@@ -93,40 +93,40 @@ class AIService:
         Bạn là một giám khảo IELTS cực kỳ khắt khe (Strict IELTS Examiner). Hãy chấm điểm và phân tích bài viết sau: "{text}"
         
         Yêu cầu nghiêm ngặt:
-        1. Chấm điểm Band Score (từ 0.0 đến 9.0). Đừng quá nương tay, hãy chấm đúng trình độ IELTS.
+        1. Chấm điểm Band Score (từ 0.0 đến 9.0).
         2. Nhận xét chi tiết bằng tiếng Việt (Task Response, Coherence, Vocabulary, Grammar).
         3. Đưa ra 3 gợi ý cụ thể bằng tiếng Việt để nâng band điểm.
-        4. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, trong phần 'reason', bạn phải giải thích rõ bằng tiếng Việt theo kiểu: "Bạn lỗi chính tả ở chỗ chữ 'abc' đáng ra phải là 'xyz'" hoặc "Lỗi ngữ pháp: bạn dùng thì quá khứ ở đây là sai, phải dùng hiện tại hoàn thành vì...".
+        4. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, trong phần 'reason', bạn phải giải thích rõ bằng tiếng Việt.
         
         Trả về DUY NHẤT định dạng JSON:
         {{
             "band_score": 5.0,
-            "feedback": "Nhận xét khắt khe bằng tiếng Việt...",
-            "suggestions": ["Gợi ý nâng band 1", "Gợi ý nâng band 2", "Gợi ý nâng band 3"],
+            "feedback": "...",
+            "suggestions": ["...", "...", "..."],
             "corrections": [
-                {{
-                    "original": "từ_sai", 
-                    "corrected": "từ_đúng", 
-                    "reason": "Giải thích chi tiết lỗi sai và tại sao phải sửa như vậy bằng tiếng Việt"
-                }}
+                {{"original": "...", "corrected": "...", "reason": "..."}}
             ]
         }}
         """
         
-        # 1. Try Gemini (Flash then Pro)
+        # 1. Thử Gemini trước
         for model_name in ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro']:
             try:
+                print(f"--- Attempting analysis with {model_name} ---")
                 model = genai.GenerativeModel(model_name)
                 res = await model.generate_content_async(prompt)
-                if res.text:
-                    return json.loads(self._clean_json(res.text))
+                if res and res.text:
+                    cleaned_res = self._clean_json(res.text)
+                    print(f"Gemini {model_name} succeeded")
+                    return json.loads(cleaned_res)
             except Exception as e:
-                print(f"Gemini {model_name} failed: {e}")
-            
-        # 2. Fallback to Ollama
+                print(f"Gemini {model_name} failed: {str(e)[:100]}...")
+
+        # 2. Dự phòng dùng Ollama (Phi-3 hoặc TinyLlama)
         for model_name in ["phi3", "tinyllama"]:
             try:
-                async with httpx.AsyncClient(timeout=90.0) as client:
+                print(f"--- Falling back to Ollama: {model_name} ---")
+                async with httpx.AsyncClient(timeout=180.0) as client:
                     response = await client.post(
                         f"{self.ollama_host}/api/generate",
                         json={
@@ -137,10 +137,12 @@ class AIService:
                         }
                     )
                     if response.status_code == 200:
-                        data = response.json()
-                        return json.loads(data.get("response", "{}"))
+                        raw_data = response.json().get("response", "{}")
+                        cleaned_data = self._clean_json(raw_data)
+                        print(f"Ollama {model_name} succeeded")
+                        return json.loads(cleaned_data)
             except Exception as e:
-                print(f"Ollama {model_name} failed: {e}")
+                print(f"Ollama {model_name} failed: {str(e)[:100]}...")
 
         return {
             "band_score": "N/A", 
