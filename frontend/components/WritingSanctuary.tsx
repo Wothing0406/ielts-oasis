@@ -97,15 +97,16 @@ const WritingSanctuary = () => {
                 </p>
               </div>
               
-              {analysis?.suggestions && (
-                <div className="p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border-l-4 border-primary">
-                  <div className="flex items-center gap-2 mb-2 text-primary">
-                    <span className="material-symbols-rounded text-sm">translate</span>
-                    <span className="text-xs font-bold uppercase">Lexical Resource</span>
-                  </div>
-                  <p className="text-sm opacity-70">
-                    {analysis.suggestions[0]}
-                  </p>
+              {analysis?.corrections && analysis.corrections.length > 0 && (
+                <div className="space-y-3 mt-6">
+                  <h5 className="text-[10px] font-black uppercase text-red-500 tracking-wider">Detailed Corrections</h5>
+                  {analysis.corrections.map((c: any, i: number) => (
+                    <div key={i} className="p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                       <p className="text-[10px] line-through text-red-400 mb-1">{c.original}</p>
+                       <p className="text-xs font-bold text-green-600 dark:text-green-400 mb-1">{c.corrected}</p>
+                       <p className="text-[10px] text-accent/60 italic">{c.reason}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

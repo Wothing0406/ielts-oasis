@@ -70,13 +70,36 @@ class AIService:
         return {"word": word, "meaning": word, "phonetic": "/.../", "example": ""}
 
     async def analyze_writing(self, text: str):
-        prompt = f"Analyze IELTS essay: {text}. Return JSON with feedback, band_score, suggestions, encouragement."
+        prompt = f"""
+        You are a strict IELTS Writing Examiner. Analyze the following essay: "{text}"
+        
+        CRITICAL GRADING RULES:
+        1. If the text is too short (e.g., under 50 words), give a very low band score (1.0-3.0) and be blunt about the lack of content.
+        2. Point out EVERY single mistake: Spelling, Grammar, Punctuation.
+        3. Use the 4 official IELTS criteria: Task Response, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy.
+        
+        Return ONLY a JSON object with this exact structure:
+        {{
+            "band_score": "float (e.g. 5.5)",
+            "feedback": "Overall strict critique (Vietnamese)",
+            "suggestions": ["List of 3 specific improvements (Vietnamese)"],
+            "corrections": [
+                {{"original": "mistake", "corrected": "fix", "reason": "why (Vietnamese)"}}
+            ]
+        }}
+        """
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
             res = await model.generate_content_async(prompt)
             return json.loads(self._clean_json(res.text))
-        except:
-            return {"feedback": "Nỗ lực tốt!", "band_score": "6.0", "suggestions": [], "encouragement": "✨"}
+        except Exception as e:
+            print(f"Writing Analysis Error: {e}")
+            return {
+                "band_score": "N/A", 
+                "feedback": "AI đang bận, hãy thử lại sau.", 
+                "suggestions": ["Kiểm tra kết nối mạng"],
+                "corrections": []
+            }
 
     async def get_encouragement(self):
         try:
