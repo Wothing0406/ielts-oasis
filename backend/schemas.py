@@ -2,18 +2,18 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
 
-class VocabularyBase(BaseModel):
+class VocabIn(BaseModel):
     word: str
     phonetic: Optional[str] = None
     meaning: Optional[str] = None
     example: Optional[str] = None
     topic: Optional[str] = "General"
-    audio_path: Optional[str] = None
+    audio_url: Optional[str] = None
 
-class VocabularyCreate(VocabularyBase):
+class VocabularyCreate(VocabIn):
     pass
 
-class Vocabulary(VocabularyBase):
+class Vocabulary(VocabIn):
     id: int
     mastery_level: int
     last_reviewed: datetime
