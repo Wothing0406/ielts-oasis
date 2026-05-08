@@ -71,44 +71,50 @@ class AIService:
 
     async def analyze_writing(self, text: str):
         prompt = f"""
-        You are a strict IELTS Writing Examiner. Analyze the following essay: "{text}"
-        
-        CRITICAL GRADING RULES:
-        1. If the text is too short (e.g., under 50 words), give a very low band score (1.0-3.0) and be blunt about the lack of content.
-        2. Point out EVERY single mistake: Spelling, Grammar, Punctuation.
-        3. Use the 4 official IELTS criteria: Task Response, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy.
-        
-        Return ONLY a JSON object with this exact structure:
+        Strict IELTS Examiner Mode. Essay: "{text}"
+        Return ONLY JSON:
         {{
-            "band_score": "float (e.g. 5.5)",
-            "feedback": "Overall strict critique (Vietnamese)",
-            "suggestions": ["List of 3 specific improvements (Vietnamese)"],
+            "band_score": "float",
+            "feedback": "critique in Vietnamese",
+            "suggestions": ["3 tips in Vietnamese"],
             "corrections": [
-                {{"original": "mistake", "corrected": "fix", "reason": "why (Vietnamese)"}}
+                {{"original": "mistake", "corrected": "fix", "reason": "why in Vietnamese"}}
             ]
         }}
         """
-        # Try multiple models in case one is not available in the user's region/key
-        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
-        last_error = ""
         
-        for model_name in models_to_try:
+        # 1. Try Gemini first (just in case)
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            res = await model.generate_content_async(prompt)
+            return json.loads(self._clean_json(res.text))
+        except Exception as e:
+            print(f"Gemini failed (likely age restriction): {e}")
+            
+            # 2. Fallback to Local Llama (Ollama)
             try:
-                model = genai.GenerativeModel(model_name)
-                res = await model.generate_content_async(prompt)
-                return json.loads(self._clean_json(res.text))
-            except Exception as e:
-                last_error = str(e)
-                print(f"Model {model_name} failed: {e}")
-                continue
-        
-        # If all fail
-        return {
-            "band_score": "Error", 
-            "feedback": f"Lỗi kết nối AI: {last_error}. Hãy kiểm tra API Key hoặc phiên bản thư viện.", 
-            "suggestions": ["Thử lại sau vài phút"],
-            "corrections": []
-        }
+                import httpx
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        f"{self.ollama_host}/api/generate",
+                        json={
+                            "model": "tinyllama",
+                            "prompt": prompt,
+                            "stream": False,
+                            "format": "json"
+                        },
+                        timeout=60.0
+                    )
+                    data = response.json()
+                    return json.loads(data.get("response", "{}"))
+            except Exception as ollama_err:
+                print(f"Ollama fallback failed: {ollama_err}")
+                return {
+                    "band_score": "N/A", 
+                    "feedback": "Cả Gemini và Llama đều không khả dụng. Hãy đảm bảo Ollama đang chạy.", 
+                    "suggestions": ["Kiểm tra docker-compose"],
+                    "corrections": []
+                }
 
     async def get_encouragement(self):
         try:
