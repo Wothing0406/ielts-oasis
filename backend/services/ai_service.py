@@ -33,10 +33,13 @@ class AIService:
         return None
 
     def _clean_json(self, text: str):
-        text = text.strip()
-        if "```json" in text: text = text.split("```json")[1].split("```")[0]
-        elif "```" in text: text = text.split("```")[1].split("```")[0]
-        return text.strip()
+        try:
+            text = text.strip()
+            if "```json" in text: text = text.split("```json")[1].split("```")[0]
+            elif "```" in text: text = text.split("```")[1].split("```")[0]
+            return text.strip()
+        except:
+            return "{}"
 
     async def detect_all_objects(self, image: Image.Image):
         prompt = """
@@ -50,22 +53,21 @@ class AIService:
         Example: [{"word": "Apple", "meaning": "Quả táo", "phonetic": "/ˈæp.əl/", "box": [0.1, 0.1, 0.3, 0.3]}]
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async([prompt, image])
-            return json.loads(self._clean_json(res.text))
-        except: pass
-        try:
             buffered = BytesIO()
             image.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
             
             res = await self._call_ollama(prompt, model=self.vision_model, images=[img_str])
             if res:
-                items = json.loads(self._clean_json(res))
-                for i, item in enumerate(items):
-                    if "box" not in item: item["box"] = [0.2 + i*0.2, 0.2 + i*0.2, 0.4 + i*0.2, 0.4 + i*0.2]
-                return items
-        except: pass
+                try:
+                    items = json.loads(self._clean_json(res))
+                    for i, item in enumerate(items):
+                        if "box" not in item: item["box"] = [0.2 + i*0.2, 0.2 + i*0.2, 0.4 + i*0.2, 0.4 + i*0.2]
+                    return items
+                except json.JSONDecodeError:
+                    print("JSON Decode Error in detect_all_objects")
+        except Exception as e:
+            print(f"Object detection failed: {e}")
         return []
 
     async def refine_vocabulary(self, word: str):
@@ -80,12 +82,11 @@ class AIService:
         }}
         """
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async(prompt)
-            return json.loads(self._clean_json(res.text))
-        except:
             res = await self._call_ollama(prompt)
-            if res: return json.loads(self._clean_json(res))
+            if res: 
+                return json.loads(self._clean_json(res))
+        except Exception as e:
+            print(f"Refine vocabulary failed: {e}")
         return {"word": word, "meaning": word, "phonetic": "/.../", "example": ""}
 
     async def analyze_writing(self, text: str):
@@ -109,23 +110,10 @@ class AIService:
         }}
         """
         
-        # 1. Thử Gemini trước
-        for model_name in ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro']:
-            try:
-                print(f"--- Attempting analysis with {model_name} ---")
-                model = genai.GenerativeModel(model_name)
-                res = await model.generate_content_async(prompt)
-                if res and res.text:
-                    cleaned_res = self._clean_json(res.text)
-                    print(f"Gemini {model_name} succeeded")
-                    return json.loads(cleaned_res)
-            except Exception as e:
-                print(f"Gemini {model_name} failed: {str(e)[:100]}...")
-
-        # 2. Dự phòng dùng Ollama (TinyLlama nhanh hơn, Phi-3 thông minh hơn)
+        # Chỉ dùng Ollama theo yêu cầu
         for model_name in ["tinyllama", "phi3"]:
             try:
-                print(f"--- Falling back to Ollama: {model_name} ---")
+                print(f"--- Using Ollama model: {model_name} ---")
                 async with httpx.AsyncClient(timeout=180.0) as client:
                     response = await client.post(
                         f"{self.ollama_host}/api/generate",
@@ -139,24 +127,26 @@ class AIService:
                     if response.status_code == 200:
                         raw_data = response.json().get("response", "{}")
                         cleaned_data = self._clean_json(raw_data)
-                        print(f"Ollama {model_name} succeeded")
-                        return json.loads(cleaned_data)
+                        try:
+                            return json.loads(cleaned_data)
+                        except json.JSONDecodeError:
+                            print(f"JSON Decode Error with {model_name}")
             except Exception as e:
                 print(f"Ollama {model_name} failed: {str(e)[:100]}...")
 
         return {
             "band_score": "N/A", 
-            "feedback": "Không thể kết nối AI để chấm điểm lúc này. Vui lòng thử lại sau.", 
-            "suggestions": ["Kiểm tra kết nối mạng hoặc Ollama"],
+            "feedback": "Lỗi xử lý ngôn ngữ hoặc mạng bị chậm. Vui lòng thử lại.", 
+            "suggestions": ["Kiểm tra kết nối mạng"],
             "corrections": []
         }
 
     async def get_encouragement(self):
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async("Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt.")
-            return res.text.strip()
+            res = await self._call_ollama("Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt.")
+            if res: return res.strip()
         except:
-            return "Chào mừng bạn đến với Oasis! 🌴"
+            pass
+        return "Chào mừng bạn đến với Oasis! 🌴"
 
 ai_service = AIService()
