@@ -72,51 +72,59 @@ class AIService:
 
     async def analyze_writing(self, text: str):
         prompt = f"""
-        Strict IELTS Examiner Mode. Essay: "{text}"
-        Return ONLY JSON:
+        You are an expert IELTS Examiner. Analyze the following essay: "{text}"
+        
+        Requirements:
+        1. Provide a Band Score (0.0 to 9.0).
+        2. Give detailed feedback in Vietnamese covering Task Response, Coherence, Vocabulary, and Grammar.
+        3. Provide 3 specific suggestions in Vietnamese for improvement.
+        4. Identify specific errors: original text, corrected version, and explanation in Vietnamese.
+        
+        Return ONLY valid JSON:
         {{
-            "band_score": "float",
-            "feedback": "critique in Vietnamese",
-            "suggestions": ["3 tips in Vietnamese"],
+            "band_score": 6.5,
+            "feedback": "Detailed critique in Vietnamese...",
+            "suggestions": ["Tip 1", "Tip 2", "Tip 3"],
             "corrections": [
-                {{"original": "mistake", "corrected": "fix", "reason": "why in Vietnamese"}}
+                {{"original": "wrong text", "corrected": "correct text", "reason": "explanation in Vietnamese"}}
             ]
         }}
         """
         
+        # 1. Try Gemini first (Best quality)
         try:
-            # 1. Sử dụng Phi-3 Mini (Rất nhẹ cho CPU nhưng thông minh)
-            import httpx
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.ollama_host}/api/generate",
-                    json={
-                        "model": "phi3",
-                        "prompt": prompt,
-                        "stream": False,
-                        "format": "json"
-                    },
-                    timeout=90.0
-                )
-                data = response.json()
-                return json.loads(data.get("response", "{}"))
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            res = await model.generate_content_async(prompt)
+            return json.loads(self._clean_json(res.text))
         except Exception as e:
-            print(f"Ollama phi3 failed, trying tinyllama: {e}")
+            print(f"Gemini failed for analysis: {e}")
+            
+        # 2. Fallback to Ollama Phi-3 or TinyLlama
+        models = ["phi3", "tinyllama"]
+        for model_name in models:
             try:
-                async with httpx.AsyncClient() as client:
-                    res = await client.post(
+                async with httpx.AsyncClient(timeout=90.0) as client:
+                    response = await client.post(
                         f"{self.ollama_host}/api/generate",
-                        json={ "model": "tinyllama", "prompt": prompt, "stream": False, "format": "json" },
-                        timeout=30.0
+                        json={
+                            "model": model_name,
+                            "prompt": prompt,
+                            "stream": False,
+                            "format": "json"
+                        }
                     )
-                    return json.loads(res.json().get("response", "{}"))
-            except:
-                return {
-                    "band_score": "Error", 
-                    "feedback": "Không thể kết nối AI. Hãy chạy: 'ollama pull phi3'", 
-                    "suggestions": ["Kiểm tra Ollama"],
-                    "corrections": []
-                }
+                    if response.status_code == 200:
+                        data = response.json()
+                        return json.loads(data.get("response", "{}"))
+            except Exception as e:
+                print(f"Ollama {model_name} failed: {e}")
+
+        return {
+            "band_score": "N/A", 
+            "feedback": "Không thể kết nối AI để chấm điểm lúc này. Vui lòng thử lại sau.", 
+            "suggestions": ["Kiểm tra kết nối mạng hoặc Ollama"],
+            "corrections": []
+        }
 
     async def get_encouragement(self):
         try:
