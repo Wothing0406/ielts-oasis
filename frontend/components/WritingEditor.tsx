@@ -11,19 +11,45 @@ const WritingSanctuary = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = async (mode: 'feedback' | 'score') => {
+  const handleAnalyze = async () => {
     if (!text) return;
     setIsAnalyzing(true);
     try {
-      const res = await fetch(`/proxy/writing/analyze`, {
+      const startRes = await fetch(`/api/writing/analyze/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, task_type: "Task 2" }),
+        body: JSON.stringify({ content: text }),
       });
-      const data = await res.json();
-      setAnalysis(data);
-    } catch (err) { console.error(err); }
-    finally { setIsAnalyzing(false); }
+      if (!startRes.ok) throw new Error(`Server error: ${startRes.status}`);
+      const { task_id } = await startRes.json();
+      
+      const poll = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/writing/analyze/status/${task_id}`);
+          if (statusRes.ok) {
+            const data = await statusRes.json();
+            if (data.status === "completed") {
+              clearInterval(poll);
+              setAnalysis(data.result);
+              setIsAnalyzing(false);
+            } else if (data.status === "failed") {
+              clearInterval(poll);
+              throw new Error(data.error || "Analysis failed");
+            }
+          }
+        } catch (err: any) {
+          clearInterval(poll);
+          console.error("Polling error:", err);
+          alert(`Grading failed: ${err.message}`);
+          setIsAnalyzing(false);
+        }
+      }, 3000);
+
+    } catch (err: any) { 
+      console.error("Analysis failed:", err);
+      alert(`Grading failed: ${err.message}`);
+      setIsAnalyzing(false);
+    }
   };
 
   return (

@@ -155,12 +155,33 @@ async def text_to_speech(data: dict):
     audio_file = await tts_service.generate_speech(word)
     return {"audio_url": f"/static/{audio_file}"}
 
+import asyncio
+
+analysis_jobs = {}
+
 class WritingIn(BaseModel):
     content: str
 
-@app.post("/writing/analyze")
-async def analyze_writing(writing: WritingIn):
-    return await ai_service.analyze_writing(writing.content)
+async def process_analysis(task_id: str, content: str):
+    try:
+        result = await ai_service.analyze_writing(content)
+        analysis_jobs[task_id] = {"status": "completed", "result": result}
+    except Exception as e:
+        analysis_jobs[task_id] = {"status": "failed", "error": str(e)}
+
+@app.post("/writing/analyze/start")
+async def start_writing_analysis(writing: WritingIn):
+    task_id = str(uuid.uuid4())
+    analysis_jobs[task_id] = {"status": "processing"}
+    asyncio.create_task(process_analysis(task_id, writing.content))
+    return {"task_id": task_id}
+
+@app.get("/writing/analyze/status/{task_id}")
+async def get_analysis_status(task_id: str):
+    job = analysis_jobs.get(task_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return job
 
 @app.get("/encouragement")
 async def get_encouragement():

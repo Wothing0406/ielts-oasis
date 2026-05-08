@@ -14,21 +14,44 @@ const WritingSanctuary = () => {
     if (!text) return;
     setIsAnalyzing(true);
     try {
-      console.log("Analyzing text:", text);
-      const res = await fetch(`/proxy/writing/analyze`, {
+      console.log("Starting analysis for text:", text);
+      const startRes = await fetch(`/api/writing/analyze/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: text }),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      console.log("Analysis result:", data);
-      setAnalysis(data);
+      if (!startRes.ok) throw new Error(`Server error: ${startRes.status}`);
+      const { task_id } = await startRes.json();
+      
+      // Poll every 3 seconds
+      const poll = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/writing/analyze/status/${task_id}`);
+          if (statusRes.ok) {
+            const data = await statusRes.json();
+            if (data.status === "completed") {
+              clearInterval(poll);
+              console.log("Analysis result:", data.result);
+              setAnalysis(data.result);
+              setIsAnalyzing(false);
+            } else if (data.status === "failed") {
+              clearInterval(poll);
+              throw new Error(data.error || "Analysis failed");
+            }
+          }
+        } catch (err: any) {
+          clearInterval(poll);
+          console.error("Polling error:", err);
+          alert(`Grading failed: ${err.message}`);
+          setIsAnalyzing(false);
+        }
+      }, 3000);
+
     } catch (err: any) { 
       console.error("Analysis failed:", err);
       alert(`Grading failed: ${err.message}`);
+      setIsAnalyzing(false);
     }
-    finally { setIsAnalyzing(false); }
   };
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
