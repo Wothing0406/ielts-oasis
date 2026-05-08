@@ -88,18 +88,27 @@ class AIService:
             ]
         }}
         """
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async(prompt)
-            return json.loads(self._clean_json(res.text))
-        except Exception as e:
-            print(f"Writing Analysis Error: {e}")
-            return {
-                "band_score": "N/A", 
-                "feedback": "AI đang bận, hãy thử lại sau.", 
-                "suggestions": ["Kiểm tra kết nối mạng"],
-                "corrections": []
-            }
+        # Try multiple models in case one is not available in the user's region/key
+        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+        last_error = ""
+        
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                res = await model.generate_content_async(prompt)
+                return json.loads(self._clean_json(res.text))
+            except Exception as e:
+                last_error = str(e)
+                print(f"Model {model_name} failed: {e}")
+                continue
+        
+        # If all fail
+        return {
+            "band_score": "Error", 
+            "feedback": f"Lỗi kết nối AI: {last_error}. Hãy kiểm tra API Key hoặc phiên bản thư viện.", 
+            "suggestions": ["Thử lại sau vài phút"],
+            "corrections": []
+        }
 
     async def get_encouragement(self):
         try:
