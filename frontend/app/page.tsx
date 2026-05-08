@@ -189,6 +189,27 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Bottom Mobile Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-primary/10 p-3 md:hidden z-[100] flex justify-around items-center">
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center gap-1 text-primary">
+          <span className="material-symbols-rounded">dashboard</span>
+          <span className="text-[10px] font-bold">Home</span>
+        </button>
+        <button onClick={() => document.getElementById('lens')?.scrollIntoView({ behavior: 'smooth' })} className="flex flex-col items-center gap-1 opacity-40 hover:opacity-100 transition-opacity">
+          <span className="material-symbols-rounded">camera_enhance</span>
+          <span className="text-[10px] font-bold">Lens</span>
+        </button>
+        <button onClick={() => document.getElementById('writing')?.scrollIntoView({ behavior: 'smooth' })} className="flex flex-col items-center gap-1 opacity-40 hover:opacity-100 transition-opacity">
+          <span className="material-symbols-rounded">edit_square</span>
+          <span className="text-[10px] font-bold">Write</span>
+        </button>
+        <button onClick={() => document.getElementById('library')?.scrollIntoView({ behavior: 'smooth' })} className="flex flex-col items-center gap-1 opacity-40 hover:opacity-100 transition-opacity relative">
+          <span className="material-symbols-rounded">library_books</span>
+          <span className="text-[10px] font-bold">Library</span>
+          {dueCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+        </button>
+      </nav>
+
       <MascotMessage dueCount={dueCount} />
       <ToastContainer toasts={toasts} onRemove={(id) => setToasts(t => t.filter(x => x.id !== id))} />
     </div>
