@@ -11,7 +11,7 @@ import ToastContainer, { Toast } from '../components/ToastContainer';
 import MascotMessage from '../components/MascotMessage';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = '/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function Home() {
   const [vocab, setVocab] = useState<any[]>([]);

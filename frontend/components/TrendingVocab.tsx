@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Leaf, Plus, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = '/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const TrendingVocab = ({ onImport }: { onImport: (word: any) => void }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
