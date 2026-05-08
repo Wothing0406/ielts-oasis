@@ -90,21 +90,25 @@ class AIService:
 
     async def analyze_writing(self, text: str):
         prompt = f"""
-        You are an expert IELTS Examiner. Analyze the following essay: "{text}"
+        Bạn là một giám khảo IELTS cực kỳ khắt khe (Strict IELTS Examiner). Hãy chấm điểm và phân tích bài viết sau: "{text}"
         
-        Requirements:
-        1. Provide a Band Score (0.0 to 9.0).
-        2. Give detailed feedback in Vietnamese covering Task Response, Coherence, Vocabulary, and Grammar.
-        3. Provide 3 specific suggestions in Vietnamese for improvement.
-        4. Identify specific errors: original text, corrected version, and explanation in Vietnamese.
+        Yêu cầu nghiêm ngặt:
+        1. Chấm điểm Band Score (từ 0.0 đến 9.0). Đừng quá nương tay, hãy chấm đúng trình độ IELTS.
+        2. Nhận xét chi tiết bằng tiếng Việt (Task Response, Coherence, Vocabulary, Grammar).
+        3. Đưa ra 3 gợi ý cụ thể bằng tiếng Việt để nâng band điểm.
+        4. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, trong phần 'reason', bạn phải giải thích rõ bằng tiếng Việt theo kiểu: "Bạn lỗi chính tả ở chỗ chữ 'abc' đáng ra phải là 'xyz'" hoặc "Lỗi ngữ pháp: bạn dùng thì quá khứ ở đây là sai, phải dùng hiện tại hoàn thành vì...".
         
-        Return ONLY valid JSON:
+        Trả về DUY NHẤT định dạng JSON:
         {{
-            "band_score": 6.5,
-            "feedback": "Detailed critique in Vietnamese...",
-            "suggestions": ["Tip 1", "Tip 2", "Tip 3"],
+            "band_score": 5.0,
+            "feedback": "Nhận xét khắt khe bằng tiếng Việt...",
+            "suggestions": ["Gợi ý nâng band 1", "Gợi ý nâng band 2", "Gợi ý nâng band 3"],
             "corrections": [
-                {{"original": "wrong text", "corrected": "correct text", "reason": "explanation in Vietnamese"}}
+                {{
+                    "original": "từ_sai", 
+                    "corrected": "từ_đúng", 
+                    "reason": "Giải thích chi tiết lỗi sai và tại sao phải sửa như vậy bằng tiếng Việt"
+                }}
             ]
         }}
         """
