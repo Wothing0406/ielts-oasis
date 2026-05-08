@@ -9,6 +9,7 @@ import WeeklyStats from '../components/WeeklyStats';
 import VocabularyQuiz from '../components/VocabularyQuiz';
 import ToastContainer, { Toast } from '../components/ToastContainer';
 import MascotMessage from '../components/MascotMessage';
+import HistoryModal from '../components/HistoryModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
@@ -17,8 +18,10 @@ export default function Home() {
   const [vocab, setVocab] = useState<any[]>([]);
   const [greeting, setGreeting] = useState("Ready for your daily brew of knowledge?");
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [dueCount, setDueCount] = useState(0);
+  const [stats, setStats] = useState({ streak: 0, masteredCount: 0, history: [] });
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter(t => t.id !== id));
@@ -32,15 +35,18 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const [vRes, gRes] = await Promise.all([
+      const [vRes, gRes, sRes] = await Promise.all([
         fetch(`${API_URL}/vocabulary`),
-        fetch(`${API_URL}/encouragement`)
+        fetch(`${API_URL}/encouragement`),
+        fetch(`${API_URL}/stats`)
       ]);
       const vData = await vRes.json();
       const gData = await gRes.json();
+      const sData = await sRes.json();
       
       setVocab(Array.isArray(vData) ? vData : []);
       if (gData.encouragement) setGreeting(gData.encouragement);
+      if (sData) setStats({ streak: sData.streak || 0, masteredCount: sData.mastered_this_week || 0, history: sData.history || [] });
       
       // Calculate Due Count (SRS)
       const now = new Date();
@@ -149,7 +155,11 @@ export default function Home() {
             onAdd={(word) => handleAddVocab({ word })} 
             onDelete={handleRemoveVocab}
           />
-          <WeeklyStats />
+          <WeeklyStats 
+            streak={stats.streak} 
+            masteredCount={stats.masteredCount} 
+            onOpenHistory={() => setShowHistory(true)} 
+          />
           
           {/* Tip of the Day */}
           <section className="xl:col-span-12 bg-secondary rounded-large p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-primary/20">
@@ -169,7 +179,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* QUIZ MODAL */}
+      {/* QUIZ AND HISTORY MODALS */}
       <AnimatePresence>
         {showQuiz && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -186,6 +196,13 @@ export default function Home() {
               onClose={() => setShowQuiz(false)} 
             />
           </div>
+        )}
+
+        {showHistory && (
+          <HistoryModal 
+            history={stats.history} 
+            onClose={() => setShowHistory(false)} 
+          />
         )}
       </AnimatePresence>
 

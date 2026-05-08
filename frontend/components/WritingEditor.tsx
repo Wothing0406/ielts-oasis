@@ -15,7 +15,7 @@ const WritingSanctuary = () => {
     if (!text) return;
     setIsAnalyzing(true);
     try {
-      const res = await fetch(`${API_URL}/writing/analyze`, {
+      const res = await fetch(`/proxy/writing/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, task_type: "Task 2" }),

@@ -15,7 +15,7 @@ const WritingSanctuary = () => {
     setIsAnalyzing(true);
     try {
       console.log("Analyzing text:", text);
-      const res = await fetch(`${API_URL}/writing/analyze`, {
+      const res = await fetch(`/proxy/writing/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: text }),

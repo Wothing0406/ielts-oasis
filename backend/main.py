@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import os
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image
 from io import BytesIO
 from ultralytics import YOLO
@@ -174,6 +174,46 @@ async def delete_vocab(id: int):
     db.commit()
     db.close()
     return {"ok": True}
+
+@app.get("/stats")
+async def get_stats():
+    db = SessionLocal()
+    now = datetime.utcnow()
+    
+    # History: last 15 words
+    recent_words = db.query(Vocabulary).order_by(desc(Vocabulary.last_reviewed)).limit(15).all()
+    history = [{"word": w.word, "meaning": w.meaning, "last_reviewed": w.last_reviewed} for w in recent_words]
+    
+    # Mastered this week
+    one_week_ago = now.timestamp() - (7 * 24 * 60 * 60)
+    mastered = db.query(Vocabulary).filter(
+        Vocabulary.mastery_level > 1,
+        Vocabulary.last_reviewed >= datetime.fromtimestamp(one_week_ago)
+    ).count()
+    
+    # Basic streak calculation based on unique dates of activity
+    all_dates = db.query(Vocabulary.last_reviewed).all()
+    unique_dates = sorted(list(set([d[0].date() for d in all_dates if d[0]])), reverse=True)
+    
+    streak = 0
+    current_date = now.date()
+    for d in unique_dates:
+        if d == current_date or (streak == 0 and (current_date - d).days == 1):
+            streak += 1
+            current_date = d - timedelta(days=1)
+        elif (current_date - d).days > 1:
+            break
+            
+    if streak == 0 and len(unique_dates) > 0 and (now.date() - unique_dates[0]).days == 1:
+        streak = 1 # Played yesterday, streak is alive
+        
+    db.close()
+    
+    return {
+        "streak": max(1, streak) if len(unique_dates) > 0 else 0,
+        "mastered_this_week": mastered,
+        "history": history
+    }
 
 if __name__ == "__main__":
     import uvicorn
