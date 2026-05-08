@@ -71,48 +71,55 @@ class AIService:
 
     async def analyze_writing(self, text: str):
         prompt = f"""
-        Strict IELTS Examiner Mode. Essay: "{text}"
-        Return ONLY JSON:
+        Hành động như một giám khảo IELTS Writing cực kỳ khắt khe. 
+        Phân tích bài viết: "{text}"
+        
+        YÊU CẦU:
+        1. Phải chỉ ra CHI TIẾT lỗi ngữ pháp, chính tả, dấu câu.
+        2. Nếu bài quá ngắn (như "Hello..."), chấm Band 1.0.
+        3. Trả về định dạng JSON DUY NHẤT:
         {{
-            "band_score": "float",
-            "feedback": "critique in Vietnamese",
-            "suggestions": ["3 tips in Vietnamese"],
+            "band_score": "số điểm (ví dụ 4.5)",
+            "feedback": "nhận xét tổng quan gắt gao (tiếng Việt)",
+            "suggestions": ["3 lời khuyên cải thiện"],
             "corrections": [
-                {{"original": "mistake", "corrected": "fix", "reason": "why in Vietnamese"}}
+                {{"original": "lỗi", "corrected": "sửa lại", "reason": "giải thích (tiếng Việt)"}}
             ]
         }}
         """
         
-        # 1. Try Gemini first (just in case)
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async(prompt)
-            return json.loads(self._clean_json(res.text))
+            # 1. Ưu tiên Llama 3 chạy cục bộ (thông minh hơn)
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.ollama_host}/api/generate",
+                    json={
+                        "model": "llama3",
+                        "prompt": prompt,
+                        "stream": False,
+                        "format": "json"
+                    },
+                    timeout=90.0
+                )
+                data = response.json()
+                return json.loads(data.get("response", "{}"))
         except Exception as e:
-            print(f"Gemini failed (likely age restriction): {e}")
-            
-            # 2. Fallback to Local Llama (Ollama)
+            print(f"Ollama llama3 failed, trying tinyllama: {e}")
+            # Fallback to tinyllama if llama3 is not pulled
             try:
-                import httpx
                 async with httpx.AsyncClient() as client:
-                    response = await client.post(
+                    res = await client.post(
                         f"{self.ollama_host}/api/generate",
-                        json={
-                            "model": "tinyllama",
-                            "prompt": prompt,
-                            "stream": False,
-                            "format": "json"
-                        },
-                        timeout=60.0
+                        json={ "model": "tinyllama", "prompt": prompt, "stream": False, "format": "json" },
+                        timeout=30.0
                     )
-                    data = response.json()
-                    return json.loads(data.get("response", "{}"))
-            except Exception as ollama_err:
-                print(f"Ollama fallback failed: {ollama_err}")
+                    return json.loads(res.json().get("response", "{}"))
+            except:
                 return {
-                    "band_score": "N/A", 
-                    "feedback": "Cả Gemini và Llama đều không khả dụng. Hãy đảm bảo Ollama đang chạy.", 
-                    "suggestions": ["Kiểm tra docker-compose"],
+                    "band_score": "Error", 
+                    "feedback": "Không thể kết nối AI. Hãy chạy: 'ollama pull llama3'", 
+                    "suggestions": ["Kiểm tra Ollama"],
                     "corrections": []
                 }
 

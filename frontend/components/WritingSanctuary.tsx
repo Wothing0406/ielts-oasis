@@ -37,12 +37,12 @@ const WritingSanctuary = () => {
     <section className="xl:col-span-12 matcha-card p-10 bento-card">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-primary">
-            <span className="material-symbols-rounded">edit_note</span>
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-secondary rounded-full flex items-center justify-center text-primary flex-shrink-0">
+            <span className="material-symbols-rounded text-xl">edit_note</span>
           </div>
           <div>
-            <h3 className="font-display text-2xl font-bold text-accent dark:text-primary">Writing Sanctuary</h3>
-            <p className="text-sm opacity-60 text-accent dark:text-secondary">Topic: The impact of technology on traditional education.</p>
+            <h3 className="font-display text-lg md:text-2xl font-bold text-accent dark:text-primary">Writing Sanctuary</h3>
+            <p className="text-[10px] md:text-sm opacity-60 text-accent dark:text-secondary">Topic: The impact of technology on traditional education.</p>
           </div>
         </div>
         <div className="flex gap-4">
