@@ -177,9 +177,12 @@ async def text_to_speech(data: dict):
     audio_file = await tts_service.generate_speech(word)
     return {"audio_url": f"/static/{audio_file}"}
 
+class WritingIn(BaseModel):
+    content: str
+
 @app.post("/writing/analyze")
-async def analyze_writing(text: str = Form(...)):
-    return await ai_service.analyze_writing(text)
+async def analyze_writing(writing: WritingIn):
+    return await ai_service.analyze_writing(writing.content)
 
 @app.get("/encouragement")
 async def get_encouragement():
