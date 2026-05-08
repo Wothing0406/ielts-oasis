@@ -113,17 +113,18 @@ class AIService:
         }}
         """
         
-        # 1. Try Gemini first (Best quality)
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            res = await model.generate_content_async(prompt)
-            return json.loads(self._clean_json(res.text))
-        except Exception as e:
-            print(f"Gemini failed for analysis: {e}")
+        # 1. Try Gemini (Flash then Pro)
+        for model_name in ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro']:
+            try:
+                model = genai.GenerativeModel(model_name)
+                res = await model.generate_content_async(prompt)
+                if res.text:
+                    return json.loads(self._clean_json(res.text))
+            except Exception as e:
+                print(f"Gemini {model_name} failed: {e}")
             
-        # 2. Fallback to Ollama Phi-3 or TinyLlama
-        models = ["phi3", "tinyllama"]
-        for model_name in models:
+        # 2. Fallback to Ollama
+        for model_name in ["phi3", "tinyllama"]:
             try:
                 async with httpx.AsyncClient(timeout=90.0) as client:
                     response = await client.post(

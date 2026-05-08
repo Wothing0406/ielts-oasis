@@ -6,17 +6,18 @@ class Vocabulary(Base):
     __tablename__ = "vocabulary"
 
     id = Column(Integer, primary_key=True, index=True)
-    word = Column(String(100), index=True)
-    phonetic = Column(String(100))
+    word = Column(String(255), unique=True, index=True)
+    phonetic = Column(String(255))
     meaning = Column(Text)
     example = Column(Text)
     topic = Column(String(100), default="General")
-    audio_path = Column(String(255))
+    audio_url = Column(String(255))
     
     # Spaced Repetition (SRS) Fields
     mastery_level = Column(Integer, default=1) # 1 to 5
     last_reviewed = Column(DateTime, default=datetime.utcnow)
     next_review = Column(DateTime, default=datetime.utcnow)
+    is_learned = Column(Boolean, default=False)
     
     is_global = Column(Boolean, default=False)
     popularity = Column(Integer, default=1)

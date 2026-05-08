@@ -15,28 +15,9 @@ from ultralytics import YOLO
 from services.ai_service import ai_service
 from services.tts_service import tts_service
 
-# Configuration
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-DB_HOST = os.getenv("DB_HOST", "db")
-DB_NAME = os.getenv("DB_NAME", "ielts_oasis")
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Models
-class Vocabulary(Base):
-    __tablename__ = "vocabulary"
-    id = Column(Integer, primary_key=True, index=True)
-    word = Column(String(255), unique=True, index=True)
-    meaning = Column(Text)
-    phonetic = Column(String(255))
-    example = Column(Text)
-    audio_url = Column(String(255))
-    next_review = Column(DateTime, default=datetime.utcnow)
-    is_learned = Column(Boolean, default=False)
+from database import SessionLocal, engine, Base
+from models import Vocabulary
+from schemas import VocabIn
 
 Base.metadata.create_all(bind=engine)
 
@@ -58,10 +39,7 @@ def seed_db():
 
 seed_db()
 
-class VocabIn(BaseModel):
-    word: str
-    meaning: str = None
-    phonetic: str = None
+# VocabIn is imported from schemas
 
 app = FastAPI(title="IELTS Oasis API")
 
