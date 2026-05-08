@@ -49,6 +49,7 @@ class AIService:
             buffered = BytesIO()
             image.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
+            
             res = await self._call_ollama("List 3 objects: word, meaning, phonetic. JSON.", model=self.vision_model, images=[img_str])
             if res:
                 items = json.loads(self._clean_json(res))
@@ -71,31 +72,26 @@ class AIService:
 
     async def analyze_writing(self, text: str):
         prompt = f"""
-        Hành động như một giám khảo IELTS Writing cực kỳ khắt khe. 
-        Phân tích bài viết: "{text}"
-        
-        YÊU CẦU:
-        1. Phải chỉ ra CHI TIẾT lỗi ngữ pháp, chính tả, dấu câu.
-        2. Nếu bài quá ngắn (như "Hello..."), chấm Band 1.0.
-        3. Trả về định dạng JSON DUY NHẤT:
+        Strict IELTS Examiner Mode. Essay: "{text}"
+        Return ONLY JSON:
         {{
-            "band_score": "số điểm (ví dụ 4.5)",
-            "feedback": "nhận xét tổng quan gắt gao (tiếng Việt)",
-            "suggestions": ["3 lời khuyên cải thiện"],
+            "band_score": "float",
+            "feedback": "critique in Vietnamese",
+            "suggestions": ["3 tips in Vietnamese"],
             "corrections": [
-                {{"original": "lỗi", "corrected": "sửa lại", "reason": "giải thích (tiếng Việt)"}}
+                {{"original": "mistake", "corrected": "fix", "reason": "why in Vietnamese"}}
             ]
         }}
         """
         
         try:
-            # 1. Ưu tiên Llama 3 chạy cục bộ (thông minh hơn)
+            # 1. Sử dụng Phi-3 Mini (Rất nhẹ cho CPU nhưng thông minh)
             import httpx
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.ollama_host}/api/generate",
                     json={
-                        "model": "llama3",
+                        "model": "phi3",
                         "prompt": prompt,
                         "stream": False,
                         "format": "json"
@@ -105,8 +101,7 @@ class AIService:
                 data = response.json()
                 return json.loads(data.get("response", "{}"))
         except Exception as e:
-            print(f"Ollama llama3 failed, trying tinyllama: {e}")
-            # Fallback to tinyllama if llama3 is not pulled
+            print(f"Ollama phi3 failed, trying tinyllama: {e}")
             try:
                 async with httpx.AsyncClient() as client:
                     res = await client.post(
@@ -118,7 +113,7 @@ class AIService:
             except:
                 return {
                     "band_score": "Error", 
-                    "feedback": "Không thể kết nối AI. Hãy chạy: 'ollama pull llama3'", 
+                    "feedback": "Không thể kết nối AI. Hãy chạy: 'ollama pull phi3'", 
                     "suggestions": ["Kiểm tra Ollama"],
                     "corrections": []
                 }
