@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Flashcard from './Flashcard';
 
-const API_URL = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':8000') : 'http://localhost:8000';
+const API_URL = '/api';
 
 interface VocabItem {
   id?: number;

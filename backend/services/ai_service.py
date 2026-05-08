@@ -99,13 +99,13 @@ class AIService:
         3. Đưa ra 3 gợi ý cụ thể bằng tiếng Việt để nâng band điểm.
         4. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, trong phần 'reason', bạn phải giải thích rõ bằng tiếng Việt.
         
-        Trả về DUY NHẤT định dạng JSON:
+        Trả về DUY NHẤT định dạng JSON (thay thế các dòng chữ trong ngoặc kép bằng nội dung thật do bạn viết):
         {{
             "band_score": 5.0,
-            "feedback": "...",
-            "suggestions": ["...", "...", "..."],
+            "feedback": "Nhận xét chi tiết của bạn ở đây",
+            "suggestions": ["Gợi ý 1", "Gợi ý 2", "Gợi ý 3"],
             "corrections": [
-                {{"original": "...", "corrected": "...", "reason": "..."}}
+                {{"original": "từ bị sai", "corrected": "từ đã sửa", "reason": "Lý do sai"}}
             ]
         }}
         """

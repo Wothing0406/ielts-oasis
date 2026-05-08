@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const API_URL = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':8000') : 'http://localhost:8000';
+const API_URL = '/api';
 
 const Library = ({ vocabList, onAdd, onDelete }: { vocabList: any[], onAdd: (word: string) => void, onDelete: (id: number) => void }) => {
   const [newBrew, setNewBrew] = React.useState('');
