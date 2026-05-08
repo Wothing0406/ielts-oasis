@@ -110,8 +110,8 @@ class AIService:
         }}
         """
         
-        # Chỉ dùng Ollama theo yêu cầu
-        for model_name in ["tinyllama", "phi3"]:
+        # Chỉ dùng Ollama theo yêu cầu. Ưu tiên phi3 vì tinyllama quá "ngốc" để làm việc này.
+        for model_name in ["phi3", "tinyllama"]:
             try:
                 print(f"--- Using Ollama model: {model_name} ---")
                 async with httpx.AsyncClient(timeout=180.0) as client:
