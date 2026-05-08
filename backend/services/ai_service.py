@@ -122,8 +122,8 @@ class AIService:
             except Exception as e:
                 print(f"Gemini {model_name} failed: {str(e)[:100]}...")
 
-        # 2. Dự phòng dùng Ollama (Phi-3 hoặc TinyLlama)
-        for model_name in ["phi3", "tinyllama"]:
+        # 2. Dự phòng dùng Ollama (TinyLlama nhanh hơn, Phi-3 thông minh hơn)
+        for model_name in ["tinyllama", "phi3"]:
             try:
                 print(f"--- Falling back to Ollama: {model_name} ---")
                 async with httpx.AsyncClient(timeout=180.0) as client:
