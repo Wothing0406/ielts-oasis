@@ -43,9 +43,9 @@ services:
       - ielts-network
 
   # --- Frontend Service (Next.js) ---
-  frontend:
+  web:
     build: ./frontend
-    container_name: ielts_oasis_frontend
+    container_name: ielts_oasis_web
     restart: always
     ports:
       - "3000:3000"
@@ -71,9 +71,9 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: ielts_oasis_tunnel
     restart: always
-    command: tunnel --no-autoupdate --url http://frontend:3000
+    command: tunnel --no-autoupdate --url http://web:3000
     depends_on:
-      - frontend
+      - web
     networks:
       - ielts-network
 
