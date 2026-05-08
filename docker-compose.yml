@@ -1,0 +1,86 @@
+services:
+  # --- Database Service ---
+  db:
+    image: mysql:8.0
+    container_name: ielts_oasis_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ielts_oasis
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ielts-network
+
+  # --- Backend Service (FastAPI) ---
+  backend:
+    build: ./backend
+    container_name: ielts_oasis_backend
+    restart: always
+    environment:
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_NAME=ielts_oasis
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OLLAMA_HOST=http://ollama:11434
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 60
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - ielts-network
+
+  # --- Frontend Service (Next.js) ---
+  frontend:
+    build: ./frontend
+    container_name: ielts_oasis_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - ielts-network
+
+  # --- Local AI Service (Ollama) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ielts_oasis_ollama
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ielts-network
+    # Pull tinyllama and moondream (vision) for reliable local fallback
+    entrypoint: [ "/usr/bin/bash", "-c", "ollama serve & sleep 10 && ollama run tinyllama && ollama run moondream && wait" ]
+
+  # --- Public Access (Cloudflare Tunnel) ---
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: ielts_oasis_tunnel
+    restart: always
+    command: tunnel --no-autoupdate --url http://frontend:3000
+    depends_on:
+      - frontend
+    networks:
+      - ielts-network
+
+networks:
+  ielts-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  ollama_data:
