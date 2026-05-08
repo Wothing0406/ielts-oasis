@@ -39,7 +39,16 @@ class AIService:
         return text.strip()
 
     async def detect_all_objects(self, image: Image.Image):
-        prompt = "Identify 3 main objects. Return JSON array: [{\"word\": \"...\", \"meaning\": \"...\", \"phonetic\": \"...\", \"box\": [ymin, xmin, ymax, xmax]}]"
+        prompt = """
+        Identify 3 main objects in this image for an IELTS learner. 
+        Return ONLY a JSON array of objects with these fields:
+        - word: English word
+        - meaning: Vietnamese translation
+        - phonetic: IPA pronunciation
+        - box: [ymin, xmin, ymax, xmax] (normalized 0-1)
+        
+        Example: [{"word": "Apple", "meaning": "Quả táo", "phonetic": "/ˈæp.əl/", "box": [0.1, 0.1, 0.3, 0.3]}]
+        """
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
             res = await model.generate_content_async([prompt, image])
@@ -50,7 +59,7 @@ class AIService:
             image.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
             
-            res = await self._call_ollama("List 3 objects: word, meaning, phonetic. JSON.", model=self.vision_model, images=[img_str])
+            res = await self._call_ollama(prompt, model=self.vision_model, images=[img_str])
             if res:
                 items = json.loads(self._clean_json(res))
                 for i, item in enumerate(items):
@@ -60,7 +69,16 @@ class AIService:
         return []
 
     async def refine_vocabulary(self, word: str):
-        prompt = f"IELTS details for '{word}'. JSON: {{\"word\": \"{word}\", \"meaning\": \"VN\", \"phonetic\": \"IPA\", \"example\": \"...\"}}"
+        prompt = f"""
+        Provide IELTS learning details for the word: "{word}"
+        Return ONLY valid JSON:
+        {{
+            "word": "{word}",
+            "meaning": "Vietnamese translation",
+            "phonetic": "IPA pronunciation",
+            "example": "A useful example sentence for IELTS"
+        }}
+        """
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
             res = await model.generate_content_async(prompt)
