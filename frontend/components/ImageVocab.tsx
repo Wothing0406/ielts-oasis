@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Plus, StopCircle, CameraIcon, Leaf } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':8000') : 'http://localhost:8000';
 
 interface DetectedWord {
   word: string;
