@@ -64,7 +64,7 @@ services:
     networks:
       - ielts-network
     # Pull tinyllama and moondream (vision) for reliable local fallback
-    entrypoint: [ "/usr/bin/bash", "-c", "ollama serve & sleep 10 && ollama run tinyllama && ollama run moondream && wait" ]
+    entrypoint: [ "/usr/bin/bash", "-c", "ollama serve & sleep 10 && ollama run tinyllama && ollama run moondream && ollama run phi3 && wait" ]
 
   # --- Public Access (Cloudflare Tunnel) ---
   tunnel:
