@@ -183,7 +183,7 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
                 placeholder={`Ví dụ định dạng JSON:\n{\n  "text": "I am an authentic, adaptive, and witty AI collaborator designed to work alongside you on any project or idea..."\n}\n\nHoặc dán đoạn văn bình thường vào đây...`}
               ></textarea>
               <button type="button" 
-                onClick={() => generateReadingTest(inputText)}
+                onClick={() => generateTest(inputText)}
                 disabled={loading || !inputText.trim()}
                 className="w-full text-sm font-bold bg-primary text-white px-8 py-4 rounded-xl shadow hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
@@ -212,7 +212,7 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                   {communityPosts.map(post => (
                     <div key={post.id} className="p-4 border border-primary/20 rounded-xl bg-white dark:bg-neutral-900 hover:border-primary cursor-pointer transition-all flex flex-col justify-between"
-                         onClick={() => generateReadingTest(post.full_content)}>
+                         onClick={() => generateTest(post.full_content)}>
                       <p className="text-sm line-clamp-3 mb-3">{post.content}</p>
                       <div className="flex items-center justify-between text-xs opacity-70">
                         <span>Bởi: {post.username}</span>
