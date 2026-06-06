@@ -145,6 +145,31 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
     }
   };
 
+  const handleShareToCommunity = async () => {
+    if (!analysis || !text) return;
+    const token = localStorage.getItem('oasis_token');
+    if (!token) return alert('Bạn cần đăng nhập để chia sẻ bài viết!');
+    
+    try {
+      const res = await fetch(`/api/community/share-writing`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: text,
+          band_score: analysis.band_score,
+          feedback: analysis
+        }),
+      });
+      if (!res.ok) throw new Error('Không thể chia sẻ');
+      alert('Đã đăng bài viết của bạn lên Oasis Community thành công!');
+    } catch (err: any) {
+      alert(`Lỗi: ${err.message}`);
+    }
+  };
+
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
@@ -216,8 +241,15 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
               <h4 className="font-display font-bold flex items-center gap-2 text-accent dark:text-primary">
                 <span className="material-symbols-rounded text-primary">auto_awesome</span> AI Insights
               </h4>
-              <div className="px-3 py-1 bg-primary text-white rounded-full text-sm font-bold">
-                {analysis ? `Band ${analysis.band_score}` : "Analyzing..."}
+              <div className="flex items-center gap-3">
+                {analysis && (
+                  <button type="button" onClick={handleShareToCommunity} className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
+                    <span className="material-symbols-rounded text-[18px]">public</span> Chia sẻ
+                  </button>
+                )}
+                <div className="px-3 py-1 bg-primary text-white rounded-full text-sm font-bold">
+                  {analysis ? `Band ${analysis.band_score}` : "Analyzing..."}
+                </div>
               </div>
             </div>
             

@@ -297,20 +297,7 @@ async def process_analysis(task_id: str, content: str, user_id: int = None):
     try:
         result = await ai_service.analyze_writing(content)
         analysis_jobs[task_id] = {"status": "completed", "result": result}
-        
-        if user_id:
-            db = SessionLocal()
-            log = WritingLog(
-                user_id=user_id,
-                content=content,
-                feedback=json.dumps(result),
-                band_score=str(result.get("band_score", "N/A")),
-                word_count=len(content.split())
-            )
-            db.add(log)
-            db.commit()
-            db.close()
-            
+
     except Exception as e:
         analysis_jobs[task_id] = {"status": "failed", "error": str(e)}
 
@@ -517,6 +504,30 @@ async def get_community_feed(sort_by: Optional[str] = "new"):
         
     db.close()
     return {"vocabularies": vocab_list, "writings": writing_list}
+
+class ShareWritingIn(BaseModel):
+    content: str
+    band_score: str
+    feedback: dict
+
+@app.post("/community/share-writing")
+async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để đăng bài")
+    
+    db = SessionLocal()
+    log = WritingLog(
+        user_id=user["user_id"],
+        content=payload.content,
+        feedback=json.dumps(payload.feedback),
+        band_score=payload.band_score,
+        word_count=len(payload.content.split())
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    db.close()
+    return {"message": "Đã chia sẻ bài viết", "id": log.id}
 
 @app.post("/community/convert/{writing_id}")
 async def convert_writing_to_lesson(writing_id: int):

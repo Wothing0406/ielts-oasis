@@ -65,6 +65,31 @@ export default function CommunityFeed() {
     }
   };
 
+  const handleSaveToVault = async (vocab: any) => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return alert("Bạn cần đăng nhập để lưu từ vựng!");
+    try {
+      const res = await fetch(`${API_URL}/vocabulary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          word: vocab.word,
+          meaning: vocab.meaning,
+          phonetic: vocab.phonetic,
+          image_url: vocab.image_url
+        })
+      });
+      if (res.ok) {
+        alert(`Đã lưu "${vocab.word}" vào kho từ vựng của bạn!`);
+      } else {
+        alert("Có lỗi xảy ra khi lưu từ vựng.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi kết nối.");
+    }
+  };
+
   const handlePostComment = async () => {
     if (!newComment.trim() || !activeComments) return;
     const token = localStorage.getItem("oasis_token");
@@ -201,13 +226,16 @@ export default function CommunityFeed() {
               </div>
             </div>
             <div className="text-right flex flex-col items-end gap-2">
-              <p className="text-xs font-bold text-accent">{v.meaning}</p>
+              <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{v.meaning}</p>
               <div className="flex items-center gap-3 text-[10px] font-bold text-accent/60">
                 <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
                   <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
                 </button>
                 <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
                   <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
+                </button>
+                <button type="button" onClick={() => handleSaveToVault(v)} className="flex items-center gap-1 text-primary hover:text-primary/70 transition-colors bg-primary/10 px-2 py-1 rounded-md ml-2">
+                  <span className="material-symbols-rounded text-[14px]">bookmark_add</span> Lưu
                 </button>
               </div>
             </div>
