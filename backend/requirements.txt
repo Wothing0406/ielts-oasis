@@ -4,7 +4,7 @@ sqlalchemy
 pymysql
 pydantic
 pydantic-settings
-google-generativeai
+openai
 edge-tts
 python-multipart
 python-dotenv
@@ -13,3 +13,7 @@ uvicorn[standard]
 httpx
 ultralytics
 opencv-python-headless
+PyJWT
+discord.py
+apscheduler
+youtube-transcript-api

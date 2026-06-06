@@ -2,6 +2,22 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
 
+class UserBase(BaseModel):
+    discord_id: str
+    username: str
+    avatar_url: Optional[str] = None
+
+class UserCreate(UserBase):
+    pass
+
+class User(UserBase):
+    id: int
+    created_at: datetime
+    last_login: datetime
+
+    class Config:
+        from_attributes = True
+
 class VocabIn(BaseModel):
     word: str
     phonetic: Optional[str] = None
@@ -9,12 +25,17 @@ class VocabIn(BaseModel):
     example: Optional[str] = None
     topic: Optional[str] = "General"
     audio_url: Optional[str] = None
+    image_url: Optional[str] = None
+    box: Optional[List[float]] = None
+    synonyms: Optional[List[str]] = []
+    memory_hook: Optional[str] = None
 
 class VocabularyCreate(VocabIn):
-    pass
+    user_id: Optional[int] = None
 
 class Vocabulary(VocabIn):
     id: int
+    user_id: Optional[int] = None
     mastery_level: int
     last_reviewed: datetime
     next_review: datetime
@@ -26,6 +47,7 @@ class Vocabulary(VocabIn):
 class WritingLogBase(BaseModel):
     content: str
     mood: Optional[str] = None
+    user_id: Optional[int] = None
 
 class WritingLog(WritingLogBase):
     id: int

@@ -10,6 +10,58 @@ const WritingSanctuary = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // AI Rephrase States
+  const [selectedPhrase, setSelectedPhrase] = useState('');
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
+  const [rephraseSuggestions, setRephraseSuggestions] = useState<string[]>([]);
+  const [isRephrasing, setIsRephrasing] = useState(false);
+
+  const handleTextSelection = (e: React.MouseEvent<HTMLTextAreaElement> | React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    
+    if (start !== end) {
+      const selected = target.value.substring(start, end).trim();
+      if (selected.length > 0 && selected.split(/\s+/).length <= 15) {
+        setSelectedPhrase(selected);
+        setSelectionRange({ start, end });
+      }
+    }
+  };
+
+  const handleRephrase = async () => {
+    if (!selectedPhrase || isRephrasing) return;
+    setIsRephrasing(true);
+    setRephraseSuggestions([]);
+    try {
+      const res = await fetch(`/api/writing/rephrase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text, selected_phrase: selectedPhrase }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRephraseSuggestions(data.suggestions || []);
+      } else {
+        alert("Không thể kết nối AI để rephrase.");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRephrasing(false);
+    }
+  };
+
+  const applyRephrase = (suggestion: string) => {
+    if (!selectionRange) return;
+    const newText = text.substring(0, selectionRange.start) + suggestion + text.substring(selectionRange.end);
+    setText(newText);
+    setSelectedPhrase('');
+    setSelectionRange(null);
+    setRephraseSuggestions([]);
+  };
+
   const handleAnalyze = async () => {
     if (!text) return;
     setIsAnalyzing(true);
@@ -90,6 +142,8 @@ const WritingSanctuary = () => {
               placeholder="Modern technology has revolutionized the education sector..."
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onMouseUp={handleTextSelection}
+              onKeyUp={handleTextSelection}
             />
             <div className="absolute bottom-6 right-8 text-xs font-bold opacity-40 uppercase tracking-widest text-accent dark:text-secondary">
               {wordCount} Words / Recommended: 250
@@ -110,15 +164,99 @@ const WritingSanctuary = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-symbols-rounded text-primary text-sm">psychology</span>
-                  <span className="text-xs font-bold uppercase text-accent dark:text-primary">Task Response</span>
-                </div>
-                <p className="text-sm opacity-70 text-accent dark:text-secondary">
-                  {analysis?.feedback || "Start writing to get feedback on your structure and content."}
-                </p>
-              </div>
+                {/* AI Rephrase Box */}
+                {selectedPhrase && (
+                  <div className="p-4 bg-primary/10 rounded-2xl border-2 border-primary/20 shadow-sm transition-all duration-300">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold uppercase text-primary flex items-center gap-1">
+                        <span className="material-symbols-rounded text-sm">lightbulb</span> AI Rephrase
+                      </span>
+                      <button 
+                        onClick={() => { setSelectedPhrase(''); setRephraseSuggestions([]); }}
+                        className="text-xs text-accent/40 hover:text-accent"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                    <p className="text-xs italic text-accent opacity-80 mb-3 bg-white p-2.5 rounded-xl border border-primary/5">
+                      "{selectedPhrase}"
+                    </p>
+                    
+                    {rephraseSuggestions.length === 0 ? (
+                      <button
+                        onClick={handleRephrase}
+                        disabled={isRephrasing}
+                        className="w-full bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {isRephrasing ? (
+                          <>
+                            <span className="material-symbols-rounded text-xs animate-spin">refresh</span>
+                            Đang tìm gợi ý...
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-rounded text-xs">auto_awesome</span>
+                            Gợi ý viết lại cụm từ
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-[10px] uppercase font-black text-accent/40 tracking-wider">Gợi ý từ AI (Click để áp dụng):</p>
+                        {rephraseSuggestions.map((suggestion, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => applyRephrase(suggestion)}
+                            className="w-full text-left p-2.5 bg-white border border-primary/10 hover:border-primary rounded-xl text-xs text-accent font-medium hover:bg-primary/5 transition-all shadow-sm flex items-start gap-1"
+                          >
+                            <span className="material-symbols-rounded text-primary text-xs mt-0.5">check_circle</span>
+                            <span>{suggestion}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {analysis?.strengths && analysis.strengths.length > 0 && (
+                  <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl shadow-sm border border-green-100 dark:border-green-900/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-rounded text-green-500 text-sm">check_circle</span>
+                      <span className="text-xs font-bold uppercase text-green-600 dark:text-green-400">Ưu điểm (Strengths)</span>
+                    </div>
+                    <ul className="text-sm opacity-80 text-green-800 dark:text-green-300 list-disc pl-5 space-y-1">
+                      {analysis.strengths.map((s: string, i: number) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {analysis?.weaknesses && analysis.weaknesses.length > 0 && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-rounded text-orange-500 text-sm">warning</span>
+                      <span className="text-xs font-bold uppercase text-orange-600 dark:text-orange-400">Nhược điểm (Weaknesses)</span>
+                    </div>
+                    <ul className="text-sm opacity-80 text-orange-800 dark:text-orange-300 list-disc pl-5 space-y-1">
+                      {analysis.weaknesses.map((w: string, i: number) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {!analysis?.strengths && !analysis?.weaknesses && (
+                  <div className="p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-rounded text-primary text-sm">psychology</span>
+                      <span className="text-xs font-bold uppercase text-accent dark:text-primary">Phân tích</span>
+                    </div>
+                    <p className="text-sm opacity-70 text-accent dark:text-secondary">
+                      Bắt đầu viết để nhận được phân tích chi tiết về điểm mạnh và điểm yếu.
+                    </p>
+                  </div>
+                )}
               
               {analysis?.corrections && analysis.corrections.length > 0 && (
                 <div className="space-y-3 mt-6">

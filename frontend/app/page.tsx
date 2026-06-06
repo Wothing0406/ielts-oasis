@@ -1,215 +1,191 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import VocabularyLab from '../components/VocabularyLab';
-import MatchaLens from '../components/MatchaLens';
-import WritingSanctuary from '../components/WritingSanctuary';
-import Library from '../components/Library';
-import WeeklyStats from '../components/WeeklyStats';
-import VocabularyQuiz from '../components/VocabularyQuiz';
-import ToastContainer, { Toast } from '../components/ToastContainer';
-import MascotMessage from '../components/MascotMessage';
-import HistoryModal from '../components/HistoryModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import DailyPlanner from "@/components/DailyPlanner";
+import VocabularyLab from "@/components/VocabularyLab";
+import MatchaLens from "@/components/MatchaLens";
+import WritingSanctuary from "@/components/WritingSanctuary";
+import CommunityFeed from "@/components/CommunityFeed";
+import ListeningLab from "@/components/ListeningLab";
+import ReadingLab from "@/components/ReadingLab";
+import MascotMessage from "@/components/MascotMessage";
 
-const API_URL = '/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
-  const [vocab, setVocab] = useState<any[]>([]);
-  const [greeting, setGreeting] = useState("Ready for your daily brew of knowledge?");
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const [dueCount, setDueCount] = useState(0);
-  const [stats, setStats] = useState({ streak: 0, masteredCount: 0, history: [] });
+  const [user, setUser] = useState<any>(null);
+  const [vocabList, setVocabList] = useState<any[]>([]);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter(t => t.id !== id));
-  };
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => removeToast(id), 3000);
-  };
-
-  const fetchData = async () => {
+  const fetchVocabs = async (tokenStr: string) => {
     try {
-      const [vRes, gRes, sRes] = await Promise.all([
-        fetch(`${API_URL}/vocabulary`),
-        fetch(`${API_URL}/encouragement`),
-        fetch(`${API_URL}/stats`)
-      ]);
-      const vData = await vRes.json();
-      const gData = await gRes.json();
-      const sData = await sRes.json();
-      
-      setVocab(Array.isArray(vData) ? vData : []);
-      if (gData.encouragement) setGreeting(gData.encouragement);
-      if (sData) setStats({ streak: sData.streak || 0, masteredCount: sData.mastered_this_week || 0, history: sData.history || [] });
-      
-      // Calculate Due Count (SRS)
-      const now = new Date();
-      const due = vData.filter((item: any) => new Date(item.next_review) <= now).length;
-      setDueCount(due);
-    } catch (err) { console.error(err); }
+      const res = await fetch(`${API_URL}/vocabulary`, {
+        headers: { Authorization: `Bearer ${tokenStr}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVocabList(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
-    fetchData();
+    const savedUser = localStorage.getItem("oasis_user");
+    const savedToken = localStorage.getItem("oasis_token");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {}
+    }
+    if (savedToken) {
+      fetchVocabs(savedToken);
+    } else {
+      // Fetch public/mock vocabs if not logged in just to show something
+      fetch(`${API_URL}/vocabulary`).then(res => res.json()).then(setVocabList).catch(console.error);
+    }
   }, []);
 
-  const handleAddVocab = async (wordData: any) => {
+  const handleAddVocab = async (formData: any) => {
+    const token = localStorage.getItem("oasis_token");
+    const headers: any = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    
     try {
       const res = await fetch(`${API_URL}/vocabulary`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(wordData),
+        method: "POST",
+        headers,
+        body: JSON.stringify(formData)
       });
       if (res.ok) {
-        showToast(`Added "${wordData.word}" to your library!`, 'success');
-        fetchData();
-      } else {
-        showToast('Failed to add word.', 'error');
+        const newVocab = await res.json();
+        setVocabList([newVocab, ...vocabList]);
       }
-    } catch (err) { 
-      console.error(err);
-      showToast('Connection error.', 'error');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteVocab = async (id: number) => {
+    const token = localStorage.getItem("oasis_token");
+    const headers: any = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    
+    try {
+      const res = await fetch(`${API_URL}/vocabulary/${id}`, {
+        method: "DELETE",
+        headers
+      });
+      if (res.ok) {
+        setVocabList(vocabList.filter(v => v.id !== id));
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const handleGenerateTopic = async (topic: string) => {
-    try {
-      const res = await fetch(`${API_URL}/vocabulary/generate?topic=${topic}`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        showToast(`AI is brewing words for "${topic}"...`, 'success');
-        fetchData();
-      }
-    } catch (err) { console.error(err); }
+    // Placeholder for now
+    console.log("Generate topic:", topic);
   };
 
-  const handleRemoveVocab = async (id: number) => {
-    try {
-      const res = await fetch(`${API_URL}/vocabulary/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        showToast('Word removed from library.', 'success');
-        fetchData();
-      }
-    } catch (err) { console.error(err); }
+  const handleStartQuiz = () => {
+    // Placeholder for now
+    console.log("Start quiz");
   };
 
-  const handleReview = async (id: number, isCorrect: boolean) => {
-    try {
-      await fetch(`${API_URL}/vocabulary/${id}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_correct: isCorrect }),
-      });
-      fetchData(); // Refresh counts
-    } catch (err) { console.error(err); }
+  const handleLogin = () => {
+    const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+    fetch(`${API_URL}/auth/discord/login?redirect_uri=${redirectUri}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      })
+      .catch(err => console.error("Login err:", err));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("oasis_token");
+    localStorage.removeItem("oasis_user");
+    setUser(null);
+    window.location.reload();
   };
 
   return (
-    <div className="flex h-screen p-4 lg:p-6 gap-6 relative overflow-hidden bg-[#FFFDF5]">
-      <main className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-        {/* Header */}
+    <div className="flex h-screen p-4 lg:p-6 gap-6 max-w-[1600px] mx-auto w-full">
+      <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
           <div>
-            <h2 className="text-4xl font-display font-bold text-accent">
-              Hello, Cậu nhớ <span className="animate-pulse">🍵</span>
-            </h2>
-            <p className="text-lg opacity-70 text-accent">{greeting}</p>
+            <h2 className="text-4xl font-display font-bold">Hello {user ? user.username : 'Cậu nhé'}:3<span className="animate-pulse">🍵</span></h2>
+            <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
           </div>
-          
           <div className="flex items-center gap-4">
-            <div className="relative group">
-              <input 
-                className="pl-12 pr-6 py-4 bg-white border-none rounded-full shadow-sm focus:ring-2 focus:ring-primary w-full md:w-64 text-accent" 
-                placeholder="Search vocabulary..." 
-                type="text"
-              />
-              <span className="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 opacity-40 text-accent">search</span>
-            </div>
+            {!user ? (
+              <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
+                Login with Discord
+              </button>
+            ) : (
+              <div className="flex items-center gap-4">
+                <img src={user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt="avatar" className="w-12 h-12 rounded-full border-2 border-primary" />
+                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow transition-all">
+                  Logout
+                </button>
+              </div>
+            )}
+            <button className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center">
+              <span className="material-symbols-rounded">notifications</span>
+            </button>
           </div>
         </header>
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 pb-8">
-          <VocabularyLab 
-            vocabList={vocab} 
-            onAdd={handleAddVocab} 
-            onDelete={handleRemoveVocab}
-            onGenerateTopic={handleGenerateTopic}
-            onStartQuiz={() => setShowQuiz(true)} 
-          />
-          <MatchaLens onAdd={handleAddVocab} />
           
-          <WritingSanctuary />
-          
-          <Library 
-            vocabList={vocab} 
-            onAdd={(word) => handleAddVocab({ word })} 
-            onDelete={handleRemoveVocab}
-          />
-          <WeeklyStats 
-            streak={stats.streak} 
-            masteredCount={stats.masteredCount} 
-            onOpenHistory={() => setShowHistory(true)} 
-          />
-          
-          {/* Tip of the Day */}
-          <section className="xl:col-span-12 bg-secondary rounded-large p-6 flex flex-col md:flex-row items-center justify-between gap-6 border border-primary/20">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-primary shadow-sm border-2 border-primary/10">
-                <span className="material-symbols-rounded text-3xl">lightbulb</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-accent">Matcha Tip</h4>
-                <p className="opacity-70 text-sm text-accent">Lặp lại ngắt quãng (SRS) giúp bạn nhớ từ vựng lâu hơn gấp 3 lần so với học vẹt.</p>
-              </div>
-            </div>
-            <button className="bg-primary text-white font-bold py-4 px-10 rounded-full hover:scale-105 transition-transform whitespace-nowrap">
-              Learn More
-            </button>
+          {/* Gợi ý AI - Lên trên cùng */}
+          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <DailyPlanner />
           </section>
+
+          {/* Hàng 2: Vocab Lab và Matcha Lens */}
+          <section className="xl:col-span-8 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <VocabularyLab 
+              vocabList={vocabList}
+              onAdd={handleAddVocab}
+              onDelete={handleDeleteVocab}
+              onGenerateTopic={handleGenerateTopic}
+              onStartQuiz={handleStartQuiz}
+            />
+          </section>
+          
+          <section className="xl:col-span-4 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card flex flex-col items-center">
+            <MatchaLens onAdd={handleAddVocab} />
+          </section>
+
+          {/* Hàng 3: Reading và Listening Lab */}
+          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <ReadingLab />
+          </section>
+          
+          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <ListeningLab />
+          </section>
+
+          {/* Hàng 4: Writing Sanctuary */}
+          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <WritingSanctuary />
+          </section>
+          
+          {/* Hàng 5: Community Feed */}
+          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <CommunityFeed />
+          </section>
+
         </div>
       </main>
-
-      {/* QUIZ AND HISTORY MODALS */}
-      <AnimatePresence>
-        {showQuiz && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
-              onClick={() => setShowQuiz(false)}
-              className="absolute inset-0 bg-accent/20 backdrop-blur-sm"
-            />
-            <VocabularyQuiz 
-              vocabList={vocab} 
-              onReview={handleReview}
-              onClose={() => setShowQuiz(false)} 
-            />
-          </div>
-        )}
-
-        {showHistory && (
-          <HistoryModal 
-            history={stats.history} 
-            onClose={() => setShowHistory(false)} 
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Bottom Mobile Navigation Removed */}
-
-      <MascotMessage dueCount={dueCount} />
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts(t => t.filter(x => x.id !== id))} />
+      {/* Mascot (Fixed Position) */}
+      <MascotMessage dueCount={3} />
     </div>
   );
 }

@@ -12,7 +12,11 @@ interface VocabItem {
   phonetic: string;
   meaning: string;
   example?: string;
+  synonyms?: string[];
+  memory_hook?: string;
   audio_path?: string;
+  image_url?: string;
+  topic?: string;
 }
 
 const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQuiz }: { 
@@ -38,6 +42,11 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     word: "Matcha",
     phonetic: "/ˈmætʃ.ə/",
     meaning: "Bột trà xanh Nhật Bản",
+    example: "Matcha is a finely ground powder of specially grown and processed green tea leaves.",
+    synonyms: ["Trà xanh", "Green tea"],
+    topic: "Food & Drink",
+    memory_hook: "Matcha (mát trà) -> Trà xanh rất mát.",
+    image_url: "/static/matcha-default.jpg"
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -72,7 +81,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   };
 
   return (
-    <section className="xl:col-span-8 matcha-card p-4 bento-card flex flex-col">
+    <div className="w-full h-full p-4 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display text-lg font-bold flex items-center gap-2">
           <span className="material-symbols-rounded text-primary">edit_note</span> Thêm từ mới
@@ -182,6 +191,11 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               phonetic={current.phonetic}
               meaning={current.meaning}
               audioPath={current.audio_path}
+              synonyms={current.synonyms}
+              memoryHook={current.memory_hook}
+              imageUrl={current.image_url}
+              topic={current.topic}
+              example={current.example}
               onAudioClick={() => playAudio(current.word)}
             />
             
@@ -209,7 +223,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

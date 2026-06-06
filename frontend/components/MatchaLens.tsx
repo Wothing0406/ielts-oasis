@@ -138,7 +138,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   };
 
   return (
-    <section className="xl:col-span-4 matcha-card p-4 bento-card flex flex-col items-center">
+    <div className="w-full h-full p-4 flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-4">
         <h3 className="font-display text-lg font-bold flex items-center gap-2">
           <span className="material-symbols-rounded text-primary">filter_center_focus</span> Matcha Lens
@@ -185,9 +185,9 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
                           <AnimatePresence>
                 {results.map((item, idx) => {
                   if (!item.box) return null;
-                  // Standard mapping: box is [x1, y1, x2, y2]
-                  const left = item.box[0] * 100;
-                  const top = item.box[1] * 100;
+                  // Center mapping: box is [xmin, ymin, xmax, ymax]
+                  const centerX = ((item.box[0] + item.box[2]) / 2) * 100;
+                  const centerY = ((item.box[1] + item.box[3]) / 2) * 100;
                   
                   return (
                     <motion.div 
@@ -196,8 +196,8 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
                       animate={{ scale: 1, opacity: 1 }}
                       className="absolute z-[999] cursor-pointer"
                       style={{ 
-                        left: `${left}%`, 
-                        top: `${top}%`,
+                        left: `${centerX}%`, 
+                        top: `${centerY}%`,
                         transform: 'translate(-50%, -50%)'
                       }}
                       onClick={() => onAdd(item)}
@@ -262,7 +262,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
           100% { transform: translateX(100%); }
         }
       `}</style>
-    </section>
+    </div>
   );
 };
 

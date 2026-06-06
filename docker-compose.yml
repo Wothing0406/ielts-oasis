@@ -29,8 +29,9 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_NAME=ielts_oasis
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
@@ -39,6 +40,26 @@ services:
         condition: service_healthy
       ollama:
         condition: service_started
+    networks:
+      - ielts-network
+
+  # --- Discord Bot Service ---
+  discord_bot:
+    build: ./backend
+    container_name: ielts_oasis_discord_bot
+    restart: always
+    environment:
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_NAME=ielts_oasis
+      - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - .env
+    command: python bot.py
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - ielts-network
 

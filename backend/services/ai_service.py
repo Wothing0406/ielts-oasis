@@ -1,32 +1,38 @@
-import google.generativeai as genai
 import os
-from dotenv import load_dotenv
 import json
 import httpx
-import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 load_dotenv()
 
-# Configure Gemini
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key and "your_" not in api_key:
-    genai.configure(api_key=api_key)
-
 class AIService:
     def __init__(self):
+        # Google Gemini API via OpenAI compatibility
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        self.client = AsyncOpenAI(
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            api_key=self.gemini_api_key if self.gemini_api_key else "dummy-key",
+        )
+        
+        # Primary models via Gemini API
+        self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-1.5-flash")
+        self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-1.5-flash")
+        
+        # Fallback local Ollama
         self.ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-        self.text_model = "tinyllama"
-        self.vision_model = "moondream"
+        self.fallback_text_model = os.getenv("FALLBACK_TEXT_MODEL", "phi3")
+        self.fallback_vision_model = os.getenv("FALLBACK_VISION_MODEL", "moondream")
 
     async def _call_ollama(self, prompt: str, model=None, images=None, is_json=True):
         try:
-            payload = {"model": model or self.text_model, "prompt": prompt, "stream": False}
+            payload = {"model": model or self.fallback_text_model, "prompt": prompt, "stream": False}
             if is_json: payload["format"] = "json"
             if images: payload["images"] = images
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(f"{self.ollama_host}/api/generate", json=payload)
                 if response.status_code == 200: return response.json().get("response")
         except: pass
@@ -43,51 +49,103 @@ class AIService:
 
     async def detect_all_objects(self, image: Image.Image):
         prompt = """
-        Identify 3 main objects in this image for an IELTS learner. 
-        Return ONLY a JSON array of objects with these fields:
+        Identify 5 main objects in this image for an IELTS learner. 
+        Return ONLY a JSON array of objects with these exact fields:
         - word: English word
         - meaning: Vietnamese translation
         - phonetic: IPA pronunciation
-        - box: [ymin, xmin, ymax, xmax] (normalized 0-1)
+        - box: [xmin, ymin, xmax, ymax] (normalized coordinates from 0.0 to 1.0)
         
-        Example: [{"word": "Apple", "meaning": "Quả táo", "phonetic": "/ˈæp.əl/", "box": [0.1, 0.1, 0.3, 0.3]}]
+        Example: [{"word": "Apple", "meaning": "Quả táo", "phonetic": "/ˈæp.əl/", "box": [0.1, 0.2, 0.3, 0.4]}]
         """
-        try:
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
             
-            res = await self._call_ollama(prompt, model=self.vision_model, images=[img_str])
+        try:
+            # 1. Try 9router (OpenAI SDK)
+            response = await self.client.chat.completions.create(
+                model=self.primary_vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
+                        ]
+                    }
+                ],
+                # Not forcing JSON mode for vision model to avoid errors if provider doesn't support it
+                # We will parse it manually
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            data = json.loads(cleaned)
+            # If it's returning a dict wrapping the array, extract it
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    if isinstance(v, list): return v
+            return data
+        except Exception as e:
+            print(f"9router detect_all_objects failed: {e}. Falling back to Ollama.")
+
+        # 2. Fallback to Ollama
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_vision_model, images=[img_str])
             if res:
                 try:
                     items = json.loads(self._clean_json(res))
                     for i, item in enumerate(items):
-                        if "box" not in item: item["box"] = [0.2 + i*0.2, 0.2 + i*0.2, 0.4 + i*0.2, 0.4 + i*0.2]
+                        if "box" not in item: item["box"] = [0.2 + i*0.1, 0.2 + i*0.1, 0.4 + i*0.1, 0.4 + i*0.1]
                     return items
                 except json.JSONDecodeError:
                     print("JSON Decode Error in detect_all_objects")
         except Exception as e:
-            print(f"Object detection failed: {e}")
+            print(f"Ollama Object detection failed: {e}")
         return []
 
     async def refine_vocabulary(self, word: str):
         prompt = f"""
-        Provide IELTS learning details for the word: "{word}"
-        Return ONLY valid JSON:
+        Provide IELTS learning details for the input: "{word}"
+        If the input is in Vietnamese, translate it to an English IELTS vocabulary word and use it as the "word" field, with the input as the "meaning".
+        If the input is in English, keep it as the "word" and provide the Vietnamese translation as the "meaning".
+        Return ONLY valid JSON with exactly these fields:
         {{
-            "word": "{word}",
+            "word": "The English word",
             "meaning": "Vietnamese translation",
             "phonetic": "IPA pronunciation",
-            "example": "A useful example sentence for IELTS"
+            "example": "A useful example sentence for IELTS in English",
+            "synonyms": ["synonym1", "synonym2"],
+            "collocations": ["collocation1", "collocation2"],
+            "topic": "The topic of this word (e.g. Environment, Technology, Health, etc.)",
+            "memory_hook": "A short, memorable explanation or trick in Vietnamese to remember this word."
         }}
         """
         try:
-            res = await self._call_ollama(prompt)
+            # 1. Try 9router
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                # Removed response_format to ensure compatibility with all models
+            )
+            content = response.choices[0].message.content
+            return json.loads(self._clean_json(content))
+        except Exception as e:
+            print(f"9router refine_vocabulary failed: {e}. Falling back to Ollama.")
+
+        # 2. Fallback to Ollama
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model)
             if res: 
                 return json.loads(self._clean_json(res))
         except Exception as e:
-            print(f"Refine vocabulary failed: {e}")
-        return {"word": word, "meaning": word, "phonetic": "/.../", "example": ""}
+            print(f"Ollama refine vocabulary failed: {e}")
+            
+        return {
+            "word": word, "meaning": word, "phonetic": "/.../", 
+            "example": "", "synonyms": [], "collocations": [], "topic": "General", "memory_hook": ""
+        }
 
     async def analyze_writing(self, text: str):
         prompt = f"""
@@ -95,58 +153,408 @@ class AIService:
         
         Yêu cầu nghiêm ngặt:
         1. Chấm điểm Band Score (từ 0.0 đến 9.0).
-        2. Nhận xét chi tiết bằng tiếng Việt (Task Response, Coherence, Vocabulary, Grammar).
-        3. Đưa ra 3 gợi ý cụ thể bằng tiếng Việt để nâng band điểm.
-        4. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, trong phần 'reason', bạn phải giải thích rõ bằng tiếng Việt.
+        2. Đưa ra danh sách các ưu điểm (strengths) và nhược điểm (weaknesses) chi tiết.
+        3. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, giải thích rõ lý do bằng tiếng Việt.
         
-        Trả về DUY NHẤT định dạng JSON (thay thế các dòng chữ trong ngoặc kép bằng nội dung thật do bạn viết):
+        Trả về DUY NHẤT định dạng JSON:
         {{
             "band_score": 5.0,
-            "feedback": "Nhận xét chi tiết của bạn ở đây",
-            "suggestions": ["Gợi ý 1", "Gợi ý 2", "Gợi ý 3"],
+            "strengths": ["Ưu điểm 1", "Ưu điểm 2"],
+            "weaknesses": ["Nhược điểm 1", "Nhược điểm 2"],
             "corrections": [
                 {{"original": "từ bị sai", "corrected": "từ đã sửa", "reason": "Lý do sai"}}
             ]
         }}
         """
-        
-        # Chỉ dùng Ollama theo yêu cầu. Ưu tiên phi3 vì tinyllama quá "ngốc" để làm việc này.
-        for model_name in ["phi3", "tinyllama"]:
-            try:
-                print(f"--- Using Ollama model: {model_name} ---")
-                async with httpx.AsyncClient(timeout=180.0) as client:
-                    response = await client.post(
-                        f"{self.ollama_host}/api/generate",
-                        json={
-                            "model": model_name,
-                            "prompt": prompt,
-                            "stream": False,
-                            "format": "json"
-                        }
-                    )
-                    if response.status_code == 200:
-                        raw_data = response.json().get("response", "{}")
-                        cleaned_data = self._clean_json(raw_data)
-                        try:
-                            return json.loads(cleaned_data)
-                        except json.JSONDecodeError:
-                            print(f"JSON Decode Error with {model_name}")
-            except Exception as e:
-                print(f"Ollama {model_name} failed: {str(e)[:100]}...")
+        try:
+            # 1. Try 9router
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content
+            return json.loads(self._clean_json(content))
+        except Exception as e:
+            print(f"9router analyze_writing failed: {e}. Falling back to Ollama.")
+
+        # 2. Fallback to Ollama
+        try:
+            print(f"--- Using Ollama model: {self.fallback_text_model} ---")
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                response = await client.post(
+                    f"{self.ollama_host}/api/generate",
+                    json={
+                        "model": self.fallback_text_model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "format": "json"
+                    }
+                )
+                if response.status_code == 200:
+                    raw_data = response.json().get("response", "{}")
+                    cleaned_data = self._clean_json(raw_data)
+                    return json.loads(cleaned_data)
+        except Exception as e:
+            print(f"Ollama {self.fallback_text_model} failed: {str(e)[:100]}...")
 
         return {
             "band_score": "N/A", 
-            "feedback": "Lỗi xử lý ngôn ngữ hoặc mạng bị chậm. Vui lòng thử lại.", 
-            "suggestions": ["Kiểm tra kết nối mạng"],
+            "strengths": [],
+            "weaknesses": ["Lỗi xử lý ngôn ngữ hoặc mạng bị chậm. Vui lòng thử lại."], 
             "corrections": []
         }
 
     async def get_encouragement(self):
         try:
-            res = await self._call_ollama("Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt.")
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": "Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt."}]
+            )
+            return response.choices[0].message.content.strip()
+        except:
+            pass
+            
+        try:
+            res = await self._call_ollama("Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt.", model=self.fallback_text_model, is_json=False)
             if res: return res.strip()
         except:
             pass
         return "Chào mừng bạn đến với Oasis! 🌴"
 
+    async def get_advice(self, prompt: str):
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Gemini get_advice failed: {e}. Falling back to Ollama.")
+            
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model, is_json=False)
+            if res: return res.strip()
+        except:
+            pass
+        return "Hiện tại tôi đang bận cập nhật dữ liệu. Bạn cứ tiếp tục học từ vựng nhé!"
+
+    async def search_unsplash_image(self, word: str):
+        import re
+        try:
+            async with httpx.AsyncClient() as client:
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+                # Fetch Unsplash search results page
+                url = f"https://unsplash.com/s/photos/{word.replace(' ', '-')}"
+                r = await client.get(url, headers=headers, timeout=10.0)
+                if r.status_code == 200:
+                    # Find all Unsplash photo URLs
+                    urls = re.findall(r'https://images.unsplash.com/photo-[^?"]+', r.text)
+                    if urls:
+                        # Return first photo URL with sizing parameters
+                        return urls[0] + "?auto=format&fit=crop&w=400&q=80"
+        except Exception as e:
+            print(f"Failed to fetch Unsplash image for {word}: {e}")
+        return None
+
+    async def get_rephrase_suggestions(self, full_text: str, selected_phrase: str):
+        prompt = f"""
+        Bạn là chuyên gia IELTS. Trong bài luận sau:
+        "{full_text}"
+        
+        Người học đã chọn cụm từ: "{selected_phrase}"
+        
+        Hãy đưa ra 3 cách viết lại (rephrase) cụm từ này để nâng cao điểm IELTS (giúp tự nhiên hơn, ngữ pháp tốt hơn hoặc từ vựng học thuật hơn).
+        Trả về DUY NHẤT một mảng JSON chứa 3 chuỗi gợi ý, không có giải thích hay markdown code blocks ngoài mảng JSON này.
+        
+        Ví dụ: ["Suggestion 1", "Suggestion 2", "Suggestion 3"]
+        """
+        try:
+            # 1. Try Gemini
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Gemini rephrase failed: {e}. Falling back to Ollama.")
+            
+        # 2. Try Ollama
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model)
+            if res:
+                return json.loads(self._clean_json(res))
+        except Exception as e:
+            print(f"Ollama rephrase failed: {e}")
+            
+        return [f"{selected_phrase} (better alternative)", f"improved {selected_phrase}", f"academic {selected_phrase}"]
+
+    async def generate_grammar_questions(self):
+        prompt = """
+        Tạo 5 câu hỏi trắc nghiệm ngữ pháp tiếng Anh trình độ IELTS.
+        Yêu cầu trả về DUY NHẤT một định dạng mảng JSON chứa các câu hỏi, không thêm bất kỳ văn bản nào khác. Mỗi câu hỏi phải là một đối tượng JSON có các trường chính xác như sau:
+        [
+            {
+                "question": "Câu tiếng Anh có chỗ trống chứa ____...",
+                "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
+                "correct_answer": "Đáp án đúng chính xác (phải khớp hoàn toàn với một trong các phần tử trong options)",
+                "explanation": "Giải thích chi tiết bằng tiếng Việt lý do chọn đáp án này và điểm ngữ pháp tương ứng."
+            }
+        ]
+        """
+        try:
+            # 1. Try Gemini
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Gemini generate_grammar_questions failed: {e}. Falling back to Ollama.")
+            
+        # 2. Try Ollama
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model)
+            if res:
+                return json.loads(self._clean_json(res))
+        except Exception as e:
+            print(f"Ollama generate_grammar_questions failed: {e}")
+            
+        # Fallback dummy questions
+        return [
+            {
+                "question": "If I ______ more time, I would study IELTS every day.",
+                "options": ["have", "had", "will have", "would have"],
+                "correct_answer": "had",
+                "explanation": "Đây là câu điều kiện loại 2 (diễn tả giả định không có thật ở hiện tại). Mệnh đề If dùng thì quá khứ đơn (had)."
+            },
+            {
+                "question": "The government is trying to encourage the use of ______ energy.",
+                "options": ["renew", "renewable", "renewed", "renewal"],
+                "correct_answer": "renewable",
+                "explanation": "Chúng ta cần một tính từ đứng trước danh từ 'energy' để bổ nghĩa cho nó. 'Renewable energy' nghĩa là năng lượng tái tạo."
+            }
+        ]
+
+    async def generate_youtube_listening(self, youtube_url: str):
+        from youtube_transcript_api import YouTubeTranscriptApi
+        import urllib.parse as urlparse
+
+        try:
+            # Extract video ID
+            parsed_url = urlparse.urlparse(youtube_url)
+            video_id = ""
+            if parsed_url.hostname == 'youtu.be':
+                video_id = parsed_url.path[1:]
+            elif parsed_url.hostname in ('www.youtube.com', 'youtube.com'):
+                if parsed_url.path == '/watch':
+                    video_id = urlparse.parse_qs(parsed_url.query)['v'][0]
+                elif parsed_url.path.startswith('/embed/'):
+                    video_id = parsed_url.path.split('/')[2]
+                elif parsed_url.path.startswith('/v/'):
+                    video_id = parsed_url.path.split('/')[2]
+                    
+            if not video_id:
+                return {"error": "Invalid YouTube URL"}
+
+            # Get transcript
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            
+            # Limit transcript to first 50 lines approx to avoid huge token usage
+            transcript_text = " ".join([t['text'] for t in transcript[:50]])
+            
+            prompt = f"""
+            Đây là phần transcript (phụ đề) của một video YouTube tiếng Anh:
+            "{transcript_text}"
+            
+            Hãy đánh giá xem nội dung này có phù hợp để học tiếng Anh (đặc biệt là IELTS Listening) không?
+            Nếu phù hợp, hãy tạo 3 câu hỏi trắc nghiệm (Multiple Choice) dựa trên nội dung.
+            
+            Trả về DUY NHẤT một đối tượng JSON với cấu trúc sau:
+            {{
+                "is_suitable": true,
+                "reason": "Lý do ngắn gọn bằng tiếng Việt",
+                "questions": [
+                    {{
+                        "id": 1,
+                        "question": "Câu hỏi tiếng Anh...",
+                        "options": ["A", "B", "C", "D"],
+                        "correctAnswer": "Đáp án đúng (phải khớp hoàn toàn 1 trong 4 options)",
+                        "explanation": "Giải thích tiếng Việt"
+                    }}
+                ]
+            }}
+            """
+            
+            # Call Gemini
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+
+        except Exception as e:
+            print(f"YouTube transcript/AI failed: {e}")
+            return {"error": str(e), "is_suitable": False, "reason": "Không thể lấy phụ đề tiếng Anh tự động từ video này."}
+
+    async def generate_daily_plan(self, topic: str):
+        prompt = f"""
+        Học viên muốn học IELTS trong ngày hôm nay với chủ đề: "{topic}".
+        Hãy tạo một lộ trình học siêu tốc "Matcha Daily List" bao gồm:
+        1. 10 từ vựng cốt lõi.
+        2. Một bài nghe ngắn gọn (tóm tắt ý tưởng hoặc link/podcast idea).
+        3. Một câu hỏi Writing Task 2.
+        4. Một đoạn Reading ngắn (khoảng 100 chữ).
+        
+        Trả về DUY NHẤT định dạng JSON có cấu trúc sau, KHÔNG giải thích thêm:
+        {{
+            "topic": "{topic}",
+            "vocabulary": [
+                {{"word": "Từ", "meaning": "Nghĩa tiếng Việt", "phonetic": "Phiên âm"}}
+            ],
+            "listening": {{"title": "Tiêu đề bài nghe", "description": "Mô tả..."}},
+            "writing": {{"prompt": "Đề bài Writing Task 2"}},
+            "reading": {{"text": "Đoạn văn reading ngắn", "questions": ["Câu hỏi 1", "Câu hỏi 2"]}}
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Daily Plan failed: {e}")
+            return {"error": str(e)}
+
+    async def generate_lesson_from_writing(self, text: str):
+        prompt = f"""
+        Dưới đây là một bài luận (Writing) của học viên:
+        "{text}"
+        
+        Hãy biến nó thành một bài Đọc hiểu / Nghe hiểu (Reading/Listening Comprehension).
+        1. Trích xuất 3 từ vựng nổi bật từ bài viết.
+        2. Tạo 3 câu hỏi trắc nghiệm liên quan đến nội dung bài viết.
+        
+        Trả về DUY NHẤT một đối tượng JSON với cấu trúc:
+        {{
+            "vocabulary": [
+                {{"word": "từ", "meaning": "nghĩa"}}
+            ],
+            "questions": [
+                {{
+                    "id": 1,
+                    "question": "Câu hỏi...",
+                    "options": ["A", "B", "C", "D"],
+                    "correctAnswer": "Đáp án đúng (khớp hoàn toàn với option)",
+                    "explanation": "Giải thích ngắn gọn"
+                }}
+            ]
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Generate lesson failed: {e}")
+            return {"error": str(e)}
+
+    async def generate_reading_questions(self, text: str):
+        prompt = f"""
+        Dưới đây là một đoạn văn bản tiếng Anh:
+        "{text}"
+        
+        Hãy đóng vai là một giám khảo IELTS chuyên nghiệp. Hãy đọc hiểu đoạn văn bản trên và sinh ra 4 câu hỏi kiểm tra đọc hiểu.
+        - 2 câu hỏi dạng trắc nghiệm (Multiple Choice)
+        - 2 câu hỏi dạng điền từ vào chỗ trống (Fill in the blank)
+        
+        Trả về DUY NHẤT một đối tượng JSON với cấu trúc:
+        {{
+            "title": "IELTS Reading Practice",
+            "content": "Trích xuất hoặc tóm tắt đoạn văn bản gốc (giữ nguyên tiếng Anh)",
+            "questions": [
+                {{
+                    "id": 1,
+                    "type": "multiple_choice",
+                    "text": "Câu hỏi...",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": "Đáp án đúng (khớp hoàn toàn 1 option)"
+                }},
+                {{
+                    "id": 2,
+                    "type": "fill_in_the_blank",
+                    "text": "Câu chứa chỗ trống cần điền _______.",
+                    "answer": "Từ cần điền (1-3 từ)"
+                }}
+            ]
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Generate reading questions failed: {e}")
+            return {"error": str(e)}
+
+    async def generate_listening_from_text(self, text: str):
+        prompt = f"""
+        Bạn là một giám khảo IELTS. Dưới đây là một đoạn hội thoại hoặc văn bản tiếng Anh:
+        "{text}"
+        
+        Hãy sinh ra 4 câu hỏi kiểm tra kỹ năng nghe hiểu (Listening Comprehension) dựa trên nội dung này.
+        - 2 câu trắc nghiệm (Multiple Choice)
+        - 2 câu điền từ (Fill in the blank)
+        
+        Trả về DUY NHẤT một định dạng JSON:
+        {{
+            "title": "IELTS Listening Practice",
+            "context": "Mô tả ngắn gọn về ngữ cảnh của đoạn văn bằng tiếng Anh",
+            "questions": [
+                {{
+                    "id": 1,
+                    "type": "multiple_choice",
+                    "text": "Câu hỏi...",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": "Đáp án đúng (khớp hoàn toàn với option)"
+                }},
+                {{
+                    "id": 2,
+                    "type": "fill_in_the_blank",
+                    "text": "Câu chứa chỗ trống _______.",
+                    "answer": "Từ cần điền"
+                }}
+            ]
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"Generate listening failed: {e}")
+            return {"error": str(e)}
+
 ai_service = AIService()
+
+
