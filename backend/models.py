@@ -45,7 +45,7 @@ class ImageStore(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class WritingLog(Base):
-    __tablename__ = "writing_logs"
+    __tablename__ = "user_writing_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
