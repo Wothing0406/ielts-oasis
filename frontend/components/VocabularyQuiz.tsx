@@ -25,7 +25,9 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   const [quizType, setQuizType] = useState<'vocab' | 'grammar' | null>(null);
   const [grammarQuestions, setGrammarQuestions] = useState<any[]>([]);
   const [isLoadingGrammar, setIsLoadingGrammar] = useState(false);
-  const [shuffledQuestions, setShuffledQuestions] = useState<VocabItem[]>([]);
+  const [shuffledQuestions, setShuffledQuestions] = useState<VocabItem[]>(() => {
+    return [...vocabList].sort(() => Math.random() - 0.5);
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [mode, setMode] = useState<QuizMode>('ABCD');
   const [options, setOptions] = useState<string[]>([]);
@@ -33,13 +35,6 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-
-  // Initialize shuffled vocabulary questions
-  useEffect(() => {
-    if (vocabList.length > 0 && shuffledQuestions.length === 0) {
-      setShuffledQuestions([...vocabList].sort(() => Math.random() - 0.5));
-    }
-  }, [vocabList]);
 
   const activeQuestions = quizType === 'vocab' ? shuffledQuestions : grammarQuestions;
 
@@ -122,7 +117,8 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   // 1. Selection Screen
   if (quizType === null) {
     return (
-      <div className="bg-white p-8 md:p-10 rounded-large shadow-2xl max-w-md w-full relative overflow-hidden border-4 border-primary/30 text-center flex flex-col items-center">
+      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white p-8 md:p-10 rounded-large shadow-2xl max-w-md w-full relative overflow-hidden border-4 border-primary/30 text-center flex flex-col items-center">
         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
           <span className="material-symbols-rounded text-primary text-4xl">quiz</span>
         </div>
@@ -130,7 +126,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
         <p className="text-sm opacity-60 mb-8">Luyện tập giúp củng cố kiến thức tốt hơn. Hãy chọn phần thi bạn muốn ôn tập!</p>
         
         <div className="flex flex-col gap-4 w-full">
-          <button
+          <button type="button"
             onClick={() => {
               if (vocabList.length === 0) {
                 alert("Thư viện từ vựng đang trống! Hãy quét hoặc thêm từ vựng trước nhé.");
@@ -147,7 +143,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
             </div>
           </button>
           
-          <button
+          <button type="button"
             onClick={() => {
               setQuizType('grammar');
               fetchGrammarQuestions();
@@ -162,22 +158,25 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
           </button>
         </div>
         
-        <button onClick={onClose} className="absolute top-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
+        <button type="button" onClick={onClose} className="absolute top-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
            <span className="material-symbols-rounded text-3xl">close</span>
         </button>
       </div>
+    </div>
     );
   }
 
   // 2. Loading Screen for Grammar Mode
   if (isLoadingGrammar) {
     return (
-      <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full flex flex-col items-center justify-center">
+      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full flex flex-col items-center justify-center">
          <div className="w-16 h-16 relative mb-4">
            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
          </div>
          <p className="text-sm font-bold uppercase tracking-widest text-primary animate-pulse">AI is brewing grammar questions...</p>
+        </div>
       </div>
     );
   }
@@ -185,9 +184,11 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   // 3. Questions Empty Screen
   if (activeQuestions.length === 0) {
     return (
-      <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full">
+      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full">
          <p className="text-xl font-display font-bold mb-6 text-accent">Không tìm thấy câu hỏi...</p>
-         <button onClick={() => setQuizType(null)} className="bg-primary text-white px-10 py-4 rounded-full font-bold">Quay lại</button>
+         <button type="button" onClick={() => setQuizType(null)} className="bg-primary text-white px-10 py-4 rounded-full font-bold">Quay lại</button>
+        </div>
       </div>
     );
   }
@@ -195,7 +196,8 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   const current = activeQuestions[currentIndex];
 
   return (
-    <div className="bg-white p-6 md:p-10 rounded-large shadow-2xl max-w-lg w-full relative overflow-hidden border-4 border-primary/30">
+    <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white p-6 md:p-10 rounded-large shadow-2xl max-w-lg w-full relative overflow-hidden border-4 border-primary/30">
       <AnimatePresence mode="wait">
         {!isFinished ? (
           <motion.div
@@ -247,7 +249,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                       ? option === current.meaning 
                       : option === current.correct_answer;
                     return (
-                      <button 
+                      <button type="button" 
                        key={i}
                        onClick={() => handleAnswer(option)}
                        disabled={feedback !== null}
@@ -281,7 +283,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                   disabled={feedback !== null}
                 />
                 {!feedback && (
-                  <button 
+                  <button type="button" 
                     onClick={() => handleAnswer(userInput)}
                     className="w-full mt-4 bg-primary text-white py-3.5 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all active:scale-95"
                   >
@@ -327,7 +329,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                   )}
                 </div>
                 
-                <button 
+                <button type="button" 
                   onClick={nextQuestion}
                   className="w-full py-3.5 bg-accent text-white rounded-full font-bold shadow-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-all"
                 >
@@ -337,25 +339,26 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
             )}
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
-             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-                <span className="material-symbols-rounded text-5xl text-primary">stars</span>
-             </div>
-             <h3 className="text-3xl font-display font-black mb-2 text-accent">Hoàn thành!</h3>
-             <p className="text-lg opacity-60 mb-8 text-accent">Điểm của bạn: <b>{score}</b> / {activeQuestions.length}</p>
-             <button onClick={() => setQuizType(null)} className="bg-primary text-white px-10 py-4 rounded-full font-bold shadow-xl hover:scale-[1.02] transition-all mr-2">
-                Chơi tiếp
-             </button>
-             <button onClick={onClose} className="bg-accent text-white px-10 py-4 rounded-full font-bold shadow-xl hover:scale-[1.02] transition-all">
-                Đóng
-             </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <button onClick={onClose} className="absolute top-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
-         <span className="material-symbols-rounded text-3xl">close</span>
-      </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
+               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                  <span className="material-symbols-rounded text-5xl text-primary">stars</span>
+               </div>
+               <h3 className="text-3xl font-display font-black mb-2 text-accent">Hoàn thành!</h3>
+               <p className="text-lg opacity-60 mb-8 text-accent">Điểm của bạn: <b>{score}</b> / {activeQuestions.length}</p>
+               <button type="button" onClick={() => setQuizType(null)} className="bg-primary text-white px-10 py-4 rounded-full font-bold shadow-xl hover:scale-[1.02] transition-all mr-2">
+                  Chơi tiếp
+               </button>
+               <button type="button" onClick={onClose} className="bg-accent text-white px-10 py-4 rounded-full font-bold shadow-xl hover:scale-[1.02] transition-all">
+                  Đóng
+               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <button type="button" onClick={onClose} className="absolute top-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
+           <span className="material-symbols-rounded text-3xl">close</span>
+        </button>
+      </div>
     </div>
   );
 };

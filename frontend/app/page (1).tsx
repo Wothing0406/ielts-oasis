@@ -182,11 +182,11 @@ export default function Home() {
                 <img src={user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} className="w-8 h-8 rounded-full border border-primary/20" alt="avatar" />
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-accent leading-tight">{user.username}</span>
-                  <button onClick={handleLogout} className="text-[10px] text-red-500 hover:underline text-left">Đăng xuất</button>
+                  <button type="button" onClick={handleLogout} className="text-[10px] text-red-500 hover:underline text-left">Đăng xuất</button>
                 </div>
               </div>
             ) : (
-              <button 
+              <button type="button" 
                 onClick={handleLogin}
                 className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-5 py-2.5 rounded-full font-bold transition-all shadow-md"
               >
@@ -238,7 +238,7 @@ export default function Home() {
                 <p className="opacity-70 text-sm text-accent">Lặp lại ngắt quãng (SRS) giúp bạn nhớ từ vựng lâu hơn gấp 3 lần so với học vẹt.</p>
               </div>
             </div>
-            <button className="bg-primary text-white font-bold py-4 px-10 rounded-full hover:scale-105 transition-transform whitespace-nowrap">
+            <button type="button" className="bg-primary text-white font-bold py-4 px-10 rounded-full hover:scale-105 transition-transform whitespace-nowrap">
               Learn More
             </button>
           </section>

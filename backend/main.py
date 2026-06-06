@@ -14,12 +14,16 @@ from io import BytesIO
 from ultralytics import YOLO
 from services.ai_service import ai_service
 from services.tts_service import tts_service
+from logger import setup_logger
+
+logger = setup_logger("fastapi_main")
 
 from database import SessionLocal, engine, Base
-from models import Vocabulary, WritingLog, User
+from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan
 from schemas import VocabIn
 
-Base.metadata.create_all(bind=engine)
+class TranslateInput(BaseModel):
+    text: str
 
 def seed_db():
     db = SessionLocal()
@@ -29,7 +33,47 @@ def seed_db():
             ("Innovative", "Sáng tạo", "/ˈɪn.ə.veɪ.tɪv/"),
             ("Sustainable", "Bền vững", "/səˈsteɪ.nə.bəl/"),
             ("Evaluate", "Đánh giá", "/ɪˈvæl.ju.eɪt/"),
-            ("Significant", "Quan trọng", "/sɪɡˈnɪf.ɪ.kənt/")
+            ("Significant", "Quan trọng", "/sɪɡˈnɪf.ɪ.kənt/"),
+            ("Crucial", "Thiết yếu, quan trọng", "/ˈkruː.ʃəl/"),
+            ("Viable", "Khả thi", "/ˈvaɪ.ə.bəl/"),
+            ("Feasible", "Khả thi", "/ˈfiː.zə.bəl/"),
+            ("Empower", "Trao quyền, tạo điều kiện", "/ɪmˈpaʊ.ər/"),
+            ("Collaboration", "Sự hợp tác", "/kəˌlæb.əˈreɪ.ʃən/"),
+            ("Innovation", "Đổi mới, sáng tạo", "/ˌɪn.əˈveɪ.ʃən/"),
+            ("Integrity", "Sự chính trực", "/ɪnˈteɡ.rə.ti/"),
+            ("Resilience", "Sự kiên cường, phục hồi nhanh", "/rɪˈzɪl.i.əns/"),
+            ("Promote", "Thúc đẩy", "/prəˈməʊt/"),
+            ("Enhance", "Nâng cao", "/ɪnˈhɑːns/"),
+            ("Deteriorate", "Suy thoái, xấu đi", "/dɪˈtɪə.ri.ə.reɪt/"),
+            ("Stagnant", "Trì trệ", "/ˈstæɡ.nənt/"),
+            ("Infrastructure", "Cơ sở hạ tầng", "/ˈɪn.frə.strʌk.tʃər/"),
+            ("Inequality", "Sự bất bình đẳng", "/ˌɪn.iˈkwɒl.ə.ti/"),
+            ("Entrepreneur", "Doanh nhân", "/ˌɒn.trə.prəˈnɜːr/"),
+            ("Productivity", "Năng suất", "/ˌprɒd.ʌkˈtɪv.ə.ti/"),
+            ("Authentic", "Chân thực", "/ɔːˈθen.tɪk/"),
+            ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
+            ("Imminent", "Sắp xảy ra, cận kề", "/ˈɪm.ɪ.nənt/"),
+            ("Vital", "Thiết yếu", "/ˈvaɪ.təl/"),
+            ("Ambiguous", "Mơ hồ", "/æmˈbɪɡ.ju.əs/"),
+            ("Pragmatic", "Thực dụng", "/præɡˈmæt.ɪk/"),
+            ("Advocate", "Ủng hộ, người ủng hộ", "/ˈæd.və.keɪt/"),
+            ("Undermine", "Làm suy yếu", "/ˌʌn.dəˈmaɪn/"),
+            ("Exacerbate", "Làm trầm trọng thêm", "/ɪɡˈzæs.ə.beɪt/"),
+            ("Mitigate", "Giảm nhẹ", "/ˈmɪt.ɪ.ɡeɪt/"),
+            ("Implement", "Thực hiện", "/ˈɪm.plɪ.ment/"),
+            ("Facilitate", "Tạo điều kiện thuận lợi", "/fəˈsɪl.ɪ.teɪt/"),
+            ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
+            ("Indigenous", "Bản địa", "/ɪnˈdɪdʒ.ɪ.nəs/"),
+            ("Perception", "Nhận thức", "/pəˈsep.ʃən/"),
+            ("Cognitive", "Thuộc về nhận thức", "/ˈkɒɡ.nə.tɪv/"),
+            ("Subtle", "Tinh tế", "/ˈsʌt.l/"),
+            ("Eloquent", "Lưu loát, có tài hùng biện", "/ˈel.ə.kwənt/"),
+            ("Compelling", "Thuyết phục, hấp dẫn", "/kəmˈpel.ɪŋ/"),
+            ("Tentative", "Do dự, tạm thời", "/ˈten.tə.tɪv/"),
+            ("Abundant", "Dồi dào", "/əˈbʌn.dənt/"),
+            ("Scarce", "Khan hiếm", "/skeəs/"),
+            ("Pivotal", "Then chốt", "/ˈpɪv.ə.təl/"),
+            ("Pervasive", "Lan tỏa", "/pəˈveɪ.sɪv/")
         ]
         for word, meaning, phonetic in starter_words:
             v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic)
@@ -37,7 +81,6 @@ def seed_db():
         db.commit()
     db.close()
 
-seed_db()
 
 # VocabIn is imported from schemas
 
@@ -47,6 +90,16 @@ from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
 app.include_router(auth_router)
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("FastAPI Server Starting...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database initialized.")
+    try:
+        seed_db()
+    except Exception as e:
+        logger.error(f"Seeding failed: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,7 +124,9 @@ YOLO_TRANSLATIONS = {
     'keyboard': ('Bàn phím', '/ˈkiː.bɔːd/'), 'bottle': ('Chai lọ', '/ˈbɒt.əl/'),
     'cup': ('Cái cốc', '/kʌp/'), 'chair': ('Cái ghế', '/tʃeər/'),
     'book': ('Quyển sách', '/bʊk/'), 'clock': ('Đồng hồ', '/klɒk/'),
-    'vase': ('Bình hoa', '/vɑːz/'), 'potted plant': ('Chậu cây', '/ˌpɒt.ɪd ˈplɑːnt/')
+    'vase': ('Bình hoa', '/vɑːz/'), 'potted plant': ('Chậu cây', '/ˌpɒt.ɪd ˈplɑːnt/'),
+    'orange': ('Cam', '/ˈɒr.ɪndʒ/'), 'orange': ('Cam', '/ˈɒr.ɪndʒ/')
+    
 }
 
 @app.get("/vocabulary")
@@ -176,25 +231,8 @@ async def detect_vocabulary(file: UploadFile = File(...)):
         img = Image.open(BytesIO(contents)).convert("RGB")
         img_filename = f"{uuid.uuid4()}.jpg"
         img.save(os.path.join(static_dir, img_filename))
-        
-        results = yolo_model(img)
         detected_items = []
-        
-        for r in results:
-            for box in r.boxes:
-                label = yolo_model.names[int(box.cls[0])].lower()
-                meaning, phonetic = YOLO_TRANSLATIONS.get(label, (label.capitalize(), "/.../"))
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-                w, h = img.size
-                detected_items.append({
-                    "word": label.capitalize(),
-                    "meaning": meaning,
-                    "phonetic": phonetic,
-                    "box": [x1/w, y1/h, x2/w, y2/h],
-                    "confidence": float(box.conf[0])
-                })
-
-        if len(detected_items) < 2:
+        try:
             ai_items = await ai_service.detect_all_objects(img)
             for item in ai_items:
                 box = item.get("box", [0.1, 0.1, 0.3, 0.3])
@@ -205,11 +243,41 @@ async def detect_vocabulary(file: UploadFile = File(...)):
                     "box": [box[1], box[0], box[3], box[2]],
                     "confidence": 0.9
                 })
+        except Exception as e:
+            print(f"Gemini detect failed: {e}")
+
+        if len(detected_items) < 2:
+            print("Fallback to YOLO...")
+            results = yolo_model(img)
+            for r in results:
+                for box in r.boxes:
+                    label = yolo_model.names[int(box.cls[0])].lower()
+                    meaning, phonetic = YOLO_TRANSLATIONS.get(label, (label.capitalize(), "/.../"))
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    w, h = img.size
+                    detected_items.append({
+                        "word": label.capitalize(),
+                        "meaning": meaning,
+                        "phonetic": phonetic,
+                        "box": [x1/w, y1/h, x2/w, y2/h],
+                        "confidence": float(box.conf[0])
+                    })
 
         return {"items": detected_items, "image_url": f"/static/{img_filename}"}
     except Exception as e:
         print(f"Detect Error: {e}")
         return {"items": [], "image_url": ""}
+
+@app.post("/translate")
+async def translate_text(data: TranslateInput):
+    """Dịch nhanh một từ/cụm từ cho tính năng Click to Translate"""
+    try:
+        prompt = f"Dịch và giải thích ngắn gọn ý nghĩa của từ/cụm từ sau sang tiếng Việt (nếu là từ đơn hãy kèm phiên âm và loại từ, nếu là cụm từ thì dịch sát nghĩa ngữ cảnh): '{data.text}'"
+        response = await ai_service.get_advice(prompt)
+        return {"meaning": response or "Không thể dịch."}
+    except Exception as e:
+        logger.error(f"Translate error: {e}")
+        return {"error": str(e), "meaning": "Lỗi dịch."}
 
 @app.post("/tts")
 async def text_to_speech(data: dict):
@@ -353,10 +421,17 @@ async def quiz_grammar():
 
 class YoutubeIn(BaseModel):
     url: str
+    mode: str = "quiz"
+
+class ObjectDetectionInput(BaseModel):
+    image_url: str
+
+class TranslateInput(BaseModel):
+    text: str
 
 @app.post("/listening/youtube")
 async def listening_youtube(payload: YoutubeIn):
-    result = await ai_service.generate_youtube_listening(payload.url)
+    result = await ai_service.generate_youtube_listening(payload.url, mode=payload.mode)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
@@ -371,15 +446,29 @@ async def generate_daily_plan(payload: DailyPlanIn):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+from sqlalchemy import func
+from typing import Optional
+
 @app.get("/community/feed")
-async def get_community_feed():
+async def get_community_feed(sort_by: Optional[str] = "new"):
     db = SessionLocal()
     
-    # Get top 10 vocabularies (most recently added overall or could be by popularity, let's use recently added global for now)
-    vocabs = db.query(Vocabulary).order_by(desc(Vocabulary.id)).limit(20).all()
+    # Calculate a simple "hotness" score (likes * 2 + comments) if needed, but for simplicity we can just sort by likes.
+    
+    # Get vocabularies
+    vocab_query = db.query(Vocabulary)
+    if sort_by == "top":
+        # For vocab, 'top' might just be popularity
+        vocab_query = vocab_query.order_by(desc(Vocabulary.popularity))
+    else:
+        vocab_query = vocab_query.order_by(desc(Vocabulary.id))
+    
+    vocabs = vocab_query.limit(20).all()
     vocab_list = []
     for v in vocabs:
         user = db.query(User).filter(User.id == v.user_id).first() if v.user_id else None
+        likes_count = db.query(Like).filter(Like.post_type == 'vocabulary', Like.post_id == v.id).count()
+        comments_count = db.query(Comment).filter(Comment.post_type == 'vocabulary', Comment.post_id == v.id).count()
         vocab_list.append({
             "id": v.id,
             "word": v.word,
@@ -387,22 +476,44 @@ async def get_community_feed():
             "phonetic": v.phonetic,
             "username": user.username if user else "Anonymous",
             "avatar_url": user.avatar_url if user else None,
-            "image_url": v.image_url
+            "image_url": v.image_url,
+            "likes": likes_count,
+            "comments": comments_count
         })
         
-    # Get top 10 writings
-    writings = db.query(WritingLog).order_by(desc(WritingLog.id)).limit(10).all()
+    # Get writings
+    writing_query = db.query(WritingLog)
+    if sort_by == "top":
+        # Sort by band score (highest first). Note: band_score is string so "9.0" > "8.0"
+        writing_query = writing_query.order_by(desc(WritingLog.band_score))
+    else:
+        writing_query = writing_query.order_by(desc(WritingLog.id))
+        
+    writings = writing_query.limit(20).all()
     writing_list = []
     for w in writings:
         user = db.query(User).filter(User.id == w.user_id).first() if w.user_id else None
+        likes_count = db.query(Like).filter(Like.post_type == 'writing', Like.post_id == w.id).count()
+        comments_count = db.query(Comment).filter(Comment.post_type == 'writing', Comment.post_id == w.id).count()
+        
+        # Calculate hotness manually and sort later if sort_by == "hot"
+        hotness = likes_count * 2 + comments_count
+        
         writing_list.append({
             "id": w.id,
             "content": w.content[:200] + "..." if len(w.content) > 200 else w.content,
             "full_content": w.content,
             "band_score": w.band_score,
             "username": user.username if user else "Anonymous",
-            "avatar_url": user.avatar_url if user else None
+            "avatar_url": user.avatar_url if user else None,
+            "likes": likes_count,
+            "comments": comments_count,
+            "hotness": hotness
         })
+        
+    if sort_by == "hot":
+        vocab_list = sorted(vocab_list, key=lambda x: (x['likes'] * 2 + x['comments']), reverse=True)
+        writing_list = sorted(writing_list, key=lambda x: x['hotness'], reverse=True)
         
     db.close()
     return {"vocabularies": vocab_list, "writings": writing_list}
@@ -497,10 +608,11 @@ class ReadingGenIn(BaseModel):
 
 class ListeningGenIn(BaseModel):
     text: str
+    mode: str = "paragraph"
 
 @app.post("/listening/generate-from-text")
 async def generate_listening_from_text_endpoint(payload: ListeningGenIn):
-    result = await ai_service.generate_listening_from_text(payload.text)
+    result = await ai_service.generate_listening_from_text(payload.text, mode=payload.mode)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
         
@@ -518,6 +630,85 @@ async def generate_reading_test(payload: ReadingGenIn):
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
+
+class LikeIn(BaseModel):
+    post_type: str
+    post_id: int
+
+class CommentIn(BaseModel):
+    post_type: str
+    post_id: int
+    content: str
+
+@app.post("/community/like")
+async def toggle_like(payload: LikeIn, current_user: dict = Depends(get_current_user)):
+    db = SessionLocal()
+    user_id = current_user["user_id"]
+    existing = db.query(Like).filter(Like.user_id == user_id, Like.post_type == payload.post_type, Like.post_id == payload.post_id).first()
+    if existing:
+        db.delete(existing)
+        db.commit()
+        liked = False
+    else:
+        new_like = Like(user_id=user_id, post_type=payload.post_type, post_id=payload.post_id)
+        db.add(new_like)
+        db.commit()
+        liked = True
+    db.close()
+    return {"liked": liked}
+
+@app.post("/community/comment")
+async def add_comment(payload: CommentIn, current_user: dict = Depends(get_current_user)):
+    db = SessionLocal()
+    user_id = current_user["user_id"]
+    new_comment = Comment(user_id=user_id, post_type=payload.post_type, post_id=payload.post_id, content=payload.content)
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    
+    # Return with user info
+    user = db.query(User).filter(User.id == user_id).first()
+    result = {
+        "id": new_comment.id,
+        "content": new_comment.content,
+        "username": user.username if user else "Anonymous",
+        "avatar_url": user.avatar_url if user else None,
+        "created_at": new_comment.created_at.isoformat()
+    }
+    db.close()
+    return result
+
+@app.get("/community/comments/{post_type}/{post_id}")
+async def get_comments(post_type: str, post_id: int):
+    db = SessionLocal()
+    comments = db.query(Comment).filter(Comment.post_type == post_type, Comment.post_id == post_id).order_by(desc(Comment.created_at)).all()
+    res = []
+    for c in comments:
+        user = db.query(User).filter(User.id == c.user_id).first() if c.user_id else None
+        res.append({
+            "id": c.id,
+            "content": c.content,
+            "username": user.username if user else "Anonymous",
+            "avatar_url": user.avatar_url if user else None,
+            "created_at": c.created_at.isoformat()
+        })
+    db.close()
+    return {"comments": res}
+
+class SavePlanIn(BaseModel):
+    topic: str = ""
+    plan_data: dict
+
+@app.post("/study-plan/save")
+async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    db = SessionLocal()
+    new_plan = DailyPlan(user_id=current_user["user_id"], plan_json=payload.plan_data)
+    db.add(new_plan)
+    db.commit()
+    db.close()
+    return {"status": "success", "message": "Lộ trình đã được lưu!"}
 
 if __name__ == "__main__":
     import uvicorn

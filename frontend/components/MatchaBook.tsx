@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 
-export default function ReadingLab() {
+interface MatchaBookProps {
+  initialReading?: string;
+}
+
+export default function MatchaBook({ initialReading }: MatchaBookProps) {
   const [passage, setPassage] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -10,20 +14,68 @@ export default function ReadingLab() {
   const [inputText, setInputText] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [communityFilter, setCommunityFilter] = useState("new");
+  const [translation, setTranslation] = useState<{text: string, meaning: string, pos: {x: number, y: number}} | null>(null);
+
+  // Save drafts
+  useEffect(() => {
+    if (passage && passage.title && Object.keys(answers).length > 0) {
+      localStorage.setItem(`reading_draft_${passage.title}`, JSON.stringify(answers));
+    }
+  }, [answers, passage]);
 
   useEffect(() => {
-    if (activeTab === "community" && communityPosts.length === 0) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/community/feed`)
+    if (initialReading) {
+      setInputText(initialReading);
+      generateTest(initialReading);
+    }
+  }, [initialReading]);
+
+  // Translation handler
+  const handleMouseUp = async (e: any) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    
+    const text = selection.toString().trim();
+    if (text.length === 0 || text.length > 50) return;
+
+    // Use pageX/pageY from the mouse event to place popup
+    setTranslation({ text, meaning: "Loading...", pos: { x: e.pageX, y: e.pageY - 40 } });
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      setTranslation({ text, meaning: data.meaning, pos: { x: e.pageX, y: e.pageY - 40 } });
+    } catch (err) {
+      setTranslation({ text, meaning: "Error translating", pos: { x: e.pageX, y: e.pageY - 40 } });
+    }
+  };
+
+  useEffect(() => {
+    // Dismiss translation on click elsewhere
+    const handleClick = () => setTranslation(null);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "community") {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/community/feed?sort_by=${communityFilter}`)
         .then(res => res.json())
         .then(data => {
-          if (data.writings) setCommunityPosts(data.writings);
+          if (data.writings) setCommunityPosts(data.writings.filter((w: any) => w.full_content && w.full_content.length > 200));
         })
         .catch(console.error);
     }
-  }, [activeTab]);
+  }, [activeTab, communityFilter]);
 
-  const generateReadingTest = async (textToUse: string) => {
-    if (!textToUse.trim()) return;
+  const generateTest = async (textToUse?: string) => {
+    const content = textToUse || inputText;
+    if (!content.trim()) return;
     setLoading(true);
     setScore(null);
     setAnswers({});
@@ -31,10 +83,20 @@ export default function ReadingLab() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/reading/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToUse })
+        body: JSON.stringify({ text: content })
       });
       const data = await res.json();
       setPassage(data);
+      if (data && data.title) {
+        const saved = localStorage.getItem(`reading_draft_${data.title}`);
+        if (saved) {
+          try { setAnswers(JSON.parse(saved)); } catch (e) { setAnswers({}); }
+        } else {
+          setAnswers({});
+        }
+      } else {
+        setAnswers({});
+      }
       setShowInput(false);
     } catch (err) {
       console.error(err);
@@ -56,33 +118,31 @@ export default function ReadingLab() {
 
   return (
     <div className="p-8">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-primary">
-            <span className="material-symbols-rounded">menu_book</span>
-          </div>
-          <div>
-            <h3 className="font-display text-2xl font-bold">Reading Lab</h3>
-            <p className="text-sm opacity-60">AI-Generated IELTS Reading Practice</p>
-          </div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-primary/10 pb-6 mb-6">
+        <div>
+          <h2 className="font-display text-2xl md:text-3xl font-black text-accent flex items-center gap-2">
+            <span className="material-symbols-rounded text-primary text-3xl">menu_book</span>
+            Matcha Book
+          </h2>
+          <p className="text-sm text-accent/70 mt-1">Reading Lab: Luyện đọc hiểu mọi văn bản</p>
         </div>
         {!passage && !showInput ? (
-          <button 
+          <button type="button" 
             onClick={() => setShowInput(true)} 
             className="text-sm font-bold bg-primary text-white px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-all"
           >
             Create New Test
           </button>
         ) : passage && !score ? (
-          <button 
+          <button type="button" 
             onClick={submitTest}
             className="text-sm font-bold bg-accent text-white px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-all"
           >
             Submit Answers
           </button>
         ) : passage && score ? (
-          <button 
-            onClick={() => { setPassage(null); setShowInput(true); }}
+          <button type="button" 
+            onClick={() => { setPassage(null); setAnswers({}); setShowInput(true); }}
             className="text-sm font-bold bg-secondary text-primary border border-primary px-8 py-3 rounded-full shadow hover:scale-105 transition-all"
           >
             Try Another
@@ -93,13 +153,13 @@ export default function ReadingLab() {
       {showInput && !passage && (
         <div className="mb-8 p-6 bg-secondary/30 rounded-2xl border border-primary/20">
           <div className="flex flex-wrap gap-2 mb-6">
-            <button 
+            <button type="button" 
               onClick={() => setActiveTab("manual")}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'manual' ? 'bg-primary text-white shadow' : 'bg-white text-primary border border-primary/20'}`}
             >
                Nhập văn bản thủ công
             </button>
-            <button 
+            <button type="button" 
               onClick={() => setActiveTab("community")}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'community' ? 'bg-primary text-white shadow' : 'bg-white text-primary border border-primary/20'}`}
             >
@@ -109,14 +169,20 @@ export default function ReadingLab() {
 
           {activeTab === "manual" && (
             <div className="animate-fade-in">
-              <h4 className="font-bold mb-4">Paste your text here to generate a reading test:</h4>
+              <h4 className="font-bold mb-2">Dán đoạn văn tiếng Anh để AI tạo bài tập Reading:</h4>
+              <p className="text-xs text-primary mb-4 opacity-80 bg-primary/5 p-3 rounded-lg border border-primary/20">
+                💡 <b>Mẹo:</b> Để AI phân tích chính xác, hãy dùng định dạng JSON. Bạn có thể chép prompt này đưa cho Gemini/ChatGPT: 
+                <br/><code className="bg-primary/20 px-1 py-0.5 rounded mt-1 inline-block select-all">
+                  Hãy chuyển đoạn văn dưới đây thành 1 cấu trúc JSON có format: {`{"text": "nội dung đoạn văn..."}`}
+                </code>
+              </p>
               <textarea 
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
-                className="w-full h-40 p-4 rounded-xl border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 outline-none focus:ring-2 focus:ring-primary mb-4"
-                placeholder="E.g., A news article, an essay, or any English paragraph..."
+                className="w-full h-48 p-4 rounded-xl border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 outline-none focus:ring-2 focus:ring-primary mb-4 font-mono text-sm"
+                placeholder={`Ví dụ định dạng JSON:\n{\n  "text": "I am an authentic, adaptive, and witty AI collaborator designed to work alongside you on any project or idea..."\n}\n\nHoặc dán đoạn văn bình thường vào đây...`}
               ></textarea>
-              <button 
+              <button type="button" 
                 onClick={() => generateReadingTest(inputText)}
                 disabled={loading || !inputText.trim()}
                 className="w-full text-sm font-bold bg-primary text-white px-8 py-4 rounded-xl shadow hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -128,7 +194,18 @@ export default function ReadingLab() {
 
           {activeTab === "community" && (
             <div className="animate-fade-in">
-              <h4 className="font-bold mb-4">Chọn 1 bài viết hay từ cộng đồng để làm bài đọc:</h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold">Chọn 1 bài viết hay từ cộng đồng để làm bài đọc:</h4>
+                <select 
+                  className="bg-white border border-primary/20 text-accent text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
+                  value={communityFilter}
+                  onChange={(e) => setCommunityFilter(e.target.value)}
+                >
+                  <option value="new">Mới nhất</option>
+                  <option value="hot">Đang Hot (Top tương tác)</option>
+                  <option value="top">Điểm cao nhất</option>
+                </select>
+              </div>
               {communityPosts.length === 0 ? (
                 <p className="text-sm opacity-60">Không tìm thấy bài viết nào hoặc đang tải...</p>
               ) : (
@@ -161,9 +238,23 @@ export default function ReadingLab() {
       {passage && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Passage Section */}
-          <div className="bg-secondary/40 dark:bg-neutral-800/40 p-6 rounded-2xl border border-primary/10 h-[600px] overflow-y-auto custom-scrollbar text-justify text-lg leading-relaxed whitespace-pre-wrap">
+          <div 
+            className="bg-secondary/40 dark:bg-neutral-800/40 p-6 rounded-2xl border border-primary/10 h-[600px] overflow-y-auto custom-scrollbar text-justify text-lg leading-relaxed whitespace-pre-wrap relative"
+            onMouseUp={handleMouseUp}
+          >
             <h4 className="text-2xl font-bold mb-4 text-center">{passage.title}</h4>
             {passage.content}
+            
+            {translation && (
+              <div 
+                className="absolute z-50 bg-white dark:bg-neutral-900 border border-primary text-sm p-4 rounded-xl shadow-2xl max-w-sm animate-fade-in"
+                style={{ top: Math.max(10, translation.pos.y - 100), left: Math.min(window.innerWidth - 300, Math.max(10, translation.pos.x - 150)), position: 'fixed' }}
+                onMouseDown={e => e.stopPropagation()} // prevent dismiss when clicking inside popup
+              >
+                <div className="font-bold text-primary mb-1 text-base">{translation.text}</div>
+                <div className="opacity-90">{translation.meaning}</div>
+              </div>
+            )}
           </div>
 
           {/* Questions Section */}

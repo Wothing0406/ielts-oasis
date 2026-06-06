@@ -27,7 +27,7 @@ const WeeklyStats: React.FC<WeeklyStatsProps> = ({ streak, masteredCount, onOpen
           <p className="text-sm opacity-70 text-accent dark:text-secondary">You've mastered {masteredCount} new words this week.</p>
         </div>
         
-        <button onClick={onOpenHistory} className="bg-primary text-white px-12 py-4 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 hover:shadow-xl transition-all flex items-center gap-2 group">
+        <button type="button" onClick={onOpenHistory} className="bg-primary text-white px-12 py-4 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 hover:shadow-xl transition-all flex items-center gap-2 group">
           Review History 
           <span className="material-symbols-rounded group-hover:translate-x-1 transition-transform">trending_flat</span>
         </button>

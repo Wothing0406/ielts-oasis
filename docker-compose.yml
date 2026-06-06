@@ -12,7 +12,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,7 +34,9 @@ services:
       - .env
     ports:
       - "8000:8000"
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 300
     depends_on:
       db:
         condition: service_healthy
@@ -56,6 +58,8 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     env_file:
       - .env
+    volumes:
+      - ./backend:/app
     command: python bot.py
     depends_on:
       db:
@@ -70,6 +74,9 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:
@@ -87,12 +94,14 @@ services:
     # Pull tinyllama and moondream (vision) for reliable local fallback
     entrypoint: [ "/usr/bin/bash", "-c", "ollama serve & sleep 10 && ollama run tinyllama && ollama run moondream && ollama run phi3 && wait" ]
 
-  # --- Public Access (Cloudflare Tunnel) ---
+  # --- Public Access (Ngrok Tunnel) ---
   tunnel:
-    image: cloudflare/cloudflared:latest
+    image: ngrok/ngrok:latest
     container_name: ielts_oasis_tunnel
     restart: always
-    command: tunnel --no-autoupdate --url http://web:3000
+    environment:
+      - NGROK_AUTHTOKEN=3EmAQdviM8qcEuvyHlqTVWB4HAy_2wz9vu1uZ5Hr5PnLv1fEK
+    command: "http http://web:3000 --domain=drudge-amount-charting.ngrok-free.dev --log=stdout"
     depends_on:
       - web
     networks:

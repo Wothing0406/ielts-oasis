@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lexend, Quicksand } from "next/font/google";
 import "./globals.css";
+import { MotionProvider } from "@/components/MotionProvider";
 
 const lexend = Lexend({ 
   subsets: ["latin", "vietnamese"],
@@ -34,7 +35,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
       </head>
       <body className={`${lexend.variable} ${quicksand.variable} font-sans antialiased bg-[#FFFDF5] text-[#5D4037]`}>
-        {children}
+        <MotionProvider>
+          {children}
+        </MotionProvider>
       </body>
     </html>
   );

@@ -9,14 +9,20 @@ export default function CommunityFeed() {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies'>('writings');
+  const [sortBy, setSortBy] = useState('new');
   const [lesson, setLesson] = useState<any>(null);
   const [convertingId, setConvertingId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
-  useEffect(() => {
-    fetch(`${API_URL}/community/feed`)
+  const [activeComments, setActiveComments] = useState<{type: string, id: int} | null>(null);
+  const [commentsList, setCommentsList] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+
+  const fetchFeed = () => {
+    setLoading(true);
+    fetch(`${API_URL}/community/feed?sort_by=${sortBy}`)
       .then(res => res.json())
       .then(resData => {
         setData(resData);
@@ -26,7 +32,59 @@ export default function CommunityFeed() {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, [sortBy]);
+
+  const handleLike = async (postType: string, postId: number) => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return alert("Bạn cần đăng nhập để thả tim!");
+    try {
+      const res = await fetch(`${API_URL}/community/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ post_type: postType, post_id: postId })
+      });
+      if (res.ok) fetchFeed(); // Refresh feed to update like count
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleShowComments = async (postType: string, postId: number) => {
+    setActiveComments({type: postType, id: postId});
+    setCommentsList([]);
+    try {
+      const res = await fetch(`${API_URL}/community/comments/${postType}/${postId}`);
+      const data = await res.json();
+      setCommentsList(data.comments);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !activeComments) return;
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return alert("Bạn cần đăng nhập để bình luận!");
+    try {
+      const res = await fetch(`${API_URL}/community/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ post_type: activeComments.type, post_id: activeComments.id, content: newComment })
+      });
+      if (res.ok) {
+        const comment = await res.json();
+        setCommentsList([comment, ...commentsList]);
+        setNewComment("");
+        fetchFeed(); // Update comment count on feed
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleConvertToLesson = async (writingId: number) => {
     setConvertingId(writingId);
@@ -73,58 +131,85 @@ export default function CommunityFeed() {
           </h2>
           <p className="text-sm text-accent/70">Cùng học hỏi từ các bài viết và từ vựng xuất sắc của mọi người</p>
         </div>
-        <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10 mt-4 md:mt-0">
-          <button 
-            onClick={() => setActiveTab('writings')}
-            className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'writings' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
+          <select 
+            className="bg-white border border-primary/20 text-accent text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary mr-4"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
           >
-            Bài luận hay
-          </button>
-          <button 
-            onClick={() => setActiveTab('vocabularies')}
-            className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'vocabularies' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
-          >
-            Từ vựng nổi bật
-          </button>
-        </div>
+            <option value="new">Mới nhất</option>
+            <option value="hot">Đang Hot</option>
+            <option value="top">Điểm cao nhất</option>
+          </select>
+          <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10 mt-4 md:mt-0">
+            <button type="button" 
+              onClick={() => setActiveTab('writings')}
+              className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'writings' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
+            >
+              Bài luận hay
+            </button>
+            <button type="button" 
+              onClick={() => setActiveTab('vocabularies')}
+              className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'vocabularies' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
+            >
+              Từ vựng nổi bật
+            </button>
+          </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
         {activeTab === 'writings' && data.writings.map(w => (
           <div key={w.id} className="bg-[#f9fdfa] border-2 border-primary/10 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
             <div className="flex items-center gap-3 border-b border-black/5 pb-3">
-              <img src={w.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} className="w-8 h-8 rounded-full border border-primary/30" />
+              <img src={w.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${w.username}'s avatar`} className="w-8 h-8 rounded-full border border-primary/30" />
               <div>
                 <p className="text-xs font-black text-accent">{w.username}</p>
                 <p className="text-[10px] text-accent/60">Band Score: <span className="text-primary font-bold">{w.band_score}</span></p>
               </div>
             </div>
             <p className="text-xs text-accent italic leading-relaxed line-clamp-3">"{w.content}"</p>
-            <button 
-              onClick={() => handleConvertToLesson(w.id)}
-              disabled={convertingId === w.id}
-              className="mt-auto self-start bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
-            >
-              {convertingId === w.id ? (
-                <><span className="material-symbols-rounded animate-spin text-[14px]">sync</span> Đang tạo bài học AI...</>
-              ) : (
-                <><span className="material-symbols-rounded text-[14px]">psychology</span> Biến thành bài Nghe/Đọc</>
-              )}
-            </button>
+            
+            {/* Tương tác */}
+            <div className="flex items-center gap-4 text-xs font-bold text-accent/60 mt-auto border-t border-black/5 pt-3">
+              <button type="button" onClick={() => handleLike('writing', w.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                <span className="material-symbols-rounded text-[16px]">favorite</span> {w.likes || 0}
+              </button>
+              <button type="button" onClick={() => handleShowComments('writing', w.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                <span className="material-symbols-rounded text-[16px]">chat_bubble</span> {w.comments || 0}
+              </button>
+              <button type="button" 
+                onClick={() => handleConvertToLesson(w.id)}
+                disabled={convertingId === w.id}
+                className="ml-auto bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
+              >
+                {convertingId === w.id ? (
+                  <><span className="material-symbols-rounded animate-spin text-[14px]">sync</span> Đang tạo bài học AI...</>
+                ) : (
+                  <><span className="material-symbols-rounded text-[14px]">psychology</span> Học bài này</>
+                )}
+              </button>
+            </div>
           </div>
         ))}
 
         {activeTab === 'vocabularies' && data.vocabularies.map(v => (
           <div key={v.id} className="bg-white border-2 border-primary/10 p-4 rounded-2xl flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-4">
-              <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} className="w-10 h-10 rounded-full border-2 border-primary/20" />
+              <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-10 h-10 rounded-full border-2 border-primary/20" />
               <div>
                 <p className="font-display font-black text-primary text-lg leading-none">{v.word}</p>
                 <p className="text-[10px] text-accent/50 italic">{v.phonetic} - bởi {v.username}</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-2">
               <p className="text-xs font-bold text-accent">{v.meaning}</p>
+              <div className="flex items-center gap-3 text-[10px] font-bold text-accent/60">
+                <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                  <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
+                </button>
+                <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                  <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -136,7 +221,7 @@ export default function CommunityFeed() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setLesson(null)} className="absolute inset-0 bg-accent/30 backdrop-blur-sm" />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#FFFDF5] w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 md:p-8 rounded-[2rem] border-4 border-primary/30 relative z-10 shadow-2xl">
-              <button onClick={() => setLesson(null)} className="absolute top-4 right-4 bg-secondary/50 text-accent/50 hover:text-accent p-2 rounded-full"><span className="material-symbols-rounded">close</span></button>
+              <button type="button" onClick={() => setLesson(null)} className="absolute top-4 right-4 bg-secondary/50 text-accent/50 hover:text-accent p-2 rounded-full"><span className="material-symbols-rounded">close</span></button>
               
               <h3 className="font-display font-black text-2xl text-primary mb-6 flex items-center gap-2">
                 <span className="material-symbols-rounded">auto_awesome</span> AI Interactive Lesson
@@ -145,7 +230,9 @@ export default function CommunityFeed() {
               {lesson.audio_url && (
                 <div className="mb-6 bg-white p-4 rounded-3xl border-2 border-primary/10 flex flex-col gap-2">
                   <p className="text-xs font-bold text-accent">Nghe bài viết này:</p>
-                  <audio controls src={lesson.audio_url} className="w-full" />
+                  <audio controls src={lesson.audio_url} className="w-full">
+                    <track kind="captions" />
+                  </audio>
                 </div>
               )}
 
@@ -154,7 +241,7 @@ export default function CommunityFeed() {
                   <h4 className="text-sm font-bold text-accent mb-3 flex items-center gap-1"><span className="material-symbols-rounded text-primary">local_library</span> Từ Vựng Trích Xuất</h4>
                   <div className="space-y-3">
                     {lesson.vocabulary?.map((v: any, i: number) => (
-                      <div key={i} className="bg-white border border-primary/10 p-3 rounded-xl">
+                      <div key={v.word || i} className="bg-white border border-primary/10 p-3 rounded-xl">
                         <span className="font-bold text-primary mr-2">{v.word}</span>
                         <span className="text-xs text-accent italic">- {v.meaning}</span>
                       </div>
@@ -166,7 +253,7 @@ export default function CommunityFeed() {
                   <h4 className="text-sm font-bold text-accent mb-3 flex items-center gap-1"><span className="material-symbols-rounded text-primary">quiz</span> Quiz Đọc / Nghe hiểu</h4>
                   <div className="space-y-4">
                     {lesson.questions?.map((q: any, i: number) => (
-                      <div key={i} className="bg-white border border-primary/10 p-4 rounded-xl space-y-2">
+                      <div key={q.id || q.question || i} className="bg-white border border-primary/10 p-4 rounded-xl space-y-2">
                         <p className="text-xs font-bold text-accent">{i + 1}. {q.question}</p>
                         <div className="space-y-1 mt-2">
                           {q.options?.map((opt: string) => {
@@ -178,7 +265,7 @@ export default function CommunityFeed() {
                             if (showFeedback && isSelected && !isCorrect) btnClass = "bg-red-500 border-red-500 text-white";
                             
                             return (
-                              <button key={opt} onClick={() => handleOptionSelect(q.id, opt)} className={`w-full text-left px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${btnClass}`}>
+                              <button type="button" key={opt} onClick={() => handleOptionSelect(q.id, opt)} className={`w-full text-left px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${btnClass}`}>
                                 {opt}
                               </button>
                             );
@@ -197,10 +284,55 @@ export default function CommunityFeed() {
                     {showFeedback ? (
                        <span className="text-sm font-bold text-accent mr-4">Kết quả: <b className="text-primary">{score}</b> / {lesson.questions?.length}</span>
                     ) : (
-                      <button onClick={handleSubmitQuiz} className="bg-primary text-white text-xs font-bold px-6 py-3 rounded-full hover:scale-105">Nộp bài</button>
+                      <button type="button" onClick={handleSubmitQuiz} className="bg-primary text-white text-xs font-bold px-6 py-3 rounded-full hover:scale-105">Nộp bài</button>
                     )}
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Comments Modal */}
+      <AnimatePresence>
+        {activeComments && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveComments(null)} className="absolute inset-0 bg-accent/30 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-lg max-h-[80vh] flex flex-col rounded-[2rem] border border-primary/20 relative z-10 shadow-2xl overflow-hidden">
+              <div className="p-4 border-b border-primary/10 flex justify-between items-center bg-secondary/20">
+                <h3 className="font-bold text-accent flex items-center gap-2"><span className="material-symbols-rounded">chat_bubble</span> Bình luận</h3>
+                <button type="button" onClick={() => setActiveComments(null)} className="text-accent/50 hover:text-accent p-1"><span className="material-symbols-rounded">close</span></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {commentsList.length === 0 ? (
+                  <p className="text-center text-xs opacity-50 py-4">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                ) : (
+                  commentsList.map((c: any) => (
+                    <div key={c.id} className="flex gap-3">
+                      <img src={c.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${c.username}'s avatar`} className="w-8 h-8 rounded-full border border-primary/20" />
+                      <div className="bg-secondary/30 px-4 py-2 rounded-2xl rounded-tl-none border border-primary/5">
+                        <p className="text-[10px] font-black text-primary mb-1">{c.username}</p>
+                        <p className="text-xs text-accent">{c.content}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="p-4 border-t border-primary/10 bg-secondary/10 flex gap-2">
+                <input 
+                  type="text" 
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                  placeholder="Viết bình luận..."
+                  className="flex-1 bg-white border border-primary/20 rounded-full px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button type="button" onClick={handlePostComment} className="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+                  <span className="material-symbols-rounded text-[14px]">send</span>
+                </button>
               </div>
             </motion.div>
           </div>

@@ -5,17 +5,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
-export default function DailyPlanner() {
+interface DailyPlannerProps {
+  onAddVocab?: (vocab: any) => void;
+  onPracticeWriting?: (prompt: string) => void;
+  onPracticeReading?: (text: string) => void;
+  onPracticeListening?: (context: string) => void;
+}
+
+export default function DailyPlanner({ 
+  onAddVocab, 
+  onPracticeWriting, 
+  onPracticeReading, 
+  onPracticeListening 
+}: DailyPlannerProps) {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<any>(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const generatePlan = async () => {
     if (!topic.trim()) return;
     setLoading(true);
     setError("");
     setPlan(null);
+    setSaved(false);
     try {
       const res = await fetch(`${API_URL}/study-plan/generate`, {
         method: "POST",
@@ -29,6 +44,27 @@ export default function DailyPlanner() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const savePlan = async () => {
+    if (!plan) return;
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return alert("Bạn cần đăng nhập để lưu lộ trình!");
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/study-plan/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ topic, plan_data: plan }),
+      });
+      if (res.ok) setSaved(true);
+      else alert("Không thể lưu lộ trình.");
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -53,7 +89,7 @@ export default function DailyPlanner() {
           placeholder="Nhập chủ đề bạn muốn học hôm nay (vd: Environment, Technology...)"
           className="flex-1 px-6 py-4 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner"
         />
-        <button 
+        <button type="button" 
           onClick={generatePlan}
           disabled={loading || !topic.trim()}
           className="bg-primary text-white font-bold px-8 py-4 rounded-full flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
@@ -81,9 +117,22 @@ export default function DailyPlanner() {
           >
             {/* Vocab */}
             <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-display font-black text-accent text-lg flex items-center gap-2 mb-4">
-                <span className="material-symbols-rounded text-primary">local_library</span> 10 Từ vựng cốt lõi
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-display font-black text-accent text-lg flex items-center gap-2">
+                  <span className="material-symbols-rounded text-primary">local_library</span> 10 Từ vựng cốt lõi
+                </h3>
+                <button 
+                  onClick={() => {
+                    if (onAddVocab && plan.vocabulary) {
+                      plan.vocabulary.forEach((v: any) => onAddVocab(v));
+                      alert("Đã gửi các từ vào Kho từ vựng!");
+                    }
+                  }}
+                  className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors"
+                >
+                  Lưu tất cả
+                </button>
+              </div>
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                 {plan.vocabulary?.map((v: any, i: number) => (
                   <div key={i} className="p-3 bg-[#eef7f2] rounded-2xl border border-primary/10 flex justify-between items-start gap-4">
@@ -106,6 +155,12 @@ export default function DailyPlanner() {
                   </h3>
                   <p className="text-xs font-bold text-accent">{plan.listening?.title}</p>
                   <p className="text-[10px] mt-1 text-accent/70">{plan.listening?.description}</p>
+                  <button 
+                    onClick={() => onPracticeListening && onPracticeListening(plan.listening?.description || plan.listening?.title)}
+                    className="mt-3 w-full bg-accent/5 hover:bg-accent/10 text-accent font-bold text-xs py-2 rounded-xl transition-colors"
+                  >
+                    Thực hành Nghe
+                  </button>
                 </div>
                 
                 <div className="bg-white border-2 border-primary/10 rounded-3xl p-5 shadow-sm">
@@ -113,6 +168,12 @@ export default function DailyPlanner() {
                     <span className="material-symbols-rounded text-primary text-base">edit_document</span> Writing Task 2
                   </h3>
                   <p className="text-xs text-accent italic">{plan.writing?.prompt}</p>
+                  <button 
+                    onClick={() => onPracticeWriting && onPracticeWriting(plan.writing?.prompt)}
+                    className="mt-3 w-full bg-accent/5 hover:bg-accent/10 text-accent font-bold text-xs py-2 rounded-xl transition-colors"
+                  >
+                    Thực hành Viết
+                  </button>
                 </div>
               </div>
 
@@ -132,7 +193,29 @@ export default function DailyPlanner() {
                     </p>
                   ))}
                 </div>
+                <button 
+                  onClick={() => onPracticeReading && onPracticeReading(plan.reading?.text)}
+                  className="mt-4 w-full bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-sm py-3 rounded-xl transition-all"
+                >
+                  Thực hành Đọc ngay
+                </button>
               </div>
+            </div>
+
+            <div className="lg:col-span-2 flex justify-center mt-4">
+              <button 
+                onClick={savePlan}
+                disabled={saving || saved}
+                className="bg-primary text-white font-bold px-8 py-3 rounded-full flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {saved ? (
+                  <><span className="material-symbols-rounded">check_circle</span> Đã lưu lộ trình</>
+                ) : saving ? (
+                  <><span className="material-symbols-rounded animate-spin">sync</span> Đang lưu...</>
+                ) : (
+                  <><span className="material-symbols-rounded">bookmark</span> Lưu lộ trình này</>
+                )}
+              </button>
             </div>
           </motion.div>
         )}

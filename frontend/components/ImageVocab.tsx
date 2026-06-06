@@ -26,15 +26,17 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const checkModel = async () => {
       try {
         const res = await fetch(`${API_URL}/health/yolo`);
         const data = await res.json();
         if (data.status === 'ready') setModelStatus('ready');
-        else setTimeout(checkModel, 3000);
-      } catch { setTimeout(checkModel, 3000); }
+        else timeoutId = setTimeout(checkModel, 3000);
+      } catch { timeoutId = setTimeout(checkModel, 3000); }
     };
     checkModel();
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const startCamera = async () => {
@@ -110,7 +112,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
            </div>
         </div>
         <div className="flex gap-3">
-           <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white rounded-2xl shadow-sm text-matcha-primary hover:bg-matcha-soft transition-all border-2 border-matcha-primary/10">
+           <button type="button" onClick={() => fileInputRef.current?.click()} className="p-4 bg-white rounded-2xl shadow-sm text-matcha-primary hover:bg-matcha-soft transition-all border-2 border-matcha-primary/10">
               <Upload />
            </button>
            <input type="file" ref={fileInputRef} onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0])} className="hidden" />
@@ -129,9 +131,11 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
 
         {isCameraOpen ? (
           <>
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover">
+              <track kind="captions" />
+            </video>
             <div className="absolute inset-0 border-[20px] border-white/20 pointer-events-none" />
-            <button 
+            <button type="button" 
               onClick={takeSnapshot} 
               className="absolute bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-white rounded-full border-8 border-matcha-primary shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center group"
             >
@@ -163,7 +167,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
                 ))}
              </div>
 
-             <button onClick={() => setIsCameraOpen(true)} className="absolute top-6 left-6 bg-white/90 px-6 py-3 rounded-2xl font-black text-xs uppercase text-matcha-primary shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
+             <button type="button" onClick={() => setIsCameraOpen(true)} className="absolute top-6 left-6 bg-white/90 px-6 py-3 rounded-2xl font-black text-xs uppercase text-matcha-primary shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
                 Retake Photo
              </button>
           </div>
@@ -176,7 +180,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
              >
                 <img src="/logoweb.png" className="w-32 h-32" alt="Mascot" />
              </motion.div>
-             <button className="matcha-btn">Open Lens 🍵</button>
+             <button type="button" className="matcha-btn">Open Lens 🍵</button>
              <p className="mt-4 text-[10px] font-black text-matcha-primary/40 uppercase tracking-[0.3em]">Local YOLO Object Detection</p>
           </div>
         )}
@@ -192,10 +196,10 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       </div>
 
       <div className="px-8 pb-8 flex gap-4">
-         <button onClick={() => setIsCameraOpen(true)} className="flex-1 bg-white border-4 border-matcha-primary text-matcha-primary font-black py-4 rounded-3xl shadow-lg hover:bg-matcha-soft transition-all">
+         <button type="button" onClick={() => setIsCameraOpen(true)} className="flex-1 bg-white border-4 border-matcha-primary text-matcha-primary font-black py-4 rounded-3xl shadow-lg hover:bg-matcha-soft transition-all">
             OPEN LENS
          </button>
-         <button className="flex-1 bg-white border-4 border-latte-brown text-latte-brown font-black py-4 rounded-3xl shadow-lg hover:bg-cream-yellow transition-all">
+         <button type="button" className="flex-1 bg-white border-4 border-latte-brown text-latte-brown font-black py-4 rounded-3xl shadow-lg hover:bg-cream-yellow transition-all">
             VIEW STORIES
          </button>
       </div>

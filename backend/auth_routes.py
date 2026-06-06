@@ -24,7 +24,7 @@ import urllib.parse
 def discord_login(redirect_uri: str = None):
     uri = redirect_uri if redirect_uri else DISCORD_REDIRECT_URI
     encoded_uri = urllib.parse.quote(uri, safe='')
-    url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email%20guilds.join"
+    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email%20guilds.join"
     return {"url": url}
 
 class AuthCode(BaseModel):
@@ -84,54 +84,54 @@ async def discord_callback(payload: AuthCode):
     db.commit()
     db.refresh(user)
     
-    if is_new_user:
-        discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
-        discord_guild_id = os.getenv("DISCORD_GUILD_ID")
-        
-        if discord_bot_token:
-            async def send_welcome_and_join_guild():
-                try:
-                    async with httpx.AsyncClient() as client:
-                        headers = {
-                            "Authorization": f"Bot {discord_bot_token}",
-                            "Content-Type": "application/json"
-                        }
-                        
-                        # 1. Add user to Guild first
-                        if discord_guild_id and access_token:
-                            payload = {"access_token": access_token}
-                            res = await client.put(
-                                f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
-                                headers=headers,
-                                json=payload
-                            )
-                            if res.status_code in (201, 204):
-                                print("User added to guild successfully.")
-                            else:
-                                print(f"Failed to add user to guild: {res.status_code} {res.text}")
-                        
-                        # Wait a bit for Discord to process the guild join before DMing
-                        await asyncio.sleep(2)
-                        
-                        # 2. Send Welcome DM
-                        dm_res = await client.post(
-                            "https://discord.com/api/v10/users/@me/channels",
+    discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
+    discord_guild_id = os.getenv("DISCORD_GUILD_ID")
+    
+    if discord_bot_token:
+        async def send_welcome_and_join_guild():
+            try:
+                async with httpx.AsyncClient() as client:
+                    headers = {
+                        "Authorization": f"Bot {discord_bot_token}",
+                        "Content-Type": "application/json"
+                    }
+                    
+                    # 1. Add user to Guild first
+                    if discord_guild_id and access_token:
+                        payload = {"access_token": access_token}
+                        res = await client.put(
+                            f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
                             headers=headers,
-                            json={"recipient_id": discord_id}
+                            json=payload
                         )
-                        if dm_res.status_code == 200:
-                            channel_id = dm_res.json().get("id")
-                            await client.post(
-                                f"https://discord.com/api/v10/channels/{channel_id}/messages",
-                                headers=headers,
-                                json={"content": "Chào mừng bạn đến với IELTS Oasis! Tài khoản của bạn đã được đăng ký thành công. Đây là tin nhắn tự động để bạn có thể dễ dàng tìm thấy tôi. Chúc bạn học tốt nhé! 🍵"}
-                            )
+                        if res.status_code in (201, 204):
+                            print("User added to guild successfully.")
                         else:
-                            print(f"Failed to create DM channel: {dm_res.status_code} {dm_res.text}")
-                except Exception as e:
-                    print(f"Failed to process welcome flow: {e}")
-            
-            asyncio.create_task(send_welcome_and_join_guild())
+                            print(f"Failed to add user to guild: {res.status_code} {res.text}")
+                    
+                    # Wait a bit for Discord to process the guild join before DMing
+                    await asyncio.sleep(2)
+                    
+                    # 2. Send Welcome DM
+                    dm_res = await client.post(
+                        "https://discord.com/api/v10/users/@me/channels",
+                        headers=headers,
+                        json={"recipient_id": discord_id}
+                    )
+                    if dm_res.status_code == 200:
+                        channel_id = dm_res.json().get("id")
+                        msg = "Chào mừng bạn đến với IELTS Oasis! Tài khoản của bạn đã được đăng ký thành công. 🍵" if is_new_user else "Bạn đã đăng nhập thành công vào hệ thống IELTS Oasis! Chúc bạn học tốt nhé! 🍵"
+                        await client.post(
+                            f"https://discord.com/api/v10/channels/{channel_id}/messages",
+                            headers=headers,
+                            json={"content": msg}
+                        )
+                    else:
+                        print(f"Failed to create DM channel: {dm_res.status_code} {dm_res.text}")
+            except Exception as e:
+                print(f"Failed to process welcome flow: {e}")
+        
+        asyncio.create_task(send_welcome_and_join_guild())
     
     # Generate JWT
     jwt_payload = {

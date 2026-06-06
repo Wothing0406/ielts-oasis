@@ -19,6 +19,22 @@ interface VocabItem {
   topic?: string;
 }
 
+const playAudio = async (word: string) => {
+  try {
+    const res = await fetch(`${API_URL}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word }),
+    });
+    const data = await res.json();
+    if (data.audio_url) {
+      const audio = new Audio(data.audio_url);
+      audio.play();
+    }
+  } catch (err) { console.error("TTS error:", err); }
+};
+
+
 const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQuiz }: { 
   vocabList: VocabItem[], 
   onAdd: (word: any) => Promise<void>, 
@@ -46,7 +62,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     synonyms: ["Trà xanh", "Green tea"],
     topic: "Food & Drink",
     memory_hook: "Matcha (mát trà) -> Trà xanh rất mát.",
-    image_url: "/static/matcha-default.jpg"
+    image_url: "/logo.png"
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -64,21 +80,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const next = () => setCurrentIndex((prev) => (prev + 1) % (vocabList.length || 1));
   const prev = () => setCurrentIndex((prev) => (prev - 1 + (vocabList.length || 1)) % (vocabList.length || 1));
 
-  const playAudio = async (word: string) => {
-    try {
-      const res = await fetch(`${API_URL}/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word }),
-      });
-      const data = await res.json();
-      if (data.audio_url) {
-        // Correct path for proxied static files
-        const audio = new Audio(data.audio_url);
-        audio.play();
-      }
-    } catch (err) { console.error("TTS error:", err); }
-  };
+
 
   return (
     <div className="w-full h-full p-4 flex flex-col">
@@ -87,13 +89,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           <span className="material-symbols-rounded text-primary">edit_note</span> Thêm từ mới
         </h3>
         <div className="flex gap-2">
-           <button 
+           <button type="button" 
              onClick={() => setShowAdvanced(false)}
              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${!showAdvanced ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
            >
              AI
            </button>
-           <button 
+           <button type="button" 
              onClick={() => setShowAdvanced(true)}
              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${showAdvanced ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
            >
@@ -160,9 +162,14 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               />
               <button 
                 type="submit"
-                className="absolute right-1.5 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center"
+                disabled={isAdding || !formData.word}
+                className="absolute right-1.5 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-opacity"
               >
-                <span className="material-symbols-rounded">auto_awesome</span>
+                {isAdding ? (
+                  <span className="material-symbols-rounded animate-spin">sync</span>
+                ) : (
+                  <span className="material-symbols-rounded">auto_awesome</span>
+                )}
               </button>
             </motion.form>
           )}
@@ -170,7 +177,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         
         <div className="flex flex-wrap gap-2 mb-6">
           {['Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
-            <button
+            <button type="button"
               key={topic}
               onClick={() => onGenerateTopic(topic)}
               className="px-3 py-1 rounded-full bg-secondary text-accent text-[10px] font-bold hover:bg-primary hover:text-white transition-all"
@@ -182,7 +189,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-4 w-full justify-center">
-            <button onClick={prev} className="p-2 hover:bg-primary/10 rounded-full text-accent">
+            <button type="button" onClick={prev} className="p-2 hover:bg-primary/10 rounded-full text-accent">
               <span className="material-symbols-rounded text-3xl">chevron_left</span>
             </button>
             
@@ -199,13 +206,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               onAudioClick={() => playAudio(current.word)}
             />
             
-            <button onClick={next} className="p-2 hover:bg-primary/10 rounded-full text-accent">
+            <button type="button" onClick={next} className="p-2 hover:bg-primary/10 rounded-full text-accent">
               <span className="material-symbols-rounded text-3xl">chevron_right</span>
             </button>
           </div>
           
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
-             <button 
+             <button type="button" 
                onClick={onStartQuiz}
                className="w-full sm:w-auto bg-accent text-white px-8 py-3 rounded-full font-bold shadow-lg text-sm flex items-center justify-center gap-2 hover:scale-105 transition-all"
              >
@@ -213,7 +220,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
              </button>
              
              {current.id && (
-               <button 
+               <button type="button" 
                  onClick={() => onDelete(current.id!)}
                  className="w-full sm:w-auto bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all"
                >

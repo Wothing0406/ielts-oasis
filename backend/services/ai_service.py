@@ -19,8 +19,8 @@ class AIService:
         )
         
         # Primary models via Gemini API
-        self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-1.5-flash")
-        self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-1.5-flash")
+        self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
+        self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
         
         # Fallback local Ollama
         self.ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
@@ -32,10 +32,14 @@ class AIService:
             payload = {"model": model or self.fallback_text_model, "prompt": prompt, "stream": False}
             if is_json: payload["format"] = "json"
             if images: payload["images"] = images
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=300.0) as client:
                 response = await client.post(f"{self.ollama_host}/api/generate", json=payload)
-                if response.status_code == 200: return response.json().get("response")
-        except: pass
+                if response.status_code == 200: 
+                    return response.json().get("response")
+                else:
+                    print(f"Ollama returned {response.status_code}: {response.text}")
+        except Exception as e: 
+            print(f"Ollama request failed: {e}")
         return None
 
     def _clean_json(self, text: str):
@@ -152,13 +156,19 @@ class AIService:
         Bạn là một giám khảo IELTS cực kỳ khắt khe (Strict IELTS Examiner). Hãy chấm điểm và phân tích bài viết sau: "{text}"
         
         Yêu cầu nghiêm ngặt:
-        1. Chấm điểm Band Score (từ 0.0 đến 9.0).
+        1. Chấm điểm Band Score (từ 0.0 đến 9.0) chung và chi tiết 4 tiêu chí.
         2. Đưa ra danh sách các ưu điểm (strengths) và nhược điểm (weaknesses) chi tiết.
         3. Bắt lỗi chính tả và ngữ pháp cực kỳ chi tiết. Với mỗi lỗi, giải thích rõ lý do bằng tiếng Việt.
         
         Trả về DUY NHẤT định dạng JSON:
         {{
             "band_score": 5.0,
+            "criteria": {{
+                "task_achievement": 5.0,
+                "coherence": 5.0,
+                "lexical_resource": 5.0,
+                "grammar": 5.0
+            }},
             "strengths": ["Ưu điểm 1", "Ưu điểm 2"],
             "weaknesses": ["Nhược điểm 1", "Nhược điểm 2"],
             "corrections": [
@@ -339,7 +349,7 @@ class AIService:
             }
         ]
 
-    async def generate_youtube_listening(self, youtube_url: str):
+    async def generate_youtube_listening(self, youtube_url: str, mode: str = "quiz"):
         from youtube_transcript_api import YouTubeTranscriptApi
         import urllib.parse as urlparse
 
@@ -361,42 +371,84 @@ class AIService:
                 return {"error": "Invalid YouTube URL"}
 
             # Get transcript
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            from youtube_transcript_api import YouTubeTranscriptApi
+            try:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+            except:
+                # Fallback to list_transcripts
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(['en', 'en-US', 'en-GB']).fetch()
+                
+            transcript_text = " ".join([t.get('text', '') if isinstance(t, dict) else getattr(t, 'text', '') for t in transcript_list])
             
-            # Limit transcript to first 50 lines approx to avoid huge token usage
-            transcript_text = " ".join([t['text'] for t in transcript[:50]])
+            if len(transcript_text) < 100:
+                return {"is_suitable": False, "reason": "Phụ đề quá ngắn, không đủ để tạo bài kiểm tra."}
             
-            prompt = f"""
-            Đây là phần transcript (phụ đề) của một video YouTube tiếng Anh:
-            "{transcript_text}"
+            if mode == "dictation":
+                prompt = f"""
+                Đây là phần transcript (phụ đề) của một video YouTube tiếng Anh:
+                "{transcript_text}"
+                
+                Hãy trích xuất nguyên văn khoảng 3-5 câu liên tiếp quan trọng nhất từ đoạn trên.
+                Sau đó đục lỗ (tạo chỗ trống) ở những từ vựng/cụm từ quan trọng (khoảng 3-5 chỗ trống) để người dùng luyện nghe điền từ.
+                Mỗi chỗ trống thay bằng chuỗi "_______".
+                
+                Trả về DUY NHẤT một đối tượng JSON với cấu trúc sau:
+                {{
+                    "is_suitable": true,
+                    "reason": "Lý do",
+                    "questions": [
+                        {{
+                            "id": 1,
+                            "type": "fill_in_the_blank",
+                            "text": "Câu văn tiếng Anh có chứa _______ ở vị trí từ bị thiếu.",
+                            "answer": "từ_cần_điền"
+                        }}
+                    ]
+                }}
+                """
+            else:
+                prompt = f"""
+                Đây là phần transcript (phụ đề) của một video YouTube tiếng Anh:
+                "{transcript_text}"
+                
+                Hãy tạo 3 câu hỏi trắc nghiệm (Multiple Choice) kiểm tra mức độ hiểu bài.
+                
+                Trả về DUY NHẤT một đối tượng JSON với cấu trúc sau:
+                {{
+                    "is_suitable": true,
+                    "reason": "Lý do",
+                    "questions": [
+                        {{
+                            "id": 1,
+                            "type": "multiple_choice",
+                            "question": "Câu hỏi tiếng Anh...",
+                            "options": ["A", "B", "C", "D"],
+                            "correctAnswer": "Đáp án đúng (phải khớp hoàn toàn 1 trong 4 options)",
+                            "explanation": "Giải thích tiếng Việt"
+                        }}
+                    ]
+                }}
+                """
             
-            Hãy đánh giá xem nội dung này có phù hợp để học tiếng Anh (đặc biệt là IELTS Listening) không?
-            Nếu phù hợp, hãy tạo 3 câu hỏi trắc nghiệm (Multiple Choice) dựa trên nội dung.
+            try:
+                # Call Gemini
+                response = await self.client.chat.completions.create(
+                    model=self.primary_text_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                content = response.choices[0].message.content
+                cleaned = self._clean_json(content)
+                return json.loads(cleaned)
+            except Exception as e:
+                print(f"Gemini youtube listening failed: {e}. Falling back to Ollama.")
+                
+            # Fallback to Ollama
+            res = await self._call_ollama(prompt, model=self.fallback_text_model)
+            if res:
+                return json.loads(self._clean_json(res))
             
-            Trả về DUY NHẤT một đối tượng JSON với cấu trúc sau:
-            {{
-                "is_suitable": true,
-                "reason": "Lý do ngắn gọn bằng tiếng Việt",
-                "questions": [
-                    {{
-                        "id": 1,
-                        "question": "Câu hỏi tiếng Anh...",
-                        "options": ["A", "B", "C", "D"],
-                        "correctAnswer": "Đáp án đúng (phải khớp hoàn toàn 1 trong 4 options)",
-                        "explanation": "Giải thích tiếng Việt"
-                    }}
-                ]
-            }}
-            """
-            
-            # Call Gemini
-            response = await self.client.chat.completions.create(
-                model=self.primary_text_model,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            content = response.choices[0].message.content
-            cleaned = self._clean_json(content)
-            return json.loads(cleaned)
+            return {"error": "Both Gemini and Ollama failed to generate listening questions."}
 
         except Exception as e:
             print(f"YouTube transcript/AI failed: {e}")
@@ -512,48 +564,82 @@ class AIService:
         except Exception as e:
             print(f"Generate reading questions failed: {e}")
             return {"error": str(e)}
-
-    async def generate_listening_from_text(self, text: str):
-        prompt = f"""
-        Bạn là một giám khảo IELTS. Dưới đây là một đoạn hội thoại hoặc văn bản tiếng Anh:
-        "{text}"
-        
-        Hãy sinh ra 4 câu hỏi kiểm tra kỹ năng nghe hiểu (Listening Comprehension) dựa trên nội dung này.
-        - 2 câu trắc nghiệm (Multiple Choice)
-        - 2 câu điền từ (Fill in the blank)
-        
-        Trả về DUY NHẤT một định dạng JSON:
-        {{
-            "title": "IELTS Listening Practice",
-            "context": "Mô tả ngắn gọn về ngữ cảnh của đoạn văn bằng tiếng Anh",
-            "questions": [
-                {{
-                    "id": 1,
-                    "type": "multiple_choice",
-                    "text": "Câu hỏi...",
-                    "options": ["A", "B", "C", "D"],
-                    "answer": "Đáp án đúng (khớp hoàn toàn với option)"
-                }},
-                {{
-                    "id": 2,
-                    "type": "fill_in_the_blank",
-                    "text": "Câu chứa chỗ trống _______.",
-                    "answer": "Từ cần điền"
-                }}
-            ]
-        }}
-        """
+    async def generate_listening_from_text(self, text: str, mode: str = "paragraph"):
+        if mode == "conversation":
+            prompt = f"""
+            Bạn là một giám khảo IELTS. Dưới đây là một đoạn hội thoại tiếng Anh:
+            "{text}"
+            
+            Hãy sinh ra từ 10 đến 20 câu hỏi trắc nghiệm (Multiple Choice) kiểm tra kỹ năng nghe hiểu (Listening Comprehension) dựa trên nội dung hội thoại này.
+            Các câu hỏi phải có độ khó TĂNG DẦN (từ dễ đến khó).
+            
+            Trả về DUY NHẤT một định dạng JSON:
+            {{
+                "title": "IELTS Listening - Conversation",
+                "context": "Mô tả ngắn gọn về ngữ cảnh của đoạn hội thoại bằng tiếng Anh",
+                "questions": [
+                    {{
+                        "id": 1,
+                        "type": "multiple_choice",
+                        "text": "Câu hỏi...",
+                        "options": ["A", "B", "C", "D"],
+                        "answer": "Đáp án đúng (khớp hoàn toàn với 1 trong 4 option)"
+                    }}
+                ]
+            }}
+            """
+        else:
+            prompt = f"""
+            Bạn là một giám khảo IELTS. Dưới đây là một đoạn văn bản tiếng Anh:
+            "{text}"
+            
+            Hãy sinh ra khoảng 5-10 câu hỏi kiểm tra kỹ năng nghe hiểu (Listening Comprehension) dựa trên nội dung này.
+            - Bao gồm câu trắc nghiệm (Multiple Choice)
+            - Bao gồm câu điền từ (Fill in the blank)
+            
+            Trả về DUY NHẤT một định dạng JSON:
+            {{
+                "title": "IELTS Listening - Monologue",
+                "context": "Mô tả ngắn gọn về ngữ cảnh của đoạn văn bằng tiếng Anh",
+                "questions": [
+                    {{
+                        "id": 1,
+                        "type": "multiple_choice",
+                        "text": "Câu hỏi...",
+                        "options": ["A", "B", "C", "D"],
+                        "answer": "Đáp án đúng (khớp hoàn toàn với option)"
+                    }},
+                    {{
+                        "id": 2,
+                        "type": "fill_in_the_blank",
+                        "text": "Câu chứa chỗ trống cần điền _______.",
+                        "answer": "Từ cần điền (1-3 từ)"
+                    }}
+                ]
+            }}
+            """
+            
         try:
             response = await self.client.chat.completions.create(
                 model=self.primary_text_model,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
             )
             content = response.choices[0].message.content
             cleaned = self._clean_json(content)
             return json.loads(cleaned)
         except Exception as e:
-            print(f"Generate listening failed: {e}")
-            return {"error": str(e)}
+            print(f"Gemini text listening failed: {e}. Falling back to Ollama.")
+            
+        # Fallback to Ollama
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model)
+            if res:
+                return json.loads(self._clean_json(res))
+        except Exception as e:
+            print(f"Ollama text listening failed: {e}")
+            
+        return {"error": "AI could not generate questions."}
 
 ai_service = AIService()
 

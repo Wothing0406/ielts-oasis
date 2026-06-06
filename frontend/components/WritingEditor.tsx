@@ -77,7 +77,7 @@ const WritingSanctuary = () => {
           onChange={(e) => setText(e.target.value)}
         />
         <div className="absolute bottom-6 right-6 flex gap-3">
-           <button 
+           <button type="button" 
              onClick={() => handleAnalyze('score')}
              disabled={isAnalyzing}
              className="matcha-btn flex items-center gap-2"
@@ -85,7 +85,7 @@ const WritingSanctuary = () => {
              {isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
              Check Band
            </button>
-           <button 
+           <button type="button" 
              onClick={() => handleAnalyze('feedback')}
              disabled={isAnalyzing}
              className="bg-white text-latte-brown font-black px-6 py-3 rounded-2xl shadow-md hover:bg-matcha-soft transition-all flex items-center gap-2 border border-latte-brown/10"
@@ -103,7 +103,7 @@ const WritingSanctuary = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mt-6 p-8 bg-white border-4 border-matcha-primary rounded-[3rem] shadow-2xl relative"
           >
-             <button onClick={() => setAnalysis(null)} className="absolute top-4 right-4 text-gray-300 hover:text-red-400"><Send className="w-4 h-4 rotate-45" /></button>
+             <button type="button" onClick={() => setAnalysis(null)} className="absolute top-4 right-4 text-gray-300 hover:text-red-400"><Send className="w-4 h-4 rotate-45" /></button>
              <div className="flex items-center gap-4 mb-4">
                 <div className="bg-matcha-primary text-white px-4 py-2 rounded-xl font-black text-xl shadow-md">
                    Band {analysis.band_score}

@@ -5,6 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
+const playAudio = async (word: string) => {
+  try {
+    const res = await fetch(`${API_URL}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word }),
+    });
+    const data = await res.json();
+    if (data.audio_url) {
+      const audio = new Audio(data.audio_url);
+      audio.play();
+    }
+  } catch (err) { console.error("TTS error:", err); }
+};
+
 interface DetectedWord {
   word: string;
   meaning: string;
@@ -20,6 +35,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [zoom, setZoom] = useState(1);
   const [capabilities, setCapabilities] = useState<any>(null);
+  const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -100,20 +116,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
     uploadFile(file);
   };
 
-  const playAudio = async (word: string) => {
-    try {
-      const res = await fetch(`${API_URL}/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word }),
-      });
-      const data = await res.json();
-      if (data.audio_url) {
-        const audio = new Audio(data.audio_url);
-        audio.play();
-      }
-    } catch (err) { console.error("TTS error:", err); }
-  };
+
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
@@ -135,6 +138,12 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       // }
     } catch (err) { console.error(err); }
     finally { setIsUploading(false); }
+  };
+
+  const handleSave = (item: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAdd(item);
+    setSavedWords(new Set(savedWords).add(item.word));
   };
 
   return (
@@ -160,7 +169,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
              </div>
            )}
            {isCameraOpen && (
-             <button 
+             <button type="button" 
                onClick={switchCamera}
                className="p-2 bg-secondary rounded-full text-accent hover:bg-primary/20 transition-all shadow-sm"
              >
@@ -194,19 +203,26 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
                       key={`${item.word}-${idx}`}
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="absolute z-[999] cursor-pointer"
+                      className="absolute z-[999]"
                       style={{ 
                         left: `${centerX}%`, 
                         top: `${centerY}%`,
                         transform: 'translate(-50%, -50%)'
                       }}
-                      onClick={() => onAdd(item)}
                     >
-                      <div className="bg-white p-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] border-2 border-primary flex flex-col items-center min-w-[80px] hover:scale-110 transition-transform">
-                         <span className="text-[10px] font-black text-primary uppercase leading-none mb-1">{item.word}</span>
-                         <span className="text-[9px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
-                         <span className="text-[8px] text-accent/50 italic leading-none font-medium">{item.phonetic}</span>
-                         <div className="w-4 h-1 bg-primary/20 rounded-full mt-1"></div>
+                      <div className="bg-white p-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] border-2 border-primary flex flex-col items-center min-w-[100px] hover:scale-105 transition-transform group">
+                         <span className="text-[12px] font-black text-primary uppercase leading-none mb-1">{item.word}</span>
+                         <span className="text-[10px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
+                         <span className="text-[9px] text-accent/50 italic leading-none font-medium mb-2">{item.phonetic}</span>
+                         
+                         <button type="button" 
+                           onClick={(e) => handleSave(item, e)}
+                           disabled={savedWords.has(item.word)}
+                           className={`w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-700' : 'bg-primary text-white hover:bg-primary/90'}`}
+                         >
+                           <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
+                           {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu từ'}
+                         </button>
                       </div>
                     </motion.div>
                   );
@@ -238,14 +254,14 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-4 w-full">
-        <button 
+        <button type="button" 
           onClick={() => isCameraOpen ? takeSnapshot() : startCamera()}
           className="bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm hover:scale-[1.02] shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           <span className="material-symbols-rounded text-lg">{isCameraOpen ? 'photo_camera' : 'videocam'}</span> 
           {isCameraOpen ? 'Chụp ảnh' : 'Mở Camera'}
         </button>
-        <button 
+        <button type="button" 
           onClick={() => fileInputRef.current?.click()}
           className="bg-white text-accent py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-2 border-primary/20 hover:bg-primary/5 transition-all"
         >

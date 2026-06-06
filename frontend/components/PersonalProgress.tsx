@@ -64,10 +64,10 @@ const PersonalProgress = () => {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
          </div>
          <div className="space-y-2">
-            <button className="w-full py-2 bg-white rounded-xl text-[10px] font-black text-matcha-primary uppercase tracking-widest shadow-sm border border-latte-brown/5">
+            <button type="button" className="w-full py-2 bg-white rounded-xl text-[10px] font-black text-matcha-primary uppercase tracking-widest shadow-sm border border-latte-brown/5">
                Lofi Radio
             </button>
-            <button className="w-full py-2 bg-matcha-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">
+            <button type="button" className="w-full py-2 bg-matcha-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">
                Pomodoro Timer
             </button>
          </div>

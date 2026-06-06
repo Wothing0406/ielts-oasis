@@ -6,15 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
+    "clsx": "^2.1.0",
+    "framer-motion": "^11.0.24",
+    "lucide-react": "^0.368.0",
     "next": "14.2.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "framer-motion": "^11.0.24",
-    "lucide-react": "^0.368.0",
-    "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.2"
   },
   "devDependencies": {
@@ -24,6 +25,7 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.0",
+    "react-doctor": "^0.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

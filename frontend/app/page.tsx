@@ -6,15 +6,22 @@ import VocabularyLab from "@/components/VocabularyLab";
 import MatchaLens from "@/components/MatchaLens";
 import WritingSanctuary from "@/components/WritingSanctuary";
 import CommunityFeed from "@/components/CommunityFeed";
-import ListeningLab from "@/components/ListeningLab";
-import ReadingLab from "@/components/ReadingLab";
+import MatchaBook from "@/components/MatchaBook";
+import MatchaRadio from "@/components/MatchaRadio";
 import MascotMessage from "@/components/MascotMessage";
+import VocabularyQuiz from "@/components/VocabularyQuiz";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [vocabList, setVocabList] = useState<any[]>([]);
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  // States for Daily Plan interaction
+  const [activeWritingPrompt, setActiveWritingPrompt] = useState("");
+  const [activeReadingContext, setActiveReadingContext] = useState("");
+  const [activeListeningContext, setActiveListeningContext] = useState("");
 
   const fetchVocabs = async (tokenStr: string) => {
     try {
@@ -41,7 +48,6 @@ export default function Home() {
     if (savedToken) {
       fetchVocabs(savedToken);
     } else {
-      // Fetch public/mock vocabs if not logged in just to show something
       fetch(`${API_URL}/vocabulary`).then(res => res.json()).then(setVocabList).catch(console.error);
     }
   }, []);
@@ -59,7 +65,7 @@ export default function Home() {
       });
       if (res.ok) {
         const newVocab = await res.json();
-        setVocabList([newVocab, ...vocabList]);
+        setVocabList(prev => [newVocab, ...prev]);
       }
     } catch (e) {
       console.error(e);
@@ -77,7 +83,7 @@ export default function Home() {
         headers
       });
       if (res.ok) {
-        setVocabList(vocabList.filter(v => v.id !== id));
+        setVocabList(prev => prev.filter(v => v.id !== id));
       }
     } catch (e) {
       console.error(e);
@@ -85,13 +91,19 @@ export default function Home() {
   };
 
   const handleGenerateTopic = async (topic: string) => {
-    // Placeholder for now
     console.log("Generate topic:", topic);
   };
 
   const handleStartQuiz = () => {
-    // Placeholder for now
-    console.log("Start quiz");
+    if (vocabList.length < 4) {
+      alert("Bạn cần ít nhất 4 từ vựng để bắt đầu ôn tập!");
+      return;
+    }
+    setShowQuiz(true);
+  };
+
+  const handleReview = async (id: number, isCorrect: boolean) => {
+    console.log(`Reviewed word ${id}: ${isCorrect}`);
   };
 
   const handleLogin = () => {
@@ -145,7 +157,21 @@ export default function Home() {
           
           {/* Gợi ý AI - Lên trên cùng */}
           <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <DailyPlanner />
+            <DailyPlanner 
+              onAddVocab={(vocabData: any) => handleAddVocab(vocabData)}
+              onPracticeWriting={(prompt: string) => {
+                setActiveWritingPrompt(prompt);
+                document.getElementById('writing-sanctuary')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onPracticeReading={(text: string) => {
+                setActiveReadingContext(text);
+                document.getElementById('matcha-book')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onPracticeListening={(text: string) => {
+                setActiveListeningContext(text);
+                document.getElementById('matcha-radio')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
           </section>
 
           {/* Hàng 2: Vocab Lab và Matcha Lens */}
@@ -160,21 +186,21 @@ export default function Home() {
           </section>
           
           <section className="xl:col-span-4 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card flex flex-col items-center">
-            <MatchaLens onAdd={handleAddVocab} />
+            {/* <MatchaLens onAdd={handleAddVocab} /> */}
           </section>
 
           {/* Hàng 3: Reading và Listening Lab */}
-          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <ReadingLab />
+          <section id="matcha-book" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <MatchaBook initialReading={activeReadingContext} />
           </section>
           
-          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <ListeningLab />
+          <section id="matcha-radio" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <MatchaRadio initialContext={activeListeningContext} />
           </section>
 
           {/* Hàng 4: Writing Sanctuary */}
-          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <WritingSanctuary />
+          <section id="writing-sanctuary" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+            <WritingSanctuary initialPrompt={activeWritingPrompt} />
           </section>
           
           {/* Hàng 5: Community Feed */}
@@ -184,6 +210,15 @@ export default function Home() {
 
         </div>
       </main>
+
+      {showQuiz && (
+        <VocabularyQuiz 
+          vocabList={vocabList}
+          onClose={() => setShowQuiz(false)}
+          onReview={handleReview}
+        />
+      )}
+
       {/* Mascot (Fixed Position) */}
       <MascotMessage dueCount={3} />
     </div>

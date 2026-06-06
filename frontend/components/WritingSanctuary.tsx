@@ -1,11 +1,21 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
-const WritingSanctuary = () => {
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+interface WritingSanctuaryProps {
+  initialPrompt?: string;
+}
+
+const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -15,6 +25,31 @@ const WritingSanctuary = () => {
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [rephraseSuggestions, setRephraseSuggestions] = useState<string[]>([]);
   const [isRephrasing, setIsRephrasing] = useState(false);
+
+  // Timer States
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [timerActive, setTimerActive] = useState(false);
+
+  useEffect(() => {
+    let interval: any;
+    if (timerActive && timeLeft !== null && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => prev !== null ? prev - 1 : null);
+      }, 1000);
+    } else if (timerActive && timeLeft === 0) {
+      setTimerActive(false);
+      handleAnalyze(); // Auto submit
+    }
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerActive, timeLeft]);
+
+
+
+  const startTimer = (minutes: number) => {
+    setTimeLeft(minutes * 60);
+    setTimerActive(true);
+  };
 
   const handleTextSelection = (e: React.MouseEvent<HTMLTextAreaElement> | React.KeyboardEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
@@ -67,9 +102,13 @@ const WritingSanctuary = () => {
     setIsAnalyzing(true);
     try {
       console.log("Starting analysis for text:", text);
+      const token = localStorage.getItem('oasis_token');
       const startRes = await fetch(`/api/writing/analyze/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: JSON.stringify({ content: text }),
       });
       if (!startRes.ok) throw new Error(`Server error: ${startRes.status}`);
@@ -120,11 +159,22 @@ const WritingSanctuary = () => {
             <p className="text-[10px] md:text-sm opacity-60 text-accent dark:text-secondary">Topic: The impact of technology on traditional education.</p>
           </div>
         </div>
-        <div className="flex gap-4">
-          <button className="text-sm font-bold text-primary bg-primary/10 px-6 py-3 rounded-full hover:bg-primary/20 transition-all">Save Draft</button>
-          <button 
+        <div className="flex gap-4 items-center">
+          {timeLeft !== null && (
+            <div className={`font-mono font-bold text-xl ${timeLeft < 60 ? 'text-red-500 animate-pulse' : 'text-primary'}`}>
+              {formatTime(timeLeft)}
+            </div>
+          )}
+          {!timerActive && timeLeft === null && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => startTimer(20)} className="text-xs font-bold text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-all">Task 1 (20m)</button>
+              <button type="button" onClick={() => startTimer(40)} className="text-xs font-bold text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-all">Task 2 (40m)</button>
+            </div>
+          )}
+          <button type="button" className="text-sm font-bold text-primary bg-primary/10 px-6 py-3 rounded-full hover:bg-primary/20 transition-all">Save Draft</button>
+          <button type="button" 
             onClick={handleAnalyze}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || isRephrasing}
             className="text-sm font-bold bg-primary text-white px-8 py-3 rounded-full shadow-lg shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2"
           >
             {isAnalyzing && <span className="material-symbols-rounded animate-spin text-sm">refresh</span>}
@@ -137,13 +187,21 @@ const WritingSanctuary = () => {
         {/* Writing Canvas */}
         <div className="lg:col-span-2">
           <div className="bg-secondary/40 dark:bg-neutral-800/40 rounded-medium p-8 relative min-h-[400px] border border-primary/5">
+            {initialPrompt && (
+              <div className="mb-6 p-4 bg-primary/5 rounded-2xl border border-primary/20">
+                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Topic</p>
+                <p className="text-sm text-accent italic font-medium">{initialPrompt}</p>
+              </div>
+            )}
             <textarea 
+              aria-label="Write your essay here"
               className="writing-lines font-sans text-lg bg-transparent border-none outline-none w-full h-full min-h-[350px] resize-none text-accent dark:text-secondary placeholder:opacity-30"
               placeholder="Modern technology has revolutionized the education sector..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               onMouseUp={handleTextSelection}
               onKeyUp={handleTextSelection}
+              disabled={isAnalyzing || (timerActive && timeLeft === 0)}
             />
             <div className="absolute bottom-6 right-8 text-xs font-bold opacity-40 uppercase tracking-widest text-accent dark:text-secondary">
               {wordCount} Words / Recommended: 250
@@ -171,7 +229,7 @@ const WritingSanctuary = () => {
                       <span className="text-xs font-bold uppercase text-primary flex items-center gap-1">
                         <span className="material-symbols-rounded text-sm">lightbulb</span> AI Rephrase
                       </span>
-                      <button 
+                      <button type="button" 
                         onClick={() => { setSelectedPhrase(''); setRephraseSuggestions([]); }}
                         className="text-xs text-accent/40 hover:text-accent"
                       >
@@ -183,7 +241,7 @@ const WritingSanctuary = () => {
                     </p>
                     
                     {rephraseSuggestions.length === 0 ? (
-                      <button
+                      <button type="button"
                         onClick={handleRephrase}
                         disabled={isRephrasing}
                         className="w-full bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
@@ -203,9 +261,9 @@ const WritingSanctuary = () => {
                     ) : (
                       <div className="space-y-2">
                         <p className="text-[10px] uppercase font-black text-accent/40 tracking-wider">Gợi ý từ AI (Click để áp dụng):</p>
-                        {rephraseSuggestions.map((suggestion, idx) => (
-                          <button
-                            key={idx}
+                        {rephraseSuggestions.map((suggestion) => (
+                          <button type="button"
+                            key={suggestion}
                             onClick={() => applyRephrase(suggestion)}
                             className="w-full text-left p-2.5 bg-white border border-primary/10 hover:border-primary rounded-xl text-xs text-accent font-medium hover:bg-primary/5 transition-all shadow-sm flex items-start gap-1"
                           >
@@ -218,6 +276,27 @@ const WritingSanctuary = () => {
                   </div>
                 )}
                 
+                {analysis?.criteria && (
+                  <div className="p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-primary/10 grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase font-bold text-accent/60">Task Achievement</div>
+                      <div className="font-bold text-primary">{analysis.criteria.task_achievement || analysis.criteria.task_response || "-"}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase font-bold text-accent/60">Coherence</div>
+                      <div className="font-bold text-primary">{analysis.criteria.coherence || "-"}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase font-bold text-accent/60">Lexical Resource</div>
+                      <div className="font-bold text-primary">{analysis.criteria.lexical_resource || "-"}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase font-bold text-accent/60">Grammar</div>
+                      <div className="font-bold text-primary">{analysis.criteria.grammar || "-"}</div>
+                    </div>
+                  </div>
+                )}
+
                 {analysis?.strengths && analysis.strengths.length > 0 && (
                   <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl shadow-sm border border-green-100 dark:border-green-900/30">
                     <div className="flex items-center gap-2 mb-2">
@@ -272,7 +351,7 @@ const WritingSanctuary = () => {
               )}
             </div>
           </div>
-          <button className="w-full py-4 bg-accent text-white rounded-full font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
+          <button type="button" className="w-full py-4 bg-accent text-white rounded-full font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
             <span className="material-symbols-rounded">menu_book</span> View Full Report
           </button>
         </div>

@@ -53,7 +53,7 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
            <h3 className="text-4xl font-display font-black text-accent mb-1">{word}</h3>
            <p className="text-sm opacity-50 italic mb-4">{phonetic}</p>
            
-           <button 
+           <button type="button" 
              onClick={(e) => {
                e.stopPropagation();
                onAudioClick();

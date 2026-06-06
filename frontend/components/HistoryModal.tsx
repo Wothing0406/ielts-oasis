@@ -26,7 +26,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ history, onClose }) => {
           <h2 className="text-2xl font-display font-bold text-accent dark:text-primary flex items-center gap-2">
             <span className="material-symbols-rounded text-primary">history</span> Review History
           </h2>
-          <button 
+          <button type="button" 
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >

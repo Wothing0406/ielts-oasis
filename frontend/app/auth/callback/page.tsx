@@ -1,16 +1,20 @@
 "use client";
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Đang kết nối với Discord...");
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     const code = searchParams.get('code');
-    if (code) {
+    let timerId: NodeJS.Timeout;
+    
+    if (code && !hasFetched.current) {
+      hasFetched.current = true;
       setStatus("Đang xác thực thông tin...");
       fetch('/api/auth/discord/callback', {
         method: 'POST',
@@ -26,7 +30,7 @@ function AuthCallbackContent() {
           localStorage.setItem('oasis_token', data.token);
           localStorage.setItem('oasis_user', JSON.stringify(data.user));
           setStatus("Đăng nhập thành công! Đang chuyển hướng...");
-          setTimeout(() => {
+          timerId = setTimeout(() => {
             router.push('/');
           }, 1000);
         } else {
@@ -37,9 +41,13 @@ function AuthCallbackContent() {
         console.error(err);
         setStatus("Lỗi kết nối máy chủ.");
       });
-    } else {
+    } else if (!code) {
       setStatus("Không tìm thấy mã xác thực. Vui lòng thử lại.");
     }
+    
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
   }, [router, searchParams]);
 
   return (

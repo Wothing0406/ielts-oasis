@@ -6,25 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
+const virtualUsers = [
+  { name: "User", xp: 2500, level: 15, avatar: "🐻" },
+  { name: "MatchaLover", xp: 1800, level: 12, avatar: "🐨" },
+  { name: "IELTSKing", xp: 1200, level: 8, avatar: "🐼" },
+];
+
 const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
-  const [trending, setTrending] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const res = await fetch(`${API_URL}/vocabulary/community`);
-        const data = await res.json();
-        setTrending(data);
-      } catch (err) { console.error(err); }
-    };
-    fetchTrending();
-  }, []);
-
-  const virtualUsers = [
-    { name: "User", xp: 2500, level: 15, avatar: "🐻" },
-    { name: "MatchaLover", xp: 1800, level: 12, avatar: "🐨" },
-    { name: "IELTSKing", xp: 1200, level: 8, avatar: "🐼" },
-  ];
 
   return (
     <div className="flex flex-col h-full p-6">
@@ -43,8 +31,8 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
       <div className="space-y-6">
         <div className="space-y-3">
            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top Matcha Drinkers</h3>
-           {virtualUsers.map((user, i) => (
-             <div key={i} className="flex items-center justify-between bg-white/40 p-4 rounded-3xl border border-white/60">
+           {virtualUsers.map((user) => (
+             <div key={user.name} className="flex items-center justify-between bg-white/40 p-4 rounded-3xl border border-white/60">
                 <div className="flex items-center gap-4">
                    <div className="w-12 h-12 bg-cream-yellow rounded-2xl flex items-center justify-center text-2xl shadow-inner border-2 border-white">
                       {user.avatar}

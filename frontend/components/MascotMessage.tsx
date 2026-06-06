@@ -34,7 +34,7 @@ const MascotMessage = ({ dueCount }: { dueCount: number }) => {
              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white overflow-hidden group hover:scale-110 transition-transform">
                 <span className="material-symbols-rounded text-white text-4xl group-hover:animate-bounce">eco</span>
              </div>
-             <button 
+             <button type="button" 
                onClick={() => setIsVisible(false)}
                className="w-6 h-6 bg-accent text-white rounded-full flex items-center justify-center text-[10px] shadow-sm hover:bg-red-500 transition-colors"
              >

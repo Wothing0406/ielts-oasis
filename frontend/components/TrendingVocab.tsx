@@ -55,7 +55,7 @@ const TrendingVocab = ({ onImport }: { onImport: (word: any) => void }) => {
                       <p className="text-[10px] font-bold text-matcha-primary group-hover:text-white/60 transition-colors">{item.phonetic || "/.../"}</p>
                    </div>
                 </div>
-                <button 
+                <button type="button" 
                   onClick={(e) => { e.stopPropagation(); onImport(item); }}
                   className="bg-white p-2 rounded-xl text-matcha-primary shadow-sm opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0"
                 >
