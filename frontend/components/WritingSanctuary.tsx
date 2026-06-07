@@ -208,9 +208,9 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Writing Canvas */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           <div className="bg-secondary/40 dark:bg-neutral-800/40 rounded-medium p-8 relative min-h-[400px] border border-primary/5">
             {initialPrompt && (
               <div className="mb-6 p-4 bg-primary/5 rounded-2xl border border-primary/20">
@@ -237,18 +237,18 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
         {/* AI Insights Panel */}
         <div className="space-y-6">
           <div className="p-6 bg-primary/5 dark:bg-primary/10 rounded-medium border border-primary/20">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
               <h4 className="font-display font-bold flex items-center gap-2 text-accent dark:text-primary">
                 <span className="material-symbols-rounded text-primary">auto_awesome</span> AI Insights
               </h4>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 {analysis && (
                   <button type="button" onClick={handleShareToCommunity} className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
                     <span className="material-symbols-rounded text-[18px]">public</span> Chia sẻ
                   </button>
                 )}
-                <div className="px-3 py-1 bg-primary text-white rounded-full text-sm font-bold">
-                  {analysis ? `Band ${analysis.band_score}` : "Analyzing..."}
+                <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap">
+                  {analysis ? `Band ${analysis.band_score}` : isAnalyzing ? "Đang chấm..." : "Chưa chấm"}
                 </div>
               </div>
             </div>
