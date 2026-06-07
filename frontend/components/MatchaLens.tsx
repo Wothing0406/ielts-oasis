@@ -293,7 +293,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 w-full">
+      <div className="grid grid-cols-2 gap-4 w-full mt-auto">
         <button type="button" 
           onClick={() => isCameraOpen ? takeSnapshot() : startCamera()}
           className="bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm hover:scale-[1.02] shadow-lg shadow-primary/20 transition-all active:scale-95"
@@ -311,13 +311,41 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
-      
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
+
+      {/* Results panel - always visible after detect */}
+      {results.length > 0 && (
+        <div className="w-full mt-3">
+          <p className="text-[10px] font-black text-accent/40 uppercase tracking-widest mb-2">
+            🔍 Phát hiện {results.length} vật thể:
+          </p>
+          <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            {results.map((item, idx) => (
+              <motion.div
+                key={`result-${item.word}-${idx}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.06 }}
+                className="flex items-center justify-between bg-secondary/40 border border-primary/15 rounded-xl px-3 py-2"
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-primary">{item.word}</span>
+                  <span className="text-[10px] text-accent/50 italic">{item.phonetic}</span>
+                  <span className="text-xs text-accent/80 font-bold">{item.meaning}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleSave(item, e)}
+                  disabled={savedWords.has(item.word)}
+                  className={`ml-2 px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 flex-shrink-0 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+                >
+                  <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
+                  {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu'}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
