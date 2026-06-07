@@ -576,10 +576,12 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     db.close()
     return {"vocabularies": vocab_list, "writings": writing_list}
 
+from typing import Any
+
 class ShareWritingIn(BaseModel):
     content: str
-    band_score: str
-    feedback: dict
+    band_score: Any
+    feedback: Any
 
 @app.post("/community/share-writing")
 async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_current_user)):
@@ -591,7 +593,7 @@ async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_curren
         user_id=user["user_id"],
         content=payload.content,
         feedback=json.dumps(payload.feedback),
-        band_score=payload.band_score,
+        band_score=str(payload.band_score),
         word_count=len(payload.content.split())
     )
     db.add(log)

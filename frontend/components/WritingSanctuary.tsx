@@ -159,7 +159,7 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
         },
         body: JSON.stringify({
           content: text,
-          band_score: analysis.band_score,
+          band_score: String(analysis.band_score),
           feedback: analysis
         }),
       });
