@@ -135,6 +135,8 @@ async def get_vocabulary(user: dict = Depends(get_current_user)):
     query = db.query(Vocabulary)
     if user:
         query = query.filter(Vocabulary.user_id == user["user_id"])
+    else:
+        query = query.filter(Vocabulary.user_id == None)
     vocabs = query.order_by(desc(Vocabulary.id)).all()
     db.close()
     return vocabs
