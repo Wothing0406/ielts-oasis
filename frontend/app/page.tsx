@@ -8,7 +8,6 @@ import WritingSanctuary from "@/components/WritingSanctuary";
 import CommunityFeed from "@/components/CommunityFeed";
 import MatchaBook from "@/components/MatchaBook";
 import MatchaRadio from "@/components/MatchaRadio";
-import MascotMessage from "@/components/MascotMessage";
 import VocabularyQuiz from "@/components/VocabularyQuiz";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -304,9 +303,6 @@ export default function Home() {
           onReview={handleReview}
         />
       )}
-
-      {/* Mascot (Fixed Position) */}
-      <MascotMessage dueCount={dueCount} />
     </div>
   );
 }
