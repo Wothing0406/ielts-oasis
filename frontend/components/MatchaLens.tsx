@@ -36,6 +36,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   const [zoom, setZoom] = useState(1);
   const [capabilities, setCapabilities] = useState<any>(null);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
+  const [detectError, setDetectError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -120,23 +121,28 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
+    setDetectError(null);
     const formData = new FormData();
     formData.append('file', file);
     try {
       const res = await fetch(`${API_URL}/vocabulary/detect`, { method: 'POST', body: formData });
       const data = await res.json();
+      console.log('[MatchaLens] detect response:', data);
       const items = data.items || [];
+      console.log('[MatchaLens] detected items count:', items.length);
       setResults(items);
+      
+      if (items.length === 0) {
+        setDetectError('AI không phát hiện được vật thể nào. Hãy thử ảnh khác có nhiều vật hơn!');
+      }
       
       if (data.image_url) {
         setPreview(`${API_URL}${data.image_url}`);
       }
-
-      // Auto-pronounce removed as per user request
-      // if (items.length > 0) {
-      //   playAudio(items[0].word);
-      // }
-    } catch (err) { console.error(err); }
+    } catch (err: any) { 
+      console.error('[MatchaLens] detect error:', err);
+      setDetectError(`Lỗi kết nối: ${err.message}`);
+    }
     finally { setIsUploading(false); }
   };
 
@@ -189,46 +195,40 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
             className="w-full h-full object-cover" 
           />
         ) : preview ? (
-          <div className="relative w-full h-full bg-black flex items-center justify-center">
-             <img src={preview} className="w-full h-full object-contain" alt="Preview" />
-                          <AnimatePresence>
-                {results.map((item, idx) => {
-                  if (!item.box) return null;
-                  // Center mapping: box is [xmin, ymin, xmax, ymax]
-                  const centerX = ((item.box[0] + item.box[2]) / 2) * 100;
-                  const centerY = ((item.box[1] + item.box[3]) / 2) * 100;
-                  
-                  return (
-                    <motion.div 
-                      key={`${item.word}-${idx}`}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="absolute z-[999]"
-                      style={{ 
-                        left: `${centerX}%`, 
-                        top: `${centerY}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    >
-                      <div className="bg-white p-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] border-2 border-primary flex flex-col items-center min-w-[100px] hover:scale-105 transition-transform group">
-                         <span className="text-[12px] font-black text-primary uppercase leading-none mb-1">{item.word}</span>
-                         <span className="text-[10px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
-                         <span className="text-[9px] text-accent/50 italic leading-none font-medium mb-2">{item.phonetic}</span>
-                         
-                         <button type="button" 
-                           onClick={(e) => handleSave(item, e)}
-                           disabled={savedWords.has(item.word)}
-                           className={`w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-700' : 'bg-primary text-white hover:bg-primary/90'}`}
-                         >
-                           <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
-                           {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu từ'}
-                         </button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-              {results.length === 0 && !isUploading && (
+          <div className="relative w-full h-full bg-black flex flex-col">
+             <img src={preview} className="w-full h-full object-contain" alt="Preview" style={{maxHeight: results.length > 0 ? '65%' : '100%'}} />
+             {results.length > 0 && (
+               <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1.5 z-[999]">
+                 {results.map((item, idx) => (
+                   <motion.div
+                     key={`${item.word}-${idx}`}
+                     initial={{ scale: 0, opacity: 0 }}
+                     animate={{ scale: 1, opacity: 1 }}
+                     transition={{ delay: idx * 0.08 }}
+                     className="bg-white/95 backdrop-blur-sm px-2 py-1.5 rounded-xl shadow-lg border-2 border-primary flex items-center gap-2"
+                   >
+                     <div className="flex flex-col">
+                       <span className="text-[11px] font-black text-primary uppercase leading-none">{item.word}</span>
+                       <span className="text-[9px] text-accent/70 leading-none">{item.meaning}</span>
+                     </div>
+                     <button type="button"
+                       onClick={(e) => handleSave(item, e)}
+                       disabled={savedWords.has(item.word)}
+                       className={`p-1 rounded-lg transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+                     >
+                       <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
+                     </button>
+                   </motion.div>
+                 ))}
+               </div>
+             )}
+             {detectError && (
+               <div className="absolute bottom-4 left-2 right-2 bg-red-500/80 text-white text-[10px] px-4 py-2 rounded-full text-center backdrop-blur-sm">
+                 {detectError}
+               </div>
+             )}
+             {results.length === 0 && !isUploading && !detectError && (
+
                 <div className="absolute bottom-4 bg-black/50 text-white text-[10px] px-4 py-1 rounded-full backdrop-blur-sm">
                   Chưa phát hiện được vật thể. Hãy thử góc khác!
                 </div>
