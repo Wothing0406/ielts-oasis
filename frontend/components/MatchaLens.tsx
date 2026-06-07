@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
+// For file uploads we call backend directly via /api proxy route
+// but use a dedicated path that bypasses Next.js body limit issues
+const BACKEND_URL = '/api';
 
 const playAudio = async (word: string) => {
   try {
@@ -125,7 +128,8 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/vocabulary/detect`, { method: 'POST', body: formData });
+      // Call backend directly to avoid Next.js proxy 503 on large file uploads
+      const res = await fetch(`${BACKEND_URL}/vocabulary/detect`, { method: 'POST', body: formData });
       const data = await res.json();
       console.log('[MatchaLens] detect response:', data);
       const items = data.items || [];
@@ -137,7 +141,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       }
       
       if (data.image_url) {
-        setPreview(`${API_URL}${data.image_url}`);
+        setPreview(`${BACKEND_URL}${data.image_url}`);
       }
     } catch (err: any) { 
       console.error('[MatchaLens] detect error:', err);
