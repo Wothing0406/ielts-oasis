@@ -138,16 +138,14 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
       const data = await res.json();
       console.log('[MatchaLens] detect response:', data);
       const items = data.items || [];
-      console.log('[MatchaLens] detected items count:', items.length);
+      console.log('[MatchaLens] detected items count:', items.length, items);
       setResults(items);
       
       if (items.length === 0) {
         setDetectError('AI không phát hiện được vật thể nào. Hãy thử ảnh khác có nhiều vật hơn!');
       }
-      
-      if (data.image_url) {
-        setPreview(`${API_URL}${data.image_url}`);
-      }
+      // Keep original camera snapshot - don't replace with server URL
+      // so bounding box coordinates align correctly with the displayed image
     } catch (err: any) { 
       console.error('[MatchaLens] detect error:', err);
       setDetectError(`Lỗi kết nối: ${err.message}`);
