@@ -54,6 +54,37 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
     }
   };
 
+  const getObjectCoverCoords = (box: number[]) => {
+    if (!box || box.length < 4) return { left: 0, top: 0, width: 0, height: 0, centerX: 0, labelTop: 0 };
+    const [xmin, ymin, xmax, ymax] = box;
+    
+    let left = xmin;
+    let width = xmax - xmin;
+    let top = ymin;
+    let height = ymax - ymin;
+    
+    if (aspectRatio > 1) {
+      // Landscape: cropped left/right
+      left = xmin * aspectRatio - (aspectRatio - 1) / 2;
+      width = (xmax - xmin) * aspectRatio;
+    } else if (aspectRatio < 1) {
+      // Portrait: cropped top/bottom
+      top = ymin / aspectRatio - (1 / aspectRatio - 1) / 2;
+      height = (ymax - ymin) / aspectRatio;
+    }
+    
+    const centerX = left + width / 2;
+    
+    return {
+      left: left * 100,
+      top: top * 100,
+      width: width * 100,
+      height: height * 100,
+      centerX: centerX * 100,
+      labelTop: top * 100
+    };
+  };
+
   const startCamera = async (mode: 'user' | 'environment' = facingMode) => {
     setIsCameraOpen(true);
     setPreview(null);
@@ -219,10 +250,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
         </div>
       </div>
       
-      <div 
-        className="relative w-full rounded-3xl overflow-hidden border-4 border-primary/10 mb-6 shadow-inner bg-secondary/30 transition-all duration-300"
-        style={{ aspectRatio: aspectRatio }}
-      >
+      <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-4 border-primary/10 mb-6 shadow-inner bg-secondary/30">
         {isCameraOpen ? (
           <video 
             ref={videoRef} 
@@ -241,13 +269,8 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
              />
              {results.map((item, idx) => {
                if (!item.box || item.box.length < 4) return null;
-               const [xmin, ymin, xmax, ymax] = item.box;
-               const left   = xmin * 100;
-               const top    = ymin * 100;
-               const width  = (xmax - xmin) * 100;
-               const height = (ymax - ymin) * 100;
-               const centerX = ((xmin + xmax) / 2) * 100;
-               const labelTop = ymin * 100;
+               const coords = getObjectCoverCoords(item.box);
+               const { left, top, width, height, centerX, labelTop } = coords;
 
                return (
                  <React.Fragment key={`${item.word}-${idx}`}>
