@@ -17,11 +17,61 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [vocabList, setVocabList] = useState<any[]>([]);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   // States for Daily Plan interaction
   const [activeWritingPrompt, setActiveWritingPrompt] = useState("");
   const [activeReadingContext, setActiveReadingContext] = useState("");
   const [activeListeningContext, setActiveListeningContext] = useState("");
+
+  const dueCount = vocabList.length;
+
+  useEffect(() => {
+    const list = [];
+    if (dueCount > 0) {
+      list.push({
+        id: "due-vocab",
+        icon: "eco",
+        color: "text-green-500 bg-green-50",
+        title: "Nhắc nhở ôn tập",
+        content: `Cậu ơi ơi, có ${dueCount} từ vựng đang bị "bỏ rơi" rồi. Ôn tập một chút cho mau thuộc nhé! 🍵`,
+        time: "Bây giờ"
+      });
+    }
+    
+    list.push({
+      id: "like-writing",
+      icon: "favorite",
+      color: "text-red-500 bg-red-50",
+      title: "Minh Thư đã thích bài viết",
+      content: `${user ? user.username : "Cậu"} ơi, bài viết Writing Sanctuary của bạn vừa nhận được lượt thích từ Minh Thư.`,
+      time: "1 giờ trước"
+    });
+    
+    list.push({
+      id: "comment-writing",
+      icon: "chat",
+      color: "text-blue-500 bg-blue-50",
+      title: "Thành Nam đã bình luận",
+      content: 'Thành Nam: "Lập luận rất sắc bén! Cố gắng phát huy nhé!"',
+      time: "2 giờ trước"
+    });
+
+    if (vocabList.length > 0) {
+      const sampleWord = vocabList[0].word;
+      list.push({
+        id: "like-vocab",
+        icon: "bookmark",
+        color: "text-orange-500 bg-orange-50",
+        title: "An Nguyễn đã lưu từ vựng",
+        content: `An Nguyễn đã lưu lại từ vựng '${sampleWord}' mà bạn đã đóng góp.`,
+        time: "4 giờ trước"
+      });
+    }
+
+    setNotifications(list);
+  }, [vocabList, user, dueCount]);
 
   const fetchVocabs = async (tokenStr: string) => {
     try {
@@ -146,9 +196,52 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <button className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center">
-              <span className="material-symbols-rounded">notifications</span>
-            </button>
+            <div className="relative">
+              <button 
+                type="button"
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
+              >
+                <span className="material-symbols-rounded">notifications</span>
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-neutral-900 border border-primary/10 rounded-2xl shadow-xl z-50 p-4 max-h-96 overflow-y-auto">
+                  <h4 className="font-bold text-sm text-accent dark:text-white mb-3 flex items-center justify-between">
+                    <span>Thông báo mới</span>
+                    <button 
+                      type="button"
+                      onClick={() => setShowNotifications(false)}
+                      className="text-xs text-primary font-bold hover:underline"
+                    >
+                      Đóng
+                    </button>
+                  </h4>
+                  <div className="flex flex-col gap-2">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="flex gap-3 p-2 hover:bg-secondary/35 rounded-xl border border-transparent hover:border-primary/5 transition-all">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.color}`}>
+                          <span className="material-symbols-rounded text-lg">{n.icon}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] font-black text-accent dark:text-white leading-none">{n.title}</span>
+                          <span className="text-[10px] text-accent/70 dark:text-white/70 leading-relaxed mt-0.5">{n.content}</span>
+                          <span className="text-[8px] text-accent/40 dark:text-white/40 mt-1">{n.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {notifications.length === 0 && (
+                      <p className="text-center text-xs text-accent/40 py-6">Không có thông báo mới nào.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -220,7 +313,7 @@ export default function Home() {
       )}
 
       {/* Mascot (Fixed Position) */}
-      <MascotMessage dueCount={3} />
+      <MascotMessage dueCount={dueCount} />
     </div>
   );
 }

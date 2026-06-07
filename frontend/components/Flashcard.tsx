@@ -50,7 +50,9 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
                 <span className="material-symbols-rounded text-primary opacity-30 text-3xl">eco</span>
              </div>
            )}
-           <h3 className="text-4xl font-display font-black text-accent mb-1">{word}</h3>
+           <h3 className={`font-display font-black text-accent mb-1 text-center px-2 break-words ${
+             word.length > 15 ? 'text-xl md:text-2xl' : word.length > 10 ? 'text-2xl md:text-3xl' : 'text-3xl md:text-4xl'
+           }`}>{word}</h3>
            <p className="text-sm opacity-50 italic mb-4">{phonetic}</p>
            
            <button type="button" 
