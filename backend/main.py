@@ -234,20 +234,22 @@ async def detect_vocabulary(file: UploadFile = File(...)):
         detected_items = []
         try:
             ai_items = await ai_service.detect_all_objects(img)
+            print(f"AI detected {len(ai_items)} items: {[i.get('word') for i in ai_items]}")
             for item in ai_items:
                 box = item.get("box", [0.1, 0.1, 0.3, 0.3])
                 detected_items.append({
                     "word": item.get("word", "Unknown"),
                     "meaning": item.get("meaning", "Nghĩa"),
                     "phonetic": item.get("phonetic", "/.../"),
-                    "box": [box[1], box[0], box[3], box[2]],
+                    "box": box,  # Keep original box order [xmin, ymin, xmax, ymax]
                     "confidence": 0.9
                 })
         except Exception as e:
             print(f"Gemini detect failed: {e}")
 
-        if len(detected_items) < 2:
-            print("Fallback to YOLO...")
+        # Only fallback to YOLO if AI returned nothing at all
+        if len(detected_items) == 0:
+            print("AI returned nothing, falling back to YOLO...")
             results = yolo_model(img)
             for r in results:
                 for box in r.boxes:
