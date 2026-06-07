@@ -19,8 +19,8 @@ class AIService:
         )
         
         # Primary models via Gemini API
-        self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
-        self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
+        self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-1.5-flash")
+        self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-1.5-flash")
         
         # Fallback local Ollama
         self.ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
@@ -377,10 +377,10 @@ Return ONLY the JSON array. Example:
             # Get transcript
             from youtube_transcript_api import YouTubeTranscriptApi
             try:
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+                transcript_list = YouTubeTranscriptApi.fetch(video_id, languages=['en', 'en-US', 'en-GB'])
             except:
-                # Fallback to list_transcripts
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(['en', 'en-US', 'en-GB']).fetch()
+                # Fallback to list
+                transcript_list = YouTubeTranscriptApi.list(video_id).find_transcript(['en', 'en-US', 'en-GB']).fetch()
                 
             transcript_text = " ".join([t.get('text', '') if isinstance(t, dict) else getattr(t, 'text', '') for t in transcript_list])
             
