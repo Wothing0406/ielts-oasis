@@ -186,7 +186,7 @@ export default function Home() {
           </section>
           
           <section className="xl:col-span-4 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card flex flex-col items-center">
-            {/* <MatchaLens onAdd={handleAddVocab} /> */}
+            <MatchaLens onAdd={handleAddVocab} />
           </section>
 
           {/* Hàng 3: Reading và Listening Lab */}
