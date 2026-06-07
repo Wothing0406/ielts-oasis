@@ -195,44 +195,77 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
             className="w-full h-full object-cover" 
           />
         ) : preview ? (
-          <div className="relative w-full h-full bg-black flex flex-col">
-             <img src={preview} className="w-full h-full object-contain" alt="Preview" style={{maxHeight: results.length > 0 ? '65%' : '100%'}} />
-             {results.length > 0 && (
-               <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1.5 z-[999]">
-                 {results.map((item, idx) => (
+          <div className="relative w-full h-full bg-black overflow-hidden">
+             <img 
+               src={preview} 
+               className="w-full h-full object-cover" 
+               alt="Preview" 
+             />
+             {results.map((item, idx) => {
+               if (!item.box || item.box.length < 4) return null;
+               const [xmin, ymin, xmax, ymax] = item.box;
+               const left   = xmin * 100;
+               const top    = ymin * 100;
+               const width  = (xmax - xmin) * 100;
+               const height = (ymax - ymin) * 100;
+               const centerX = ((xmin + xmax) / 2) * 100;
+               const labelTop = ymin * 100;
+
+               return (
+                 <React.Fragment key={`${item.word}-${idx}`}>
+                   {/* Bounding box */}
+                   <div
+                     className="absolute border-2 border-primary rounded-lg pointer-events-none"
+                     style={{
+                       left: `${left}%`,
+                       top: `${top}%`,
+                       width: `${width}%`,
+                       height: `${height}%`,
+                       boxShadow: '0 0 0 1px rgba(0,0,0,0.3)'
+                     }}
+                   />
+                   {/* Vocab card at top of bounding box */}
                    <motion.div
-                     key={`${item.word}-${idx}`}
                      initial={{ scale: 0, opacity: 0 }}
                      animate={{ scale: 1, opacity: 1 }}
                      transition={{ delay: idx * 0.08 }}
-                     className="bg-white/95 backdrop-blur-sm px-2 py-1.5 rounded-xl shadow-lg border-2 border-primary flex items-center gap-2"
+                     className="absolute z-[999]"
+                     style={{
+                       left: `${centerX}%`,
+                       top: `${Math.max(labelTop - 1, 0)}%`,
+                       transform: 'translate(-50%, -100%)',
+                     }}
                    >
-                     <div className="flex flex-col">
-                       <span className="text-[11px] font-black text-primary uppercase leading-none">{item.word}</span>
-                       <span className="text-[9px] text-accent/70 leading-none">{item.meaning}</span>
+                     <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-xl shadow-lg border-2 border-primary flex flex-col items-center min-w-[80px]">
+                       <span className="text-[11px] font-black text-primary uppercase leading-none mb-0.5">{item.word}</span>
+                       <span className="text-[9px] text-accent/60 italic leading-none mb-0.5">{item.phonetic}</span>
+                       <span className="text-[9px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
+                       <button
+                         type="button"
+                         onClick={(e) => handleSave(item, e)}
+                         disabled={savedWords.has(item.word)}
+                         className={`w-full px-2 py-0.5 rounded-md text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+                       >
+                         <span className="material-symbols-rounded text-[10px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
+                         {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu từ'}
+                       </button>
                      </div>
-                     <button type="button"
-                       onClick={(e) => handleSave(item, e)}
-                       disabled={savedWords.has(item.word)}
-                       className={`p-1 rounded-lg transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
-                     >
-                       <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
-                     </button>
+                     {/* Arrow pointing down to object */}
+                     <div className="w-2 h-2 bg-primary rotate-45 mx-auto -mt-1 rounded-sm" />
                    </motion.div>
-                 ))}
-               </div>
-             )}
+                 </React.Fragment>
+               );
+             })}
              {detectError && (
                <div className="absolute bottom-4 left-2 right-2 bg-red-500/80 text-white text-[10px] px-4 py-2 rounded-full text-center backdrop-blur-sm">
                  {detectError}
                </div>
              )}
              {results.length === 0 && !isUploading && !detectError && (
-
-                <div className="absolute bottom-4 bg-black/50 text-white text-[10px] px-4 py-1 rounded-full backdrop-blur-sm">
-                  Chưa phát hiện được vật thể. Hãy thử góc khác!
-                </div>
-              )}
+               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-4 py-1 rounded-full backdrop-blur-sm whitespace-nowrap">
+                 Chưa phát hiện được vật thể. Hãy thử góc khác!
+               </div>
+             )}
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-accent/20 cursor-pointer" onClick={() => startCamera()}>
