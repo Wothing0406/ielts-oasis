@@ -1,10 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-  },
   async rewrites() {
     return [
       {
@@ -16,6 +11,9 @@ const nextConfig = {
         destination: 'http://backend:8000/static/:path*', // Proxy static files (audio)
       },
     ];
+  },
+  experimental: {
+    proxyTimeout: 120000,
   },
 };
 
