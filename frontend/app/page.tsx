@@ -11,7 +11,7 @@ import MatchaRadio from "@/components/MatchaRadio";
 import VocabularyQuiz from "@/components/VocabularyQuiz";
 import MatchaNotification, { ToastData, ModalData } from "@/components/MatchaNotification";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "/api";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
