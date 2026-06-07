@@ -100,6 +100,32 @@ async def startup_event():
         seed_db()
     except Exception as e:
         logger.error(f"Seeding failed: {e}")
+        
+    # Enrich any existing database words that are missing details
+    try:
+        db = SessionLocal()
+        empty_vocabs = db.query(Vocabulary).filter(
+            (Vocabulary.example == None) | (Vocabulary.example == "") | 
+            (Vocabulary.memory_hook == None) | (Vocabulary.memory_hook == "")
+        ).all()
+        if empty_vocabs:
+            logger.info(f"Found {len(empty_vocabs)} words missing details, enriching...")
+            for v in empty_vocabs:
+                try:
+                    data = await ai_service.refine_vocabulary(v.word)
+                    if data:
+                        v.example = data.get("example", v.example)
+                        v.synonyms = data.get("synonyms", v.synonyms)
+                        v.topic = data.get("topic", v.topic)
+                        v.memory_hook = data.get("memory_hook", v.memory_hook)
+                        if not v.phonetic or v.phonetic == "/.../":
+                            v.phonetic = data.get("phonetic", v.phonetic)
+                except Exception as ex:
+                    logger.error(f"Failed to enrich '{v.word}': {ex}")
+            db.commit()
+        db.close()
+    except Exception as e:
+        logger.error(f"Auto-enrich failed: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -193,8 +219,8 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         except Exception as e:
             print(f"Matcha Lens crop failed: {e}")
     
-    # Force AI Refinement if fields are missing
-    if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../":
+    # Force AI Refinement if enriched learning fields are missing
+    if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../" or not vocab.example or not vocab.memory_hook or not vocab.synonyms:
         try:
             data = await ai_service.refine_vocabulary(vocab_in.word)
             vocab.word = data.get("word", vocab.word)
