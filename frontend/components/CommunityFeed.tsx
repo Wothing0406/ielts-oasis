@@ -310,7 +310,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
       <div className={`grid gap-6 mt-2 ${
         activeTab === 'writings' 
           ? 'grid-cols-1 lg:grid-cols-2' 
-          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 items-start'
+          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start'
       }`}>
         {activeTab === 'writings' && data.writings.map(w => (
           <div key={w.id} className="bg-[#f9fdfa] border-2 border-primary/10 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
@@ -357,7 +357,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
           const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
           const isSaving = savingWords.has(v.word);
           return (
-            <div key={v.id} className="bg-[#FFFDF5] border-2 border-primary/15 p-4 rounded-3xl flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-300 w-full">
+            <div key={v.id} className="bg-[#FFFDF5] border-2 border-primary/15 p-4 rounded-3xl flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-300 w-full overflow-hidden">
               {/* Người đăng */}
               <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
                 <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-5 h-5 rounded-full border border-primary/20" />
@@ -374,8 +374,8 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
               </div>
 
               {/* Tương tác và Lưu */}
-              <div className="flex items-center justify-between gap-3 text-[10px] font-bold text-accent/60 border-t border-primary/10 pt-2.5 mt-1 w-full">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-accent/60 border-t border-primary/10 pt-2.5 mt-1 w-full">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
                     <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
                   </button>
@@ -384,14 +384,13 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   {currentUser && currentUser.user_id === v.user_id && (
                     <button 
                       type="button" 
                       onClick={() => handleDeleteVocab(v.id)} 
-                      className="flex items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors px-2 py-0.5 rounded-md border border-red-200 hover:bg-red-50"
+                      className="flex items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors px-1.5 py-0.5 rounded-md border border-red-200 hover:bg-red-50"
                     >
-                      <span className="material-symbols-rounded text-[12px]">delete</span>
                       Xóa
                     </button>
                   )}
@@ -400,7 +399,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                     type="button" 
                     onClick={() => !isSaved && !isSaving && handleSaveToVault(v)} 
                     disabled={isSaved || isSaving}
-                    className={`flex items-center gap-0.5 transition-colors px-2.5 py-1 rounded-full text-[9px] font-bold ${
+                    className={`flex items-center gap-0.5 transition-colors px-2 py-1 rounded-full text-[9px] font-bold ${
                       isSaved 
                         ? 'bg-green-100 text-green-700 cursor-default' 
                         : isSaving
@@ -418,7 +417,6 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
             </div>
           );
         })}
-      </div>
 
       {/* Lesson Modal */}
       <AnimatePresence>
