@@ -353,26 +353,30 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
           const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
           const isSaving = savingWords.has(v.word);
           return (
-            <div key={v.id} className="bg-white border-2 border-primary/10 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-4">
-              <div className="flex items-center gap-4 min-w-0">
+            <div key={v.id} className="bg-white border-2 border-primary/10 p-5 rounded-2xl flex flex-col justify-between shadow-sm gap-3">
+              <div className="flex items-start gap-4">
                 <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-10 h-10 rounded-full border-2 border-primary/20 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-display font-black text-primary text-lg leading-none break-all">{v.word}</p>
-                  <p className="text-[10px] text-accent/50 italic mt-1 truncate">{v.phonetic} - bởi {v.username}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <p className="font-display font-black text-primary text-lg break-words leading-none">{v.word}</p>
+                    <span className="text-[10px] text-accent/50 italic">{v.phonetic}</span>
+                  </div>
+                  <p className="text-[10px] text-accent/40 italic mt-0.5">bởi {v.username}</p>
+                  <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full w-fit mt-2 break-words">{v.meaning}</p>
                 </div>
               </div>
-              <div className="text-left sm:text-right flex flex-col sm:items-end gap-2 w-full sm:w-auto">
-                <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full w-fit sm:max-w-xs break-words">{v.meaning}</p>
-                <div className="flex items-center justify-between sm:justify-end gap-3 text-[10px] font-bold text-accent/60 w-full sm:w-auto">
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
-                      <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
-                    </button>
-                    <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                      <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
-                    </button>
-                  </div>
-                  
+
+              <div className="flex items-center justify-between gap-3 text-[10px] font-bold text-accent/60 border-t border-black/5 pt-2.5 mt-1 w-full">
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                    <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
+                  </button>
+                  <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                    <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-2">
                   {currentUser && currentUser.user_id === v.user_id && (
                     <button 
                       type="button" 
@@ -388,7 +392,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                     type="button" 
                     onClick={() => !isSaved && !isSaving && handleSaveToVault(v)} 
                     disabled={isSaved || isSaving}
-                    className={`flex items-center gap-1 transition-colors px-2 py-1 rounded-md ml-2 ${
+                    className={`flex items-center gap-1 transition-colors px-2 py-1 rounded-md ${
                       isSaved 
                         ? 'bg-green-100 text-green-700 cursor-default font-semibold' 
                         : isSaving
