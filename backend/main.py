@@ -91,17 +91,9 @@ from fastapi import Depends
 app = FastAPI(title="IELTS Oasis API")
 app.include_router(auth_router)
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("FastAPI Server Starting...")
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database initialized.")
-    try:
-        seed_db()
-    except Exception as e:
-        logger.error(f"Seeding failed: {e}")
-        
-    # Enrich any existing database words that are missing details
+async def backfill_vocabularies():
+    # Wait a bit for the server to be fully up
+    await asyncio.sleep(3)
     try:
         db = SessionLocal()
         empty_vocabs = db.query(Vocabulary).filter(
@@ -109,7 +101,7 @@ async def startup_event():
             (Vocabulary.memory_hook == None) | (Vocabulary.memory_hook == "")
         ).all()
         if empty_vocabs:
-            logger.info(f"Found {len(empty_vocabs)} words missing details, enriching...")
+            logger.info(f"Found {len(empty_vocabs)} words missing details, enriching in background...")
             for v in empty_vocabs:
                 try:
                     data = await ai_service.refine_vocabulary(v.word)
@@ -123,9 +115,23 @@ async def startup_event():
                 except Exception as ex:
                     logger.error(f"Failed to enrich '{v.word}': {ex}")
             db.commit()
+            logger.info("Background vocabulary enrichment completed.")
         db.close()
     except Exception as e:
         logger.error(f"Auto-enrich failed: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("FastAPI Server Starting...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database initialized.")
+    try:
+        seed_db()
+    except Exception as e:
+        logger.error(f"Seeding failed: {e}")
+        
+    # Start background enrichment
+    asyncio.create_task(backfill_vocabularies())
 
 app.add_middleware(
     CORSMiddleware,
