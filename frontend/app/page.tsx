@@ -25,53 +25,43 @@ export default function Home() {
   const [activeReadingContext, setActiveReadingContext] = useState("");
   const [activeListeningContext, setActiveListeningContext] = useState("");
 
-  const dueCount = vocabList.length;
+  const [dueCountFromApi, setDueCountFromApi] = useState(0);
+
+  const dueCount = dueCountFromApi || vocabList.length;
+
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem("oasis_token");
+    const headers: any = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      const res = await fetch(`${API_URL}/notifications`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setDueCountFromApi(data.due_count || 0);
+      }
+    } catch (e) {
+      console.error("Fetch notifications failed:", e);
+    }
+  };
 
   useEffect(() => {
-    const list = [];
-    if (dueCount > 0) {
-      list.push({
-        id: "due-vocab",
-        icon: "eco",
-        color: "text-green-500 bg-green-50",
-        title: "Nhắc nhở ôn tập",
-        content: `Cậu ơi ơi, có ${dueCount} từ vựng đang bị "bỏ rơi" rồi. Ôn tập một chút cho mau thuộc nhé! 🍵`,
-        time: "Bây giờ"
-      });
-    }
-    
-    list.push({
-      id: "like-writing",
-      icon: "favorite",
-      color: "text-red-500 bg-red-50",
-      title: "Minh Thư đã thích bài viết",
-      content: `${user ? user.username : "Cậu"} ơi, bài viết Writing Sanctuary của bạn vừa nhận được lượt thích từ Minh Thư.`,
-      time: "1 giờ trước"
-    });
-    
-    list.push({
-      id: "comment-writing",
-      icon: "chat",
-      color: "text-blue-500 bg-blue-50",
-      title: "Thành Nam đã bình luận",
-      content: 'Thành Nam: "Lập luận rất sắc bén! Cố gắng phát huy nhé!"',
-      time: "2 giờ trước"
-    });
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 20000);
+    return () => clearInterval(interval);
+  }, [user]);
 
-    if (vocabList.length > 0) {
-      const sampleWord = vocabList[0].word;
-      list.push({
-        id: "like-vocab",
-        icon: "bookmark",
-        color: "text-orange-500 bg-orange-50",
-        title: "An Nguyễn đã lưu từ vựng",
-        content: `An Nguyễn đã lưu lại từ vựng '${sampleWord}' mà bạn đã đóng góp.`,
-        time: "4 giờ trước"
-      });
-    }
-
-    setNotifications(list);
-  }, [vocabList, user, dueCount]);
+  const displayNotifications = [...notifications];
+  if (dueCount > 0 && !displayNotifications.some(n => n.id === 'due-vocab')) {
+    displayNotifications.unshift({
+      id: "due-vocab",
+      icon: "eco",
+      color: "text-green-500 bg-green-50",
+      title: "Nhắc nhở ôn tập",
+      content: `Cậu ơi ơi, có ${dueCount} từ vựng đang bị "bỏ rơi" rồi. Ôn tập một chút cho mau thuộc nhé! 🍵`,
+      time: "Bây giờ"
+    });
+  }
 
   const fetchVocabs = async (tokenStr: string) => {
     try {
@@ -203,16 +193,19 @@ export default function Home() {
                 className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
               >
                 <span className="material-symbols-rounded">notifications</span>
-                {notifications.length > 0 && (
+                {displayNotifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
-                    {notifications.length}
+                    {displayNotifications.length}
                   </span>
                 )}
               </button>
               
               {showNotifications && (
-                <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-neutral-900 border border-primary/10 rounded-2xl shadow-xl z-50 p-4 max-h-96 overflow-y-auto">
-                  <h4 className="font-bold text-sm text-accent dark:text-white mb-3 flex items-center justify-between">
+                <div 
+                  className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 max-h-96 overflow-y-auto"
+                  style={{ opacity: 1, zIndex: 9999, backgroundColor: '#ffffff' }}
+                >
+                  <h4 className="font-bold text-sm text-accent mb-3 flex items-center justify-between">
                     <span>Thông báo mới</span>
                     <button 
                       type="button"
@@ -223,19 +216,19 @@ export default function Home() {
                     </button>
                   </h4>
                   <div className="flex flex-col gap-2">
-                    {notifications.map((n) => (
-                      <div key={n.id} className="flex gap-3 p-2 hover:bg-secondary/35 rounded-xl border border-transparent hover:border-primary/5 transition-all">
+                    {displayNotifications.map((n) => (
+                      <div key={n.id} className="flex gap-3 p-2 hover:bg-secondary/35 rounded-xl border border-transparent hover:border-primary/5 transition-all text-left">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.color}`}>
                           <span className="material-symbols-rounded text-lg">{n.icon}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[11px] font-black text-accent dark:text-white leading-none">{n.title}</span>
-                          <span className="text-[10px] text-accent/70 dark:text-white/70 leading-relaxed mt-0.5">{n.content}</span>
-                          <span className="text-[8px] text-accent/40 dark:text-white/40 mt-1">{n.time}</span>
+                          <span className="text-[11px] font-black text-accent leading-none">{n.title}</span>
+                          <span className="text-[10px] text-accent/70 leading-relaxed mt-0.5">{n.content}</span>
+                          <span className="text-[8px] text-accent/40 mt-1">{n.time}</span>
                         </div>
                       </div>
                     ))}
-                    {notifications.length === 0 && (
+                    {displayNotifications.length === 0 && (
                       <p className="text-center text-xs text-accent/40 py-6">Không có thông báo mới nào.</p>
                     )}
                   </div>

@@ -712,6 +712,140 @@ class SavePlanIn(BaseModel):
     topic: str = ""
     plan_data: dict
 
+@app.get("/notifications")
+async def get_user_notifications(current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        return {"notifications": [], "due_count": 0}
+    
+    db = SessionLocal()
+    user_id = current_user["user_id"]
+    
+    # Get user's vocabulary IDs
+    user_vocabs = db.query(Vocabulary).filter(Vocabulary.user_id == user_id).all()
+    vocab_ids = [v.id for v in user_vocabs]
+    vocab_map = {v.id: v.word for v in user_vocabs}
+    
+    # Get user's writing IDs
+    user_writings = db.query(WritingLog).filter(WritingLog.user_id == user_id).all()
+    writing_ids = [w.id for w in user_writings]
+    
+    notifications = []
+    
+    # Helper to calculate friendly time
+    def get_time_str(dt):
+        now = datetime.utcnow()
+        diff = now - dt
+        if diff.days > 0:
+            return f"{diff.days} ngày trước"
+        seconds = diff.seconds
+        hours = seconds // 3600
+        if hours > 0:
+            return f"{hours} giờ trước"
+        minutes = seconds // 60
+        if minutes > 0:
+            return f"{minutes} phút trước"
+        return "Vừa xong"
+
+    # 1. Fetch likes on user's vocabulary
+    if vocab_ids:
+        vocab_likes = db.query(Like).filter(
+            Like.post_type == 'vocabulary',
+            Like.post_id.in_(vocab_ids),
+            Like.user_id != user_id
+        ).order_by(desc(Like.created_at)).limit(10).all()
+        
+        for l in vocab_likes:
+            liker = db.query(User).filter(User.id == l.user_id).first()
+            username = liker.username if liker else "Ai đó"
+            word = vocab_map.get(l.post_id, "từ vựng")
+            notifications.append({
+                "id": f"like-vocab-{l.id}",
+                "icon": "favorite",
+                "color": "text-red-500 bg-red-50",
+                "title": f"{username} đã thích từ vựng",
+                "content": f"{username} đã thích từ vựng '{word}' của bạn.",
+                "time": get_time_str(l.created_at),
+                "created_at": l.created_at
+            })
+            
+    # 2. Fetch likes on user's writings
+    if writing_ids:
+        writing_likes = db.query(Like).filter(
+            Like.post_type == 'writing',
+            Like.post_id.in_(writing_ids),
+            Like.user_id != user_id
+        ).order_by(desc(Like.created_at)).limit(10).all()
+        
+        for l in writing_likes:
+            liker = db.query(User).filter(User.id == l.user_id).first()
+            username = liker.username if liker else "Ai đó"
+            notifications.append({
+                "id": f"like-writing-{l.id}",
+                "icon": "favorite",
+                "color": "text-red-500 bg-red-50",
+                "title": f"{username} đã thích bài viết",
+                "content": f"{username} đã thích bài viết Writing của bạn.",
+                "time": get_time_str(l.created_at),
+                "created_at": l.created_at
+            })
+
+    # 3. Fetch comments on user's vocabulary
+    if vocab_ids:
+        vocab_comments = db.query(Comment).filter(
+            Comment.post_type == 'vocabulary',
+            Comment.post_id.in_(vocab_ids),
+            Comment.user_id != user_id
+        ).order_by(desc(Comment.created_at)).limit(10).all()
+        
+        for c in vocab_comments:
+            commenter = db.query(User).filter(User.id == c.user_id).first()
+            username = commenter.username if commenter else "Ai đó"
+            word = vocab_map.get(c.post_id, "từ vựng")
+            notifications.append({
+                "id": f"comment-vocab-{c.id}",
+                "icon": "chat",
+                "color": "text-blue-500 bg-blue-50",
+                "title": f"{username} đã bình luận từ vựng",
+                "content": f'{username}: "{c.content}" (trên từ vựng {word})',
+                "time": get_time_str(c.created_at),
+                "created_at": c.created_at
+            })
+
+    # 4. Fetch comments on user's writings
+    if writing_ids:
+        writing_comments = db.query(Comment).filter(
+            Comment.post_type == 'writing',
+            Comment.post_id.in_(writing_ids),
+            Comment.user_id != user_id
+        ).order_by(desc(Comment.created_at)).limit(10).all()
+        
+        for c in writing_comments:
+            commenter = db.query(User).filter(User.id == c.user_id).first()
+            username = commenter.username if commenter else "Ai đó"
+            notifications.append({
+                "id": f"comment-writing-{c.id}",
+                "icon": "chat",
+                "color": "text-blue-500 bg-blue-50",
+                "title": f"{username} đã bình luận bài viết",
+                "content": f'{username}: "{c.content}"',
+                "time": get_time_str(c.created_at),
+                "created_at": c.created_at
+            })
+
+    # Sort notifications by created_at descending
+    notifications.sort(key=lambda x: x["created_at"], reverse=True)
+    
+    # Remove datetime objects so it is JSON serializable
+    for n in notifications:
+        del n["created_at"]
+        
+    # Calculate due count (total user vocab count)
+    due_count = db.query(Vocabulary).filter(Vocabulary.user_id == user_id).count()
+    
+    db.close()
+    
+    return {"notifications": notifications, "due_count": due_count}
+
 @app.post("/study-plan/save")
 async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user)):
     if not current_user:
