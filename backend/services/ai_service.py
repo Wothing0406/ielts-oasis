@@ -42,26 +42,28 @@ class AIService:
             print(f"Ollama request failed: {e}")
         return None
 
-    def _clean_json(self, text: str):
+    def _clean_json(self, text: str, expect_list=False):
         try:
             text = text.strip()
             if "```json" in text: text = text.split("```json")[1].split("```")[0]
             elif "```" in text: text = text.split("```")[1].split("```")[0]
             return text.strip()
         except:
-            return "{}"
+            return "[]" if expect_list else "{}"
 
     async def detect_all_objects(self, image: Image.Image):
         prompt = """
-        Identify 5 main objects in this image for an IELTS learner. 
-        Return ONLY a JSON array of objects with these exact fields:
-        - word: English word
-        - meaning: Vietnamese translation
-        - phonetic: IPA pronunciation
-        - box: [xmin, ymin, xmax, ymax] (normalized coordinates from 0.0 to 1.0)
-        
-        Example: [{"word": "Apple", "meaning": "Quả táo", "phonetic": "/ˈæp.əl/", "box": [0.1, 0.2, 0.3, 0.4]}]
-        """
+You are an IELTS vocabulary assistant. Look at this image carefully and identify ALL visible distinct objects.
+Return ONLY a JSON array (no markdown, no explanation) of 5 to 8 objects with these exact fields:
+- word: English word (noun, e.g. "Chair", "Bag", "Phone")
+- meaning: Vietnamese translation
+- phonetic: IPA pronunciation (e.g. "/tʃeər/")
+- box: [xmin, ymin, xmax, ymax] as float from 0.0 to 1.0 indicating where the object is in the image
+
+Return ONLY the JSON array. Example:
+[{"word": "Chair", "meaning": "Cái ghế", "phonetic": "/tʃeər/", "box": [0.1, 0.2, 0.4, 0.8]},
+ {"word": "Table", "meaning": "Cái bàn", "phonetic": "/ˈteɪ.bəl/", "box": [0.0, 0.5, 0.9, 1.0]}]
+"""
         
         buffered = BytesIO()
         image.save(buffered, format="JPEG")
@@ -84,13 +86,15 @@ class AIService:
                 # We will parse it manually
             )
             content = response.choices[0].message.content
-            cleaned = self._clean_json(content)
+            cleaned = self._clean_json(content, expect_list=True)
             data = json.loads(cleaned)
             # If it's returning a dict wrapping the array, extract it
             if isinstance(data, dict):
                 for k, v in data.items():
                     if isinstance(v, list): return v
-            return data
+            if isinstance(data, list):
+                return data
+            return []
         except Exception as e:
             print(f"9router detect_all_objects failed: {e}. Falling back to Ollama.")
 
@@ -99,7 +103,7 @@ class AIService:
             res = await self._call_ollama(prompt, model=self.fallback_vision_model, images=[img_str])
             if res:
                 try:
-                    items = json.loads(self._clean_json(res))
+                    items = json.loads(self._clean_json(res, expect_list=True))
                     for i, item in enumerate(items):
                         if "box" not in item: item["box"] = [0.2 + i*0.1, 0.2 + i*0.1, 0.4 + i*0.1, 0.4 + i*0.1]
                     return items

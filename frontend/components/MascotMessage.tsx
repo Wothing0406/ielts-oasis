@@ -20,7 +20,7 @@ const MascotMessage = ({ dueCount }: { dueCount: number }) => {
           initial={{ opacity: 0, y: 20, scale: 0.8 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
-          className="fixed bottom-10 right-10 z-50 flex flex-col items-end gap-2"
+          className="fixed bottom-10 left-10 z-50 flex flex-col items-start gap-2"
         >
           <div className="bg-white p-4 rounded-2xl shadow-2xl border-2 border-primary relative max-w-xs">
             <p className="text-accent text-sm font-bold leading-relaxed">
