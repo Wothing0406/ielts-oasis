@@ -417,6 +417,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
             </div>
           );
         })}
+      </div>
 
       {/* Lesson Modal */}
       <AnimatePresence>
