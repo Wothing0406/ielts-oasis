@@ -307,7 +307,11 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+      <div className={`grid gap-6 mt-2 ${
+        activeTab === 'writings' 
+          ? 'grid-cols-1 lg:grid-cols-2' 
+          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 items-start'
+      }`}>
         {activeTab === 'writings' && data.writings.map(w => (
           <div key={w.id} className="bg-[#f9fdfa] border-2 border-primary/10 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
             <div className="flex items-center gap-3 border-b border-black/5 pb-3">
@@ -353,21 +357,25 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
           const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
           const isSaving = savingWords.has(v.word);
           return (
-            <div key={v.id} className="bg-white border-2 border-primary/10 p-5 rounded-2xl flex flex-col justify-between shadow-sm gap-3">
-              <div className="flex items-start gap-4">
-                <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-10 h-10 rounded-full border-2 border-primary/20 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <p className="font-display font-black text-primary text-lg break-words leading-none">{v.word}</p>
-                    <span className="text-[10px] text-accent/50 italic">{v.phonetic}</span>
-                  </div>
-                  <p className="text-[10px] text-accent/40 italic mt-0.5">bởi {v.username}</p>
-                  <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full w-fit mt-2 break-words">{v.meaning}</p>
-                </div>
+            <div key={v.id} className="bg-[#FFFDF5] border-2 border-primary/15 p-4 rounded-3xl flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-300 w-full">
+              {/* Người đăng */}
+              <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
+                <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-5 h-5 rounded-full border border-primary/20" />
+                <span className="text-[9px] font-black text-accent/60 truncate">bởi {v.username}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-[10px] font-bold text-accent/60 border-t border-black/5 pt-2.5 mt-1 w-full">
-                <div className="flex items-center gap-3">
+              {/* Nội dung từ vựng tập trung (Centered Focus) */}
+              <div className="flex flex-col items-center text-center my-1 gap-1">
+                <h4 className="font-display font-black text-primary text-lg tracking-tight break-words leading-none">{v.word}</h4>
+                <p className="text-[10px] text-accent/40 italic font-mono mt-1">{v.phonetic}</p>
+                <span className="text-[11px] font-bold text-accent bg-secondary/80 px-3 py-1 rounded-full border border-primary/10 mt-2 break-words shadow-sm">
+                  {v.meaning}
+                </span>
+              </div>
+
+              {/* Tương tác và Lưu */}
+              <div className="flex items-center justify-between gap-3 text-[10px] font-bold text-accent/60 border-t border-primary/10 pt-2.5 mt-1 w-full">
+                <div className="flex items-center gap-2.5">
                   <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
                     <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
                   </button>
@@ -376,14 +384,14 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {currentUser && currentUser.user_id === v.user_id && (
                     <button 
                       type="button" 
                       onClick={() => handleDeleteVocab(v.id)} 
-                      className="flex items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors px-2 py-1 rounded-md border border-red-200 hover:bg-red-50"
+                      className="flex items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors px-2 py-0.5 rounded-md border border-red-200 hover:bg-red-50"
                     >
-                      <span className="material-symbols-rounded text-[14px]">delete</span>
+                      <span className="material-symbols-rounded text-[12px]">delete</span>
                       Xóa
                     </button>
                   )}
@@ -392,15 +400,15 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                     type="button" 
                     onClick={() => !isSaved && !isSaving && handleSaveToVault(v)} 
                     disabled={isSaved || isSaving}
-                    className={`flex items-center gap-1 transition-colors px-2 py-1 rounded-md ${
+                    className={`flex items-center gap-0.5 transition-colors px-2.5 py-1 rounded-full text-[9px] font-bold ${
                       isSaved 
-                        ? 'bg-green-100 text-green-700 cursor-default font-semibold' 
+                        ? 'bg-green-100 text-green-700 cursor-default' 
                         : isSaving
                         ? 'bg-primary/5 text-primary/40 cursor-wait animate-pulse'
-                        : 'bg-primary/10 text-primary hover:text-primary/70'
+                        : 'bg-primary text-white hover:bg-primary/80 shadow-sm'
                     }`}
                   >
-                    <span className="material-symbols-rounded text-[14px]">
+                    <span className="material-symbols-rounded text-[12px]">
                       {isSaved ? 'check_circle' : isSaving ? 'sync' : 'bookmark_add'}
                     </span> 
                     {isSaved ? 'Đã lưu' : isSaving ? 'Đang lưu...' : 'Lưu'}
