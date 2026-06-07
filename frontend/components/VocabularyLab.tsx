@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Flashcard from './Flashcard';
 
@@ -46,6 +46,37 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(true);
+
+  // Auto-focus on the newly added word when vocabulary list grows
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [vocabList.length]);
+
+  // Swipe gesture hooks
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      next();
+    } else if (isRightSwipe) {
+      prev();
+    }
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -117,20 +148,20 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             >
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none" 
+                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
                     placeholder="Từ tiếng Anh"
                     value={formData.word}
                     onChange={(e) => setFormData({...formData, word: e.target.value})}
                   />
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none" 
+                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
                     placeholder="Phiên âm /.../"
                     value={formData.phonetic}
                     onChange={(e) => setFormData({...formData, phonetic: e.target.value})}
                   />
                </div>
                <input 
-                 className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none" 
+                 className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
                  placeholder="Nghĩa tiếng Việt"
                  value={formData.meaning}
                  onChange={(e) => setFormData({...formData, meaning: e.target.value})}
@@ -153,7 +184,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               className="flex items-center mb-6 relative"
             >
               <input 
-                className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none" 
+                className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60" 
                 placeholder="Gõ từ để AI tự điền..."
                 type="text"
                 value={formData.word}
@@ -175,7 +206,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           )}
         </AnimatePresence>
         
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mt-4 mb-6">
           {['Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
             <button type="button"
               key={topic}
@@ -187,27 +218,49 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           ))}
         </div>
         
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-4 w-full justify-center">
-            <button type="button" onClick={prev} className="p-2 hover:bg-primary/10 rounded-full text-accent">
-              <span className="material-symbols-rounded text-3xl">chevron_left</span>
+        <div className="flex flex-col items-center w-full mt-8">
+          <div className="w-full max-w-[290px] xs:max-w-[320px] sm:max-w-sm flex justify-center">
+            <div 
+              className="w-full flex justify-center"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
+              <Flashcard 
+                word={current.word}
+                phonetic={current.phonetic}
+                meaning={current.meaning}
+                audioPath={current.audio_path}
+                synonyms={current.synonyms}
+                memoryHook={current.memory_hook}
+                imageUrl={current.image_url}
+                topic={current.topic}
+                example={current.example}
+                onAudioClick={() => playAudio(current.word)}
+              />
+            </div>
+          </div>
+
+          {/* Controller Row below the card */}
+          <div className="flex items-center gap-6 mt-4 z-20">
+            <button 
+              type="button" 
+              onClick={prev} 
+              className="p-2.5 bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all"
+              aria-label="Previous card"
+            >
+              <span className="material-symbols-rounded text-xl">chevron_left</span>
             </button>
-            
-            <Flashcard 
-              word={current.word}
-              phonetic={current.phonetic}
-              meaning={current.meaning}
-              audioPath={current.audio_path}
-              synonyms={current.synonyms}
-              memoryHook={current.memory_hook}
-              imageUrl={current.image_url}
-              topic={current.topic}
-              example={current.example}
-              onAudioClick={() => playAudio(current.word)}
-            />
-            
-            <button type="button" onClick={next} className="p-2 hover:bg-primary/10 rounded-full text-accent">
-              <span className="material-symbols-rounded text-3xl">chevron_right</span>
+            <span className="text-xs font-bold text-accent/50">
+              {vocabList.length > 0 ? `${currentIndex + 1} / ${vocabList.length}` : '0 / 0'}
+            </span>
+            <button 
+              type="button" 
+              onClick={next} 
+              className="p-2.5 bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all"
+              aria-label="Next card"
+            >
+              <span className="material-symbols-rounded text-xl">chevron_right</span>
             </button>
           </div>
           

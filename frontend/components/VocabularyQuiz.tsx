@@ -129,7 +129,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
           <button type="button"
             onClick={() => {
               if (vocabList.length === 0) {
-                alert("Thư viện từ vựng đang trống! Hãy quét hoặc thêm từ vựng trước nhé.");
+                (window as any).showAlert("Oops! Thư viện từ vựng đang trống rỗng rồi. Quét hoặc thêm vài từ vựng rồi quay lại ôn tập nhé! 🍵", "Thiếu nguyên liệu!", "warning");
                 return;
               }
               setQuizType('vocab');

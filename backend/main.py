@@ -180,12 +180,12 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
     db = SessionLocal()
     user_id = user["user_id"] if user else None
     existing = db.query(Vocabulary).filter(
-        Vocabulary.word == vocab_in.word,
+        func.lower(Vocabulary.word) == func.lower(vocab_in.word),
         Vocabulary.user_id == user_id
     ).first()
     if existing:
         db.close()
-        return existing
+        raise HTTPException(status_code=409, detail=f"Từ vựng '{vocab_in.word}' đã có trong kho của bạn rồi!")
     
     vocab = Vocabulary(
         user_id=user_id,
@@ -362,10 +362,17 @@ async def get_encouragement():
 @app.delete("/vocabulary/{id}")
 async def delete_vocab(id: int, user: dict = Depends(get_current_user)):
     db = SessionLocal()
-    query = db.query(Vocabulary).filter(Vocabulary.id == id)
-    if user:
-        query = query.filter(Vocabulary.user_id == user["user_id"])
-    query.delete()
+    user_id = user["user_id"] if user else None
+    vocab = db.query(Vocabulary).filter(Vocabulary.id == id).first()
+    if not vocab:
+        db.close()
+        raise HTTPException(status_code=404, detail="Vocabulary not found")
+    
+    if vocab.user_id != user_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="Không có quyền xóa từ vựng này")
+        
+    db.delete(vocab)
     db.commit()
     db.close()
     return {"ok": True}
@@ -475,23 +482,35 @@ from sqlalchemy import func
 from typing import Optional
 
 @app.get("/community/feed")
-async def get_community_feed(sort_by: Optional[str] = "new"):
+async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, user: Optional[dict] = Depends(get_current_user)):
     db = SessionLocal()
-    
-    # Calculate a simple "hotness" score (likes * 2 + comments) if needed, but for simplicity we can just sort by likes.
+    user_id = user["user_id"] if user else None
     
     # Get vocabularies
     vocab_query = db.query(Vocabulary)
+    if filter_mine:
+        if not user_id:
+            db.close()
+            return {"vocabularies": [], "writings": []}
+        vocab_query = vocab_query.filter(Vocabulary.user_id == user_id)
+    
     if sort_by == "top":
         # For vocab, 'top' might just be popularity
         vocab_query = vocab_query.order_by(desc(Vocabulary.popularity))
     else:
         vocab_query = vocab_query.order_by(desc(Vocabulary.id))
     
-    vocabs = vocab_query.limit(20).all()
+    # Fetch a larger batch to filter duplicates by word name
+    vocabs = vocab_query.limit(100).all()
     vocab_list = []
+    seen_words = set()
     for v in vocabs:
-        user = db.query(User).filter(User.id == v.user_id).first() if v.user_id else None
+        word_lower = v.word.strip().lower()
+        if word_lower in seen_words:
+            continue
+        seen_words.add(word_lower)
+        
+        user_obj = db.query(User).filter(User.id == v.user_id).first() if v.user_id else None
         likes_count = db.query(Like).filter(Like.post_type == 'vocabulary', Like.post_id == v.id).count()
         comments_count = db.query(Comment).filter(Comment.post_type == 'vocabulary', Comment.post_id == v.id).count()
         vocab_list.append({
@@ -499,15 +518,28 @@ async def get_community_feed(sort_by: Optional[str] = "new"):
             "word": v.word,
             "meaning": v.meaning,
             "phonetic": v.phonetic,
-            "username": user.username if user else "Anonymous",
-            "avatar_url": user.avatar_url if user else None,
+            "user_id": v.user_id,
+            "username": user_obj.username if user_obj else "Anonymous",
+            "avatar_url": user_obj.avatar_url if user_obj else None,
             "image_url": v.image_url,
             "likes": likes_count,
-            "comments": comments_count
+            "comments": comments_count,
+            # Extra fields to skip AI refinement during save
+            "example": v.example,
+            "synonyms": v.synonyms,
+            "memory_hook": v.memory_hook
         })
+        if len(vocab_list) >= 20:
+            break
         
     # Get writings
     writing_query = db.query(WritingLog)
+    if filter_mine:
+        if not user_id:
+            db.close()
+            return {"vocabularies": [], "writings": []}
+        writing_query = writing_query.filter(WritingLog.user_id == user_id)
+
     if sort_by == "top":
         # Sort by band score (highest first). Note: band_score is string so "9.0" > "8.0"
         writing_query = writing_query.order_by(desc(WritingLog.band_score))
@@ -517,7 +549,7 @@ async def get_community_feed(sort_by: Optional[str] = "new"):
     writings = writing_query.limit(20).all()
     writing_list = []
     for w in writings:
-        user = db.query(User).filter(User.id == w.user_id).first() if w.user_id else None
+        user_obj = db.query(User).filter(User.id == w.user_id).first() if w.user_id else None
         likes_count = db.query(Like).filter(Like.post_type == 'writing', Like.post_id == w.id).count()
         comments_count = db.query(Comment).filter(Comment.post_type == 'writing', Comment.post_id == w.id).count()
         
@@ -529,8 +561,9 @@ async def get_community_feed(sort_by: Optional[str] = "new"):
             "content": w.content[:200] + "..." if len(w.content) > 200 else w.content,
             "full_content": w.content,
             "band_score": w.band_score,
-            "username": user.username if user else "Anonymous",
-            "avatar_url": user.avatar_url if user else None,
+            "user_id": w.user_id,
+            "username": user_obj.username if user_obj else "Anonymous",
+            "avatar_url": user_obj.avatar_url if user_obj else None,
             "likes": likes_count,
             "comments": comments_count,
             "hotness": hotness
@@ -566,6 +599,29 @@ async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_curren
     db.refresh(log)
     db.close()
     return {"message": "Đã chia sẻ bài viết", "id": log.id}
+
+@app.delete("/community/writing/{id}")
+async def delete_writing(id: int, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập")
+    db = SessionLocal()
+    user_id = user["user_id"]
+    writing = db.query(WritingLog).filter(WritingLog.id == id).first()
+    if not writing:
+        db.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết")
+    if writing.user_id != user_id:
+        db.close()
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xóa bài viết này")
+    
+    # Also delete associated likes and comments to keep database clean
+    db.query(Like).filter(Like.post_type == 'writing', Like.post_id == id).delete()
+    db.query(Comment).filter(Comment.post_type == 'writing', Comment.post_id == id).delete()
+    
+    db.delete(writing)
+    db.commit()
+    db.close()
+    return {"ok": True}
 
 @app.post("/community/convert/{writing_id}")
 async def convert_writing_to_lesson(writing_id: int):

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
-export default function CommunityFeed() {
+export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVocab?: (vocab: any) => Promise<any>, vocabList?: any[] }) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies'>('writings');
@@ -16,13 +16,30 @@ export default function CommunityFeed() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
-  const [activeComments, setActiveComments] = useState<{type: string, id: int} | null>(null);
+  const [activeComments, setActiveComments] = useState<{type: string, id: number} | null>(null);
   const [commentsList, setCommentsList] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [savingWords, setSavingWords] = useState<Set<string>>(new Set());
+
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("oasis_user");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {}
+    }
+  }, []);
 
   const fetchFeed = () => {
     setLoading(true);
-    fetch(`${API_URL}/community/feed?sort_by=${sortBy}`)
+    const token = localStorage.getItem("oasis_token");
+    const headers: any = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}`, { headers })
       .then(res => res.json())
       .then(resData => {
         setData(resData);
@@ -36,11 +53,11 @@ export default function CommunityFeed() {
 
   useEffect(() => {
     fetchFeed();
-  }, [sortBy]);
+  }, [sortBy, showOnlyMine]);
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return alert("Bạn cần đăng nhập để thả tim!");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để thả tim! 🍵", "info");
     try {
       const res = await fetch(`${API_URL}/community/like`, {
         method: "POST",
@@ -67,33 +84,126 @@ export default function CommunityFeed() {
 
   const handleSaveToVault = async (vocab: any) => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return alert("Bạn cần đăng nhập để lưu từ vựng!");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+    if (savingWords.has(vocab.word)) return;
+
+    // Check if duplicate on client side first
+    const isDuplicate = vocabList.some(v => v.word.toLowerCase() === vocab.word.toLowerCase());
+    if (isDuplicate) {
+      return (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+    }
+
+    // Set lock
+    setSavingWords(prev => {
+      const next = new Set(prev);
+      next.add(vocab.word);
+      return next;
+    });
+
     try {
-      const res = await fetch(`${API_URL}/vocabulary`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({
+      if (onAddVocab) {
+        const result = await onAddVocab({
           word: vocab.word,
           meaning: vocab.meaning,
           phonetic: vocab.phonetic,
-          image_url: vocab.image_url
-        })
-      });
-      if (res.ok) {
-        alert(`Đã lưu "${vocab.word}" vào kho từ vựng của bạn!`);
+          image_url: vocab.image_url,
+          example: vocab.example,
+          synonyms: vocab.synonyms,
+          memory_hook: vocab.memory_hook
+        });
+        if (result && result.success) {
+          // Successfully added, let it update reactively
+        } else if (result && result.status === "duplicate") {
+          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+        } else {
+          (window as any).showToast("Có lỗi xảy ra khi lưu từ vựng. 🍵", "error");
+        }
       } else {
-        alert("Có lỗi xảy ra khi lưu từ vựng.");
+        const res = await fetch(`${API_URL}/vocabulary`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({
+            word: vocab.word,
+            meaning: vocab.meaning,
+            phonetic: vocab.phonetic,
+            image_url: vocab.image_url,
+            example: vocab.example,
+            synonyms: vocab.synonyms,
+            memory_hook: vocab.memory_hook
+          })
+        });
+        if (res.ok) {
+          // Successfully added, let it update reactively
+        } else if (res.status === 409) {
+          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+        } else {
+          (window as any).showToast("Có lỗi xảy ra khi lưu từ vựng. 🍵", "error");
+        }
       }
     } catch (e) {
       console.error(e);
-      alert("Lỗi kết nối.");
+      (window as any).showToast("Lỗi kết nối! 🍵", "error");
+    } finally {
+      // Remove lock
+      setSavingWords(prev => {
+        const next = new Set(prev);
+        next.delete(vocab.word);
+        return next;
+      });
     }
+  };
+
+  const handleDeleteWriting = async (writingId: number) => {
+    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài viết này khỏi Oasis Community? 🍵", async () => {
+      const token = localStorage.getItem("oasis_token");
+      if (!token) return (window as any).showToast("Bạn cần đăng nhập! 🍵", "info");
+      try {
+        const res = await fetch(`${API_URL}/community/writing/${writingId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          (window as any).showToast("Đã xóa bài viết thành công! 🍵", "success");
+          fetchFeed();
+        } else {
+          const errData = await res.json();
+          (window as any).showToast("Lỗi: " + (errData.detail || "Không thể xóa bài viết"), "error");
+        }
+      } catch (e) {
+        console.error(e);
+        (window as any).showToast("Lỗi kết nối.", "error");
+      }
+    }, "Xác nhận xóa");
+  };
+
+  const handleDeleteVocab = async (vocabId: number) => {
+    (window as any).showConfirm("Bạn có chắc chắn muốn xóa từ vựng này khỏi Oasis Community? 🍵", async () => {
+      const token = localStorage.getItem("oasis_token");
+      if (!token) return (window as any).showToast("Bạn cần đăng nhập! 🍵", "info");
+      try {
+        const res = await fetch(`${API_URL}/vocabulary/${vocabId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          (window as any).showToast("Đã xóa từ vựng thành công! 🍵", "success");
+          fetchFeed();
+          window.location.reload();
+        } else {
+          const errData = await res.json();
+          (window as any).showToast("Lỗi: " + (errData.detail || "Không thể xóa từ vựng"), "error");
+        }
+      } catch (e) {
+        console.error(e);
+        (window as any).showToast("Lỗi kết nối.", "error");
+      }
+    }, "Xác nhận xóa");
   };
 
   const handlePostComment = async () => {
     if (!newComment.trim() || !activeComments) return;
     const token = localStorage.getItem("oasis_token");
-    if (!token) return alert("Bạn cần đăng nhập để bình luận!");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để bình luận! 🍵", "info");
     try {
       const res = await fetch(`${API_URL}/community/comment`, {
         method: "POST",
@@ -147,8 +257,8 @@ export default function CommunityFeed() {
   }
 
   return (
-    <section className="xl:col-span-12 matcha-card p-6 md:p-10 bento-card flex flex-col gap-6 bg-white border-4 border-primary/20 rounded-[3rem]">
-      <div className="flex flex-col md:flex-row justify-between items-center border-b border-primary/10 pb-4">
+    <section className="xl:col-span-12 bg-white border-4 border-primary/20 rounded-[3rem] p-6 md:p-10 shadow-sm flex flex-col gap-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-primary/10 pb-4 gap-4 w-full">
         <div>
           <h2 className="font-display text-2xl font-black text-accent flex items-center gap-2">
             <span className="material-symbols-rounded text-primary text-3xl">public</span>
@@ -156,8 +266,23 @@ export default function CommunityFeed() {
           </h2>
           <p className="text-sm text-accent/70">Cùng học hỏi từ các bài viết và từ vựng xuất sắc của mọi người</p>
         </div>
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+          {currentUser && (
+            <button
+              type="button"
+              onClick={() => setShowOnlyMine(prev => !prev)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-bold border transition-all flex items-center gap-1.5 ${
+                showOnlyMine 
+                  ? 'bg-primary border-primary text-white shadow-sm' 
+                  : 'bg-white border-primary/20 text-accent/75 hover:bg-secondary/20'
+              }`}
+            >
+              <span className="material-symbols-rounded text-sm">person</span>
+              Của tôi
+            </button>
+          )}
           <select 
-            className="bg-white border border-primary/20 text-accent text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary mr-4"
+            className="bg-white border border-primary/20 text-accent text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -165,7 +290,7 @@ export default function CommunityFeed() {
             <option value="hot">Đang Hot</option>
             <option value="top">Điểm cao nhất</option>
           </select>
-          <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10 mt-4 md:mt-0">
+          <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10">
             <button type="button" 
               onClick={() => setActiveTab('writings')}
               className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'writings' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
@@ -179,9 +304,10 @@ export default function CommunityFeed() {
               Từ vựng nổi bật
             </button>
           </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
         {activeTab === 'writings' && data.writings.map(w => (
           <div key={w.id} className="bg-[#f9fdfa] border-2 border-primary/10 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
             <div className="flex items-center gap-3 border-b border-black/5 pb-3">
@@ -194,17 +320,24 @@ export default function CommunityFeed() {
             <p className="text-xs text-accent italic leading-relaxed line-clamp-3">"{w.content}"</p>
             
             {/* Tương tác */}
-            <div className="flex items-center gap-4 text-xs font-bold text-accent/60 mt-auto border-t border-black/5 pt-3">
-              <button type="button" onClick={() => handleLike('writing', w.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
-                <span className="material-symbols-rounded text-[16px]">favorite</span> {w.likes || 0}
-              </button>
-              <button type="button" onClick={() => handleShowComments('writing', w.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                <span className="material-symbols-rounded text-[16px]">chat_bubble</span> {w.comments || 0}
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-accent/60 mt-auto border-t border-black/5 pt-3 w-full">
+              <div className="flex items-center gap-4">
+                <button type="button" onClick={() => handleLike('writing', w.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                  <span className="material-symbols-rounded text-[16px]">favorite</span> {w.likes || 0}
+                </button>
+                <button type="button" onClick={() => handleShowComments('writing', w.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                  <span className="material-symbols-rounded text-[16px]">chat_bubble</span> {w.comments || 0}
+                </button>
+                {currentUser && currentUser.user_id === w.user_id && (
+                  <button type="button" onClick={() => handleDeleteWriting(w.id)} className="flex items-center gap-1 text-red-500 hover:text-red-700 transition-colors">
+                    <span className="material-symbols-rounded text-[16px]">delete</span> Xóa
+                  </button>
+                )}
+              </div>
               <button type="button" 
                 onClick={() => handleConvertToLesson(w.id)}
                 disabled={convertingId === w.id}
-                className="ml-auto bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
+                className="bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
               >
                 {convertingId === w.id ? (
                   <><span className="material-symbols-rounded animate-spin text-[14px]">sync</span> Đang tạo bài học AI...</>
@@ -216,31 +349,63 @@ export default function CommunityFeed() {
           </div>
         ))}
 
-        {activeTab === 'vocabularies' && data.vocabularies.map(v => (
-          <div key={v.id} className="bg-white border-2 border-primary/10 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-4">
-              <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-10 h-10 rounded-full border-2 border-primary/20" />
-              <div>
-                <p className="font-display font-black text-primary text-lg leading-none">{v.word}</p>
-                <p className="text-[10px] text-accent/50 italic">{v.phonetic} - bởi {v.username}</p>
+        {activeTab === 'vocabularies' && data.vocabularies.map(v => {
+          const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
+          const isSaving = savingWords.has(v.word);
+          return (
+            <div key={v.id} className="bg-white border-2 border-primary/10 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <img src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${v.username}'s avatar`} className="w-10 h-10 rounded-full border-2 border-primary/20 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-display font-black text-primary text-lg leading-none break-all">{v.word}</p>
+                  <p className="text-[10px] text-accent/50 italic mt-1 truncate">{v.phonetic} - bởi {v.username}</p>
+                </div>
+              </div>
+              <div className="text-left sm:text-right flex flex-col sm:items-end gap-2 w-full sm:w-auto">
+                <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full w-fit sm:max-w-xs break-words">{v.meaning}</p>
+                <div className="flex items-center justify-between sm:justify-end gap-3 text-[10px] font-bold text-accent/60 w-full sm:w-auto">
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                      <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
+                    </button>
+                    <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                      <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
+                    </button>
+                  </div>
+                  
+                  {currentUser && currentUser.user_id === v.user_id && (
+                    <button 
+                      type="button" 
+                      onClick={() => handleDeleteVocab(v.id)} 
+                      className="flex items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors px-2 py-1 rounded-md border border-red-200 hover:bg-red-50"
+                    >
+                      <span className="material-symbols-rounded text-[14px]">delete</span>
+                      Xóa
+                    </button>
+                  )}
+
+                  <button 
+                    type="button" 
+                    onClick={() => !isSaved && !isSaving && handleSaveToVault(v)} 
+                    disabled={isSaved || isSaving}
+                    className={`flex items-center gap-1 transition-colors px-2 py-1 rounded-md ml-2 ${
+                      isSaved 
+                        ? 'bg-green-100 text-green-700 cursor-default font-semibold' 
+                        : isSaving
+                        ? 'bg-primary/5 text-primary/40 cursor-wait animate-pulse'
+                        : 'bg-primary/10 text-primary hover:text-primary/70'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-[14px]">
+                      {isSaved ? 'check_circle' : isSaving ? 'sync' : 'bookmark_add'}
+                    </span> 
+                    {isSaved ? 'Đã lưu' : isSaving ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="text-right flex flex-col items-end gap-2">
-              <p className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{v.meaning}</p>
-              <div className="flex items-center gap-3 text-[10px] font-bold text-accent/60">
-                <button type="button" onClick={() => handleLike('vocabulary', v.id)} className="flex items-center gap-1 hover:text-red-500 transition-colors">
-                  <span className="material-symbols-rounded text-[14px]">favorite</span> {v.likes || 0}
-                </button>
-                <button type="button" onClick={() => handleShowComments('vocabulary', v.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                  <span className="material-symbols-rounded text-[14px]">chat_bubble</span> {v.comments || 0}
-                </button>
-                <button type="button" onClick={() => handleSaveToVault(v)} className="flex items-center gap-1 text-primary hover:text-primary/70 transition-colors bg-primary/10 px-2 py-1 rounded-md ml-2">
-                  <span className="material-symbols-rounded text-[14px]">bookmark_add</span> Lưu
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Lesson Modal */}

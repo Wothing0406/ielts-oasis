@@ -9,6 +9,7 @@ import CommunityFeed from "@/components/CommunityFeed";
 import MatchaBook from "@/components/MatchaBook";
 import MatchaRadio from "@/components/MatchaRadio";
 import VocabularyQuiz from "@/components/VocabularyQuiz";
+import MatchaNotification, { ToastData, ModalData } from "@/components/MatchaNotification";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -18,6 +19,10 @@ export default function Home() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  
+  // Custom Toast/Modal state
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const [modal, setModal] = useState<ModalData | null>(null);
 
   // States for Daily Plan interaction
   const [activeWritingPrompt, setActiveWritingPrompt] = useState("");
@@ -25,6 +30,37 @@ export default function Home() {
   const [activeListeningContext, setActiveListeningContext] = useState("");
 
   const [dueCountFromApi, setDueCountFromApi] = useState(0);
+
+  useEffect(() => {
+    (window as any).showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+      setToast({ message, type });
+    };
+    (window as any).showAlert = (message: string, title: string = "Thông báo", type: 'success' | 'error' | 'warning' = 'success') => {
+      setModal({ title, message, type, onConfirm: () => setModal(null) });
+    };
+    (window as any).showConfirm = (message: string, onConfirm: () => void, title: string = "Xác nhận") => {
+      setModal({
+        title,
+        message,
+        type: 'confirm',
+        confirmText: 'Đồng ý',
+        cancelText: 'Hủy',
+        onConfirm: () => {
+          onConfirm();
+          setModal(null);
+        },
+        onCancel: () => setModal(null)
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
 
   const dueCount = dueCountFromApi || vocabList.length;
 
@@ -92,6 +128,12 @@ export default function Home() {
   }, []);
 
   const handleAddVocab = async (formData: any) => {
+    // 1. Prevent client-side duplicate before sending API call
+    const isDuplicate = vocabList.some(v => v.word.toLowerCase() === formData.word.toLowerCase());
+    if (isDuplicate) {
+      return { success: false, status: "duplicate", word: formData.word };
+    }
+
     const token = localStorage.getItem("oasis_token");
     const headers: any = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -104,11 +146,18 @@ export default function Home() {
       });
       if (res.ok) {
         const newVocab = await res.json();
-        setVocabList(prev => [newVocab, ...prev]);
+        setVocabList(prev => {
+          if (prev.some(v => v.word.toLowerCase() === newVocab.word.toLowerCase())) return prev;
+          return [newVocab, ...prev];
+        });
+        return { success: true, word: formData.word };
+      } else if (res.status === 409) {
+        return { success: false, status: "duplicate", word: formData.word };
       }
     } catch (e) {
       console.error(e);
     }
+    return { success: false, status: "error", word: formData.word };
   };
 
   const handleDeleteVocab = async (id: number) => {
@@ -135,7 +184,7 @@ export default function Home() {
 
   const handleStartQuiz = () => {
     if (vocabList.length < 4) {
-      alert("Bạn cần ít nhất 4 từ vựng để bắt đầu ôn tập!");
+      (window as any).showAlert("Oops! Trạm nạp năng lượng cần ít nhất 4 từ vựng để pha chế. Thêm từ đi bạn ơi! 🍵", "Thiếu nguyên liệu rồi!", "warning");
       return;
     }
     setShowQuiz(true);
@@ -201,8 +250,8 @@ export default function Home() {
               
               {showNotifications && (
                 <div 
-                  className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 max-h-96 overflow-y-auto"
-                  style={{ opacity: 1, zIndex: 9999, backgroundColor: '#ffffff' }}
+                  className="fixed left-4 right-4 top-24 md:absolute md:left-auto md:right-0 md:top-auto md:w-80 mt-3 bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 max-h-96 overflow-y-auto z-[9999]"
+                  style={{ opacity: 1, backgroundColor: '#ffffff' }}
                 >
                   <h4 className="font-bold text-sm text-accent mb-3 flex items-center justify-between">
                     <span>Thông báo mới</span>
@@ -241,8 +290,9 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 pb-8">
           
           {/* Gợi ý AI - Lên trên cùng */}
-          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+          <section className="xl:col-span-12">
             <DailyPlanner 
+              vocabList={vocabList}
               onAddVocab={(vocabData: any) => handleAddVocab(vocabData)}
               onPracticeWriting={(prompt: string) => {
                 setActiveWritingPrompt(prompt);
@@ -271,26 +321,26 @@ export default function Home() {
           </section>
           
           <section className="xl:col-span-4 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card flex flex-col items-center">
-            <MatchaLens onAdd={handleAddVocab} />
+            <MatchaLens onAdd={handleAddVocab} vocabList={vocabList} />
           </section>
 
           {/* Hàng 3: Reading và Listening Lab */}
-          <section id="matcha-book" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+          <section id="matcha-book" className="xl:col-span-12">
             <MatchaBook initialReading={activeReadingContext} />
           </section>
           
-          <section id="matcha-radio" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+          <section id="matcha-radio" className="xl:col-span-12">
             <MatchaRadio initialContext={activeListeningContext} />
           </section>
 
           {/* Hàng 4: Writing Sanctuary */}
-          <section id="writing-sanctuary" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
+          <section id="writing-sanctuary" className="xl:col-span-12">
             <WritingSanctuary initialPrompt={activeWritingPrompt} />
           </section>
           
           {/* Hàng 5: Community Feed */}
-          <section className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <CommunityFeed />
+          <section className="xl:col-span-12">
+            <CommunityFeed onAddVocab={handleAddVocab} vocabList={vocabList} />
           </section>
 
         </div>
@@ -303,6 +353,13 @@ export default function Home() {
           onReview={handleReview}
         />
       )}
+
+      <MatchaNotification 
+        toast={toast} 
+        onCloseToast={() => setToast(null)} 
+        modal={modal} 
+        onCloseModal={() => setModal(null)} 
+      />
     </div>
   );
 }

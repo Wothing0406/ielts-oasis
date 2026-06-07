@@ -27,7 +27,7 @@ interface DetectedWord {
   box?: number[]; // [x1, y1, x2, y2] in percentages
 }
 
-const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
+const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<any>, vocabList?: any[] }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [results, setResults] = useState<DetectedWord[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
@@ -211,10 +211,40 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
     finally { setIsUploading(false); }
   };
 
-  const handleSave = (item: any, e: React.MouseEvent) => {
+  const handleSave = async (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    onAdd(item);
-    setSavedWords(new Set(savedWords).add(item.word));
+    if (savedWords.has(item.word)) return;
+    
+    // Disable instantly
+    setSavedWords(prev => {
+      const next = new Set(prev);
+      next.add(item.word);
+      return next;
+    });
+    
+    // Check client side duplicate
+    const isDuplicate = vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase());
+    if (isDuplicate) {
+      (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho! 🍵`, "info");
+      return;
+    }
+
+    const result = await onAdd(item);
+    if (result && result.success) {
+      // success
+    } else {
+      if (result && result.status === "duplicate") {
+        (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho! 🍵`, "info");
+      } else {
+        (window as any).showToast("Có lỗi xảy ra khi lưu từ vựng. 🍵", "error");
+        // Re-enable on failure
+        setSavedWords(prev => {
+          const next = new Set(prev);
+          next.delete(item.word);
+          return next;
+        });
+      }
+    }
   };
 
   return (
@@ -297,20 +327,25 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
                        transform: 'translate(-50%, -100%)',
                      }}
                    >
-                     <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-xl shadow-lg border-2 border-primary flex flex-col items-center min-w-[80px]">
-                       <span className="text-[11px] font-black text-primary uppercase leading-none mb-0.5">{item.word}</span>
-                       <span className="text-[9px] text-accent/60 italic leading-none mb-0.5">{item.phonetic}</span>
-                       <span className="text-[9px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
-                       <button
-                         type="button"
-                         onClick={(e) => handleSave(item, e)}
-                         disabled={savedWords.has(item.word)}
-                         className={`w-full px-2 py-0.5 rounded-md text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
-                       >
-                         <span className="material-symbols-rounded text-[10px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
-                         {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu từ'}
-                       </button>
-                     </div>
+                     {(() => {
+                       const isSaved = savedWords.has(item.word) || vocabList.some((v: any) => v.word.toLowerCase() === item.word.toLowerCase());
+                       return (
+                         <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-xl shadow-lg border-2 border-primary flex flex-col items-center min-w-[80px]">
+                           <span className="text-[11px] font-black text-primary uppercase leading-none mb-0.5">{item.word}</span>
+                           <span className="text-[9px] text-accent/60 italic leading-none mb-0.5">{item.phonetic}</span>
+                           <span className="text-[9px] text-accent font-bold leading-none mb-1">{item.meaning}</span>
+                           <button
+                             type="button"
+                             onClick={(e) => handleSave(item, e)}
+                             disabled={isSaved}
+                             className={`w-full px-2 py-0.5 rounded-md text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all ${isSaved ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+                           >
+                             <span className="material-symbols-rounded text-[10px]">{isSaved ? 'check_circle' : 'bookmark_add'}</span>
+                             {isSaved ? 'Đã lưu' : 'Lưu từ'}
+                           </button>
+                         </div>
+                       );
+                     })()}
                      {/* Arrow pointing down to object */}
                      <div className="w-2 h-2 bg-primary rotate-45 mx-auto -mt-1 rounded-sm" />
                    </motion.div>
@@ -373,30 +408,33 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
             🔍 Phát hiện {results.length} vật thể:
           </p>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            {results.map((item, idx) => (
-              <motion.div
-                key={`result-${item.word}-${idx}`}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.06 }}
-                className="flex items-center justify-between bg-secondary/40 border border-primary/15 rounded-xl px-3 py-2"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-primary">{item.word}</span>
-                  <span className="text-[10px] text-accent/50 italic">{item.phonetic}</span>
-                  <span className="text-xs text-accent/80 font-bold">{item.meaning}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => handleSave(item, e)}
-                  disabled={savedWords.has(item.word)}
-                  className={`ml-2 px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 flex-shrink-0 transition-all ${savedWords.has(item.word) ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+            {results.map((item, idx) => {
+              const isSaved = savedWords.has(item.word) || vocabList.some((v: any) => v.word.toLowerCase() === item.word.toLowerCase());
+              return (
+                <motion.div
+                  key={`result-${item.word}-${idx}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  className="flex items-center justify-between bg-secondary/40 border border-primary/15 rounded-xl px-3 py-2"
                 >
-                  <span className="material-symbols-rounded text-[12px]">{savedWords.has(item.word) ? 'check_circle' : 'bookmark_add'}</span>
-                  {savedWords.has(item.word) ? 'Đã lưu' : 'Lưu'}
-                </button>
-              </motion.div>
-            ))}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-primary">{item.word}</span>
+                    <span className="text-[10px] text-accent/50 italic">{item.phonetic}</span>
+                    <span className="text-xs text-accent/80 font-bold">{item.meaning}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => handleSave(item, e)}
+                    disabled={isSaved}
+                    className={`ml-2 px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 flex-shrink-0 transition-all ${isSaved ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
+                  >
+                    <span className="material-symbols-rounded text-[12px]">{isSaved ? 'check_circle' : 'bookmark_add'}</span>
+                    {isSaved ? 'Đã lưu' : 'Lưu'}
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

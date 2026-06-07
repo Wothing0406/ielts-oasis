@@ -140,7 +140,7 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
 
     } catch (err: any) { 
       console.error("Analysis failed:", err);
-      alert(`Grading failed: ${err.message}`);
+      (window as any).showToast(`Đánh giá thất bại: ${err.message} 🍵`, "error");
       setIsAnalyzing(false);
     }
   };
@@ -148,7 +148,7 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
   const handleShareToCommunity = async () => {
     if (!analysis || !text) return;
     const token = localStorage.getItem('oasis_token');
-    if (!token) return alert('Bạn cần đăng nhập để chia sẻ bài viết!');
+    if (!token) return (window as any).showToast('Bạn cần đăng nhập để chia sẻ bài viết! 🍵', 'info');
     
     try {
       const res = await fetch(`/api/community/share-writing`, {
@@ -164,17 +164,17 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
         }),
       });
       if (!res.ok) throw new Error('Không thể chia sẻ');
-      alert('Đã đăng bài viết của bạn lên Oasis Community thành công!');
+      (window as any).showAlert('Bài viết của bạn đã được gửi tới Oasis Community thành công! 🍵', 'Đăng bài hoàn tất!', 'success');
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`);
+      (window as any).showToast(`Lỗi: ${err.message} 🍵`, 'error');
     }
   };
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
-    <section className="xl:col-span-12 matcha-card p-10 bento-card">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <section className="xl:col-span-12 bg-[#FFFDF5] border-4 border-primary/30 rounded-[3rem] p-6 md:p-10 shadow-sm flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 gap-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 md:w-12 md:h-12 bg-secondary rounded-full flex items-center justify-center text-primary flex-shrink-0">
             <span className="material-symbols-rounded text-xl">edit_note</span>
@@ -184,7 +184,7 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
             <p className="text-[10px] md:text-sm opacity-60 text-accent dark:text-secondary">Topic: The impact of technology on traditional education.</p>
           </div>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-center">
           {timeLeft !== null && (
             <div className={`font-mono font-bold text-xl ${timeLeft < 60 ? 'text-red-500 animate-pulse' : 'text-primary'}`}>
               {formatTime(timeLeft)}
@@ -220,7 +220,7 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
             )}
             <textarea 
               aria-label="Write your essay here"
-              className="writing-lines font-sans text-lg bg-transparent border-none outline-none w-full h-full min-h-[350px] resize-none text-accent dark:text-secondary placeholder:opacity-30"
+              className="writing-lines font-sans text-lg bg-transparent border-none outline-none w-full h-full min-h-[350px] resize-none text-accent dark:text-secondary placeholder:text-accent/60 placeholder:opacity-80"
               placeholder="Modern technology has revolutionized the education sector..."
               value={text}
               onChange={(e) => setText(e.target.value)}

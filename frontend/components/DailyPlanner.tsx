@@ -6,13 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 const API_URL = '/api';
 
 interface DailyPlannerProps {
-  onAddVocab?: (vocab: any) => void;
+  vocabList?: any[];
+  onAddVocab?: (vocab: any) => Promise<any>;
   onPracticeWriting?: (prompt: string) => void;
   onPracticeReading?: (text: string) => void;
   onPracticeListening?: (context: string) => void;
 }
 
 export default function DailyPlanner({ 
+  vocabList = [],
   onAddVocab, 
   onPracticeWriting, 
   onPracticeReading, 
@@ -24,6 +26,7 @@ export default function DailyPlanner({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savingWords, setSavingWords] = useState<Set<string>>(new Set());
 
   const generatePlan = async () => {
     if (!topic.trim()) return;
@@ -50,7 +53,7 @@ export default function DailyPlanner({
   const savePlan = async () => {
     if (!plan) return;
     const token = localStorage.getItem("oasis_token");
-    if (!token) return alert("Bạn cần đăng nhập để lưu lộ trình!");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu lộ trình! 🍵", "info");
     setSaving(true);
     try {
       const res = await fetch(`${API_URL}/study-plan/save`, {
@@ -59,10 +62,10 @@ export default function DailyPlanner({
         body: JSON.stringify({ topic, plan_data: plan }),
       });
       if (res.ok) setSaved(true);
-      else alert("Không thể lưu lộ trình.");
+      else (window as any).showToast("Không thể lưu lộ trình. 🍵", "error");
     } catch (err) {
       console.error(err);
-      alert("Lỗi kết nối.");
+      (window as any).showToast("Lỗi kết nối. 🍵", "error");
     } finally {
       setSaving(false);
     }
@@ -80,14 +83,14 @@ export default function DailyPlanner({
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         <input 
           type="text"
           value={topic}
           onChange={e => setTopic(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && generatePlan()}
           placeholder="Nhập chủ đề bạn muốn học hôm nay (vd: Environment, Technology...)"
-          className="flex-1 px-6 py-4 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner"
+          className="flex-1 px-6 py-4 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner placeholder:text-accent/60"
         />
         <button type="button" 
           onClick={generatePlan}
@@ -122,10 +125,16 @@ export default function DailyPlanner({
                   <span className="material-symbols-rounded text-primary">local_library</span> 10 Từ vựng cốt lõi
                 </h3>
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     if (onAddVocab && plan.vocabulary) {
-                      plan.vocabulary.forEach((v: any) => onAddVocab(v));
-                      alert("Đã gửi các từ vào Kho từ vựng!");
+                      let added = 0;
+                      let skipped = 0;
+                      for (const v of plan.vocabulary) {
+                        const res = await onAddVocab(v);
+                        if (res && res.success) added++;
+                        else if (res && res.status === "duplicate") skipped++;
+                      }
+                      (window as any).showAlert(`Đã pha chế thành công ${added} từ vựng mới vào kho! (Bỏ qua ${skipped} từ đã có sẵn) 🍵`, "Pha chế hoàn tất!", "success");
                     }
                   }}
                   className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors"
@@ -134,15 +143,61 @@ export default function DailyPlanner({
                 </button>
               </div>
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                {plan.vocabulary?.map((v: any, i: number) => (
-                  <div key={i} className="p-3 bg-[#eef7f2] rounded-2xl border border-primary/10 flex justify-between items-start gap-4">
-                    <div>
-                      <p className="font-bold text-accent text-sm">{v.word}</p>
-                      <p className="text-[10px] italic text-accent/50">{v.phonetic}</p>
+                {plan.vocabulary?.map((v: any, i: number) => {
+                  const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
+                  return (
+                    <div key={i} className="p-3 bg-[#eef7f2] rounded-2xl border border-primary/10 flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <p className="font-bold text-accent text-sm">{v.word}</p>
+                          <p className="text-[10px] italic text-accent/50">{v.phonetic}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 ml-auto">
+                        <p className="text-xs text-right text-accent/80 font-medium">{v.meaning}</p>
+                        <button 
+                          type="button"
+                          disabled={isSaved || savingWords.has(v.word)}
+                          onClick={async () => {
+                            if (!isSaved && onAddVocab && !savingWords.has(v.word)) {
+                              setSavingWords(prev => {
+                                const next = new Set(prev);
+                                next.add(v.word);
+                                return next;
+                              });
+                              try {
+                                const res = await onAddVocab(v);
+                                if (res && res.status === "duplicate") {
+                                  (window as any).showToast(`Từ vựng "${v.word}" đã có sẵn trong kho! 🍵`, "info");
+                                }
+                              } catch (e) {
+                                console.error(e);
+                              } finally {
+                                setSavingWords(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(v.word);
+                                  return next;
+                                });
+                              }
+                            }
+                          }}
+                          className={`flex items-center gap-1 transition-colors px-2.5 py-1 rounded-xl text-[10px] font-bold ${
+                            isSaved 
+                              ? 'bg-green-100 text-green-700 cursor-default font-semibold' 
+                              : savingWords.has(v.word)
+                              ? 'bg-primary/5 text-primary/40 cursor-wait animate-pulse'
+                              : 'bg-primary/20 text-accent hover:bg-primary/30'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-[12px]">
+                            {isSaved ? 'check_circle' : savingWords.has(v.word) ? 'sync' : 'bookmark_add'}
+                          </span>
+                          {isSaved ? 'Đã lưu' : savingWords.has(v.word) ? 'Đang lưu...' : 'Lưu'}
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-right text-accent/80 font-medium">{v.meaning}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

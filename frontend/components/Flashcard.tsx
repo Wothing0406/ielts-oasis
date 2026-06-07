@@ -21,7 +21,7 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
 
   return (
     <div 
-      className="relative w-full max-w-sm h-64 perspective-1000 cursor-pointer group"
+      className="relative w-full max-w-[290px] xs:max-w-[320px] sm:max-w-sm h-80 perspective-1000 cursor-pointer group"
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <motion.div
