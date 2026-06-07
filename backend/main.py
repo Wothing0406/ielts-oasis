@@ -112,9 +112,11 @@ async def backfill_vocabularies():
                         v.memory_hook = data.get("memory_hook", v.memory_hook)
                         if not v.phonetic or v.phonetic == "/.../":
                             v.phonetic = data.get("phonetic", v.phonetic)
+                    db.commit()
                 except Exception as ex:
+                    db.rollback()
                     logger.error(f"Failed to enrich '{v.word}': {ex}")
-            db.commit()
+                await asyncio.sleep(5.0)  # Sleep 5s to avoid hitting 15 req/min rate limit
             logger.info("Background vocabulary enrichment completed.")
         db.close()
     except Exception as e:
