@@ -37,11 +37,22 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   const [capabilities, setCapabilities] = useState<any>(null);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
   const [detectError, setDetectError] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<number>(1);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      const w = videoRef.current.videoWidth;
+      const h = videoRef.current.videoHeight;
+      if (w && h) {
+        setAspectRatio(w / h);
+      }
+    }
+  };
 
   const startCamera = async (mode: 'user' | 'environment' = facingMode) => {
     setIsCameraOpen(true);
@@ -113,18 +124,34 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
     
     const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // compress
     setPreview(dataUrl);
+    setAspectRatio(canvas.width / canvas.height);
     stopCamera();
     
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], "snapshot.jpg", { type: "image/jpeg" });
-    uploadFile(file);
+    uploadFile(file, dataUrl);
   };
 
 
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File, existingPreview?: string) => {
     setIsUploading(true);
     setDetectError(null);
+
+    if (existingPreview) {
+      setPreview(existingPreview);
+    } else {
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      const img = new Image();
+      img.onload = () => {
+        if (img.width && img.height) {
+          setAspectRatio(img.width / img.height);
+        }
+      };
+      img.src = objectUrl;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -192,13 +219,17 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
         </div>
       </div>
       
-      <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-4 border-primary/10 mb-6 shadow-inner bg-secondary/30">
+      <div 
+        className="relative w-full rounded-3xl overflow-hidden border-4 border-primary/10 mb-6 shadow-inner bg-secondary/30 transition-all duration-300"
+        style={{ aspectRatio: aspectRatio }}
+      >
         {isCameraOpen ? (
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
             muted 
+            onLoadedMetadata={handleLoadedMetadata}
             className="w-full h-full object-cover" 
           />
         ) : preview ? (
