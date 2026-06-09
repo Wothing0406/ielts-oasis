@@ -43,7 +43,7 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
     setTranslation({ text, meaning: "Loading...", pos: { x: e.pageX, y: e.pageY - 40 } });
 
     try {
-      const res = await fetch(`/api/translate`, {
+      const res = await fetch('/api/translate', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
@@ -80,7 +80,7 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
     setScore(null);
     setAnswers({});
     try {
-      const res = await fetch(`/api/reading/generate`, {
+      const res = await fetch('/api/reading/generate', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: content })

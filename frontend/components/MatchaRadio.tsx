@@ -75,7 +75,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
     if (!youtubeUrl.trim()) return;
     resetState();
     try {
-      const res = await fetch(`/api/listening/youtube`, {
+      const res = await fetch('/api/listening/youtube', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: youtubeUrl, mode: youtubeMode })
@@ -100,7 +100,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
     if (!textToUse.trim()) return;
     resetState();
     try {
-      const res = await fetch(`/api/listening/generate-from-text`, {
+      const res = await fetch('/api/listening/generate-from-text', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: textToUse, mode: isCommunity ? "paragraph" : manualMode })
