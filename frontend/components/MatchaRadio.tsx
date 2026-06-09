@@ -47,7 +47,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
 
   useEffect(() => {
     if (activeTab === "community") {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/community/feed?sort_by=${communityFilter}`)
+      fetch(`/api/community/feed?sort_by=${communityFilter}`)
         .then(res => res.json())
         .then(data => {
           if (data.writings) setCommunityPosts(data.writings.filter((w: any) => w.full_content && w.full_content.length > 200));
@@ -75,7 +75,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
     if (!youtubeUrl.trim()) return;
     resetState();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/listening/youtube`, {
+      const res = await fetch(`/api/listening/youtube`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: youtubeUrl, mode: youtubeMode })
@@ -100,7 +100,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
     if (!textToUse.trim()) return;
     resetState();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/listening/generate-from-text`, {
+      const res = await fetch(`/api/listening/generate-from-text`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: textToUse, mode: isCommunity ? "paragraph" : manualMode })
@@ -376,7 +376,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <span className="material-symbols-rounded text-4xl text-primary">volume_up</span>
                 </div>
-                <audio ref={audioRef} controls className="w-full" src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${test.audio_url}`}>
+                <audio ref={audioRef} controls className="w-full" src={test.audio_url}>
                   <track kind="captions" />
                   Your browser does not support the audio element.
                 </audio>
