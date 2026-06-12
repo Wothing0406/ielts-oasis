@@ -135,8 +135,14 @@ export default function Home() {
     }
 
     const token = localStorage.getItem("oasis_token");
-    const headers: any = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (!token) {
+      (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+      return { success: false, status: "unauthorized", word: formData.word };
+    }
+    const headers: any = { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
     
     try {
       const res = await fetch(`${API_URL}/vocabulary`, {

@@ -76,7 +76,7 @@ def seed_db():
             ("Pervasive", "Lan tỏa", "/pəˈveɪ.sɪv/")
         ]
         for word, meaning, phonetic in starter_words:
-            v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic)
+            v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic, is_global=True)
             db.add(v)
         db.commit()
     db.close()
@@ -170,15 +170,17 @@ async def get_vocabulary(user: dict = Depends(get_current_user)):
     if user:
         query = query.filter(Vocabulary.user_id == user["user_id"])
     else:
-        query = query.filter(Vocabulary.user_id == None)
+        query = query.filter(Vocabulary.is_global == True)
     vocabs = query.order_by(desc(Vocabulary.id)).all()
     db.close()
     return vocabs
 
 @app.post("/vocabulary")
 async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để lưu từ vựng")
     db = SessionLocal()
-    user_id = user["user_id"] if user else None
+    user_id = user["user_id"]
     existing = db.query(Vocabulary).filter(
         func.lower(Vocabulary.word) == func.lower(vocab_in.word),
         Vocabulary.user_id == user_id
@@ -493,6 +495,9 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             db.close()
             return {"vocabularies": [], "writings": []}
         vocab_query = vocab_query.filter(Vocabulary.user_id == user_id)
+    else:
+        # Show global vocabularies only (prevent private leaking)
+        vocab_query = vocab_query.filter(Vocabulary.is_global == True)
     
     if sort_by == "top":
         # For vocab, 'top' might just be popularity

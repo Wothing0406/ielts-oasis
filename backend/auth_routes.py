@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import asyncio
 from database import SessionLocal
-from models import User
+from models import User, Vocabulary
 from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -24,7 +24,7 @@ import urllib.parse
 def discord_login(redirect_uri: str = None):
     uri = redirect_uri if redirect_uri else DISCORD_REDIRECT_URI
     encoded_uri = urllib.parse.quote(uri, safe='')
-    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email%20guilds.join"
+    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email"
     return {"url": url}
 
 class AuthCode(BaseModel):
@@ -83,6 +83,29 @@ async def discord_callback(payload: AuthCode):
         
     db.commit()
     db.refresh(user)
+
+    if is_new_user:
+        try:
+            starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).all()
+            for sv in starter_vocabs:
+                user_v = Vocabulary(
+                    user_id=user.id,
+                    word=sv.word,
+                    meaning=sv.meaning,
+                    phonetic=sv.phonetic,
+                    example=sv.example,
+                    topic=sv.topic,
+                    audio_url=sv.audio_url,
+                    image_url=sv.image_url,
+                    synonyms=sv.synonyms,
+                    memory_hook=sv.memory_hook,
+                    is_global=False
+                )
+                db.add(user_v)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"Failed to copy starter vocabs: {e}")
     
     discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
     discord_guild_id = os.getenv("DISCORD_GUILD_ID")
@@ -96,18 +119,18 @@ async def discord_callback(payload: AuthCode):
                         "Content-Type": "application/json"
                     }
                     
-                    # 1. Add user to Guild first
-                    if discord_guild_id and access_token:
-                        payload = {"access_token": access_token}
-                        res = await client.put(
-                            f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
-                            headers=headers,
-                            json=payload
-                        )
-                        if res.status_code in (201, 204):
-                            print("User added to guild successfully.")
-                        else:
-                            print(f"Failed to add user to guild: {res.status_code} {res.text}")
+                    # 1. Add user to Guild disabled per user request (no forced server join)
+                    # if discord_guild_id and access_token:
+                    #     payload = {"access_token": access_token}
+                    #     res = await client.put(
+                    #         f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
+                    #         headers=headers,
+                    #         json=payload
+                    #     )
+                    #     if res.status_code in (201, 204):
+                    #         print("User added to guild successfully.")
+                    #     else:
+                    #         print(f"Failed to add user to guild: {res.status_code} {res.text}")
                     
                     # Wait a bit for Discord to process the guild join before DMing
                     await asyncio.sleep(2)
