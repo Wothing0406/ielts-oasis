@@ -198,7 +198,8 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         topic=vocab_in.topic or "General",
         synonyms=vocab_in.synonyms or [],
         memory_hook=vocab_in.memory_hook,
-        image_url=vocab_in.image_url
+        image_url=vocab_in.image_url,
+        is_global=True
     )
     
     # Handle crop if from Matcha Lens (box is present and image_url is a static path)
