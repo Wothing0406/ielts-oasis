@@ -109,7 +109,9 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
           image_url: vocab.image_url,
           example: vocab.example,
           synonyms: vocab.synonyms,
-          memory_hook: vocab.memory_hook
+          memory_hook: vocab.memory_hook,
+          source: "Oasis Community",
+          creator_username: vocab.username
         });
         if (result && result.success) {
           // Successfully added, let it update reactively
@@ -129,7 +131,9 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
             image_url: vocab.image_url,
             example: vocab.example,
             synonyms: vocab.synonyms,
-            memory_hook: vocab.memory_hook
+            memory_hook: vocab.memory_hook,
+            source: "Oasis Community",
+            creator_username: vocab.username
           })
         });
         if (res.ok) {

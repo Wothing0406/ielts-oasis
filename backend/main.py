@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
@@ -205,6 +205,17 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         db.close()
         raise HTTPException(status_code=409, detail=f"Từ vựng '{vocab_in.word}' đã có trong kho của bạn rồi!")
     
+    # Check if this word already exists globally in the database
+    is_already_global = db.query(Vocabulary).filter(
+        func.lower(Vocabulary.word) == func.lower(vocab_in.word),
+        Vocabulary.is_global == True
+    ).first() is not None
+    
+    # Determine is_global: only share if not copied from community, and not already global
+    is_global_val = False
+    if vocab_in.source != "Oasis Community" and not is_already_global:
+        is_global_val = True
+        
     vocab = Vocabulary(
         user_id=user_id,
         word=vocab_in.word, 
@@ -215,7 +226,7 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         synonyms=vocab_in.synonyms or [],
         memory_hook=vocab_in.memory_hook,
         image_url=vocab_in.image_url,
-        is_global=True,
+        is_global=is_global_val,
         source=vocab_in.source or "Tự thêm",
         creator_username=vocab_in.creator_username or (user["username"] if user else "Anonymous")
     )

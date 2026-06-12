@@ -55,7 +55,16 @@ async def on_message(message):
         
     await bot.process_commands(message)
     
-    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions:
+    is_reply_to_bot = False
+    if message.reference and message.reference.message_id:
+        try:
+            ref_msg = await message.channel.fetch_message(message.reference.message_id)
+            if ref_msg.author.id == bot.user.id:
+                is_reply_to_bot = True
+        except:
+            pass
+            
+    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot:
         if message.content.startswith('/'):
             return
             
@@ -69,11 +78,7 @@ async def on_message(message):
             
             if state == "STATE_ASK_INFO":
                 async with message.channel.typing():
-                    prompt = f"Học viên trả lời về thời gian rảnh và trình độ hiện tại: '{content}'. Hãy tạo 1 câu hỏi kiểm tra tiếng Anh cơ bản dựa trên trình độ đó. Trả về JSON: {{\"question\": \"Câu hỏi tiếng Anh...\", \"level_assumed\": \"...\"}}"
                     try:
-                        res = await ai_service.get_advice(prompt) # Using get_advice for generic prompt
-                        # Fallback to Ollama or just parse JSON
-                        # For simplicity, just ask AI to output text and we extract the question.
                         q_prompt = f"Học viên nói: {content}. Đưa ra 1 câu hỏi bài tập IELTS phù hợp để kiểm tra trình độ. Không giải thích dài dòng."
                         question = await ai_service.get_advice(q_prompt)
                         user_states[discord_id]["state"] = "STATE_TESTING"
@@ -91,10 +96,9 @@ async def on_message(message):
                     
                     e_prompt = f"Thông tin học viên: {info}. Họ trả lời câu hỏi test là: {content}. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ. Sau đó đề xuất lịch học mỗi ngày (ví dụ 20:00). Trả về JSON: {{\"evaluation\": \"...\", \"level\": \"...\", \"time\": \"HH:MM\", \"topic\": \"...\"}}"
                     try:
-                        raw_res = await ai_service._call_ollama(e_prompt, model=ai_service.fallback_text_model)
-                        if not raw_res:
-                            raw_res = '{"evaluation": "Khá tốt!", "level": "Intermediate", "time": "20:00", "topic": "General"}'
-                        data = json.loads(ai_service._clean_json(raw_res))
+                        data = await ai_service.get_json_advice(e_prompt)
+                        if not data or "evaluation" not in data:
+                            data = {"evaluation": "Khá tốt!", "level": "Intermediate", "time": "20:00", "topic": "General"}
                     except:
                         data = {"evaluation": "Mình đã ghi nhận câu trả lời.", "level": "Beginner", "time": "20:00", "topic": "General"}
                         
@@ -123,12 +127,18 @@ async def on_message(message):
                     
                     await message.reply(f"Đánh giá của mình: {data.get('evaluation')}\n\nTrình độ của bạn: **{data.get('level')}**.\nMình đã đặt lịch học cho bạn vào **{data.get('time')}** mỗi ngày với chủ đề **{data.get('topic')}**. Đến giờ mình sẽ nhắc thật gắt gao nhé! 🍵")
                     return
-
+ 
         # Default Chat
         async with message.channel.typing():
             if not content:
                 content = "Chào bạn"
-            prompt = f"Bạn là gia sư IELTS tên IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện bằng tiếng Việt: {content}"
+            prompt = f"""
+            Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện và hữu ích bằng tiếng Việt.
+            Nếu người dùng hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng.
+            Nếu người dùng muốn luyện tập hoặc yêu cầu bài tập tiếng Anh, hãy tạo 1-2 câu hỏi trắc nghiệm hoặc điền từ ngắn gọn kèm đáp án ẩn dưới dạng spoiler (ví dụ ||đáp án||) để họ tự thử sức.
+            
+            Câu hỏi của học viên: '{content}'
+            """
             try:
                 response = await ai_service.get_advice(prompt)
                 if response:
@@ -137,6 +147,7 @@ async def on_message(message):
                     await message.reply("Xin lỗi, tôi đang bận pha trà Matcha. Bạn hỏi lại sau nhé! 🍵")
             except Exception as e:
                 logger.error(f"Chatbot error: {e}")
+
 
 @bot.tree.command(name='web', description="Xem link truy cập web IELTS Oasis")
 async def web(interaction: discord.Interaction):

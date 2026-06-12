@@ -130,7 +130,7 @@ export default function DailyPlanner({
                       let added = 0;
                       let skipped = 0;
                       for (const v of plan.vocabulary) {
-                        const res = await onAddVocab(v);
+                        const res = await onAddVocab({ ...v, source: "Matcha Daily Plan" });
                         if (res && res.success) added++;
                         else if (res && res.status === "duplicate") skipped++;
                       }
@@ -166,7 +166,7 @@ export default function DailyPlanner({
                                 return next;
                               });
                               try {
-                                const res = await onAddVocab(v);
+                                const res = await onAddVocab({ ...v, source: "Matcha Daily Plan" });
                                 if (res && res.status === "duplicate") {
                                   (window as any).showToast(`Từ vựng "${v.word}" đã có sẵn trong kho! 🍵`, "info");
                                 }

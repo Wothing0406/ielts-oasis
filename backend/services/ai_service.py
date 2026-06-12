@@ -647,6 +647,26 @@ Return ONLY the JSON array. Example:
             
         return {"error": "AI could not generate questions."}
 
+    async def get_json_advice(self, prompt: str):
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            content = response.choices[0].message.content
+            return json.loads(self._clean_json(content))
+        except Exception as e:
+            print(f"Gemini get_json_advice failed: {e}. Falling back to Ollama.")
+            
+        try:
+            res = await self._call_ollama(prompt, model=self.fallback_text_model, is_json=True)
+            if res:
+                return json.loads(self._clean_json(res))
+        except Exception as e:
+            print(f"Ollama get_json_advice failed: {e}")
+        return {}
+
 ai_service = AIService()
 
 
