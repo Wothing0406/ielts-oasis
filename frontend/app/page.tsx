@@ -19,6 +19,8 @@ export default function Home() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [guestName, setGuestName] = useState("");
+  const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
   
   // Custom Toast/Modal state
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -212,9 +214,44 @@ export default function Home() {
       .catch(err => console.error("Login err:", err));
   };
 
+  const handleGuestLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || isGuestLoggingIn) return;
+    setIsGuestLoggingIn(true);
+    
+    const savedGuestId = localStorage.getItem("oasis_guest_id");
+    try {
+      const res = await fetch(`${API_URL}/auth/guest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: guestName.trim(),
+          guest_id: savedGuestId || undefined
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("oasis_token", data.token);
+        localStorage.setItem("oasis_user", JSON.stringify(data.user));
+        localStorage.setItem("oasis_guest_id", data.guest_id);
+        setUser(data.user);
+        fetchVocabs(data.token);
+        (window as any).showToast("Chào mừng bạn đến với IELTS Oasis! 🍵", "success");
+      } else {
+        (window as any).showToast("Không thể đăng nhập tài khoản Khách. 🍵", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+    } finally {
+      setIsGuestLoggingIn(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("oasis_token");
     localStorage.removeItem("oasis_user");
+    localStorage.removeItem("oasis_guest_id");
     setUser(null);
     window.location.reload();
   };
@@ -229,12 +266,37 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             {!user ? (
-              <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
-                Login with Discord
-              </button>
+              <div className="flex flex-wrap items-center gap-3 bg-secondary/35 border border-primary/20 p-2.5 rounded-3xl">
+                <form onSubmit={handleGuestLogin} className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Nhập tên học nhanh..." 
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="bg-white border border-primary/20 rounded-full px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary w-40 font-bold text-accent"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={isGuestLoggingIn}
+                    className="bg-primary hover:bg-primary/95 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm"
+                  >
+                    Vào Học
+                  </button>
+                </form>
+                <span className="text-xs text-accent/40 font-bold">hoặc</span>
+                <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
+                  Discord
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-4">
-                <img src={user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt="avatar" className="w-12 h-12 rounded-full border-2 border-primary" />
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="avatar" className="w-12 h-12 rounded-full border-2 border-primary" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary">
+                    {user.username.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow transition-all">
                   Logout
                 </button>

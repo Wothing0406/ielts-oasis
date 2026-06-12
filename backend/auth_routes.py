@@ -1,6 +1,7 @@
 import os
 import httpx
 import jwt
+import uuid
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -10,6 +11,85 @@ from models import User, Vocabulary
 from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+class GuestLogin(BaseModel):
+    username: str
+    guest_id: str = None
+
+@router.post("/guest")
+async def guest_login(payload: GuestLogin):
+    db = SessionLocal()
+    guest_id = payload.guest_id
+    username = payload.username.strip()
+    
+    if not username:
+        raise HTTPException(status_code=400, detail="Tên người dùng không được để trống")
+        
+    is_new_user = False
+    
+    # If they have a guest_id, try to find them
+    if guest_id:
+        user = db.query(User).filter(User.discord_id == guest_id).first()
+        if not user:
+            # If guest_id not found, create one
+            user = User(discord_id=guest_id, username=username)
+            db.add(user)
+            is_new_user = True
+        else:
+            # Update username if they changed it
+            user.username = username
+            user.last_login = datetime.utcnow()
+    else:
+        # Create a brand new guest user
+        guest_id = f"guest-{uuid.uuid4()}"
+        user = User(discord_id=guest_id, username=username)
+        db.add(user)
+        is_new_user = True
+        
+    db.commit()
+    db.refresh(user)
+    
+    # Copy starter words for new guests
+    if is_new_user:
+        try:
+            starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).all()
+            for sv in starter_vocabs:
+                user_v = Vocabulary(
+                    user_id=user.id,
+                    word=sv.word,
+                    meaning=sv.meaning,
+                    phonetic=sv.phonetic,
+                    example=sv.example,
+                    topic=sv.topic,
+                    audio_url=sv.audio_url,
+                    image_url=sv.image_url,
+                    synonyms=sv.synonyms,
+                    memory_hook=sv.memory_hook,
+                    is_global=False
+                )
+                db.add(user_v)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"Failed to copy starter vocabs for guest: {e}")
+            
+    # Generate JWT
+    jwt_payload = {
+        "user_id": user.id,
+        "discord_id": user.discord_id,  # Will be "guest-..."
+        "username": user.username,
+        "avatar_url": None,
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }
+    token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    
+    db.close()
+    
+    return {
+        "token": token,
+        "user": jwt_payload,
+        "guest_id": guest_id
+    }
 
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
