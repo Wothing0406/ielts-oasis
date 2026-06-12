@@ -65,7 +65,9 @@ async def guest_login(payload: GuestLogin):
                     image_url=sv.image_url,
                     synonyms=sv.synonyms,
                     memory_hook=sv.memory_hook,
-                    is_global=False
+                    is_global=False,
+                    source=sv.source,
+                    creator_username=sv.creator_username
                 )
                 db.add(user_v)
             db.commit()
@@ -179,7 +181,9 @@ async def discord_callback(payload: AuthCode):
                     image_url=sv.image_url,
                     synonyms=sv.synonyms,
                     memory_hook=sv.memory_hook,
-                    is_global=False
+                    is_global=False,
+                    source=sv.source,
+                    creator_username=sv.creator_username
                 )
                 db.add(user_v)
             db.commit()

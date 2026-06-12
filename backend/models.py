@@ -35,6 +35,8 @@ class Vocabulary(Base):
     
     is_global = Column(Boolean, default=False)
     popularity = Column(Integer, default=1)
+    source = Column(String(100), default="Tự thêm")
+    creator_username = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class ImageStore(Base):

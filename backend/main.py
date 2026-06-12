@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
@@ -76,7 +76,7 @@ def seed_db():
             ("Pervasive", "Lan tỏa", "/pəˈveɪ.sɪv/")
         ]
         for word, meaning, phonetic in starter_words:
-            v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic, is_global=True)
+            v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic, is_global=True, source="Hệ thống", creator_username="System")
             db.add(v)
         db.commit()
     db.close()
@@ -127,6 +127,22 @@ async def startup_event():
     logger.info("FastAPI Server Starting...")
     Base.metadata.create_all(bind=engine)
     logger.info("Database initialized.")
+    try:
+        with engine.connect() as conn:
+            # Check source column
+            res = conn.execute(text("SHOW COLUMNS FROM vocabulary LIKE 'source';")).fetchone()
+            if not res:
+                conn.execute(text("ALTER TABLE vocabulary ADD COLUMN source VARCHAR(100) DEFAULT 'Tự thêm';"))
+                conn.commit()
+                logger.info("Migration: Added 'source' column to vocabulary.")
+            # Check creator_username column
+            res_creator = conn.execute(text("SHOW COLUMNS FROM vocabulary LIKE 'creator_username';")).fetchone()
+            if not res_creator:
+                conn.execute(text("ALTER TABLE vocabulary ADD COLUMN creator_username VARCHAR(100) NULL;"))
+                conn.commit()
+                logger.info("Migration: Added 'creator_username' column to vocabulary.")
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
     try:
         seed_db()
     except Exception as e:
@@ -199,7 +215,9 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         synonyms=vocab_in.synonyms or [],
         memory_hook=vocab_in.memory_hook,
         image_url=vocab_in.image_url,
-        is_global=True
+        is_global=True,
+        source=vocab_in.source or "Tự thêm",
+        creator_username=vocab_in.creator_username or (user["username"] if user else "Anonymous")
     )
     
     # Handle crop if from Matcha Lens (box is present and image_url is a static path)
@@ -525,7 +543,7 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             "meaning": v.meaning,
             "phonetic": v.phonetic,
             "user_id": v.user_id,
-            "username": user_obj.username if user_obj else "Anonymous",
+            "username": v.creator_username or (user_obj.username if user_obj else "Anonymous"),
             "avatar_url": user_obj.avatar_url if user_obj else None,
             "image_url": v.image_url,
             "likes": likes_count,
@@ -533,7 +551,8 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             # Extra fields to skip AI refinement during save
             "example": v.example,
             "synonyms": v.synonyms,
-            "memory_hook": v.memory_hook
+            "memory_hook": v.memory_hook,
+            "source": v.source
         })
         if len(vocab_list) >= 20:
             break

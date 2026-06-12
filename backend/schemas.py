@@ -29,6 +29,8 @@ class VocabIn(BaseModel):
     box: Optional[List[float]] = None
     synonyms: Optional[List[str]] = []
     memory_hook: Optional[str] = None
+    source: Optional[str] = "Tự thêm"
+    creator_username: Optional[str] = None
 
 class VocabularyCreate(VocabIn):
     user_id: Optional[int] = None
