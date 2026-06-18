@@ -64,11 +64,17 @@ async def on_message(message):
         except:
             pass
             
-    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot:
+    discord_id = str(message.author.id)
+    in_conversation = False
+    if discord_id in user_states:
+        state_channel = user_states[discord_id].get("channel_id")
+        if not state_channel or state_channel == message.channel.id or isinstance(message.channel, discord.DMChannel):
+            in_conversation = True
+            
+    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot or in_conversation:
         if message.content.startswith('/'):
             return
             
-        discord_id = str(message.author.id)
         content = message.content.replace(f'<@{bot.user.id}>', '').strip()
         
         # Handle Conversation States
@@ -132,6 +138,21 @@ async def on_message(message):
         async with message.channel.typing():
             if not content:
                 content = "Chào bạn"
+                
+            # Fetch last 8 messages to build conversation history context
+            history_messages = []
+            try:
+                async for msg in message.channel.history(limit=8):
+                    author_name = "Học viên" if msg.author.id != bot.user.id else "IELTS Oasis"
+                    msg_content = msg.content.replace(f'<@{bot.user.id}>', '').strip()
+                    if msg_content:
+                        history_messages.append(f"{author_name}: {msg_content}")
+            except Exception as e:
+                logger.error(f"Failed to fetch history: {e}")
+                
+            history_messages.reverse()
+            history_str = "\n".join(history_messages)
+            
             prompt = f"""
             Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
             Quy tắc quan trọng:
@@ -139,7 +160,10 @@ async def on_message(message):
             2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng. Chỉ trả lời câu hỏi của họ, không tự động đố bài tập trừ khi họ yêu cầu.
             3. CHỈ khi học viên nói muốn luyện tập, yêu cầu làm bài tập, hoặc muốn thử sức, lúc đó bạn mới tạo 1-2 câu hỏi trắc nghiệm hoặc điền từ ngắn gọn kèm đáp án ẩn dưới dạng spoiler (ví dụ ||đáp án||) để họ tự thử sức.
             
-            Câu hỏi của học viên: '{content}'
+            Dưới đây là lịch sử hội thoại gần đây giữa bạn (IELTS Oasis) và học viên (hãy dựa vào đây để trả lời câu reply của họ một cách liền mạch, đúng ngữ cảnh):
+            {history_str}
+            
+            Hãy đưa ra câu trả lời tiếp theo của gia sư IELTS Oasis:
             """
             try:
                 response = await ai_service.get_advice(prompt)
@@ -167,7 +191,7 @@ async def tuvan_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("Bạn chưa đăng nhập trên web IELTS Oasis! Hãy đăng nhập trên web bằng Discord để mình biết bạn là ai nhé.")
         return
 
-    user_states[discord_id] = {"state": "STATE_ASK_INFO"}
+    user_states[discord_id] = {"state": "STATE_ASK_INFO", "channel_id": interaction.channel_id}
     await interaction.response.send_message(f"Chào {user.username}! Để thiết lập lộ trình học tốt nhất, bạn cho mình biết bạn **thường rảnh học lúc mấy giờ** và **trình độ từ vựng/IELTS hiện tại** của bạn đang ở mức nào nhé?")
 
 @bot.tree.command(name='xinnghi', description="Xin nghỉ học hôm nay với lý do")
