@@ -165,6 +165,8 @@ Return ONLY the JSON array. Example:
                 messages=[{"role": "user", "content": "Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt."}]
             )
             return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Gemini get_encouragement failed: {e}")
         return "Chào mừng bạn đến với Oasis! 🌴"
 
     async def get_advice(self, prompt: str):
