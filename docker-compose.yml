@@ -29,7 +29,6 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_NAME=ielts_oasis
-      - OLLAMA_HOST=http://ollama:11434
     env_file:
       - .env
     ports:
@@ -40,8 +39,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      ollama:
-        condition: service_started
     networks:
       - ielts-network
 
@@ -55,7 +52,6 @@ services:
       - DB_PASSWORD=password
       - DB_HOST=db
       - DB_NAME=ielts_oasis
-      - OLLAMA_HOST=http://ollama:11434
     env_file:
       - .env
     volumes:
@@ -82,18 +78,6 @@ services:
     networks:
       - ielts-network
 
-  # --- Local AI Service (Ollama) ---
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ielts_oasis_ollama
-    restart: always
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - ielts-network
-    # Pull tinyllama and moondream (vision) for reliable local fallback
-    entrypoint: [ "/usr/bin/bash", "-c", "ollama serve & sleep 10 && ollama run tinyllama && ollama run moondream && ollama run phi3 && wait" ]
-
   # --- Public Access (Ngrok Tunnel) ---
   tunnel:
     image: ngrok/ngrok:latest
@@ -113,4 +97,4 @@ networks:
 
 volumes:
   db_data:
-  ollama_data:
+

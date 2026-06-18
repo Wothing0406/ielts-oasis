@@ -22,25 +22,7 @@ class AIService:
         self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
         self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
         
-        # Fallback local Ollama
-        self.ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-        self.fallback_text_model = os.getenv("FALLBACK_TEXT_MODEL", "phi3")
-        self.fallback_vision_model = os.getenv("FALLBACK_VISION_MODEL", "moondream")
 
-    async def _call_ollama(self, prompt: str, model=None, images=None, is_json=True):
-        try:
-            payload = {"model": model or self.fallback_text_model, "prompt": prompt, "stream": False}
-            if is_json: payload["format"] = "json"
-            if images: payload["images"] = images
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                response = await client.post(f"{self.ollama_host}/api/generate", json=payload)
-                if response.status_code == 200: 
-                    return response.json().get("response")
-                else:
-                    print(f"Ollama returned {response.status_code}: {response.text}")
-        except Exception as e: 
-            print(f"Ollama request failed: {e}")
-        return None
 
     def _clean_json(self, text: str, expect_list=False):
         try:
@@ -96,21 +78,7 @@ Return ONLY the JSON array. Example:
                 return data
             return []
         except Exception as e:
-            print(f"9router detect_all_objects failed: {e}. Falling back to Ollama.")
-
-        # 2. Fallback to Ollama
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_vision_model, images=[img_str])
-            if res:
-                try:
-                    items = json.loads(self._clean_json(res, expect_list=True))
-                    for i, item in enumerate(items):
-                        if "box" not in item: item["box"] = [0.2 + i*0.1, 0.2 + i*0.1, 0.4 + i*0.1, 0.4 + i*0.1]
-                    return items
-                except json.JSONDecodeError:
-                    print("JSON Decode Error in detect_all_objects")
-        except Exception as e:
-            print(f"Ollama Object detection failed: {e}")
+            print(f"9router detect_all_objects failed: {e}")
         return []
 
     async def refine_vocabulary(self, word: str):
@@ -140,15 +108,7 @@ Return ONLY the JSON array. Example:
             content = response.choices[0].message.content
             return json.loads(self._clean_json(content))
         except Exception as e:
-            print(f"9router refine_vocabulary failed: {e}. Falling back to Ollama.")
-
-        # 2. Fallback to Ollama
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model)
-            if res: 
-                return json.loads(self._clean_json(res))
-        except Exception as e:
-            print(f"Ollama refine vocabulary failed: {e}")
+            print(f"9router refine_vocabulary failed: {e}")
             
         return {
             "word": word, "meaning": word, "phonetic": "/.../", 
@@ -189,27 +149,7 @@ Return ONLY the JSON array. Example:
             content = response.choices[0].message.content
             return json.loads(self._clean_json(content))
         except Exception as e:
-            print(f"9router analyze_writing failed: {e}. Falling back to Ollama.")
-
-        # 2. Fallback to Ollama
-        try:
-            print(f"--- Using Ollama model: {self.fallback_text_model} ---")
-            async with httpx.AsyncClient(timeout=180.0) as client:
-                response = await client.post(
-                    f"{self.ollama_host}/api/generate",
-                    json={
-                        "model": self.fallback_text_model,
-                        "prompt": prompt,
-                        "stream": False,
-                        "format": "json"
-                    }
-                )
-                if response.status_code == 200:
-                    raw_data = response.json().get("response", "{}")
-                    cleaned_data = self._clean_json(raw_data)
-                    return json.loads(cleaned_data)
-        except Exception as e:
-            print(f"Ollama {self.fallback_text_model} failed: {str(e)[:100]}...")
+            print(f"9router analyze_writing failed: {e}")
 
         return {
             "band_score": "N/A", 
@@ -225,14 +165,6 @@ Return ONLY the JSON array. Example:
                 messages=[{"role": "user", "content": "Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt."}]
             )
             return response.choices[0].message.content.strip()
-        except:
-            pass
-            
-        try:
-            res = await self._call_ollama("Chào học sinh IELTS ngắn gọn, dễ thương tiếng Việt.", model=self.fallback_text_model, is_json=False)
-            if res: return res.strip()
-        except:
-            pass
         return "Chào mừng bạn đến với Oasis! 🌴"
 
     async def get_advice(self, prompt: str):
@@ -243,13 +175,7 @@ Return ONLY the JSON array. Example:
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Gemini get_advice failed: {e}. Falling back to Ollama.")
-            
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model, is_json=False)
-            if res: return res.strip()
-        except:
-            pass
+            print(f"Gemini get_advice failed: {e}")
         return "Hiện tại tôi đang bận cập nhật dữ liệu. Bạn cứ tiếp tục học từ vựng nhé!"
 
     async def search_unsplash_image(self, word: str):
@@ -292,15 +218,7 @@ Return ONLY the JSON array. Example:
             cleaned = self._clean_json(content)
             return json.loads(cleaned)
         except Exception as e:
-            print(f"Gemini rephrase failed: {e}. Falling back to Ollama.")
-            
-        # 2. Try Ollama
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model)
-            if res:
-                return json.loads(self._clean_json(res))
-        except Exception as e:
-            print(f"Ollama rephrase failed: {e}")
+            print(f"Gemini rephrase failed: {e}")
             
         return [f"{selected_phrase} (better alternative)", f"improved {selected_phrase}", f"academic {selected_phrase}"]
 
@@ -327,15 +245,7 @@ Return ONLY the JSON array. Example:
             cleaned = self._clean_json(content)
             return json.loads(cleaned)
         except Exception as e:
-            print(f"Gemini generate_grammar_questions failed: {e}. Falling back to Ollama.")
-            
-        # 2. Try Ollama
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model)
-            if res:
-                return json.loads(self._clean_json(res))
-        except Exception as e:
-            print(f"Ollama generate_grammar_questions failed: {e}")
+            print(f"Gemini generate_grammar_questions failed: {e}")
             
         # Fallback dummy questions
         return [
@@ -447,14 +357,9 @@ Return ONLY the JSON array. Example:
                 cleaned = self._clean_json(content)
                 return json.loads(cleaned)
             except Exception as e:
-                print(f"Gemini youtube listening failed: {e}. Falling back to Ollama.")
-                
-            # Fallback to Ollama
-            res = await self._call_ollama(prompt, model=self.fallback_text_model)
-            if res:
-                return json.loads(self._clean_json(res))
+                print(f"Gemini youtube listening failed: {e}")
             
-            return {"error": "Both Gemini and Ollama failed to generate listening questions."}
+            return {"error": "Gemini failed to generate listening questions."}
 
         except Exception as e:
             print(f"YouTube transcript/AI failed: {e}")
@@ -635,15 +540,7 @@ Return ONLY the JSON array. Example:
             cleaned = self._clean_json(content)
             return json.loads(cleaned)
         except Exception as e:
-            print(f"Gemini text listening failed: {e}. Falling back to Ollama.")
-            
-        # Fallback to Ollama
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model)
-            if res:
-                return json.loads(self._clean_json(res))
-        except Exception as e:
-            print(f"Ollama text listening failed: {e}")
+            print(f"Gemini text listening failed: {e}")
             
         return {"error": "AI could not generate questions."}
 
@@ -657,14 +554,7 @@ Return ONLY the JSON array. Example:
             content = response.choices[0].message.content
             return json.loads(self._clean_json(content))
         except Exception as e:
-            print(f"Gemini get_json_advice failed: {e}. Falling back to Ollama.")
-            
-        try:
-            res = await self._call_ollama(prompt, model=self.fallback_text_model, is_json=True)
-            if res:
-                return json.loads(self._clean_json(res))
-        except Exception as e:
-            print(f"Ollama get_json_advice failed: {e}")
+            print(f"Gemini get_json_advice failed: {e}")
         return {}
 
 ai_service = AIService()
