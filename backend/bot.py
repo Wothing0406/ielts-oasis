@@ -56,6 +56,7 @@ async def on_message(message):
     await bot.process_commands(message)
     
     is_reply_to_bot = False
+    ref_msg = None
     if message.reference and message.reference.message_id:
         try:
             ref_msg = await message.channel.fetch_message(message.reference.message_id)
@@ -64,41 +65,37 @@ async def on_message(message):
         except:
             pass
             
-    discord_id = str(message.author.id)
-    in_conversation = False
-    if discord_id in user_states:
-        state_channel = user_states[discord_id].get("channel_id")
-        if not state_channel or state_channel == message.channel.id or isinstance(message.channel, discord.DMChannel):
-            in_conversation = True
-            
-    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot or in_conversation:
+    if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot:
         if message.content.startswith('/'):
             return
             
+        discord_id = str(message.author.id)
         content = message.content.replace(f'<@{bot.user.id}>', '').strip()
         
-        # Handle Conversation States
-        if discord_id in user_states:
-            state_data = user_states[discord_id]
-            state = state_data.get("state")
-            
-            if state == "STATE_ASK_INFO":
+        # 1. Check if the user is replying to a /tuvan question
+        if is_reply_to_bot and ref_msg:
+            # Step 1: User replies to /tuvan introduction
+            if "Để thiết lập lộ trình học tốt nhất" in ref_msg.content:
                 async with message.channel.typing():
                     try:
                         q_prompt = f"Học viên nói: {content}. Đưa ra 1 câu hỏi bài tập IELTS phù hợp để kiểm tra trình độ. Không giải thích dài dòng."
                         question = await ai_service.get_advice(q_prompt)
-                        user_states[discord_id]["state"] = "STATE_TESTING"
-                        user_states[discord_id]["info"] = content
+                        user_states[discord_id] = {
+                            "state": "STATE_TESTING",
+                            "info": content
+                        }
                         await message.reply(f"Ok! Dựa vào thông tin của bạn, hãy trả lời câu hỏi sau để mình đánh giá nhé:\n\n**{question}**")
                         return
                     except Exception as e:
                         logger.error(e)
             
-            elif state == "STATE_TESTING":
+            # Step 2: User replies to test question
+            elif "trả lời câu hỏi sau để mình đánh giá nhé" in ref_msg.content or "Dựa vào thông tin của bạn, hãy trả lời câu hỏi sau" in ref_msg.content:
                 async with message.channel.typing():
                     db = SessionLocal()
                     user = db.query(User).filter(User.discord_id == discord_id).first()
-                    info = state_data.get("info", "")
+                    state_data = user_states.get(discord_id, {})
+                    info = state_data.get("info", "Rảnh tối, beginner")
                     
                     e_prompt = f"Thông tin học viên: {info}. Họ trả lời câu hỏi test là: {content}. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ. Sau đó đề xuất lịch học mỗi ngày (ví dụ 20:00). Trả về JSON: {{\"evaluation\": \"...\", \"level\": \"...\", \"time\": \"HH:MM\", \"topic\": \"...\"}}"
                     try:
@@ -129,42 +126,59 @@ async def on_message(message):
                         db.commit()
                     
                     db.close()
-                    del user_states[discord_id]
+                    user_states.pop(discord_id, None)
                     
                     await message.reply(f"Đánh giá của mình: {data.get('evaluation')}\n\nTrình độ của bạn: **{data.get('level')}**.\nMình đã đặt lịch học cho bạn vào **{data.get('time')}** mỗi ngày với chủ đề **{data.get('topic')}**. Đến giờ mình sẽ nhắc thật gắt gao nhé! 🍵")
                     return
  
-        # Default Chat
+        # 2. General reply context or mention context
         async with message.channel.typing():
             if not content:
                 content = "Chào bạn"
                 
-            # Fetch last 8 messages to build conversation history context
-            history_messages = []
-            try:
-                async for msg in message.channel.history(limit=8):
-                    author_name = "Học viên" if msg.author.id != bot.user.id else "IELTS Oasis"
-                    msg_content = msg.content.replace(f'<@{bot.user.id}>', '').strip()
-                    if msg_content:
-                        history_messages.append(f"{author_name}: {msg_content}")
-            except Exception as e:
-                logger.error(f"Failed to fetch history: {e}")
+            if is_reply_to_bot and ref_msg:
+                # Direct reply to a specific bot message
+                replied_cleaned = ref_msg.content.replace(f'<@{bot.user.id}>', '').strip()
+                prompt = f"""
+                Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                Quy tắc quan trọng:
+                1. Hãy trả lời trực tiếp phản hồi của học viên đối với câu nói trước đó của bạn.
+                2. Nếu học viên chào hỏi, hãy chào lại thân thiện.
+                3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu được làm bài tập hay luyện tập.
                 
-            history_messages.reverse()
-            history_str = "\n".join(history_messages)
-            
-            prompt = f"""
-            Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
-            Quy tắc quan trọng:
-            1. Nếu học viên chào hỏi (ví dụ: hi, hello, chào thầy...), hãy chào lại một cách thân thiện và hỏi xem bạn có thể giúp gì cho họ, TUYỆT ĐỐI KHÔNG tự tiện đưa ra bài tập hay câu hỏi kiểm tra.
-            2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng. Chỉ trả lời câu hỏi của họ, không tự động đố bài tập trừ khi họ yêu cầu.
-            3. CHỈ khi học viên nói muốn luyện tập, yêu cầu làm bài tập, hoặc muốn thử sức, lúc đó bạn mới tạo 1-2 câu hỏi trắc nghiệm hoặc điền từ ngắn gọn kèm đáp án ẩn dưới dạng spoiler (ví dụ ||đáp án||) để họ tự thử sức.
-            
-            Dưới đây là lịch sử hội thoại gần đây giữa bạn (IELTS Oasis) và học viên (hãy dựa vào đây để trả lời câu reply của họ một cách liền mạch, đúng ngữ cảnh):
-            {history_str}
-            
-            Hãy đưa ra câu trả lời tiếp theo của gia sư IELTS Oasis:
-            """
+                Ngữ cảnh hội thoại:
+                - Bạn (IELTS Oasis) đã nói trước đó: "{replied_cleaned}"
+                - Học viên vừa reply/phản hồi lại câu trên của bạn: "{content}"
+                
+                Hãy đưa ra phản hồi tiếp theo của bạn:
+                """
+            else:
+                # Normal mention or DM chat history
+                history_messages = []
+                try:
+                    async for msg in message.channel.history(limit=6):
+                        author_name = "Học viên" if msg.author.id != bot.user.id else "IELTS Oasis"
+                        msg_content = msg.content.replace(f'<@{bot.user.id}>', '').strip()
+                        if msg_content:
+                            history_messages.append(f"{author_name}: {msg_content}")
+                except Exception as e:
+                    logger.error(f"Failed to fetch history: {e}")
+                    
+                history_messages.reverse()
+                history_str = "\n".join(history_messages)
+                
+                prompt = f"""
+                Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                Quy tắc quan trọng:
+                1. Nếu học viên chào hỏi (ví dụ: hi, hello, chào thầy...), hãy chào lại một cách thân thiện và hỏi xem bạn có thể giúp gì cho họ, TUYỆT ĐỐI KHÔNG tự tiện đưa ra bài tập hay câu hỏi kiểm tra.
+                2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng.
+                3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu.
+                
+                Dưới đây là lịch sử hội thoại gần đây giữa bạn (IELTS Oasis) và học viên:
+                {history_str}
+                
+                Hãy đưa ra câu trả lời tiếp theo của gia sư IELTS Oasis:
+                """
             try:
                 response = await ai_service.get_advice(prompt)
                 if response:
