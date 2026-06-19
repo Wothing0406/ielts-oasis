@@ -15,6 +15,8 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
+  const [expandedWritings, setExpandedWritings] = useState<Record<number, boolean>>({});
+  const [selectedWritingContent, setSelectedWritingContent] = useState<string>("");
 
   const [activeComments, setActiveComments] = useState<{type: string, id: number} | null>(null);
   const [commentsList, setCommentsList] = useState<any[]>([]);
@@ -225,8 +227,9 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
     }
   };
 
-  const handleConvertToLesson = async (writingId: number) => {
+  const handleConvertToLesson = async (writingId: number, fullContent: string) => {
     setConvertingId(writingId);
+    setSelectedWritingContent(fullContent);
     setLesson(null);
     setAnswers({});
     setShowFeedback(false);
@@ -325,7 +328,20 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
                 <p className="text-[10px] text-accent/60">Band Score: <span className="text-primary font-bold">{w.band_score}</span></p>
               </div>
             </div>
-            <p className="text-xs text-accent italic leading-relaxed line-clamp-3">"{w.content}"</p>
+            <div>
+              <p className={`text-xs text-accent italic leading-relaxed ${expandedWritings[w.id] ? '' : 'line-clamp-3'}`}>
+                "{w.full_content || w.content}"
+              </p>
+              {(w.full_content || w.content).length > 200 && (
+                <button
+                  type="button"
+                  onClick={() => setExpandedWritings(prev => ({ ...prev, [w.id]: !prev[w.id] }))}
+                  className="text-primary text-[10px] font-bold mt-1 hover:underline focus:outline-none"
+                >
+                  {expandedWritings[w.id] ? "Rút gọn 🍵" : "Xem thêm 🍵"}
+                </button>
+              )}
+            </div>
             
             {/* Tương tác */}
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-accent/60 mt-auto border-t border-black/5 pt-3 w-full">
@@ -345,14 +361,14 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
               <div className="flex items-center gap-2">
                 {onListenPost && (
                   <button type="button" 
-                    onClick={() => onListenPost(w.content)}
+                    onClick={() => onListenPost(w.full_content || w.content)}
                     className="bg-primary/10 text-primary text-[10px] font-bold px-4 py-2 rounded-full border border-primary/20 flex items-center gap-1 hover:bg-primary hover:text-white transition-all"
                   >
                     <span className="material-symbols-rounded text-[14px]">headphones</span> Matcha Radio
                   </button>
                 )}
                 <button type="button" 
-                  onClick={() => handleConvertToLesson(w.id)}
+                  onClick={() => handleConvertToLesson(w.id, w.full_content || w.content)}
                   disabled={convertingId === w.id}
                   className="bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
                 >
@@ -451,6 +467,15 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
                   <audio controls src={lesson.audio_url} className="w-full">
                     <track kind="captions" />
                   </audio>
+                </div>
+              )}
+
+              {selectedWritingContent && (
+                <div className="mb-6 bg-white p-5 rounded-3xl border-2 border-primary/10">
+                  <h4 className="text-sm font-bold text-accent mb-2 flex items-center gap-1">
+                    <span className="material-symbols-rounded text-primary">menu_book</span> Bài đọc (Reading Passage)
+                  </h4>
+                  <p className="text-xs text-accent leading-relaxed italic whitespace-pre-wrap">"{selectedWritingContent}"</p>
                 </div>
               )}
 
