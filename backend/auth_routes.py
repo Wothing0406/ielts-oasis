@@ -106,7 +106,7 @@ import urllib.parse
 def discord_login(redirect_uri: str = None):
     uri = redirect_uri if redirect_uri else DISCORD_REDIRECT_URI
     encoded_uri = urllib.parse.quote(uri, safe='')
-    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email"
+    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email%20guilds.join"
     return {"url": url}
 
 class AuthCode(BaseModel):
@@ -203,18 +203,18 @@ async def discord_callback(payload: AuthCode):
                         "Content-Type": "application/json"
                     }
                     
-                    # 1. Add user to Guild disabled per user request (no forced server join)
-                    # if discord_guild_id and access_token:
-                    #     payload = {"access_token": access_token}
-                    #     res = await client.put(
-                    #         f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
-                    #         headers=headers,
-                    #         json=payload
-                    #     )
-                    #     if res.status_code in (201, 204):
-                    #         print("User added to guild successfully.")
-                    #     else:
-                    #         print(f"Failed to add user to guild: {res.status_code} {res.text}")
+                    # 1. Add user to Guild (Auto join server)
+                    if discord_guild_id and access_token:
+                        payload = {"access_token": access_token}
+                        res = await client.put(
+                            f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
+                            headers=headers,
+                            json=payload
+                        )
+                        if res.status_code in (201, 204):
+                            print("User added to guild successfully.")
+                        else:
+                            print(f"Failed to add user to guild: {res.status_code} {res.text}")
                     
                     # Wait a bit for Discord to process the guild join before DMing
                     await asyncio.sleep(2)
