@@ -3,6 +3,10 @@ import httpx
 import jwt
 import uuid
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import asyncio
