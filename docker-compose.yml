@@ -84,8 +84,8 @@ services:
     container_name: ielts_oasis_tunnel
     restart: always
     environment:
-      - NGROK_AUTHTOKEN=3EmAQdviM8qcEuvyHlqTVWB4HAy_2wz9vu1uZ5Hr5PnLv1fEK
-    command: "http http://web:3000 --domain=drudge-amount-charting.ngrok-free.dev --log=stdout"
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: "http http://web:3000 --domain=${NGROK_DOMAIN} --log=stdout"
     depends_on:
       - web
     networks:
