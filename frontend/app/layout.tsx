@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "IELTS Oasis - Your Zen Learning Space",
   description: "Premium IELTS learning platform with Matcha Latte aesthetics.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/logoweb.png",
   }
 };
 
