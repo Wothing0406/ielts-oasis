@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
-export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVocab?: (vocab: any) => Promise<any>, vocabList?: any[] }) {
+export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost }: { onAddVocab?: (vocab: any) => Promise<any>, vocabList?: any[], onListenPost?: (text: string) => void }) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies'>('writings');
@@ -342,17 +342,27 @@ export default function CommunityFeed({ onAddVocab, vocabList = [] }: { onAddVoc
                   </button>
                 )}
               </div>
-              <button type="button" 
-                onClick={() => handleConvertToLesson(w.id)}
-                disabled={convertingId === w.id}
-                className="bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
-              >
-                {convertingId === w.id ? (
-                  <><span className="material-symbols-rounded animate-spin text-[14px]">sync</span> Đang tạo bài học AI...</>
-                ) : (
-                  <><span className="material-symbols-rounded text-[14px]">psychology</span> Học bài này</>
+              <div className="flex items-center gap-2">
+                {onListenPost && (
+                  <button type="button" 
+                    onClick={() => onListenPost(w.content)}
+                    className="bg-primary/10 text-primary text-[10px] font-bold px-4 py-2 rounded-full border border-primary/20 flex items-center gap-1 hover:bg-primary hover:text-white transition-all"
+                  >
+                    <span className="material-symbols-rounded text-[14px]">headphones</span> Matcha Radio
+                  </button>
                 )}
-              </button>
+                <button type="button" 
+                  onClick={() => handleConvertToLesson(w.id)}
+                  disabled={convertingId === w.id}
+                  className="bg-accent text-white text-[10px] font-bold px-4 py-2 rounded-full flex items-center gap-1 hover:bg-primary transition-colors disabled:opacity-50"
+                >
+                  {convertingId === w.id ? (
+                    <><span className="material-symbols-rounded animate-spin text-[14px]">sync</span> Đang tạo bài học AI...</>
+                  ) : (
+                    <><span className="material-symbols-rounded text-[14px]">psychology</span> Học bài này</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         ))}

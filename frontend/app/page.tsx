@@ -256,6 +256,14 @@ export default function Home() {
     window.location.reload();
   };
 
+  const handleSelectListening = (text: string) => {
+    setActiveListeningContext(text);
+    const el = document.getElementById("matcha-radio");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="flex h-screen p-4 lg:p-6 gap-6 max-w-[1600px] mx-auto w-full">
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
@@ -381,7 +389,7 @@ export default function Home() {
           <section className="xl:col-span-8 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
             <VocabularyLab 
               vocabList={vocabList}
-              onAdd={handleAddVocab}
+              onAdd={async (formData: any) => { await handleAddVocab(formData); }}
               onDelete={handleDeleteVocab}
               onGenerateTopic={handleGenerateTopic}
               onStartQuiz={handleStartQuiz}
@@ -403,12 +411,12 @@ export default function Home() {
 
           {/* Hàng 4: Writing Sanctuary */}
           <section id="writing-sanctuary" className="xl:col-span-12">
-            <WritingSanctuary initialPrompt={activeWritingPrompt} />
+            <WritingSanctuary initialPrompt={activeWritingPrompt} onListenWriting={handleSelectListening} />
           </section>
           
           {/* Hàng 5: Community Feed */}
           <section className="xl:col-span-12">
-            <CommunityFeed onAddVocab={handleAddVocab} vocabList={vocabList} />
+            <CommunityFeed onAddVocab={handleAddVocab} vocabList={vocabList} onListenPost={handleSelectListening} />
           </section>
 
         </div>

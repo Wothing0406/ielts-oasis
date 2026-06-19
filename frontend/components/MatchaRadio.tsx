@@ -36,6 +36,12 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
   const [manualMode, setManualMode] = useState<"conversation" | "paragraph">("conversation");
   const [showInput, setShowInput] = useState(false);
 
+  // Custom Audio States
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+
   // Bookmarking state
   const audioRef = useRef<HTMLAudioElement>(null);
   const [bookmarks, setBookmarks] = useState<{ time: number, label: string }[]>([]);
@@ -63,6 +69,64 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
       generateFromText(initialContext);
     }
   }, [initialContext]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    setIsPlaying(!audio.paused);
+    setCurrentTime(audio.currentTime);
+    if (audio.duration) setDuration(audio.duration);
+
+    return () => {
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [test?.audio_url]);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(console.error);
+      }
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const formatTimeMinSec = (secs: number) => {
+    if (isNaN(secs)) return "0:00";
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const resetState = () => {
     setLoading(true);
@@ -354,9 +418,11 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
       {test && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Audio Player Section */}
-          <div className="bg-secondary/40 dark:bg-neutral-800/40 p-6 rounded-2xl border border-primary/10 flex flex-col items-center gap-6 h-[600px] overflow-hidden">
-            <h4 className="text-xl font-bold text-center w-full truncate">{test.title || "Listening Test"}</h4>
-            {test.context && <p className="text-center opacity-70 text-sm px-4">{test.context}</p>}
+          <div className="bg-[#FAF9F5] dark:bg-neutral-850 p-6 rounded-3xl border border-primary/10 flex flex-col items-center justify-between gap-6 min-h-[600px]">
+            <div className="w-full text-center">
+              <h4 className="text-xl font-bold text-[#8C6239] dark:text-neutral-200 truncate">{test.title || "Matcha Radio Listening"}</h4>
+              {test.context && <p className="text-xs opacity-60 mt-1 max-w-sm mx-auto">{test.context}</p>}
+            </div>
 
             {test.type === "youtube" ? (
               <div className="w-full flex-1 bg-black rounded-xl overflow-hidden shadow-inner flex items-center justify-center min-h-[200px]">
@@ -372,31 +438,159 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
                 ></iframe>
               </div>
             ) : (
-              <div className="w-full flex flex-col items-center gap-4 my-auto">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                  <span className="material-symbols-rounded text-4xl text-primary">volume_up</span>
-                </div>
-                <audio ref={audioRef} controls className="w-full" src={test.audio_url}>
-                  <track kind="captions" />
-                  Your browser does not support the audio element.
-                </audio>
+              <div className="w-full flex flex-col items-center gap-5 my-auto">
+                <audio ref={audioRef} src={test.audio_url} />
 
-                {/* Bookmarks Section */}
-                <div className="w-full mt-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-primary/20 shadow-sm">
-                  <div className="flex gap-2 mb-3">
+                {/* self-contained animation styles */}
+                <style>{`
+                  @keyframes bounce-bar {
+                    0%, 100% { height: 6px; }
+                    50% { height: 28px; }
+                  }
+                  .v-bar {
+                    width: 3px;
+                    background-color: #9CC29C;
+                    border-radius: 2px;
+                    height: 6px;
+                  }
+                  .v-bar-active-1 { animation: bounce-bar 0.9s ease-in-out infinite; }
+                  .v-bar-active-2 { animation: bounce-bar 0.6s ease-in-out infinite 0.15s; }
+                  .v-bar-active-3 { animation: bounce-bar 1.1s ease-in-out infinite 0.3s; }
+                  .v-bar-active-4 { animation: bounce-bar 0.8s ease-in-out infinite 0.1s; }
+                  .v-bar-active-5 { animation: bounce-bar 1.0s ease-in-out infinite 0.4s; }
+                  .v-bar-active-6 { animation: bounce-bar 0.7s ease-in-out infinite 0.2s; }
+                `}</style>
+
+                {/* Retro Analog Tuner Dial */}
+                <div className="w-full max-w-sm bg-[#F3EFE0] dark:bg-neutral-800 border border-[#8C6239]/20 rounded-xl p-3 shadow-inner relative overflow-hidden">
+                  <div className="flex justify-between text-[10px] font-mono text-[#8C6239]/70 select-none px-2 mb-1">
+                    <span>88</span>
+                    <span>92</span>
+                    <span>98</span>
+                    <span>104</span>
+                    <span>108 MHz</span>
+                  </div>
+                  {/* Tuner scale marks */}
+                  <div className="h-4 border-t-2 border-b border-[#8C6239]/20 flex justify-between px-2 select-none pointer-events-none opacity-40">
+                    {"||||||||||||||||||||||||||".split("").map((c, i) => (
+                      <span key={i} className="text-[6px] font-serif">-</span>
+                    ))}
+                  </div>
+                  {/* Sliding Needle */}
+                  <div 
+                    className="absolute top-2 w-0.5 h-10 bg-red-500 transition-all duration-300 pointer-events-none shadow"
+                    style={{ left: `${4 + (currentTime / (duration || 1)) * 91}%` }}
+                  />
+                </div>
+
+                {/* Circular speaker & Audio Visualizer Section */}
+                <div className="flex items-center gap-6 my-2">
+                  {/* Visualizer Left */}
+                  <div className="flex items-end gap-1 h-8 w-12 justify-end">
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-1' : ''}`} />
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-2' : ''}`} />
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-3' : ''}`} />
+                  </div>
+
+                  {/* Spinning vinyl record disc */}
+                  <button 
+                    onClick={togglePlay}
+                    className="w-28 h-28 rounded-full bg-neutral-900 border-4 border-neutral-700 flex items-center justify-center relative shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle, #333 10%, #111 60%, #000 100%)',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.1)'
+                    }}
+                  >
+                    {/* Concentric circles grooves */}
+                    <div className="absolute inset-2 rounded-full border border-neutral-800/30 opacity-40"></div>
+                    <div className="absolute inset-4 rounded-full border border-neutral-800/30 opacity-40"></div>
+                    <div className="absolute inset-6 rounded-full border border-neutral-800/30 opacity-40"></div>
+                    <div className="absolute inset-8 rounded-full border border-neutral-800/30 opacity-40"></div>
+                    
+                    {/* Spinning label container */}
+                    <div className={`absolute inset-0 flex items-center justify-center ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '8s' }}>
+                      {/* Green center label */}
+                      <div className="w-12 h-12 bg-[#9CC29C] rounded-full border border-[#FAF9F5]/40 flex items-center justify-center relative shadow-inner">
+                        {/* Spindle hole */}
+                        <div className="w-2.5 h-2.5 bg-[#FAF9F5] rounded-full"></div>
+                      </div>
+                    </div>
+
+                    {/* Overlay play/pause state indicator */}
+                    <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="material-symbols-rounded text-white text-3xl select-none">
+                        {isPlaying ? 'pause' : 'play_arrow'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Visualizer Right */}
+                  <div className="flex items-end gap-1 h-8 w-12 justify-start">
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-4' : ''}`} />
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-5' : ''}`} />
+                    <div className={`v-bar ${isPlaying ? 'v-bar-active-6' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Custom player pill control bar */}
+                <div className="w-full max-w-md bg-[#FAF9F5] dark:bg-neutral-800 px-6 py-3 rounded-full flex items-center gap-4 shadow-sm border border-[#8C6239]/20">
+                  <button 
+                    onClick={togglePlay}
+                    className="text-neutral-800 dark:text-white hover:opacity-85 transition-opacity"
+                  >
+                    <span className="material-symbols-rounded font-bold text-lg select-none">
+                      {isPlaying ? 'pause' : 'play_arrow'}
+                    </span>
+                  </button>
+                  
+                  <span className="text-xs font-mono text-neutral-600 dark:text-neutral-300 select-none whitespace-nowrap">
+                    {formatTimeMinSec(currentTime)} / {formatTimeMinSec(duration)}
+                  </span>
+
+                  {/* Seek bar */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="flex-1 accent-[#8C6239] h-1 rounded-lg cursor-pointer bg-neutral-300 dark:bg-neutral-600 outline-none"
+                  />
+
+                  <button 
+                    onClick={toggleMute}
+                    className="text-neutral-800 dark:text-white hover:opacity-85 transition-opacity"
+                  >
+                    <span className="material-symbols-rounded text-lg select-none">
+                      {isMuted ? 'volume_off' : 'volume_up'}
+                    </span>
+                  </button>
+
+                  <span className="material-symbols-rounded text-lg text-neutral-400 select-none cursor-pointer">
+                    more_vert
+                  </span>
+                </div>
+
+                {/* Bookmarks & Notes Section */}
+                <div className="w-full p-4 bg-white/70 dark:bg-neutral-900/70 rounded-2xl border border-[#9CC29C]/30 shadow-sm mt-auto">
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       placeholder="Note (e.g. Hard to hear)..."
                       value={newBookmarkLabel}
                       onChange={e => setNewBookmarkLabel(e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-neutral-600 bg-transparent outline-none focus:border-primary"
+                      className="flex-1 px-4 py-3 rounded-xl border border-[#9CC29C]/30 bg-white dark:bg-neutral-800 outline-none focus:border-[#9CC29C] text-sm"
                     />
-                    <button type="button" onClick={addBookmark} className="px-3 py-2 bg-primary text-white text-sm rounded-lg font-bold flex items-center gap-1 hover:bg-primary/90">
+                    <button 
+                      type="button" 
+                      onClick={addBookmark} 
+                      className="px-4 py-3 bg-[#9CC29C] text-white rounded-xl font-bold flex items-center justify-center hover:bg-[#8bb48b] active:scale-95 transition-all shadow-sm"
+                    >
                       <span className="material-symbols-rounded text-[18px]">bookmark_add</span>
                     </button>
                   </div>
                   {bookmarks.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#9CC29C]/20">
                       {bookmarks.map((bm, idx) => (
                         <button type="button" key={idx} onClick={() => jumpToBookmark(bm.time)} className="px-3 py-1 bg-secondary/50 border border-primary/30 text-primary rounded-full text-xs hover:bg-primary hover:text-white transition-colors flex items-center gap-1">
                           <span className="material-symbols-rounded text-[14px]">play_circle</span>

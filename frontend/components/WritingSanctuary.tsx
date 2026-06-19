@@ -13,9 +13,10 @@ const formatTime = (seconds: number) => {
 
 interface WritingSanctuaryProps {
   initialPrompt?: string;
+  onListenWriting?: (text: string) => void;
 }
 
-const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
+const WritingSanctuary = ({ initialPrompt, onListenWriting }: WritingSanctuaryProps) => {
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -245,6 +246,11 @@ const WritingSanctuary = ({ initialPrompt }: WritingSanctuaryProps) => {
                 {analysis && (
                   <button type="button" onClick={handleShareToCommunity} className="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-sm font-bold flex items-center gap-1 transition-colors">
                     <span className="material-symbols-rounded text-[18px]">public</span> Chia sẻ
+                  </button>
+                )}
+                {text.trim().length > 10 && onListenWriting && (
+                  <button type="button" onClick={() => onListenWriting(text)} className="px-3 py-1 bg-primary text-white hover:bg-primary/90 rounded-full text-xs font-bold flex items-center gap-1 transition-colors shadow-sm">
+                    <span className="material-symbols-rounded text-[14px]">headphones</span> Matcha Radio
                   </button>
                 )}
                 <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap">
