@@ -14,9 +14,10 @@ const formatTime = (seconds: number) => {
 interface WritingSanctuaryProps {
   initialPrompt?: string;
   onListenWriting?: (text: string) => void;
+  onReadWriting?: (text: string) => void;
 }
 
-const WritingSanctuary = ({ initialPrompt, onListenWriting }: WritingSanctuaryProps) => {
+const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: WritingSanctuaryProps) => {
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -251,6 +252,11 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting }: WritingSanctuaryPr
                 {text.trim().length > 10 && onListenWriting && (
                   <button type="button" onClick={() => onListenWriting(text)} className="px-3 py-1 bg-primary text-white hover:bg-primary/90 rounded-full text-xs font-bold flex items-center gap-1 transition-colors shadow-sm">
                     <span className="material-symbols-rounded text-[14px]">headphones</span> Matcha Radio
+                  </button>
+                )}
+                {text.trim().length > 10 && onReadWriting && (
+                  <button type="button" onClick={() => onReadWriting(text)} className="px-3 py-1 bg-[#8C6239] text-white hover:bg-[#724f2e] rounded-full text-xs font-bold flex items-center gap-1 transition-colors shadow-sm">
+                    <span className="material-symbols-rounded text-[14px]">menu_book</span> Matcha Book
                   </button>
                 )}
                 <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap">

@@ -264,6 +264,14 @@ export default function Home() {
     }
   };
 
+  const handleSelectReading = (text: string) => {
+    setActiveReadingContext(text);
+    const el = document.getElementById("matcha-book");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="flex h-screen p-4 lg:p-6 gap-6 max-w-[1600px] mx-auto w-full">
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
@@ -411,7 +419,11 @@ export default function Home() {
 
           {/* Hàng 4: Writing Sanctuary */}
           <section id="writing-sanctuary" className="xl:col-span-12">
-            <WritingSanctuary initialPrompt={activeWritingPrompt} onListenWriting={handleSelectListening} />
+            <WritingSanctuary 
+              initialPrompt={activeWritingPrompt} 
+              onListenWriting={handleSelectListening} 
+              onReadWriting={handleSelectReading}
+            />
           </section>
           
           {/* Hàng 5: Community Feed */}
