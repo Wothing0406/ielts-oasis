@@ -1,5 +1,7 @@
 # 🌴 IELTS Oasis: Adaptive English Learning Platform & Proactive Multi-Agent Ecosystem
 
+![IELTS Oasis Banner](./ielts_oasis_clean_2d_matcha.png)
+
 [![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
 [![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%203.1%20Flash%20Lite-orange.svg)](https://deepmind.google/technologies/gemini/)
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-green.svg)](#)
@@ -39,27 +41,55 @@ graph TD
     DA -->|Evaluate & Schedule| DB
 ```
 
-### 1. Matcha Lens: Computer Vision + Multimodal Ingestion Agent
-* **Visual Detection:** Integrates YOLOv8 object detection in the backend. When a user uploads a photo of their surroundings, the CV agent locates distinct items.
-* **Multimodal Extraction:** Crops coordinates, maps target bounding boxes, and passes the crops to Gemini to extract translations, IPA phonetics, IELTS-oriented contextual examples, and mnemonics memory hooks.
-* **Media Binding:** Binds relevant Unsplash imagery and initiates a Text-to-Speech (TTS) pipeline to save audio clips directly.
+---
 
-### 2. IELTS Essay Grading Agent (Writing Lab)
-* **Strict Evaluation:** Acts as a strict examiner, breaking down user-submitted essays based on the 4 official IELTS criteria: *Task Achievement, Coherence & Cohesion, Lexical Resource,* and *Grammatical Range & Accuracy*.
-* **Granular Corrections:** Isolates exact grammar and spelling mistakes, highlights the original vs. corrected string, and explains the rationale in Vietnamese.
+## ⚡ Main Features
 
-### 3. YouTube Listening Quiz Generator (Listening Lab)
-* **Dynamic Scraper:** Accepts a YouTube video URL, extracts subtitles dynamically, and tests suitability for listening comprehension.
-* **Interactive Assessment:** Generates customized multiple-choice tests or dictation fill-in-the-gap exercises using the transcript data, giving users real-time playback testing capability.
+### 1. 📷 Matcha Lens (Multimodal Vocabulary Ingestion)
+* **Visual Detection:** Integrates a dual detection system. It first attempts to utilize a local **YOLOv8** model for quick physical object mapping. If no bounding boxes are detected, it seamlessly falls back to **Gemini Vision** to identify 5 to 8 distinct physical objects.
+* **Floating Bounding Boxes:** Directly overlay interactive bounding boxes on the uploaded image inside the Next.js UI.
+* **Vocabulary Enrichment:** When saving a detected word, Gemini refines it to generate IPA phonetics, Vietnamese meanings, IELTS academic contextual example sentences, synonyms, and **mnemonics Vietnamese memory hooks** to simplify retention.
+* **TTS Integration:** Automatically generates Text-to-Speech (TTS) pronunciation audio files for new words and stores them locally.
+* **Unsplash Media Binding:** Binds relevant Unsplash images to the card if no picture is present.
 
-### 4. Active Level Diagnostic & Advisor Agent (`/tuvan` Discord Flow)
-* **Interactive Interview:** Bot interviews the user in Discord regarding their study availability and current vocabulary/IELTS status.
-* **Diagnostic Test:** Formulates a tailored IELTS level assessment question based on the user's initial responses.
-* **Structured JSON Extraction:** Once the user replies directly to the question (using Discord's reply function), the advisor evaluates the answer using Gemini's **Structured Output (JSON mode)** to determine the IELTS band, topic focus, and optimal daily study times.
-* **APScheduler Integration:** Automatically registers a cron-like schedule triggers to push gắt gao (strict) daily notifications.
+### 2. ✍️ Writing Sanctuary (IELTS Essay Evaluator)
+* **Strict IELTS Examiner:** Grades essays based on the 4 official IELTS criteria: *Task Achievement, Coherence & Cohesion, Lexical Resource,* and *Grammatical Range & Accuracy*.
+* **Detailed Corrections:** Highlights original mistakes, provides correct academic forms, and gives thorough grammatical explanations in Vietnamese.
+* **AI Rephraser:** Allows users to highlight any phrase in their essay to receive 3 alternative academic/natural rewrites, which can be applied directly with one click.
+* **Timing & Drafts:** Includes built-in timed modes (Task 1: 20 mins, Task 2: 40 mins) and draft saving.
+* **Seamless Cross-Lab Redirection:** Users can send their essay to *Matcha Radio* to listen to their own text, or to *Matcha Book* to generate reading comprehension questions from it.
 
-### 5. Context-Aware Conversational Tutor
-* **Targeted Thread Continuation:** Reads parent message contents when a user replies directly to a bot message. Allows users to continue specific grammar quizzes, clarify tips, or answer exercises seamlessly without code state-tracking.
+### 3. 🎧 Matcha Radio (Listening Practice Lab)
+* **YouTube Quiz Generator:** Scrapes transcripts from any YouTube URL and generates Multiple-Choice or gap-fill Dictation tests based on video content.
+* **Interactive Player:** Custom analog radio retro tuner dial and spinning vinyl disc animations.
+* **Bookmarks & Notes:** Allows users to save notes at custom audio timestamps and jump back/forth easily.
+* **Fuzzy Grading:** Utilizes Levenshtein distance calculations to allow minor spelling differences (up to 2 character variations) and pluralizations.
+
+### 4. 📖 Matcha Book (Reading Comprehension Lab)
+* **Passage generator:** Generates IELTS Reading tests (MCQs and Fill-in-the-blanks) from custom texts or shared community posts.
+* **Click-to-Translate:** Features a highlight overlay where selecting any word or phrase up to 50 characters displays an instant translation popup powered by Gemini.
+
+### 5. 📚 Vocabulary Lab & Quizzes
+* **Interactive Flashcards:** Smart flashcard sliding interface supporting swipe gestures.
+* **SRS reviews:** Track review counts using Spaced Repetition to prompt users when review dates are due.
+* **Multi-Mode Quiz:** Supports Vocabulary ABCD/Spelling quizzes and dynamically generated AI Grammar quizzes with detailed explanations.
+
+### 6. 📅 Daily Planner & Community Hub
+* **Matcha Daily List:** Generates customized roadmaps containing 10 vocabularies, a listening summary task, a Writing Task 2 prompt, and a reading passage based on a selected topic.
+* **Oasis Community:** A shared public feed where students post their graded essays and vocabularies. Users can like, comment, and convert other community posts into custom listening or reading tests.
+* **Notification Hub:** Real-time user notifications showing likes, comments, and review due counts.
+
+---
+
+## 🤖 Discord Bot Features
+
+The proactive Discord tutor acts as the scheduling arm of the Oasis ecosystem:
+* **/tuvan Command:** Bot interviews the user about study availability and current levels, generates level-testing questions, and uses **Gemini JSON mode** to diagnose the user's IELTS band and register daily reminder triggers.
+* **/xinnghi Command:** Allows students to request a day off. Gemini strictly but fairly evaluates if the reason is legitimate (under 50 words) and logs the absence to temporarily disable daily reminders.
+* **/dailyplan Command:** Instantly generates a quick 5-vocab study roadmap for a chosen topic.
+* **/myprogress Command:** Checks user statistics directly from the database (total vocab, due review counts).
+* **Schedule Checker Job:** Runs every minute (Vietnam timezone UTC+7) to send active learning DMs to users when it is time to study.
+* **Generative Thread Replies:** Continuously supports context-aware conversations (remembers up to 6 messages) when users reply directly to bot messages.
 
 ---
 
@@ -69,19 +99,24 @@ graph TD
 ielts-oasis/
 ├── backend/                  # FastAPI Backend & Discord Bot
 │   ├── services/
-│   │   ├── ai_service.py     # Gemini API integration wrapper
+│   │   ├── ai_service.py     # Gemini API integration wrapper (OpenAI compatibility endpoint)
 │   │   └── tts_service.py    # Text-to-Speech audio generation
 │   ├── bot.py                # Python Discord Bot & Scheduler
-│   ├── main.py               # FastAPI App endpoints
-│   ├── models.py             # Database schemas (MySQL)
+│   ├── main.py               # FastAPI App endpoints & YOLOv8 integration
+│   ├── models.py             # Database schemas (MySQL via SQLAlchemy)
+│   ├── schemas.py            # Pydantic schemas
 │   ├── database.py           # DB connection helper
 │   └── auth_routes.py        # Discord OAuth2 & Guest login
 ├── frontend/                 # Next.js Web Dashboard
 │   ├── app/                  # Pages & routes
 │   └── components/           # Interactive UI elements
-│       ├── CommunityFeed.tsx # Community vocabulary feed
 │       ├── DailyPlanner.tsx  # Matcha Daily Plan view
-│       └── Flashcard.tsx     # Smart interactive flashcards
+│       ├── VocabularyLab.tsx # Smart interactive flashcards
+│       ├── MatchaLens.tsx    # Yolov8 / Gemini Multimodal camera scanner
+│       ├── MatchaRadio.tsx   # YouTube & manual audio listening lab
+│       ├── MatchaBook.tsx    # Passage reader with Click-to-Translate
+│       ├── WritingSanctuary.tsx # Timed essay canvas & AI rephraser
+│       └── CommunityFeed.tsx # Community feed with likes & comments
 └── docker-compose.yml        # Orchestrator configurations
 ```
 
@@ -132,11 +167,3 @@ docker-compose up -d --build
 * Open your browser and navigate to `https://your-domain.ngrok-free.dev`.
 * Log in as a Guest or using Discord.
 * Try `/tuvan` inside your Discord server to begin the adaptive scheduling onboarding!
-
----
-
-## ⚡ Key Strengths & Tech Highlights
-* **Dual Interface Sync:** Synchronizes data between Discord interaction logs and web flashcard vault states reactively.
-* **Stateless Persistence:** Maintains bot turn-taking states purely by inspecting Discord thread message reference properties, eliminating caching memory leaks.
-* **100% Lightweight:** Relies purely on the cost-efficient `gemini-3.1-flash-lite` model for multimodal tasks.
-* **Local Guest Access:** Users can access 90% of features anonymously without login credentials via client-side state fallbacks.
