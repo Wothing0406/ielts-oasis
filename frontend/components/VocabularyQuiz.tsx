@@ -150,10 +150,10 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
             }}
             className="w-full bg-accent text-white p-5 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3"
           >
-            <span className="material-symbols-rounded text-2xl">translate</span>
-            <div className="text-left">
-              <p className="text-base font-black leading-none">Trắc nghiệm Ngữ pháp</p>
-              <p className="text-[10px] font-medium opacity-80 mt-1">Câu hỏi ngữ pháp sinh động từ AI</p>
+            <span className="material-symbols-rounded text-2xl text-white">translate</span>
+            <div className="text-left text-white">
+              <p className="text-base font-black leading-none text-white">Trắc nghiệm Ngữ pháp</p>
+              <p className="text-[10px] font-medium opacity-80 mt-1 text-white/90">Câu hỏi ngữ pháp sinh động từ AI</p>
             </div>
           </button>
         </div>
