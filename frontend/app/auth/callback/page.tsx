@@ -11,6 +11,7 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const code = searchParams.get('code');
+    const state = searchParams.get('state');
     let timerId: NodeJS.Timeout;
     
     if (code && !hasFetched.current) {
@@ -21,7 +22,8 @@ function AuthCallbackContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           code,
-          redirect_uri: window.location.origin + '/auth/callback'
+          redirect_uri: window.location.origin + '/auth/callback',
+          state
         })
       })
       .then(res => res.json())

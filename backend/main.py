@@ -18,7 +18,8 @@ from logger import setup_logger
 
 logger = setup_logger("fastapi_main")
 
-from database import SessionLocal, engine, Base
+from database import SessionLocal, engine, Base, get_db
+from sqlalchemy.orm import Session
 from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan
 from schemas import VocabIn
 
@@ -26,60 +27,60 @@ class TranslateInput(BaseModel):
     text: str
 
 def seed_db():
-    db = SessionLocal()
-    if db.query(Vocabulary).count() == 0:
-        starter_words = [
-            ("Academic", "Học thuật", "/ˌæk.əˈdem.ɪk/"),
-            ("Innovative", "Sáng tạo", "/ˈɪn.ə.veɪ.tɪv/"),
-            ("Sustainable", "Bền vững", "/səˈsteɪ.nə.bəl/"),
-            ("Evaluate", "Đánh giá", "/ɪˈvæl.ju.eɪt/"),
-            ("Significant", "Quan trọng", "/sɪɡˈnɪf.ɪ.kənt/"),
-            ("Crucial", "Thiết yếu, quan trọng", "/ˈkruː.ʃəl/"),
-            ("Viable", "Khả thi", "/ˈvaɪ.ə.bəl/"),
-            ("Feasible", "Khả thi", "/ˈfiː.zə.bəl/"),
-            ("Empower", "Trao quyền, tạo điều kiện", "/ɪmˈpaʊ.ər/"),
-            ("Collaboration", "Sự hợp tác", "/kəˌlæb.əˈreɪ.ʃən/"),
-            ("Innovation", "Đổi mới, sáng tạo", "/ˌɪn.əˈveɪ.ʃən/"),
-            ("Integrity", "Sự chính trực", "/ɪnˈteɡ.rə.ti/"),
-            ("Resilience", "Sự kiên cường, phục hồi nhanh", "/rɪˈzɪl.i.əns/"),
-            ("Promote", "Thúc đẩy", "/prəˈməʊt/"),
-            ("Enhance", "Nâng cao", "/ɪnˈhɑːns/"),
-            ("Deteriorate", "Suy thoái, xấu đi", "/dɪˈtɪə.ri.ə.reɪt/"),
-            ("Stagnant", "Trì trệ", "/ˈstæɡ.nənt/"),
-            ("Infrastructure", "Cơ sở hạ tầng", "/ˈɪn.frə.strʌk.tʃər/"),
-            ("Inequality", "Sự bất bình đẳng", "/ˌɪn.iˈkwɒl.ə.ti/"),
-            ("Entrepreneur", "Doanh nhân", "/ˌɒn.trə.prəˈnɜːr/"),
-            ("Productivity", "Năng suất", "/ˌprɒd.ʌkˈtɪv.ə.ti/"),
-            ("Authentic", "Chân thực", "/ɔːˈθen.tɪk/"),
-            ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
-            ("Imminent", "Sắp xảy ra, cận kề", "/ˈɪm.ɪ.nənt/"),
-            ("Vital", "Thiết yếu", "/ˈvaɪ.təl/"),
-            ("Ambiguous", "Mơ hồ", "/æmˈbɪɡ.ju.əs/"),
-            ("Pragmatic", "Thực dụng", "/præɡˈmæt.ɪk/"),
-            ("Advocate", "Ủng hộ, người ủng hộ", "/ˈæd.və.keɪt/"),
-            ("Undermine", "Làm suy yếu", "/ˌʌn.dəˈmaɪn/"),
-            ("Exacerbate", "Làm trầm trọng thêm", "/ɪɡˈzæs.ə.beɪt/"),
-            ("Mitigate", "Giảm nhẹ", "/ˈmɪt.ɪ.ɡeɪt/"),
-            ("Implement", "Thực hiện", "/ˈɪm.plɪ.ment/"),
-            ("Facilitate", "Tạo điều kiện thuận lợi", "/fəˈsɪl.ɪ.teɪt/"),
-            ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
-            ("Indigenous", "Bản địa", "/ɪnˈdɪdʒ.ɪ.nəs/"),
-            ("Perception", "Nhận thức", "/pəˈsep.ʃən/"),
-            ("Cognitive", "Thuộc về nhận thức", "/ˈkɒɡ.nə.tɪv/"),
-            ("Subtle", "Tinh tế", "/ˈsʌt.l/"),
-            ("Eloquent", "Lưu loát, có tài hùng biện", "/ˈel.ə.kwənt/"),
-            ("Compelling", "Thuyết phục, hấp dẫn", "/kəmˈpel.ɪŋ/"),
-            ("Tentative", "Do dự, tạm thời", "/ˈten.tə.tɪv/"),
-            ("Abundant", "Dồi dào", "/əˈbʌn.dənt/"),
-            ("Scarce", "Khan hiếm", "/skeəs/"),
-            ("Pivotal", "Then chốt", "/ˈpɪv.ə.təl/"),
-            ("Pervasive", "Lan tỏa", "/pəˈveɪ.sɪv/")
-        ]
-        for word, meaning, phonetic in starter_words:
-            v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic, is_global=True, source="Hệ thống", creator_username="System")
-            db.add(v)
-        db.commit()
-    db.close()
+    from database import get_db_context
+    with get_db_context() as db:
+        if db.query(Vocabulary).count() == 0:
+            starter_words = [
+                ("Academic", "Học thuật", "/ˌæk.əˈdem.ɪk/"),
+                ("Innovative", "Sáng tạo", "/ˈɪn.ə.veɪ.tɪv/"),
+                ("Sustainable", "Bền vững", "/səˈsteɪ.nə.bəl/"),
+                ("Evaluate", "Đánh giá", "/ɪˈvæl.ju.eɪt/"),
+                ("Significant", "Quan trọng", "/sɪɡˈnɪf.ɪ.kənt/"),
+                ("Crucial", "Thiết yếu, quan trọng", "/ˈkruː.ʃəl/"),
+                ("Viable", "Khả thi", "/ˈvaɪ.ə.bəl/"),
+                ("Feasible", "Khả thi", "/ˈfiː.zə.bəl/"),
+                ("Empower", "Trao quyền, tạo điều kiện", "/ɪmˈpaʊ.ər/"),
+                ("Collaboration", "Sự hợp tác", "/kəˌlæb.əˈreɪ.ʃən/"),
+                ("Innovation", "Đổi mới, sáng tạo", "/ˌɪn.əˈveɪ.ʃən/"),
+                ("Integrity", "Sự chính trực", "/ɪnˈteɡ.rə.ti/"),
+                ("Resilience", "Sự kiên cường, phục hồi nhanh", "/rɪˈzɪl.i.əns/"),
+                ("Promote", "Thúc đẩy", "/prəˈməʊt/"),
+                ("Enhance", "Nâng cao", "/ɪnˈhɑːns/"),
+                ("Deteriorate", "Suy thoái, xấu đi", "/dɪˈtɪə.ri.ə.reɪt/"),
+                ("Stagnant", "Trì trệ", "/ˈstæɡ.nənt/"),
+                ("Infrastructure", "Cơ sở hạ tầng", "/ˈɪn.frə.strʌk.tʃər/"),
+                ("Inequality", "Sự bất bình đẳng", "/ˌɪn.iˈkwɒl.ə.ti/"),
+                ("Entrepreneur", "Doanh nhân", "/ˌɒn.trə.prəˈnɜːr/"),
+                ("Productivity", "Năng suất", "/ˌprɒd.ʌkˈtɪv.ə.ti/"),
+                ("Authentic", "Chân thực", "/ɔːˈθen.tɪk/"),
+                ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
+                ("Imminent", "Sắp xảy ra, cận kề", "/ˈɪm.ɪ.nənt/"),
+                ("Vital", "Thiết yếu", "/ˈvaɪ.təl/"),
+                ("Ambiguous", "Mơ hồ", "/æmˈbɪɡ.ju.əs/"),
+                ("Pragmatic", "Thực dụng", "/præɡˈmæt.ɪk/"),
+                ("Advocate", "Ủng hộ, người ủng hộ", "/ˈæd.və.keɪt/"),
+                ("Undermine", "Làm suy yếu", "/ˌʌn.dəˈmaɪn/"),
+                ("Exacerbate", "Làm trầm trọng thêm", "/ɪɡˈzæs.ə.beɪt/"),
+                ("Mitigate", "Giảm nhẹ", "/ˈmɪt.ɪ.ɡeɪt/"),
+                ("Implement", "Thực hiện", "/ˈɪm.plɪ.ment/"),
+                ("Facilitate", "Tạo điều kiện thuận lợi", "/fəˈsɪl.ɪ.teɪt/"),
+                ("Comprehensive", "Toàn diện", "/ˌkɒm.prɪˈhen.sɪv/"),
+                ("Indigenous", "Bản địa", "/ɪnˈdɪdʒ.ɪ.nəs/"),
+                ("Perception", "Nhận thức", "/pəˈsep.ʃən/"),
+                ("Cognitive", "Thuộc về nhận thức", "/ˈkɒɡ.nə.tɪv/"),
+                ("Subtle", "Tinh tế", "/ˈsʌt.l/"),
+                ("Eloquent", "Lưu loát, có tài hùng biện", "/ˈel.ə.kwənt/"),
+                ("Compelling", "Thuyết phục, hấp dẫn", "/kəmˈpel.ɪŋ/"),
+                ("Tentative", "Do dự, tạm thời", "/ˈten.tə.tɪv/"),
+                ("Abundant", "Dồi dào", "/əˈbʌn.dənt/"),
+                ("Scarce", "Khan hiếm", "/skeəs/"),
+                ("Pivotal", "Then chốt", "/ˈpɪv.ə.təl/"),
+                ("Pervasive", "Lan tỏa", "/pəˈveɪ.sɪv/")
+            ]
+            for word, meaning, phonetic in starter_words:
+                v = Vocabulary(word=word, meaning=meaning, phonetic=phonetic, is_global=True, source="Hệ thống", creator_username="System")
+                db.add(v)
+            db.commit()
 
 
 # VocabIn is imported from schemas
@@ -95,30 +96,35 @@ async def backfill_vocabularies():
     # Wait a bit for the server to be fully up
     await asyncio.sleep(3)
     try:
-        db = SessionLocal()
-        empty_vocabs = db.query(Vocabulary).filter(
-            (Vocabulary.example == None) | (Vocabulary.example == "") | 
-            (Vocabulary.memory_hook == None) | (Vocabulary.memory_hook == "")
-        ).all()
-        if empty_vocabs:
-            logger.info(f"Found {len(empty_vocabs)} words missing details, enriching in background...")
-            for v in empty_vocabs:
-                try:
-                    data = await ai_service.refine_vocabulary(v.word)
-                    if data:
-                        v.example = data.get("example", v.example)
-                        v.synonyms = data.get("synonyms", v.synonyms)
-                        v.topic = data.get("topic", v.topic)
-                        v.memory_hook = data.get("memory_hook", v.memory_hook)
-                        if not v.phonetic or v.phonetic == "/.../":
-                            v.phonetic = data.get("phonetic", v.phonetic)
-                    db.commit()
-                except Exception as ex:
-                    db.rollback()
-                    logger.error(f"Failed to enrich '{v.word}': {ex}")
+        from database import get_db_context
+        with get_db_context() as db:
+            empty_vocab_ids = [v.id for v in db.query(Vocabulary).filter(
+                (Vocabulary.example == None) | (Vocabulary.example == "") | 
+                (Vocabulary.memory_hook == None) | (Vocabulary.memory_hook == "")
+            ).all()]
+            
+        if empty_vocab_ids:
+            logger.info(f"Found {len(empty_vocab_ids)} words missing details, enriching in background...")
+            for v_id in empty_vocab_ids:
+                with get_db_context() as db:
+                    v = db.query(Vocabulary).filter(Vocabulary.id == v_id).first()
+                    if not v:
+                        continue
+                    try:
+                        data = await ai_service.refine_vocabulary(v.word)
+                        if data:
+                            v.example = data.get("example", v.example)
+                            v.synonyms = data.get("synonyms", v.synonyms)
+                            v.topic = data.get("topic", v.topic)
+                            v.memory_hook = data.get("memory_hook", v.memory_hook)
+                            if not v.phonetic or v.phonetic == "/.../":
+                                v.phonetic = data.get("phonetic", v.phonetic)
+                            db.commit()
+                    except Exception as ex:
+                        db.rollback()
+                        logger.error(f"Failed to enrich ID {v_id}: {ex}")
                 await asyncio.sleep(5.0)  # Sleep 5s to avoid hitting 15 req/min rate limit
             logger.info("Background vocabulary enrichment completed.")
-        db.close()
     except Exception as e:
         logger.error(f"Auto-enrich failed: {e}")
 
@@ -180,29 +186,25 @@ YOLO_TRANSLATIONS = {
 }
 
 @app.get("/vocabulary")
-async def get_vocabulary(user: dict = Depends(get_current_user)):
-    db = SessionLocal()
+async def get_vocabulary(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     query = db.query(Vocabulary)
     if user:
         query = query.filter(Vocabulary.user_id == user["user_id"])
     else:
         query = query.filter(Vocabulary.is_global == True)
     vocabs = query.order_by(desc(Vocabulary.id)).all()
-    db.close()
     return vocabs
 
 @app.post("/vocabulary")
-async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_user)):
+async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để lưu từ vựng")
-    db = SessionLocal()
     user_id = user["user_id"]
     existing = db.query(Vocabulary).filter(
         func.lower(Vocabulary.word) == func.lower(vocab_in.word),
         Vocabulary.user_id == user_id
     ).first()
     if existing:
-        db.close()
         raise HTTPException(status_code=409, detail=f"Từ vựng '{vocab_in.word}' đã có trong kho của bạn rồi!")
     
     # Check if this word already exists globally in the database
@@ -289,7 +291,6 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
     db.add(vocab)
     db.commit()
     db.refresh(vocab)
-    db.close()
     return vocab
 
 @app.post("/vocabulary/detect")
@@ -318,7 +319,8 @@ async def detect_vocabulary(file: UploadFile = File(...)):
         # Only fallback to YOLO if AI returned nothing at all
         if len(detected_items) == 0:
             print("AI returned nothing, falling back to YOLO...")
-            results = yolo_model(img)
+            import asyncio
+            results = await asyncio.to_thread(yolo_model, img)
             for r in results:
                 for box in r.boxes:
                     label = yolo_model.names[int(box.cls[0])].lower()
@@ -392,26 +394,62 @@ async def get_encouragement():
     return {"message": msg}
 
 @app.delete("/vocabulary/{id}")
-async def delete_vocab(id: int, user: dict = Depends(get_current_user)):
-    db = SessionLocal()
+async def delete_vocab(id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = user["user_id"] if user else None
     vocab = db.query(Vocabulary).filter(Vocabulary.id == id).first()
     if not vocab:
-        db.close()
         raise HTTPException(status_code=404, detail="Vocabulary not found")
     
     if vocab.user_id != user_id:
-        db.close()
         raise HTTPException(status_code=403, detail="Không có quyền xóa từ vựng này")
         
     db.delete(vocab)
     db.commit()
-    db.close()
     return {"ok": True}
 
+class ReviewPayload(BaseModel):
+    is_correct: bool
+
+@app.post("/vocabulary/review/{id}")
+async def review_vocabulary(id: int, payload: ReviewPayload, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    vocab = db.query(Vocabulary).filter(Vocabulary.id == id, Vocabulary.user_id == user["user_id"]).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Vocabulary not found in your vault")
+        
+    vocab.last_reviewed = datetime.utcnow()
+    vocab.is_learned = True
+    
+    if payload.is_correct:
+        vocab.mastery_level = min(5, vocab.mastery_level + 1)
+    else:
+        vocab.mastery_level = 1
+        
+    intervals = {
+        1: 1,
+        2: 3,
+        3: 7,
+        4: 14,
+        5: 30
+    }
+    interval_days = intervals.get(vocab.mastery_level, 1)
+    vocab.next_review = datetime.utcnow() + timedelta(days=interval_days)
+    
+    db.commit()
+    db.refresh(vocab)
+    
+    return {
+        "status": "success",
+        "word": vocab.word,
+        "mastery_level": vocab.mastery_level,
+        "next_review": vocab.next_review.isoformat()
+    }
+
 @app.get("/stats")
-async def get_stats(user: dict = Depends(get_current_user)):
-    db = SessionLocal()
+async def get_stats(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    db = db # keep as db
     now = datetime.utcnow()
     
     user_id = user["user_id"] if user else None
@@ -454,8 +492,6 @@ async def get_stats(user: dict = Depends(get_current_user)):
             
     if streak == 0 and len(unique_dates) > 0 and (now.date() - unique_dates[0]).days == 1:
         streak = 1 # Played yesterday, streak is alive
-        
-    db.close()
     
     return {
         "streak": max(1, streak) if len(unique_dates) > 0 else 0,
@@ -514,15 +550,13 @@ from sqlalchemy import func
 from typing import Optional
 
 @app.get("/community/feed")
-async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, user: Optional[dict] = Depends(get_current_user)):
-    db = SessionLocal()
+async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = user["user_id"] if user else None
     
     # Get vocabularies
     vocab_query = db.query(Vocabulary)
     if filter_mine:
         if not user_id:
-            db.close()
             return {"vocabularies": [], "writings": []}
         vocab_query = vocab_query.filter(Vocabulary.user_id == user_id)
     else:
@@ -572,7 +606,6 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     writing_query = db.query(WritingLog)
     if filter_mine:
         if not user_id:
-            db.close()
             return {"vocabularies": [], "writings": []}
         writing_query = writing_query.filter(WritingLog.user_id == user_id)
 
@@ -620,11 +653,10 @@ class ShareWritingIn(BaseModel):
     feedback: Any
 
 @app.post("/community/share-writing")
-async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_current_user)):
+async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để đăng bài")
     
-    db = SessionLocal()
     log = WritingLog(
         user_id=user["user_id"],
         content=payload.content,
@@ -635,21 +667,17 @@ async def share_writing(payload: ShareWritingIn, user: dict = Depends(get_curren
     db.add(log)
     db.commit()
     db.refresh(log)
-    db.close()
     return {"message": "Đã chia sẻ bài viết", "id": log.id}
 
 @app.delete("/community/writing/{id}")
-async def delete_writing(id: int, user: dict = Depends(get_current_user)):
+async def delete_writing(id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập")
-    db = SessionLocal()
     user_id = user["user_id"]
     writing = db.query(WritingLog).filter(WritingLog.id == id).first()
     if not writing:
-        db.close()
         raise HTTPException(status_code=404, detail="Không tìm thấy bài viết")
     if writing.user_id != user_id:
-        db.close()
         raise HTTPException(status_code=403, detail="Bạn không có quyền xóa bài viết này")
     
     # Also delete associated likes and comments to keep database clean
@@ -658,14 +686,11 @@ async def delete_writing(id: int, user: dict = Depends(get_current_user)):
     
     db.delete(writing)
     db.commit()
-    db.close()
     return {"ok": True}
 
 @app.post("/community/convert/{writing_id}")
-async def convert_writing_to_lesson(writing_id: int):
-    db = SessionLocal()
+async def convert_writing_to_lesson(writing_id: int, db: Session = Depends(get_db)):
     writing = db.query(WritingLog).filter(WritingLog.id == writing_id).first()
-    db.close()
     if not writing:
         raise HTTPException(status_code=404, detail="Writing not found")
         
@@ -784,8 +809,7 @@ class CommentIn(BaseModel):
     content: str
 
 @app.post("/community/like")
-async def toggle_like(payload: LikeIn, current_user: dict = Depends(get_current_user)):
-    db = SessionLocal()
+async def toggle_like(payload: LikeIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = current_user["user_id"]
     existing = db.query(Like).filter(Like.user_id == user_id, Like.post_type == payload.post_type, Like.post_id == payload.post_id).first()
     if existing:
@@ -797,12 +821,10 @@ async def toggle_like(payload: LikeIn, current_user: dict = Depends(get_current_
         db.add(new_like)
         db.commit()
         liked = True
-    db.close()
     return {"liked": liked}
 
 @app.post("/community/comment")
-async def add_comment(payload: CommentIn, current_user: dict = Depends(get_current_user)):
-    db = SessionLocal()
+async def add_comment(payload: CommentIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = current_user["user_id"]
     new_comment = Comment(user_id=user_id, post_type=payload.post_type, post_id=payload.post_id, content=payload.content)
     db.add(new_comment)
@@ -818,12 +840,10 @@ async def add_comment(payload: CommentIn, current_user: dict = Depends(get_curre
         "avatar_url": user.avatar_url if user else None,
         "created_at": new_comment.created_at.isoformat()
     }
-    db.close()
     return result
 
 @app.get("/community/comments/{post_type}/{post_id}")
-async def get_comments(post_type: str, post_id: int):
-    db = SessionLocal()
+async def get_comments(post_type: str, post_id: int, db: Session = Depends(get_db)):
     comments = db.query(Comment).filter(Comment.post_type == post_type, Comment.post_id == post_id).order_by(desc(Comment.created_at)).all()
     res = []
     for c in comments:
@@ -835,7 +855,6 @@ async def get_comments(post_type: str, post_id: int):
             "avatar_url": user.avatar_url if user else None,
             "created_at": c.created_at.isoformat()
         })
-    db.close()
     return {"comments": res}
 
 class SavePlanIn(BaseModel):
@@ -843,11 +862,10 @@ class SavePlanIn(BaseModel):
     plan_data: dict
 
 @app.get("/notifications")
-async def get_user_notifications(current_user: dict = Depends(get_current_user)):
+async def get_user_notifications(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not current_user:
         return {"notifications": [], "due_count": 0}
     
-    db = SessionLocal()
     user_id = current_user["user_id"]
     
     # Get user's vocabulary IDs
@@ -972,19 +990,15 @@ async def get_user_notifications(current_user: dict = Depends(get_current_user))
     # Calculate due count (total user vocab count)
     due_count = db.query(Vocabulary).filter(Vocabulary.user_id == user_id).count()
     
-    db.close()
-    
     return {"notifications": notifications, "due_count": due_count}
 
 @app.post("/study-plan/save")
-async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user)):
+async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    db = SessionLocal()
     new_plan = DailyPlan(user_id=current_user["user_id"], plan_json=payload.plan_data)
     db.add(new_plan)
     db.commit()
-    db.close()
     return {"status": "success", "message": "Lộ trình đã được lưu!"}
 
 if __name__ == "__main__":

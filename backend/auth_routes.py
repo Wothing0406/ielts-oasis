@@ -10,7 +10,8 @@ load_dotenv()
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import asyncio
-from database import SessionLocal
+from database import SessionLocal, get_db
+from sqlalchemy.orm import Session
 from models import User, Vocabulary
 from fastapi.security import OAuth2PasswordBearer
 
@@ -21,8 +22,7 @@ class GuestLogin(BaseModel):
     guest_id: str = None
 
 @router.post("/guest")
-async def guest_login(payload: GuestLogin):
-    db = SessionLocal()
+async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
     guest_id = payload.guest_id
     username = payload.username.strip()
     
@@ -89,8 +89,6 @@ async def guest_login(payload: GuestLogin):
     }
     token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     
-    db.close()
-    
     return {
         "token": token,
         "user": jwt_payload,
@@ -101,24 +99,55 @@ DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
 # Lấy url từ frontend để chuyển hướng về
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:3000/auth/callback")
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-key-change-me")
+
+# Secure JWT secret loading
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    import logging
+    logging.getLogger("uvicorn").warning("JWT_SECRET environment variable is not set. Using a fallback secret key, please set JWT_SECRET in production!")
+    JWT_SECRET = "super-secret-key-change-me-safely"
+
 JWT_ALGORITHM = "HS256"
 
 import urllib.parse
+import hmac
+import hashlib
+import time
+
+def generate_state():
+    timestamp = str(int(time.time()))
+    signature = hmac.new(JWT_SECRET.encode(), timestamp.encode(), hashlib.sha256).hexdigest()
+    return f"{timestamp}.{signature}"
+
+def verify_state(state: str):
+    if not state or "." not in state:
+        return False
+    try:
+        timestamp, signature = state.split(".", 1)
+        if int(time.time()) - int(timestamp) > 600:  # 10 minutes expiry
+            return False
+        expected_sig = hmac.new(JWT_SECRET.encode(), timestamp.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(signature, expected_sig)
+    except:
+        return False
 
 @router.get("/discord/login")
 def discord_login(redirect_uri: str = None):
     uri = redirect_uri if redirect_uri else DISCORD_REDIRECT_URI
     encoded_uri = urllib.parse.quote(uri, safe='')
-    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email%20guilds.join"
-    return {"url": url}
+    state = generate_state()
+    url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={encoded_uri}&response_type=code&scope=identify%20email&state={state}"
+    return {"url": url, "state": state}
 
 class AuthCode(BaseModel):
     code: str
     redirect_uri: str = None
+    state: str = None
 
 @router.post("/discord/callback")
-async def discord_callback(payload: AuthCode):
+async def discord_callback(payload: AuthCode, db: Session = Depends(get_db)):
+    if not verify_state(payload.state):
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth2 state parameter")
     if not DISCORD_CLIENT_ID or not DISCORD_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Discord OAuth2 not configured in .env")
         
@@ -129,19 +158,20 @@ async def discord_callback(payload: AuthCode):
         'code': payload.code,
         'redirect_uri': payload.redirect_uri if payload.redirect_uri else DISCORD_REDIRECT_URI
     }
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
     
+    # Store access_token for optional use (we no longer force joining guild)
+    access_token = None
     async with httpx.AsyncClient() as client:
-        # Get Token
         r = await client.post('https://discord.com/api/oauth2/token', data=data, headers=headers)
         if r.status_code != 200:
-            print("Token error:", r.text)
-            raise HTTPException(status_code=400, detail="Invalid code")
-        
+            raise HTTPException(status_code=400, detail="Failed to get Discord access token")
+            
         token_info = r.json()
         access_token = token_info.get("access_token")
         
-        # Get User Info
         headers = {"Authorization": f"Bearer {access_token}"}
         r_user = await client.get("https://discord.com/api/users/@me", headers=headers)
         if r_user.status_code != 200:
@@ -149,8 +179,7 @@ async def discord_callback(payload: AuthCode):
             
         user_info = r_user.json()
         
-    # DB Operations
-    db = SessionLocal()
+    # DB Operations (db is injected)
     discord_id = user_info.get("id")
     username = user_info.get("username")
     avatar_hash = user_info.get("avatar")
@@ -196,7 +225,6 @@ async def discord_callback(payload: AuthCode):
             print(f"Failed to copy starter vocabs: {e}")
     
     discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
-    discord_guild_id = os.getenv("DISCORD_GUILD_ID")
     
     if discord_bot_token:
         async def send_welcome_and_join_guild():
@@ -207,23 +235,7 @@ async def discord_callback(payload: AuthCode):
                         "Content-Type": "application/json"
                     }
                     
-                    # 1. Add user to Guild (Auto join server)
-                    if discord_guild_id and access_token:
-                        payload = {"access_token": access_token}
-                        res = await client.put(
-                            f"https://discord.com/api/v10/guilds/{discord_guild_id}/members/{discord_id}",
-                            headers=headers,
-                            json=payload
-                        )
-                        if res.status_code in (201, 204):
-                            print("User added to guild successfully.")
-                        else:
-                            print(f"Failed to add user to guild: {res.status_code} {res.text}")
-                    
-                    # Wait a bit for Discord to process the guild join before DMing
-                    await asyncio.sleep(2)
-                    
-                    # 2. Send Welcome DM
+                    # 1. Send Welcome DM
                     dm_res = await client.post(
                         "https://discord.com/api/v10/users/@me/channels",
                         headers=headers,
@@ -253,8 +265,6 @@ async def discord_callback(payload: AuthCode):
         "exp": datetime.utcnow() + timedelta(days=7)
     }
     token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    
-    db.close()
     
     return {"token": token, "user": jwt_payload}
 

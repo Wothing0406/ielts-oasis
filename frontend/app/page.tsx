@@ -199,7 +199,24 @@ export default function Home() {
   };
 
   const handleReview = async (id: number, isCorrect: boolean) => {
-    console.log(`Reviewed word ${id}: ${isCorrect}`);
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/vocabulary/review/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_correct: isCorrect })
+      });
+      if (res.ok) {
+        // Refresh local vocabulary list to reflect new next_review / mastery_level states
+        fetchVocabs(token);
+      }
+    } catch (e) {
+      console.error("Failed to submit SRS review:", e);
+    }
   };
 
   const handleLogin = () => {
