@@ -23,22 +23,56 @@ By pairing a feature-rich web platform with an automated Discord tutor, IELTS Oa
 
 ## 🤖 The Multi-Agent Ecosystem
 
-IELTS Oasis operates a network of autonomous agents acting on behalf of the user:
+IELTS Oasis operates a network of autonomous agents acting collaboratively across the Next.js Web Dashboard and the Discord Bot:
 
 ```mermaid
 graph TD
-    User([User Interface]) -->|Upload Image| ML[Matcha Lens CV Agent]
-    User -->|Submit Essay| WG[IELTS Essay Grading Agent]
-    User -->|Submit YouTube Link| LQ[YouTube Listening Quiz Agent]
-    User -->|Slash /tuvan| DA[Active Diagnostic Advisor Agent]
+    %% User Interfaces
+    Web[Next.js Web Dashboard]
+    Bot[Discord Bot Interface]
+
+    %% Matcha Lens Ingestion Flow
+    Web -->|1. Upload Image| CV[YOLOv8 & Gemini Vision]
+    CV -->|2. Detect & Crop| Crop[Crop Coordinator]
+    Crop -->|3. Vocab Refinement| Refine[Gemini Vocabulary Enrichment]
+    Refine -->|4. Generate TTS & Unsplash| TTS[TTS & Unsplash Service]
+    TTS -->|5. Save to Library| DB[(MySQL Database)]
+
+    %% Writing Sanctuary Flow
+    Web -->|6. Write Essay| Essay[Writing Sanctuary Canvas]
+    Essay -->|7. Grade Essay| Grade[Gemini Essay Grader]
+    Essay -->|8. Highlight Text| Rephrase[Gemini Rephrase API]
+    Grade -->|9. Save Log| DB
+    Essay -->|10. Send to| Radio[Matcha Radio Listening Lab]
+    Essay -->|11. Send to| Book[Matcha Book Reading Lab]
+
+    %% Reading & Listening Flow
+    Web -->|12. YT URL / Custom Text| Radio
+    Radio -->|13. Generate Quiz & TTS| GeminiQuiz[Gemini MCQ/Dictation Generator]
+    Web -->|14. Highlight Reader| Book
+    Book -->|15. Highlight Word| Translate[Gemini Quick Translate API]
+
+    %% Daily Planner & Quizzes
+    Web -->|16. Select Topic| Planner[Daily Planner Agent]
+    Planner -->|17. Generate Lesson plan| DB
+    Web -->|18. Review Flashcard| Quiz[Matcha Quiz: Vocab/AI Grammar]
+
+    %% Community Interactions
+    Web -->|19. Post Vocabulary/Essay| Feed[Oasis Community Feed]
+    Feed -->|20. Like & Comment| DB
+    Feed -->|21. Convert to Lesson| Book
+
+    %% Discord Bot Commands & Reminders
+    Bot -->|22. Slash /tuvan| BotAdvisor[Active Level Advisor Agent]
+    BotAdvisor -->|23. Interview & Test| BotAdvisor
+    BotAdvisor -->|24. Evaluate & Schedule| DB
+    Bot -->|25. Slash /xinnghi| BotAbsence[Absence Grading Agent]
+    BotAbsence -->|26. Evaluate Reason| DB
+    Bot -->|27. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
     
-    ML -->|Detect & Crop| IE[Vocab Ingestion & Enrichment Agent]
-    IE -->|Validate Unique| CE[Community Share Agent]
-    CE -->|Publish| DB[(MySQL Database)]
-    
-    WG -->|Evaluate Criteria| DB
-    LQ -->|Generate Gaps/MCQ| DB
-    DA -->|Evaluate & Schedule| DB
+    %% Scheduler Job
+    DB -->|28. Read Schedule| Cron[APScheduler Cron Job]
+    Cron -->|29. Push DM Reminders| Bot
 ```
 
 ---
