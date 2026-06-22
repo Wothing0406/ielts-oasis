@@ -22,7 +22,7 @@ export default function Home() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [guestName, setGuestName] = useState("");
   const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
-  
+
   // Custom Toast/Modal state
   const [toast, setToast] = useState<ToastData | null>(null);
   const [modal, setModal] = useState<ModalData | null>(null);
@@ -121,7 +121,7 @@ export default function Home() {
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
-      } catch (e) {}
+      } catch (e) { }
     }
     if (savedToken) {
       fetchVocabs(savedToken);
@@ -142,11 +142,11 @@ export default function Home() {
       (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
-    const headers: any = { 
+    const headers: any = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     };
-    
+
     try {
       const res = await fetch(`${API_URL}/vocabulary`, {
         method: "POST",
@@ -173,7 +173,7 @@ export default function Home() {
     const token = localStorage.getItem("oasis_token");
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
-    
+
     try {
       const res = await fetch(`${API_URL}/vocabulary/${id}`, {
         method: "DELETE",
@@ -236,7 +236,7 @@ export default function Home() {
     e.preventDefault();
     if (!guestName.trim() || isGuestLoggingIn) return;
     setIsGuestLoggingIn(true);
-    
+
     const savedGuestId = localStorage.getItem("oasis_guest_id");
     try {
       const res = await fetch(`${API_URL}/auth/guest`, {
@@ -302,15 +302,15 @@ export default function Home() {
             {!user ? (
               <div className="flex flex-wrap items-center gap-3 bg-secondary/35 border border-primary/20 p-2.5 rounded-3xl">
                 <form onSubmit={handleGuestLogin} className="flex items-center gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Nhập tên học nhanh..." 
+                  <input
+                    type="text"
+                    placeholder="Nhập tên học nhanh..."
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     className="bg-white border border-primary/20 rounded-full px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary w-40 font-bold text-accent"
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={isGuestLoggingIn}
                     className="bg-primary hover:bg-primary/95 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm"
                   >
@@ -336,15 +336,15 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <Link 
-              href="/game"
+            <Link
+              href="/games"
               className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-5 py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
             >
               <span className="material-symbols-rounded text-lg">sports_esports</span>
               Matcha Game 🎮
             </Link>
             <div className="relative">
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
@@ -356,15 +356,15 @@ export default function Home() {
                   </span>
                 )}
               </button>
-              
+
               {showNotifications && (
-                <div 
+                <div
                   className="fixed left-4 right-4 top-24 md:absolute md:left-auto md:right-0 md:top-auto md:w-80 mt-3 bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 max-h-96 overflow-y-auto z-[9999]"
                   style={{ opacity: 1, backgroundColor: '#ffffff' }}
                 >
                   <h4 className="font-bold text-sm text-accent mb-3 flex items-center justify-between">
                     <span>Thông báo mới</span>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowNotifications(false)}
                       className="text-xs text-primary font-bold hover:underline"
@@ -397,10 +397,10 @@ export default function Home() {
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 pb-8">
-          
+
           {/* Gợi ý AI - Lên trên cùng */}
           <section className="xl:col-span-12">
-            <DailyPlanner 
+            <DailyPlanner
               vocabList={vocabList}
               onAddVocab={(vocabData: any) => handleAddVocab(vocabData)}
               onPracticeWriting={(prompt: string) => {
@@ -420,7 +420,7 @@ export default function Home() {
 
           {/* Hàng 2: Vocab Lab và Matcha Lens */}
           <section className="xl:col-span-8 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
-            <VocabularyLab 
+            <VocabularyLab
               vocabList={vocabList}
               onAdd={async (formData: any) => { await handleAddVocab(formData); }}
               onDelete={handleDeleteVocab}
@@ -428,7 +428,7 @@ export default function Home() {
               onStartQuiz={handleStartQuiz}
             />
           </section>
-          
+
           <section className="xl:col-span-4 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card flex flex-col items-center">
             <MatchaLens onAdd={handleAddVocab} vocabList={vocabList} />
           </section>
@@ -437,20 +437,20 @@ export default function Home() {
           <section id="matcha-book" className="xl:col-span-12">
             <MatchaBook initialReading={activeReadingContext} />
           </section>
-          
+
           <section id="matcha-radio" className="xl:col-span-12">
             <MatchaRadio initialContext={activeListeningContext} />
           </section>
 
           {/* Hàng 4: Writing Sanctuary */}
           <section id="writing-sanctuary" className="xl:col-span-12">
-            <WritingSanctuary 
-              initialPrompt={activeWritingPrompt} 
-              onListenWriting={handleSelectListening} 
+            <WritingSanctuary
+              initialPrompt={activeWritingPrompt}
+              onListenWriting={handleSelectListening}
               onReadWriting={handleSelectReading}
             />
           </section>
-          
+
           {/* Hàng 5: Community Feed */}
           <section className="xl:col-span-12">
             <CommunityFeed onAddVocab={handleAddVocab} vocabList={vocabList} onListenPost={handleSelectListening} />
@@ -460,18 +460,18 @@ export default function Home() {
       </main>
 
       {showQuiz && (
-        <VocabularyQuiz 
+        <VocabularyQuiz
           vocabList={vocabList}
           onClose={() => setShowQuiz(false)}
           onReview={handleReview}
         />
       )}
 
-      <MatchaNotification 
-        toast={toast} 
-        onCloseToast={() => setToast(null)} 
-        modal={modal} 
-        onCloseModal={() => setModal(null)} 
+      <MatchaNotification
+        toast={toast}
+        onCloseToast={() => setToast(null)}
+        modal={modal}
+        onCloseModal={() => setModal(null)}
       />
     </div>
   );

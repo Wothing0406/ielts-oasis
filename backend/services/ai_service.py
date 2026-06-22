@@ -562,12 +562,19 @@ Return ONLY the JSON array. Example:
     async def generate_wordle_word(self, level: int):
         prompt = f"""
         Bạn là giám khảo IELTS chuyên nghiệp thiết kế trò chơi Wordle Matcha cho học viên.
-        Hãy tạo một từ vựng tiếng Anh IELTS gồm đúng 5 chữ cái (5 letters) dựa vào độ khó của cấp độ Level {level} (trong đó Level 1 là cực kỳ dễ, Level 10 là cực kỳ nâng cấp/nâng cao).
+        Hãy tạo một từ vựng tiếng Anh IELTS gồm đúng 5 chữ cái (5 letters) dựa vào độ khó của cấp độ Level {level}.
+        
+        Quy tắc độ khó:
+        - Level 1-5: Từ vựng cực kỳ phổ biến, thông dụng (ví dụ: WATER, STUDY, GREEN, PLANT, HOUSE).
+        - Level 6-15: Từ vựng IELTS mức độ trung cấp, học thuật phổ biến (ví dụ: FOCUS, GROUP, LEGAL, MEDIA, VOICE).
+        - Level 16+: Từ vựng IELTS nâng cao, học thuật chuyên sâu và ít gặp hơn (ví dụ: AMITY, BRIEF, DRIFT, VAGUE, SPARK, CLONE). Cấp độ càng cao, từ càng học thuật và thử thách.
+        
+        Hãy tạo các chủ đề ngẫu nhiên, đa dạng, mở rộng (open-ended random themes) liên quan đến kỳ thi IELTS.
         
         Trả về định dạng JSON chính xác như sau:
         {{
             "word": "từ tiếng Anh 5 chữ cái viết hoa (ví dụ: CLONE, WATER, GREEN)",
-            "theme": "chủ đề tiếng Việt tương ứng (ví dụ: Công nghệ, Đời sống, Màu sắc)",
+            "theme": "chủ đề tiếng Việt tương ứng (ví dụ: Công nghệ, Đời sống, Môi trường, Giáo dục)",
             "hint": "Giải nghĩa ngắn gọn của từ bằng tiếng Việt hoặc gợi ý nhỏ để người chơi đoán"
         }}
         
@@ -585,19 +592,31 @@ Return ONLY the JSON array. Example:
             data = json.loads(self._clean_json(content))
             word = str(data.get("word", "")).strip().upper()
             if len(word) != 5:
-                fallbacks = {
-                    1: {"word": "WATER", "theme": "Đời sống", "hint": "Nước uống hàng ngày"},
-                    2: {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"},
-                    3: {"word": "PLANT", "theme": "Môi trường", "hint": "Cây cối hoặc thực vật"},
-                    4: {"word": "STUDY", "theme": "Giáo dục", "hint": "Hành động học tập"},
-                    5: {"word": "CLONE", "theme": "Công nghệ", "hint": "Bản sao hoặc nhân bản vô tính"},
-                    6: {"word": "FOCUS", "theme": "Tâm lý", "hint": "Sự tập trung vào công việc"},
-                    7: {"word": "TRAIN", "theme": "Vận chuyển", "hint": "Tàu hỏa hoặc đào tạo"},
-                    8: {"word": "LEMON", "theme": "Ẩm thực", "hint": "Quả chanh vàng chua ngọt"},
-                    9: {"word": "SMILE", "theme": "Cảm xúc", "hint": "Nụ cười rạng rỡ"},
-                    10: {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"}
-                }
-                return fallbacks.get(level if level in fallbacks else 1, fallbacks[1])
+                fallbacks = [
+                    {"word": "WATER", "theme": "Đời sống", "hint": "Nước uống hàng ngày"},
+                    {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"},
+                    {"word": "PLANT", "theme": "Môi trường", "hint": "Cây cối hoặc thực vật"},
+                    {"word": "STUDY", "theme": "Giáo dục", "hint": "Hành động học tập"},
+                    {"word": "CLONE", "theme": "Công nghệ", "hint": "Bản sao hoặc nhân bản vô tính"},
+                    {"word": "FOCUS", "theme": "Tâm lý", "hint": "Sự tập trung vào công việc"},
+                    {"word": "TRAIN", "theme": "Vận chuyển", "hint": "Tàu hỏa hoặc đào tạo"},
+                    {"word": "LEMON", "theme": "Ẩm thực", "hint": "Quả chanh vàng chua ngọt"},
+                    {"word": "SMILE", "theme": "Cảm xúc", "hint": "Nụ cười rạng rỡ"},
+                    {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"},
+                    {"word": "BASIC", "theme": "Cơ bản", "hint": "Nền tảng, đơn giản nhất"},
+                    {"word": "CLEAR", "theme": "Rõ ràng", "hint": "Dễ hiểu, không bị mờ nhạt"},
+                    {"word": "CRIME", "theme": "Xã hội", "hint": "Hành vi vi phạm pháp luật"},
+                    {"word": "DRAFT", "theme": "Học thuật", "hint": "Bản nháp trước khi hoàn chỉnh"},
+                    {"word": "EVENT", "theme": "Sự kiện", "hint": "Việc xảy ra mang tính chất đặc biệt"},
+                    {"word": "FLUID", "theme": "Khoa học", "hint": "Chất lỏng hoặc linh hoạt"},
+                    {"word": "GIANT", "theme": "Kích thước", "hint": "Kẻ khổng lồ hoặc cực kỳ lớn"},
+                    {"word": "HABIT", "theme": "Thói quen", "hint": "Hành động lặp đi lặp lại hàng ngày"},
+                    {"word": "IMAGE", "theme": "Hình ảnh", "hint": "Tranh ảnh hoặc ấn tượng"},
+                    {"word": "JUDGE", "theme": "Luật pháp", "hint": "Thẩm phán hoặc đánh giá"}
+                ]
+                # Modulo fallback to prevent out of bounds and ensure infinite safety
+                fallback_item = fallbacks[level % len(fallbacks)]
+                return fallback_item
             data["word"] = word
             return data
         except Exception as e:

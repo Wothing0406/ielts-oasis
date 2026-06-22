@@ -113,12 +113,12 @@ graph TD
 * **Oasis Community:** A shared public feed where students post their graded essays and vocabularies. Users can like, comment, and convert other community posts into custom listening or reading tests.
 * **Notification Hub:** Real-time user notifications showing likes, comments, and review due counts.
 
-### 7. 🎮 Matcha Game Center (Trạm Game Học Tập)
-* **Wordle Matcha:** Trò chơi đoán từ 5 chữ cái phong cách Matcha đáng yêu.
-* **Tích hợp Gemini AI:** Tự động sinh từ bí ẩn và gợi ý theo cấp độ khó từ Level 1 đến 10 dựa trên các chủ đề IELTS thông dụng.
-* **Lưu trạng thái chơi dở:** Tự động lưu tiến độ vào Database, khi quay lại có thể tiếp tục chơi.
-* **Cơ chế tính điểm & Reset:** Điểm tích lũy tăng theo level, bonus số lần đoán và tốc độ đoán dưới 30s. Nếu đoán sai quá 6 lần, game over và level reset về 1.
-* **Leaderboard:** Bảng xếp hạng tuần hiển thị Top 10 học viên có điểm số Wordle cao nhất trong 7 ngày qua.
+### 7. 🎮 Matcha Game Center (Learning Game Hub)
+* **Wordle Matcha:** A beautiful Matcha-themed 5-letter word guessing game.
+* **Gemini AI Integration:** Dynamically generates IELTS-based secret words and clues that increase in difficulty as levels advance.
+* **State Persistence:** Automatically saves game progress to the database, allowing players to resume their active level upon return.
+* **Scoring & Leveling Mechanics:** Points scale with level progression, featuring bonuses for quick guesses (under 30s) and minimal guess counts. If a player fails to guess within 6 attempts, their level resets to 1 and accumulated points reset to 0.
+* **Leaderboard:** A dual-tab leaderboard showcasing the Top 10 weekly server high scores alongside personal bests, and highlights the all-time highest level record holder.
 
 ---
 

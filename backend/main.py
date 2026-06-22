@@ -1211,7 +1211,30 @@ async def get_game_leaderboard(db: Session = Depends(get_db)):
                 "max_level": r.max_level
             })
             
-    return {"leaderboard": leaderboard}
+    # Find all-time highest level player record
+    highest_lvl_record = db.query(
+        GameLeaderboard.user_id,
+        func.max(GameLeaderboard.max_level).label("absolute_max_level")
+    ).group_by(
+        GameLeaderboard.user_id
+    ).order_by(
+        desc("absolute_max_level")
+    ).first()
+    
+    highest_level_player = None
+    if highest_lvl_record:
+        top_user = db.query(User).filter(User.id == highest_lvl_record.user_id).first()
+        if top_user:
+            highest_level_player = {
+                "username": top_user.username,
+                "avatar_url": top_user.avatar_url,
+                "max_level": highest_lvl_record.absolute_max_level
+            }
+            
+    return {
+        "leaderboard": leaderboard,
+        "highest_level_player": highest_level_player
+    }
 
 
 if __name__ == "__main__":
