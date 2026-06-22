@@ -1054,7 +1054,21 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
     
     game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
     if not game:
-        raise HTTPException(status_code=404, detail="Game state not found")
+        word_data = await ai_service.generate_wordle_word(1)
+        game = WordleGame(
+            user_id=user_id,
+            current_level=1,
+            secret_word=word_data["word"],
+            theme=word_data["theme"],
+            hint=word_data["hint"],
+            guesses=[],
+            points=0,
+            status="playing",
+            level_start_time=datetime.utcnow()
+        )
+        db.add(game)
+        db.commit()
+        db.refresh(game)
         
     if game.status != "playing":
         raise HTTPException(status_code=400, detail="Màn chơi đã kết thúc. Vui lòng lấy trạng thái mới.")

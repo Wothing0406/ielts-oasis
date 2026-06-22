@@ -484,9 +484,9 @@ export default function WordleMatchaPage() {
                   <span className="material-symbols-rounded text-xs text-primary">layers</span>
                   Lvl {gameState?.current_level}
                 </div>
-                <div className="bg-primary/10 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 truncate max-w-[100px] sm:max-w-xs">
-                  <span className="material-symbols-rounded text-xs">interests</span>
-                  Chủ đề: {gameState?.theme || "Chủ đề"}
+                <div className="bg-primary/10 px-2 sm:px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 min-w-0 flex-1 justify-center mx-1.5">
+                  <span className="material-symbols-rounded text-xs flex-shrink-0">interests</span>
+                  <span className="truncate">Chủ đề: {gameState?.theme || "Chủ đề"}</span>
                 </div>
                 <div className="flex gap-1.5">
                   <button 
