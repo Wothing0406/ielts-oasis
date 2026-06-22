@@ -183,7 +183,9 @@ export default function WordleMatchaPage() {
     } else if (char === "BACKSPACE" || char === "DEL" || char === "XÓA") {
       setCurrentGuess((prev) => prev.slice(0, -1));
     } else if (currentGuess.length < 5 && /^[a-zA-Z]$/.test(char)) {
-      setCurrentGuess((prev) => (prev + char).toUpperCase());
+      const upperChar = char.toUpperCase();
+      if (letterStatuses[upperChar] === "gray") return;
+      setCurrentGuess((prev) => (prev + upperChar));
     }
   };
 
@@ -418,7 +420,7 @@ export default function WordleMatchaPage() {
     let colorClass = "bg-[#FFF9E6] hover:bg-[#FFF3CD] text-accent border border-primary/10";
     if (status === "green") colorClass = "bg-[#A7D08C] text-white";
     if (status === "yellow") colorClass = "bg-[#FBC02D] text-white";
-    if (status === "gray") colorClass = "bg-neutral-300 text-neutral-500 opacity-60";
+    if (status === "gray") colorClass = "bg-neutral-200 text-neutral-400 opacity-30 cursor-not-allowed pointer-events-none";
     
     return {
       className: base + colorClass,

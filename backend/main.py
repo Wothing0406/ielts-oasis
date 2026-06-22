@@ -1099,6 +1099,20 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
     if len(guess) != 5:
         raise HTTPException(status_code=400, detail="Từ đoán phải có đúng 5 chữ cái.")
         
+    # Check if guess is a valid English word using Free Dictionary API
+    import httpx
+    guess_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{guess.lower()}"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(guess_url)
+            if response.status_code == 404:
+                raise HTTPException(status_code=400, detail=f"Từ '{guess}' không có trong từ điển tiếng Anh!")
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Fallback: if dictionary API is offline or times out, allow the word
+        pass
+        
     current_guesses = list(game.guesses) if game.guesses else []
     current_guesses.append(guess)
     game.guesses = current_guesses
