@@ -298,60 +298,60 @@ export default function Home() {
             <h2 className="text-4xl font-display font-bold">Hello {user ? user.username : 'Cậu nhé'}:3<span className="animate-pulse">🍵</span></h2>
             <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {!user ? (
-              <div className="flex flex-wrap items-center gap-3 bg-secondary/35 border border-primary/20 p-2.5 rounded-3xl">
-                <form onSubmit={handleGuestLogin} className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-secondary/35 border border-primary/20 p-2 sm:p-2.5 rounded-3xl">
+                <form onSubmit={handleGuestLogin} className="flex items-center gap-1.5 sm:gap-2">
                   <input
                     type="text"
                     placeholder="Nhập tên học nhanh..."
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="bg-white border border-primary/20 rounded-full px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary w-40 font-bold text-accent"
+                    className="bg-white border border-primary/20 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-primary w-28 sm:w-40 font-bold text-accent"
                   />
                   <button
                     type="submit"
                     disabled={isGuestLoggingIn}
-                    className="bg-primary hover:bg-primary/95 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm"
+                    className="bg-primary hover:bg-primary/95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold transition-all shadow-sm"
                   >
                     Vào Học
                   </button>
                 </form>
-                <span className="text-xs text-accent/40 font-bold">hoặc</span>
-                <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
+                <span className="text-[10px] sm:text-xs text-accent/40 font-bold">hoặc</span>
+                <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all">
                   Discord
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="avatar" className="w-12 h-12 rounded-full border-2 border-primary" />
+                  <img src={user.avatar_url} alt="avatar" className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary text-xs sm:text-base">
                     {user.username.slice(0, 2).toUpperCase()}
                   </div>
                 )}
-                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow transition-all">
+                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
                   Logout
                 </button>
               </div>
             )}
             <Link
               href="/games"
-              className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-5 py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+              className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
             >
-              <span className="material-symbols-rounded text-lg">sports_esports</span>
-              Matcha Game 🎮
+              <span className="material-symbols-rounded text-base sm:text-lg">sports_esports</span>
+              Matcha Game
             </Link>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
+                className="bg-primary hover:bg-primary/90 text-white p-2.5 sm:p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
               >
-                <span className="material-symbols-rounded">notifications</span>
+                <span className="material-symbols-rounded text-base sm:text-lg">notifications</span>
                 {displayNotifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] sm:text-[10px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
                     {displayNotifications.length}
                   </span>
                 )}
