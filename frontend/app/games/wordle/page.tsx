@@ -19,6 +19,7 @@ interface GameState {
   theme: string;
   hint: string;
   guesses: string[];
+  evaluations?: string[][];
   points: number;
   status: "playing" | "won" | "lost";
   secret_word_revealed?: string | null;
@@ -81,24 +82,44 @@ export default function WordleMatchaPage() {
     fetchLeaderboard();
   }, [token]);
 
-  // Compute keyboard letter statuses whenever guesses change
+  // Compute keyboard letter statuses whenever guesses and evaluations change
   useEffect(() => {
     if (!gameState || !gameState.guesses) return;
     const statuses: { [key: string]: "green" | "yellow" | "gray" } = {};
-    const secret = gameState.secret_word_revealed || "";
+    const evaluations = gameState.evaluations;
 
-    gameState.guesses.forEach((guess) => {
+    gameState.guesses.forEach((guess, rowIndex) => {
+      const rowEval = evaluations?.[rowIndex];
       for (let i = 0; i < 5; i++) {
         const char = guess[i];
-        if (secret && secret[i] === char) {
-          statuses[char] = "green";
-        } else if (secret && secret.includes(char)) {
-          if (statuses[char] !== "green") {
-            statuses[char] = "yellow";
+        
+        // If we have evaluations from the backend, use them (secure & handles duplicates correctly)
+        if (rowEval && rowEval[i]) {
+          const status = rowEval[i];
+          if (status === "green") {
+            statuses[char] = "green";
+          } else if (status === "yellow") {
+            if (statuses[char] !== "green") {
+              statuses[char] = "yellow";
+            }
+          } else if (status === "gray") {
+            if (statuses[char] !== "green" && statuses[char] !== "yellow") {
+              statuses[char] = "gray";
+            }
           }
         } else {
-          if (statuses[char] !== "green" && statuses[char] !== "yellow") {
-            statuses[char] = "gray";
+          // Fallback if client-side has revealed secret word
+          const secret = gameState.secret_word_revealed || "";
+          if (secret && secret[i] === char) {
+            statuses[char] = "green";
+          } else if (secret && secret.includes(char)) {
+            if (statuses[char] !== "green") {
+              statuses[char] = "yellow";
+            }
+          } else {
+            if (statuses[char] !== "green" && statuses[char] !== "yellow") {
+              statuses[char] = "gray";
+            }
           }
         }
       }
@@ -195,7 +216,8 @@ export default function WordleMatchaPage() {
           if (gameState) {
             const updated: GameState = {
               ...gameState,
-              guesses: [...gameState.guesses, currentGuess],
+              guesses: data.guesses || [...gameState.guesses, currentGuess],
+              evaluations: data.evaluations,
               status: "won"
             };
             setGameState(updated);
@@ -211,8 +233,10 @@ export default function WordleMatchaPage() {
           if (gameState) {
             const updated: GameState = {
               ...gameState,
-              guesses: [...gameState.guesses, currentGuess],
-              status: "lost"
+              guesses: data.guesses || [...gameState.guesses, currentGuess],
+              evaluations: data.evaluations,
+              status: "lost",
+              secret_word_revealed: data.secret_word_revealed
             };
             setGameState(updated);
             localStorage.setItem("matcha_wordle_local_state", JSON.stringify(updated));
@@ -226,6 +250,7 @@ export default function WordleMatchaPage() {
           const updatedState: GameState = {
             ...gameState,
             guesses: data.guesses,
+            evaluations: data.evaluations,
             points: data.points,
           };
           setGameState(updatedState);
@@ -286,18 +311,28 @@ export default function WordleMatchaPage() {
   }, [currentGuess, gameState]);
 
   // Compute tile colors for Wordle grid
-  const getTileColor = (guess: string, index: number) => {
-    const secret = gameState?.secret_word_revealed || "";
-    if (!secret) return "bg-white border-primary/20 text-accent";
-
-    const char = guess[index];
-    if (secret[index] === char) {
-      return "bg-[#A7D08C] border-[#A7D08C] text-white"; // Green
-    } else if (secret.includes(char)) {
-      return "bg-[#FBC02D] border-[#FBC02D] text-white"; // Yellow
-    } else {
-      return "bg-neutral-300 border-neutral-300 text-white"; // Gray
+  const getTileColor = (guess: string, index: number, rowIndex: number) => {
+    const evaluations = gameState?.evaluations;
+    if (evaluations && evaluations[rowIndex]) {
+      const status = evaluations[rowIndex][index];
+      if (status === "green") return "bg-[#A7D08C] border-[#A7D08C] text-white"; // Green
+      if (status === "yellow") return "bg-[#FBC02D] border-[#FBC02D] text-white"; // Yellow
+      if (status === "gray") return "bg-neutral-300 border-neutral-300 text-white"; // Gray
     }
+
+    const secret = gameState?.secret_word_revealed || "";
+    if (secret) {
+      const char = guess[index];
+      if (secret[index] === char) {
+        return "bg-[#A7D08C] border-[#A7D08C] text-white"; // Green
+      } else if (secret.includes(char)) {
+        return "bg-[#FBC02D] border-[#FBC02D] text-white"; // Yellow
+      } else {
+        return "bg-neutral-300 border-neutral-300 text-white"; // Gray
+      }
+    }
+    
+    return "bg-white border-primary/20 text-accent";
   };
 
   // Wordle Grid Auto-Scaling Layout
@@ -320,7 +355,7 @@ export default function WordleMatchaPage() {
           tileStyle += char ? "border-accent scale-105" : "border-primary/20";
         } else if (i < guesses.length) {
           char = guess[j] || "";
-          tileStyle += getTileColor(guess, j);
+          tileStyle += getTileColor(guess, j, i);
         } else {
           tileStyle += "border-primary/10 opacity-40";
         }

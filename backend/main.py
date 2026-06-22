@@ -998,6 +998,25 @@ async def get_user_notifications(current_user: dict = Depends(get_current_user),
     
     return {"notifications": notifications, "due_count": due_count}
 
+def evaluate_guess(guess: str, secret: str) -> list[str]:
+    result = ['gray'] * 5
+    secret_letters = list(secret)
+    
+    # First pass: correct position (green)
+    for i in range(5):
+        if guess[i] == secret[i]:
+            result[i] = 'green'
+            secret_letters[i] = None
+            
+    # Second pass: wrong position but present (yellow)
+    for i in range(5):
+        if result[i] != 'green' and guess[i] in secret_letters:
+            idx = secret_letters.index(guess[i])
+            result[i] = 'yellow'
+            secret_letters[idx] = None
+            
+    return result
+
 @app.post("/study-plan/save")
 async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not current_user:
@@ -1036,11 +1055,14 @@ async def get_wordle_state(current_user: dict = Depends(get_current_user), db: S
         db.commit()
         db.refresh(game)
         
+    evaluations = [evaluate_guess(g, game.secret_word) for g in game.guesses]
+    
     return {
         "current_level": game.current_level,
         "theme": game.theme,
         "hint": game.hint,
         "guesses": game.guesses,
+        "evaluations": evaluations,
         "points": game.points,
         "status": game.status,
         "secret_word_revealed": game.secret_word if game.status in ["won", "lost"] else None
@@ -1094,6 +1116,9 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         game.status = "won"
         db.commit()
         
+        # Calculate evaluations for the level that was just won
+        evaluations = [evaluate_guess(g, game.secret_word) for g in current_guesses]
+        
         leaderboard_entry = GameLeaderboard(
             user_id=user_id,
             points=game.points,
@@ -1118,6 +1143,8 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
             "message": "Tuyệt vời! Bạn đã đoán đúng từ bí ẩn! 🎉",
             "points_earned": level_score,
             "total_points": game.points,
+            "evaluations": evaluations,
+            "guesses": current_guesses,
             "next_level": next_level,
             "next_theme": game.theme,
             "next_hint": game.hint
@@ -1125,6 +1152,12 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         
     elif len(current_guesses) >= 6:
         final_score = game.points
+        
+        # Calculate evaluations using the secret word of the completed level
+        evaluations = [evaluate_guess(g, game.secret_word) for g in current_guesses]
+        
+        failed_secret_word = game.secret_word
+        
         game.status = "lost"
         db.commit()
         
@@ -1150,15 +1183,20 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
             "result": "lost",
             "message": "Rất tiếc, bạn đã hết lượt đoán! Game Over. 😢",
             "final_score": final_score,
+            "evaluations": evaluations,
+            "guesses": current_guesses,
+            "secret_word_revealed": failed_secret_word,
             "reset_level": 1,
             "next_theme": game.theme,
             "next_hint": game.hint
         }
         
     else:
+        evaluations = [evaluate_guess(g, game.secret_word) for g in game.guesses]
         return {
             "result": "playing",
             "guesses": game.guesses,
+            "evaluations": evaluations,
             "theme": game.theme,
             "hint": game.hint,
             "points": game.points
