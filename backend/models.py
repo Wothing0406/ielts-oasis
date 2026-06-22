@@ -88,6 +88,7 @@ class DiscordSchedule(Base):
     study_time = Column(String(10)) # e.g. "20:00"
     level = Column(String(50))
     topic = Column(String(100), default="General")
+    weekly_plan = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class AbsenceLog(Base):
@@ -97,3 +98,26 @@ class AbsenceLog(Base):
     absent_date = Column(String(20)) # e.g. "YYYY-MM-DD"
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class WordleGame(Base):
+    __tablename__ = "wordle_games"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    current_level = Column(Integer, default=1)
+    secret_word = Column(String(5))
+    theme = Column(String(100))
+    hint = Column(Text)
+    guesses = Column(JSON, default=[])
+    points = Column(Integer, default=0)
+    status = Column(String(20), default="playing") # playing, won, lost
+    level_start_time = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class GameLeaderboard(Base):
+    __tablename__ = "game_leaderboard"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    points = Column(Integer, default=0)
+    max_level = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

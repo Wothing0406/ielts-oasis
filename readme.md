@@ -113,17 +113,25 @@ graph TD
 * **Oasis Community:** A shared public feed where students post their graded essays and vocabularies. Users can like, comment, and convert other community posts into custom listening or reading tests.
 * **Notification Hub:** Real-time user notifications showing likes, comments, and review due counts.
 
+### 7. 🎮 Matcha Game Center (Trạm Game Học Tập)
+* **Wordle Matcha:** Trò chơi đoán từ 5 chữ cái phong cách Matcha đáng yêu.
+* **Tích hợp Gemini AI:** Tự động sinh từ bí ẩn và gợi ý theo cấp độ khó từ Level 1 đến 10 dựa trên các chủ đề IELTS thông dụng.
+* **Lưu trạng thái chơi dở:** Tự động lưu tiến độ vào Database, khi quay lại có thể tiếp tục chơi.
+* **Cơ chế tính điểm & Reset:** Điểm tích lũy tăng theo level, bonus số lần đoán và tốc độ đoán dưới 30s. Nếu đoán sai quá 6 lần, game over và level reset về 1.
+* **Leaderboard:** Bảng xếp hạng tuần hiển thị Top 10 học viên có điểm số Wordle cao nhất trong 7 ngày qua.
+
 ---
 
 ## 🤖 Discord Bot Features
 
 The proactive Discord tutor acts as the scheduling arm of the Oasis ecosystem:
-* **/tuvan Command:** Bot interviews the user about study availability and current levels, generates level-testing questions, and uses **Gemini JSON mode** to diagnose the user's IELTS band and register daily reminder triggers.
-* **/xinnghi Command:** Allows students to request a day off. Gemini strictly but fairly evaluates if the reason is legitimate (under 50 words) and logs the absence to temporarily disable daily reminders.
-* **/dailyplan Command:** Instantly generates a quick 5-vocab study roadmap for a chosen topic.
-* **/myprogress Command:** Checks user statistics directly from the database (total vocab, due review counts).
-* **Schedule Checker Job:** Runs every minute (Vietnam timezone UTC+7) to send active learning DMs to users when it is time to study.
-* **Generative Thread Replies:** Continuously supports context-aware conversations (remembers up to 6 messages) when users reply directly to bot messages.
+* **/tuvan Command:** Bot phỏng vấn người dùng, kiểm tra trình độ bằng câu hỏi của Gemini, xếp lớp và **trả về lộ trình 7 ngày chi tiết dạng Embed** (checklists học gì, làm gì trên web và gợi ý cụ thể).
+* **/xinnghi Command:** Cho phép học sinh xin phép nghỉ 1 ngày. Gemini chấm điểm độ chính đáng dưới 50 từ và tạm tắt nhắc nhở ngày đó.
+* **/nghihoc Command:** Hủy học hoàn toàn. Bot sẽ hiển thị bảng xác nhận qua các nút bấm, khi xác nhận sẽ **xóa sạch mọi dữ liệu** của học viên khỏi MySQL Database.
+* **/dailyplan Command:** Tạo nhanh lộ trình 5 từ vựng theo chủ đề được chọn.
+* **/myprogress Command:** Tra cứu tiến độ từ vựng SRS hiện tại.
+* **Schedule Checker Job:** Chạy mỗi phút (UTC+7) để gửi DM nhắc nhở học bài, tự động **đính kèm checklist nhiệm vụ cụ thể của ngày hôm nay** từ lộ trình học tập của người dùng.
+* **Generative Thread Replies:** Hỗ trợ chat tự nhiên ghi nhớ 6 tin nhắn gần nhất.
 
 ---
 

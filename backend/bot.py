@@ -8,7 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from database import SessionLocal
 from models import User, Vocabulary, WritingLog, DiscordSchedule, AbsenceLog
-from datetime import datetime
+from datetime import datetime, timedelta
 from services.ai_service import ai_service
 import asyncio
 from logger import setup_logger
@@ -25,6 +25,30 @@ intents.message_content = True
 intents.dm_messages = True
 
 bot = commands.Bot(command_prefix='/', intents=intents)
+
+class ConfirmQuitView(discord.ui.View):
+    def __init__(self, author_id):
+        super().__init__(timeout=60)
+        self.author_id = author_id
+        self.value = None
+
+    @discord.ui.button(label="Xác nhận nghỉ học 😢", style=discord.ButtonStyle.danger)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if str(interaction.user.id) != self.author_id:
+            await interaction.response.send_message("Bạn không có quyền thực hiện thao tác này!", ephemeral=True)
+            return
+        self.value = True
+        await interaction.response.defer()
+        self.stop()
+
+    @discord.ui.button(label="Hủy", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if str(interaction.user.id) != self.author_id:
+            await interaction.response.send_message("Bạn không có quyền thực hiện thao tác này!", ephemeral=True)
+            return
+        self.value = False
+        await interaction.response.send_message("Cảm ơn bạn đã tiếp tục đồng hành cùng IELTS Oasis! 🍵", ephemeral=True)
+        self.stop()
 
 # State storage for advisory flow
 # user_id -> { "state": "STATE_ASK_INFO", "topic": "...", "test_question": "..." }
@@ -98,13 +122,38 @@ async def on_message(message):
                     state_data = user_states.get(discord_id, {})
                     info = state_data.get("info", "Rảnh tối, beginner")
                     
-                    e_prompt = f"Thông tin học viên: {info}. Họ trả lời câu hỏi test là: {content}. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ. Sau đó đề xuất lịch học mỗi ngày (ví dụ 20:00). Trả về JSON: {{\"evaluation\": \"...\", \"level\": \"...\", \"time\": \"HH:MM\", \"topic\": \"...\"}}"
+                    e_prompt = f"""
+                    Thông tin học viên: {info}.
+                    Học viên trả lời câu hỏi kiểm tra: "{content}".
+                    
+                    Hãy đóng vai là thầy giáo IELTS Oasis. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ.
+                    Đề xuất lịch nhắc học mỗi ngày (ví dụ 20:00) dựa trên thông tin thời gian rảnh.
+                    Và tạo một lộ trình học chi tiết cụ thể cho cả tuần (Thứ 2 đến Chủ nhật).
+                    Chủ đề của từng ngày phải cụ thể và có task list rõ ràng để học viên biết phải làm gì trên website, kèm gợi ý (tip).
+                    
+                    Trả về định dạng JSON chính xác như sau:
+                    {{
+                        "evaluation": "nhận xét chi tiết tiếng Việt",
+                        "level": "Beginner/Intermediate/Advanced",
+                        "time": "HH:MM",
+                        "topic": "chủ đề chung",
+                        "weekly_plan": {{
+                            "Monday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Tuesday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Wednesday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Thursday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Friday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Saturday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
+                            "Sunday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}}
+                        }}
+                    }}
+                    """
                     try:
                         data = await ai_service.get_json_advice(e_prompt)
                         if not data or "evaluation" not in data:
-                            data = {"evaluation": "Khá tốt!", "level": "Intermediate", "time": "20:00", "topic": "General"}
+                            data = {"evaluation": "Khá tốt!", "level": "Intermediate", "time": "20:00", "topic": "General", "weekly_plan": {}}
                     except:
-                        data = {"evaluation": "Mình đã ghi nhận câu trả lời.", "level": "Beginner", "time": "20:00", "topic": "General"}
+                        data = {"evaluation": "Mình đã ghi nhận câu trả lời.", "level": "Beginner", "time": "20:00", "topic": "General", "weekly_plan": {}}
                         
                     # Extract just the HH:MM from whatever the AI returned
                     time_str = data.get("time", "20:00")
@@ -124,12 +173,44 @@ async def on_message(message):
                         sched.study_time = time_str
                         sched.level = str(data.get("level", "Beginner"))[:50]
                         sched.topic = str(data.get("topic", "General"))[:100]
+                        sched.weekly_plan = data.get("weekly_plan")
                         db.commit()
                     
                     db.close()
                     user_states.pop(discord_id, None)
                     
-                    await message.reply(f"Đánh giá của mình: {data.get('evaluation')}\n\nTrình độ của bạn: **{data.get('level')}**.\nMình đã đặt lịch học cho bạn vào **{data.get('time')}** mỗi ngày với chủ đề **{data.get('topic')}**. Đến giờ mình sẽ nhắc thật gắt gao nhé! 🍵")
+                    # Create rich embed
+                    embed = discord.Embed(
+                        title=f"🍵 LỘ TRÌNH HỌC TẬP IELTS OASIS",
+                        description=f"Chúc mừng **{user.username if user else 'bạn'}** đã hoàn thành tư vấn! Dưới đây là lộ trình học tập được thiết kế riêng cho bạn.",
+                        color=discord.Color.from_rgb(167, 208, 140)
+                    )
+                    embed.add_field(name="📊 Đánh giá & Trình độ", value=f"**Trình độ:** {data.get('level', 'Beginner')}\n**Nhận xét:** {data.get('evaluation')}", inline=False)
+                    embed.add_field(name="⏰ Lịch nhắc học", value=f"Hàng ngày vào lúc **{time_str}** (Giờ Việt Nam)", inline=False)
+                    
+                    weekly_plan = data.get("weekly_plan", {})
+                    day_translation = {
+                        "Monday": "Thứ 2 (Monday)",
+                        "Tuesday": "Thứ 3 (Tuesday)",
+                        "Wednesday": "Thứ 4 (Wednesday)",
+                        "Thursday": "Thứ 5 (Thursday)",
+                        "Friday": "Thứ 6 (Friday)",
+                        "Saturday": "Thứ 7 (Saturday)",
+                        "Sunday": "Chủ nhật (Sunday)"
+                    }
+                    for day_en, day_vi in day_translation.items():
+                        day_data = weekly_plan.get(day_en, weekly_plan.get(day_vi, {}))
+                        if day_data:
+                            tasks = day_data.get("tasks", [])
+                            tasks_str = "\n".join([f"• {t}" for t in tasks]) if tasks else "• Chưa có nhiệm vụ"
+                            tip = day_data.get("tip", "")
+                            val = f"**Chủ đề:** {day_data.get('topic', 'N/A')}\n**Nhiệm vụ:**\n{tasks_str}"
+                            if tip:
+                                val += f"\n💡 *Gợi ý:* {tip}"
+                            embed.add_field(name=f"📅 {day_vi}", value=val, inline=False)
+                            
+                    embed.set_footer(text="Hãy bắt đầu bài học đầu tiên trên trang web IELTS Oasis nhé! 🎉")
+                    await message.reply(embed=embed)
                     return
  
         # 2. General reply context or mention context
@@ -283,18 +364,66 @@ async def myprogress_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
     db.close()
 
+@bot.tree.command(name='nghihoc', description="Huỷ bỏ lịch học và xoá sạch dữ liệu của bạn trên hệ thống")
+async def nghihoc_cmd(interaction: discord.Interaction):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    db.close()
+    
+    if not user:
+        await interaction.response.send_message("Bạn chưa đăng ký lộ trình học tập trên IELTS Oasis!", ephemeral=True)
+        return
+
+    view = ConfirmQuitView(discord_id)
+    await interaction.response.send_message(
+        "⚠️ **CẢNH BÁO NGUY HIỂM:** Bạn có chắc chắn muốn **NGHỈ HỌC**? Thao tác này sẽ xóa toàn bộ từ vựng, lịch sử viết bài luận, lịch nhắc học và tài khoản của bạn trên IELTS Oasis. Thao tác này **không thể khôi phục**!",
+        view=view,
+        ephemeral=True
+    )
+    await view.wait()
+    if view.value is True:
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.discord_id == discord_id).first()
+            if user:
+                # Delete all associated data manually
+                db.query(AbsenceLog).filter(AbsenceLog.user_id == user.id).delete()
+                db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).delete()
+                db.query(DailyPlan).filter(DailyPlan.user_id == user.id).delete()
+                db.query(Like).filter(Like.user_id == user.id).delete()
+                db.query(Comment).filter(Comment.user_id == user.id).delete()
+                db.query(WritingLog).filter(WritingLog.user_id == user.id).delete()
+                db.query(Vocabulary).filter(Vocabulary.user_id == user.id).delete()
+                db.query(User).filter(User.id == user.id).delete()
+                db.commit()
+                await interaction.followup.send("Đã huỷ học và xoá toàn bộ dữ liệu thành công. Hy vọng sẽ được đồng hành cùng bạn trong tương lai! 🍵", ephemeral=True)
+            else:
+                await interaction.followup.send("Lỗi: Không tìm thấy tài khoản người dùng.", ephemeral=True)
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error executing /nghihoc: {e}")
+            await interaction.followup.send("Có lỗi xảy ra khi thực hiện xoá dữ liệu. Vui lòng thử lại sau.", ephemeral=True)
+        finally:
+            db.close()
+
 async def schedule_checker_job():
     """Chạy mỗi phút để kiểm tra lịch học của user"""
     now = datetime.utcnow()
-    # Format current time HH:MM (UTC+7 for local if needed, assuming user enters UTC+7, but server runs UTC)
-    # Simple workaround: Just match the exact string if they entered HH:MM in their local time.
-    # We should get current hour/minute in local time (Vietnam is UTC+7)
-    local_now = datetime.utcnow()
-    current_time_str = f"{(local_now.hour + 7) % 24:02d}:{local_now.minute:02d}"
+    local_now = datetime.utcnow() + timedelta(hours=7)
+    current_time_str = f"{local_now.hour:02d}:{local_now.minute:02d}"
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
 
     db = SessionLocal()
     schedules = db.query(DiscordSchedule).all()
+    
+    # Days translation
+    weekday_en = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    weekday_vi = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+    local_weekday_idx = local_now.weekday() % 7
+    day_en = weekday_en[local_weekday_idx]
+    day_vi = weekday_vi[local_weekday_idx]
+
     for sched in schedules:
         if sched.study_time == current_time_str:
             # Check absence
@@ -311,7 +440,37 @@ async def schedule_checker_job():
                 try:
                     discord_user = await bot.fetch_user(int(user.discord_id))
                     if discord_user:
-                        await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập IELTS Oasis ngay lập tức!")
+                        weekly_plan = {}
+                        if sched.weekly_plan:
+                            try:
+                                if isinstance(sched.weekly_plan, str):
+                                    weekly_plan = json.loads(sched.weekly_plan)
+                                else:
+                                    weekly_plan = sched.weekly_plan
+                            except Exception as e:
+                                logger.error(f"Failed to parse weekly_plan for user {sched.user_id}: {e}")
+                        
+                        day_plan = weekly_plan.get(day_en, weekly_plan.get(day_vi, {}))
+                        if day_plan:
+                            topic_today = day_plan.get("topic", sched.topic)
+                            tasks = day_plan.get("tasks", [])
+                            tip = day_plan.get("tip", "")
+                            
+                            tasks_str = "\n".join([f"• {t}" for t in tasks]) if tasks else "• Hoàn thành lộ trình hàng ngày trên website."
+                            
+                            embed = discord.Embed(
+                                title=f"🍵 ĐẾN GIỜ HỌC RỒI CẬU ƠI! ({day_vi})",
+                                description=f"Đừng lười biếng nhé! Hôm nay chúng ta sẽ ôn luyện chủ đề **{topic_today}**.",
+                                color=discord.Color.from_rgb(167, 208, 140)
+                            )
+                            embed.add_field(name="📝 Nhiệm vụ hôm nay:", value=tasks_str, inline=False)
+                            if tip:
+                                embed.add_field(name="💡 Gợi ý học tập:", value=tip, inline=False)
+                            embed.set_footer(text="Truy cập IELTS Oasis ngay lập tức nhé! 🎉")
+                            
+                            await discord_user.send(embed=embed)
+                        else:
+                            await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập IELTS Oasis ngay lập tức!")
                 except Exception as e:
                     logger.error(e)
                     
@@ -322,3 +481,4 @@ if __name__ == "__main__":
         bot.run(DISCORD_BOT_TOKEN)
     else:
         logger.warning("CẢNH BÁO: Chưa cấu hình DISCORD_BOT_TOKEN trong file .env")
+

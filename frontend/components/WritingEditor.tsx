@@ -11,7 +11,7 @@ const WritingSanctuary = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (mode?: string) => {
     if (!text) return;
     setIsAnalyzing(true);
     try {

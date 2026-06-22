@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import DailyPlanner from "@/components/DailyPlanner";
 import VocabularyLab from "@/components/VocabularyLab";
 import MatchaLens from "@/components/MatchaLens";
@@ -335,6 +336,13 @@ export default function Home() {
                 </button>
               </div>
             )}
+            <Link 
+              href="/game"
+              className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-5 py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+            >
+              <span className="material-symbols-rounded text-lg">sports_esports</span>
+              Matcha Game 🎮
+            </Link>
             <div className="relative">
               <button 
                 type="button"

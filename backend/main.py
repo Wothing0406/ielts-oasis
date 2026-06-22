@@ -20,7 +20,7 @@ logger = setup_logger("fastapi_main")
 
 from database import SessionLocal, engine, Base, get_db
 from sqlalchemy.orm import Session
-from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan
+from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan, WordleGame, GameLeaderboard
 from schemas import VocabIn
 
 class TranslateInput(BaseModel):
@@ -147,6 +147,12 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE vocabulary ADD COLUMN creator_username VARCHAR(100) NULL;"))
                 conn.commit()
                 logger.info("Migration: Added 'creator_username' column to vocabulary.")
+            # Check weekly_plan column in discord_schedules
+            res_weekly = conn.execute(text("SHOW COLUMNS FROM discord_schedules LIKE 'weekly_plan';")).fetchone()
+            if not res_weekly:
+                conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN weekly_plan JSON NULL;"))
+                conn.commit()
+                logger.info("Migration: Added 'weekly_plan' column to discord_schedules.")
     except Exception as e:
         logger.error(f"Migration failed: {e}")
     try:
@@ -1000,6 +1006,213 @@ async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_
     db.add(new_plan)
     db.commit()
     return {"status": "success", "message": "Lộ trình đã được lưu!"}
+
+# --- Wordle Matcha Endpoints ---
+
+class GuessInput(BaseModel):
+    guess: str
+
+@app.get("/game/wordle/state")
+async def get_wordle_state(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = current_user["user_id"]
+    
+    game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
+    if not game:
+        word_data = await ai_service.generate_wordle_word(1)
+        game = WordleGame(
+            user_id=user_id,
+            current_level=1,
+            secret_word=word_data["word"],
+            theme=word_data["theme"],
+            hint=word_data["hint"],
+            guesses=[],
+            points=0,
+            status="playing",
+            level_start_time=datetime.utcnow()
+        )
+        db.add(game)
+        db.commit()
+        db.refresh(game)
+        
+    return {
+        "current_level": game.current_level,
+        "theme": game.theme,
+        "hint": game.hint,
+        "guesses": game.guesses,
+        "points": game.points,
+        "status": game.status,
+        "secret_word_revealed": game.secret_word if game.status in ["won", "lost"] else None
+    }
+
+@app.post("/game/wordle/guess")
+async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = current_user["user_id"]
+    
+    game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game state not found")
+        
+    if game.status != "playing":
+        raise HTTPException(status_code=400, detail="Màn chơi đã kết thúc. Vui lòng lấy trạng thái mới.")
+        
+    guess = payload.guess.strip().upper()
+    if len(guess) != 5:
+        raise HTTPException(status_code=400, detail="Từ đoán phải có đúng 5 chữ cái.")
+        
+    current_guesses = list(game.guesses) if game.guesses else []
+    current_guesses.append(guess)
+    game.guesses = current_guesses
+    db.commit()
+    
+    if guess == game.secret_word:
+        base_points = game.current_level * 100
+        guess_bonus = (7 - len(current_guesses)) * 50
+        
+        elapsed = (datetime.utcnow() - game.level_start_time).total_seconds()
+        speed_bonus = max(0, int(30 - elapsed)) * 5
+        
+        level_score = base_points + guess_bonus + speed_bonus
+        game.points += level_score
+        game.status = "won"
+        db.commit()
+        
+        leaderboard_entry = GameLeaderboard(
+            user_id=user_id,
+            points=game.points,
+            max_level=game.current_level
+        )
+        db.add(leaderboard_entry)
+        
+        next_level = game.current_level + 1
+        word_data = await ai_service.generate_wordle_word(next_level)
+        
+        game.current_level = next_level
+        game.secret_word = word_data["word"]
+        game.theme = word_data["theme"]
+        game.hint = word_data["hint"]
+        game.guesses = []
+        game.status = "playing"
+        game.level_start_time = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "result": "won",
+            "message": "Tuyệt vời! Bạn đã đoán đúng từ bí ẩn! 🎉",
+            "points_earned": level_score,
+            "total_points": game.points,
+            "next_level": next_level,
+            "next_theme": game.theme,
+            "next_hint": game.hint
+        }
+        
+    elif len(current_guesses) >= 6:
+        final_score = game.points
+        game.status = "lost"
+        db.commit()
+        
+        leaderboard_entry = GameLeaderboard(
+            user_id=user_id,
+            points=final_score,
+            max_level=game.current_level
+        )
+        db.add(leaderboard_entry)
+        
+        word_data = await ai_service.generate_wordle_word(1)
+        game.current_level = 1
+        game.secret_word = word_data["word"]
+        game.theme = word_data["theme"]
+        game.hint = word_data["hint"]
+        game.guesses = []
+        game.points = 0
+        game.status = "playing"
+        game.level_start_time = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "result": "lost",
+            "message": "Rất tiếc, bạn đã hết lượt đoán! Game Over. 😢",
+            "final_score": final_score,
+            "reset_level": 1,
+            "next_theme": game.theme,
+            "next_hint": game.hint
+        }
+        
+    else:
+        return {
+            "result": "playing",
+            "guesses": game.guesses,
+            "theme": game.theme,
+            "hint": game.hint,
+            "points": game.points
+        }
+
+@app.post("/game/wordle/reset")
+async def reset_wordle(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = current_user["user_id"]
+    
+    game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
+    word_data = await ai_service.generate_wordle_word(1)
+    if game:
+        game.current_level = 1
+        game.secret_word = word_data["word"]
+        game.theme = word_data["theme"]
+        game.hint = word_data["hint"]
+        game.guesses = []
+        game.points = 0
+        game.status = "playing"
+        game.level_start_time = datetime.utcnow()
+    else:
+        game = WordleGame(
+            user_id=user_id,
+            current_level=1,
+            secret_word=word_data["word"],
+            theme=word_data["theme"],
+            hint=word_data["hint"],
+            guesses=[],
+            points=0,
+            status="playing",
+            level_start_time=datetime.utcnow()
+        )
+        db.add(game)
+    db.commit()
+    return {"status": "success", "message": "Đã reset game về cấp độ 1."}
+
+@app.get("/game/leaderboard")
+async def get_game_leaderboard(db: Session = Depends(get_db)):
+    one_week_ago = datetime.utcnow() - timedelta(days=7)
+    
+    results = db.query(
+        GameLeaderboard.user_id,
+        func.max(GameLeaderboard.points).label("max_points"),
+        func.max(GameLeaderboard.max_level).label("max_level")
+    ).filter(
+        GameLeaderboard.created_at >= one_week_ago
+    ).group_by(
+        GameLeaderboard.user_id
+    ).order_by(
+        desc("max_points")
+    ).limit(10).all()
+    
+    leaderboard = []
+    for idx, r in enumerate(results):
+        user = db.query(User).filter(User.id == r.user_id).first()
+        if user:
+            leaderboard.append({
+                "rank": idx + 1,
+                "username": user.username,
+                "avatar_url": user.avatar_url,
+                "points": r.max_points,
+                "max_level": r.max_level
+            })
+            
+    return {"leaderboard": leaderboard}
+
 
 if __name__ == "__main__":
     import uvicorn

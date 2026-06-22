@@ -559,6 +559,51 @@ Return ONLY the JSON array. Example:
             print(f"Gemini get_json_advice failed: {e}")
         return {}
 
+    async def generate_wordle_word(self, level: int):
+        prompt = f"""
+        Bạn là giám khảo IELTS chuyên nghiệp thiết kế trò chơi Wordle Matcha cho học viên.
+        Hãy tạo một từ vựng tiếng Anh IELTS gồm đúng 5 chữ cái (5 letters) dựa vào độ khó của cấp độ Level {level} (trong đó Level 1 là cực kỳ dễ, Level 10 là cực kỳ nâng cấp/nâng cao).
+        
+        Trả về định dạng JSON chính xác như sau:
+        {{
+            "word": "từ tiếng Anh 5 chữ cái viết hoa (ví dụ: CLONE, WATER, GREEN)",
+            "theme": "chủ đề tiếng Việt tương ứng (ví dụ: Công nghệ, Đời sống, Màu sắc)",
+            "hint": "Giải nghĩa ngắn gọn của từ bằng tiếng Việt hoặc gợi ý nhỏ để người chơi đoán"
+        }}
+        
+        Quy tắc cực kỳ quan trọng:
+        1. Từ được chọn PHẢI có đúng 5 chữ cái tiếng Anh (không tính dấu cách hay ký tự đặc biệt).
+        2. Từ phải là từ có nghĩa thông dụng hoặc học thuật phù hợp với Level {level}.
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            content = response.choices[0].message.content
+            data = json.loads(self._clean_json(content))
+            word = str(data.get("word", "")).strip().upper()
+            if len(word) != 5:
+                fallbacks = {
+                    1: {"word": "WATER", "theme": "Đời sống", "hint": "Nước uống hàng ngày"},
+                    2: {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"},
+                    3: {"word": "PLANT", "theme": "Môi trường", "hint": "Cây cối hoặc thực vật"},
+                    4: {"word": "STUDY", "theme": "Giáo dục", "hint": "Hành động học tập"},
+                    5: {"word": "CLONE", "theme": "Công nghệ", "hint": "Bản sao hoặc nhân bản vô tính"},
+                    6: {"word": "FOCUS", "theme": "Tâm lý", "hint": "Sự tập trung vào công việc"},
+                    7: {"word": "TRAIN", "theme": "Vận chuyển", "hint": "Tàu hỏa hoặc đào tạo"},
+                    8: {"word": "LEMON", "theme": "Ẩm thực", "hint": "Quả chanh vàng chua ngọt"},
+                    9: {"word": "SMILE", "theme": "Cảm xúc", "hint": "Nụ cười rạng rỡ"},
+                    10: {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"}
+                }
+                return fallbacks.get(level if level in fallbacks else 1, fallbacks[1])
+            data["word"] = word
+            return data
+        except Exception as e:
+            print(f"Gemini generate_wordle_word failed: {e}")
+            return {"word": "SWEET", "theme": "Ẩm thực", "hint": "Vị ngọt ngào như Matcha Latte"}
+
 ai_service = AIService()
 
 
