@@ -549,16 +549,38 @@ export default function WordleMatchaPage() {
             <div className="w-full flex flex-col justify-between items-center gap-4 md:gap-6 h-full flex-1">
               
               {/* Game details */}
-              <div className="w-full flex items-center justify-between px-1">
-                <div className="bg-secondary px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-accent border border-primary/10 flex items-center gap-1">
-                  <span className="material-symbols-rounded text-xs text-primary">layers</span>
-                  Lvl {gameState?.current_level}
+              <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
+                <div className="flex items-center justify-between w-full sm:w-auto">
+                  <div className="bg-secondary px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-accent border border-primary/10 flex items-center gap-1">
+                    <span className="material-symbols-rounded text-xs text-primary">layers</span>
+                    Lvl {gameState?.current_level}
+                  </div>
+                  {/* Mobile-only action buttons */}
+                  <div className="flex gap-1.5 sm:hidden">
+                    <button 
+                      onClick={resetGame}
+                      className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                      title="Chơi lại từ đầu (Reset Lvl 1)"
+                    >
+                      <span className="material-symbols-rounded text-sm">restart_alt</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowHint(!showHint)}
+                      className="bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border border-[#FBC02D]/30 text-[#FBC02D] p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                    >
+                      <span className="material-symbols-rounded text-sm">lightbulb</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="bg-primary/10 px-2 sm:px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 min-w-0 flex-1 justify-center mx-1.5">
+                
+                {/* Theme banner - full width on mobile, inline on desktop */}
+                <div className="bg-primary/10 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 w-full sm:flex-1 justify-center sm:mx-1.5">
                   <span className="material-symbols-rounded text-xs flex-shrink-0">interests</span>
-                  <span className="truncate">Chủ đề: {gameState?.theme || "Chủ đề"}</span>
+                  <span className="text-center">Chủ đề: {gameState?.theme || "Chủ đề"}</span>
                 </div>
-                <div className="flex gap-1.5">
+                
+                {/* Desktop-only action buttons */}
+                <div className="hidden sm:flex gap-1.5">
                   <button 
                     onClick={resetGame}
                     className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
