@@ -128,6 +128,12 @@ export default function WordleMatchaPage() {
         const data = await res.json();
         setGameState(data);
         localStorage.setItem("matcha_wordle_local_state", JSON.stringify(data));
+      } else if (res.status === 401) {
+        localStorage.removeItem("oasis_token");
+        localStorage.removeItem("oasis_user");
+        setToken(null);
+        setUser(null);
+        setGameState(null);
       }
     } catch (e) {
       console.error("Fetch state error:", e);
@@ -225,6 +231,13 @@ export default function WordleMatchaPage() {
           setGameState(updatedState);
           localStorage.setItem("matcha_wordle_local_state", JSON.stringify(updatedState));
         }
+      } else if (res.status === 401) {
+        setMessage("Phiên học đã hết hạn. Vui lòng quay lại trang chủ đăng nhập lại nhé! 🍵");
+        localStorage.removeItem("oasis_token");
+        localStorage.removeItem("oasis_user");
+        setToken(null);
+        setUser(null);
+        setTimeout(() => setMessage(""), 5000);
       } else {
         const err = await res.json();
         setMessage(err.detail || "Từ đoán không hợp lệ!");
