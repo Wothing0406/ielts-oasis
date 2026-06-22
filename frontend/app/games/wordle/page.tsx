@@ -185,15 +185,35 @@ export default function WordleMatchaPage() {
         if (data.result === "won") {
           setRevealedWord(currentGuess);
           setPointsEarned(data.points_earned);
+          
+          if (gameState) {
+            const updated: GameState = {
+              ...gameState,
+              guesses: [...gameState.guesses, currentGuess],
+              status: "won"
+            };
+            setGameState(updated);
+            localStorage.setItem("matcha_wordle_local_state", JSON.stringify(updated));
+          }
+          
           setEndModalType("won");
           setShowEndModal(true);
-          fetchGameState();
           fetchLeaderboard();
         } else if (data.result === "lost") {
           setRevealedWord(data.secret_word_revealed || "");
+          
+          if (gameState) {
+            const updated: GameState = {
+              ...gameState,
+              guesses: [...gameState.guesses, currentGuess],
+              status: "lost"
+            };
+            setGameState(updated);
+            localStorage.setItem("matcha_wordle_local_state", JSON.stringify(updated));
+          }
+          
           setEndModalType("lost");
           setShowEndModal(true);
-          fetchGameState();
           fetchLeaderboard();
         } else {
           // Still playing
@@ -737,6 +757,7 @@ export default function WordleMatchaPage() {
                 onClick={() => {
                   setShowEndModal(false);
                   setEndModalType(null);
+                  fetchGameState();
                 }}
                 className="w-full py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-2xl shadow-md text-xs sm:text-sm transition-all active:scale-95 cursor-pointer mt-4"
               >
