@@ -560,27 +560,53 @@ Return ONLY the JSON array. Example:
         return {}
 
     async def generate_wordle_word(self, level: int):
+        import random
+        topics = [
+            ("Environment", "Môi trường"),
+            ("Technology", "Công nghệ"),
+            ("Health & Wellness", "Sức khỏe"),
+            ("Education", "Giáo dục"),
+            ("Travel & Lifestyle", "Du lịch & Đời sống"),
+            ("Art & Culture", "Nghệ thuật & Văn hóa"),
+            ("Science", "Khoa học"),
+            ("Business & Economy", "Kinh doanh & Kinh tế"),
+            ("Society & Community", "Xã hội"),
+            ("Sports & Fitness", "Thể thao & Rèn luyện"),
+            ("History & Archaeology", "Lịch sử"),
+            ("Media & Communication", "Truyền thông & Báo chí"),
+            ("Law & Justice", "Pháp luật"),
+            ("Food & Nutrition", "Ẩm thực & Dinh dưỡng"),
+            ("Nature & Wildlife", "Thiên nhiên"),
+            ("Work & Careers", "Công việc & Sự nghiệp"),
+            ("Global Issues", "Vấn đề toàn cầu"),
+            ("Psychology & Mind", "Tâm lý học"),
+            ("City Life", "Đời sống đô thị"),
+            ("Feelings & Emotions", "Cảm xúc & Tâm trạng")
+        ]
+        chosen_topic_en, chosen_topic_vi = random.choice(topics)
+        
         prompt = f"""
         Bạn là giám khảo IELTS chuyên nghiệp thiết kế trò chơi Wordle Matcha cho học viên.
         Hãy tạo một từ vựng tiếng Anh IELTS gồm đúng 5 chữ cái (5 letters) dựa vào độ khó của cấp độ Level {level}.
         
+        Yêu cầu bắt buộc: Từ được chọn và gợi ý phải bám sát hoặc liên quan chặt chẽ đến chủ đề: {chosen_topic_vi} ({chosen_topic_en}).
+        
         Quy tắc độ khó:
-        - Level 1-5: Từ vựng cực kỳ phổ biến, thông dụng (ví dụ: WATER, STUDY, GREEN, PLANT, HOUSE).
+        - Level 1-5: Từ vựng cực kỳ phổ biến, thông dụng, dễ học (ví dụ: WATER, HOUSE, PLANT, SMART, GREEN).
         - Level 6-15: Từ vựng IELTS mức độ trung cấp, học thuật phổ biến (ví dụ: FOCUS, GROUP, LEGAL, MEDIA, VOICE).
         - Level 16+: Từ vựng IELTS nâng cao, học thuật chuyên sâu và ít gặp hơn (ví dụ: AMITY, BRIEF, DRIFT, VAGUE, SPARK, CLONE). Cấp độ càng cao, từ càng học thuật và thử thách.
         
-        Hãy tạo các chủ đề ngẫu nhiên, đa dạng, mở rộng (open-ended random themes) liên quan đến kỳ thi IELTS.
-        
         Trả về định dạng JSON chính xác như sau:
         {{
-            "word": "từ tiếng Anh 5 chữ cái viết hoa (ví dụ: CLONE, WATER, GREEN)",
-            "theme": "chủ đề tiếng Việt tương ứng (ví dụ: Công nghệ, Đời sống, Môi trường, Giáo dục)",
-            "hint": "Giải nghĩa ngắn gọn của từ bằng tiếng Việt hoặc gợi ý nhỏ để người chơi đoán"
+            "word": "từ tiếng Anh 5 chữ cái viết hoa",
+            "theme": "{chosen_topic_vi}",
+            "hint": "Giải nghĩa ngắn gọn của từ bằng tiếng Việt hoặc gợi ý nhỏ liên quan đến chủ đề để người chơi đoán"
         }}
         
         Quy tắc cực kỳ quan trọng:
         1. Từ được chọn PHẢI có đúng 5 chữ cái tiếng Anh (không tính dấu cách hay ký tự đặc biệt).
         2. Từ phải là từ có nghĩa thông dụng hoặc học thuật phù hợp với Level {level}.
+        3. Hãy tạo từ ngẫu nhiên và đa dạng, tránh lặp lại từ của các lượt chơi trước.
         """
         try:
             response = await self.client.chat.completions.create(
@@ -614,14 +640,19 @@ Return ONLY the JSON array. Example:
                     {"word": "IMAGE", "theme": "Hình ảnh", "hint": "Tranh ảnh hoặc ấn tượng"},
                     {"word": "JUDGE", "theme": "Luật pháp", "hint": "Thẩm phán hoặc đánh giá"}
                 ]
-                # Modulo fallback to prevent out of bounds and ensure infinite safety
-                fallback_item = fallbacks[level % len(fallbacks)]
+                # Fall back to a randomized word from the list instead of static modulo
+                fallback_item = random.choice(fallbacks)
                 return fallback_item
             data["word"] = word
             return data
         except Exception as e:
             print(f"Gemini generate_wordle_word failed: {e}")
-            return {"word": "SWEET", "theme": "Ẩm thực", "hint": "Vị ngọt ngào như Matcha Latte"}
+            fallbacks = [
+                {"word": "SWEET", "theme": "Ẩm thực", "hint": "Vị ngọt ngào như Matcha Latte"},
+                {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"},
+                {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"}
+            ]
+            return random.choice(fallbacks)
 
 ai_service = AIService()
 

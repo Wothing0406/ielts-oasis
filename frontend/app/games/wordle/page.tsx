@@ -484,16 +484,25 @@ export default function WordleMatchaPage() {
                   <span className="material-symbols-rounded text-xs text-primary">layers</span>
                   Lvl {gameState?.current_level}
                 </div>
-                <div className="bg-primary/10 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 truncate max-w-[150px] sm:max-w-xs">
+                <div className="bg-primary/10 px-3.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black text-primary border border-primary/15 flex items-center gap-1 truncate max-w-[100px] sm:max-w-xs">
                   <span className="material-symbols-rounded text-xs">interests</span>
                   Chủ đề: {gameState?.theme || "Chủ đề"}
                 </div>
-                <button 
-                  onClick={() => setShowHint(!showHint)}
-                  className="bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border border-[#FBC02D]/30 text-[#FBC02D] p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
-                >
-                  <span className="material-symbols-rounded text-sm sm:text-base">lightbulb</span>
-                </button>
+                <div className="flex gap-1.5">
+                  <button 
+                    onClick={resetGame}
+                    className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                    title="Chơi lại từ đầu (Reset Lvl 1)"
+                  >
+                    <span className="material-symbols-rounded text-sm sm:text-base">restart_alt</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowHint(!showHint)}
+                    className="bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border border-[#FBC02D]/30 text-[#FBC02D] p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                  >
+                    <span className="material-symbols-rounded text-sm sm:text-base">lightbulb</span>
+                  </button>
+                </div>
               </div>
 
               {/* Clue Panel */}
@@ -667,6 +676,16 @@ export default function WordleMatchaPage() {
                       <span className="text-xs font-bold text-accent/70">Chủ đề từ khóa hiện tại:</span>
                       <span className="text-sm font-bold text-accent">{gameState?.theme || "N/A"}</span>
                     </div>
+                    <button 
+                      onClick={() => {
+                        setShowLeaderboard(false);
+                        resetGame();
+                      }}
+                      className="w-full mt-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-500 hover:bg-red-100 font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-rounded text-sm sm:text-base">restart_alt</span>
+                      Chơi lại từ đầu (Reset Lvl 1)
+                    </button>
                   </div>
                 )}
               </div>
