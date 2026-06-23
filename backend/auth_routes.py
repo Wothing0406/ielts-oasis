@@ -2,6 +2,8 @@ import os
 import httpx
 import jwt
 import uuid
+import re
+import random
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -21,14 +23,46 @@ class GuestLogin(BaseModel):
     username: str
     guest_id: str = None
 
+def clean_and_validate_username(username: str) -> str:
+    # 1. Strip script tags and their content first
+    temp = re.sub(r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", username, flags=re.IGNORECASE)
+    # 2. Strip any other HTML tags
+    temp = re.sub(r"<[^>]+>", "", temp)
+    # 3. Allow letters (including Vietnamese letters with accents & Đ/đ), digits, spaces, hyphens, underscores
+    cleaned = re.sub(r"[^\w\s\-\u00C0-\u1EF9\u0110\u0111]", "", temp)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    
+    if len(cleaned) < 2:
+        raise HTTPException(status_code=400, detail="Tên người dùng phải có ít nhất 2 ký tự hợp lệ.")
+    if len(cleaned) > 30:
+        raise HTTPException(status_code=400, detail="Tên người dùng không được vượt quá 30 ký tự.")
+    return cleaned
+
+def generate_unique_guest_username(base_name: str, db: Session) -> str:
+    # If the username is not taken, use it
+    existing = db.query(User).filter(User.username == base_name).first()
+    if not existing:
+        return base_name
+        
+    # If taken, generate a random 4-digit tag
+    for _ in range(50):
+        tag = random.randint(1000, 9999)
+        candidate = f"{base_name}#{tag}"
+        existing_candidate = db.query(User).filter(User.username == candidate).first()
+        if not existing_candidate:
+            return candidate
+            
+    return f"{base_name}#{random.randint(10000, 99999)}"
+
 @router.post("/guest")
 async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
     guest_id = payload.guest_id
-    username = payload.username.strip()
+    raw_username = payload.username.strip()
     
-    if not username:
+    if not raw_username:
         raise HTTPException(status_code=400, detail="Tên người dùng không được để trống")
         
+    username = clean_and_validate_username(raw_username)
     is_new_user = False
     
     # If they have a guest_id, try to find them
@@ -36,17 +70,21 @@ async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
         user = db.query(User).filter(User.discord_id == guest_id).first()
         if not user:
             # If guest_id not found, create one
-            user = User(discord_id=guest_id, username=username)
+            unique_username = generate_unique_guest_username(username, db)
+            user = User(discord_id=guest_id, username=unique_username)
             db.add(user)
             is_new_user = True
         else:
-            # Update username if they changed it
-            user.username = username
+            # Update username if they changed it (ignoring the tag suffix comparison)
+            current_base = user.username.split("#")[0] if "#" in user.username else user.username
+            if current_base != username:
+                user.username = generate_unique_guest_username(username, db)
             user.last_login = datetime.utcnow()
     else:
         # Create a brand new guest user
         guest_id = f"guest-{uuid.uuid4()}"
-        user = User(discord_id=guest_id, username=username)
+        unique_username = generate_unique_guest_username(username, db)
+        user = User(discord_id=guest_id, username=unique_username)
         db.add(user)
         is_new_user = True
         

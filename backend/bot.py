@@ -273,7 +273,8 @@ async def on_message(message):
 
 @bot.tree.command(name='web', description="Xem link truy cập web IELTS Oasis")
 async def web(interaction: discord.Interaction):
-    domain = "https://drudge-amount-charting.ngrok-free.dev"
+    redirect_uri = os.getenv("DISCORD_REDIRECT_URI", "https://ieltsoasis.site/auth/callback")
+    domain = redirect_uri.replace("/auth/callback", "")
     await interaction.response.send_message(f"Truy cập IELTS Oasis tại đây nhé: {domain}")
 
 @bot.tree.command(name='tuvan', description="Tư vấn lộ trình học tập và kiểm tra trình độ")

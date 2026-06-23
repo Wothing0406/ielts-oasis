@@ -22,6 +22,16 @@ class AIService:
         self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
         self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
         
+        # Load wordle keywords
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        keywords_path = os.path.join(current_dir, "wordle_keywords.json")
+        try:
+            with open(keywords_path, "r", encoding="utf-8") as f:
+                self.wordle_keywords = json.load(f)
+        except Exception as e:
+            print(f"Failed to load wordle_keywords.json: {e}")
+            self.wordle_keywords = ["WATER", "OASIS", "GREEN", "STUDY", "CLONE", "FOCUS", "TRAIN", "LEMON", "SMILE", "BASIC"]
+        
 
 
     def _clean_json(self, text: str, expect_list=False):
@@ -561,52 +571,35 @@ Return ONLY the JSON array. Example:
 
     async def generate_wordle_word(self, level: int):
         import random
-        topics = [
-            ("Environment", "Môi trường"),
-            ("Technology", "Công nghệ"),
-            ("Health & Wellness", "Sức khỏe"),
-            ("Education", "Giáo dục"),
-            ("Travel & Lifestyle", "Du lịch & Đời sống"),
-            ("Art & Culture", "Nghệ thuật & Văn hóa"),
-            ("Science", "Khoa học"),
-            ("Business & Economy", "Kinh doanh & Kinh tế"),
-            ("Society & Community", "Xã hội"),
-            ("Sports & Fitness", "Thể thao & Rèn luyện"),
-            ("History & Archaeology", "Lịch sử"),
-            ("Media & Communication", "Truyền thông & Báo chí"),
-            ("Law & Justice", "Pháp luật"),
-            ("Food & Nutrition", "Ẩm thực & Dinh dưỡng"),
-            ("Nature & Wildlife", "Thiên nhiên"),
-            ("Work & Careers", "Công việc & Sự nghiệp"),
-            ("Global Issues", "Vấn đề toàn cầu"),
-            ("Psychology & Mind", "Tâm lý học"),
-            ("City Life", "Đời sống đô thị"),
-            ("Feelings & Emotions", "Cảm xúc & Tâm trạng")
-        ]
-        chosen_topic_en, chosen_topic_vi = random.choice(topics)
+        # Sample 40 words from our SQL keyword database
+        sample_size = min(40, len(self.wordle_keywords))
+        sample_words = random.sample(self.wordle_keywords, sample_size)
+        sample_words_str = ", ".join(sample_words)
         
         prompt = f"""
         Bạn là giám khảo IELTS chuyên nghiệp thiết kế trò chơi Wordle Matcha cho học viên.
-        Hãy tạo một từ vựng tiếng Anh IELTS gồm đúng 5 chữ cái (5 letters) dựa vào độ khó của cấp độ Level {level}.
-        
-        Yêu cầu bắt buộc: Từ được chọn và gợi ý phải bám sát hoặc liên quan chặt chẽ đến chủ đề: {chosen_topic_vi} ({chosen_topic_en}).
-        
-        Quy tắc độ khó:
-        - Level 1-5: Từ vựng cực kỳ phổ biến, thông dụng, dễ học (ví dụ: WATER, HOUSE, PLANT, SMART, GREEN).
-        - Level 6-15: Từ vựng IELTS mức độ trung cấp, học thuật phổ biến (ví dụ: FOCUS, GROUP, LEGAL, MEDIA, VOICE).
-        - Level 16+: Từ vựng IELTS nâng cao, học thuật chuyên sâu và ít gặp hơn (ví dụ: AMITY, BRIEF, DRIFT, VAGUE, SPARK, CLONE). Cấp độ càng cao, từ càng học thuật và thử thách.
-        
+        Nhiệm vụ của bạn là chọn ra ĐÚNG MỘT TỪ trong danh sách 40 từ sau để làm từ khóa bí mật cho Level {level}:
+        [{sample_words_str}]
+
+        Quy tắc độ khó cực kỳ quan trọng cho Level {level}:
+        - Level 1-5: Từ vựng cực kỳ phổ biến, quen thuộc, cơ bản và dễ đoán (ví dụ: water, house, beach, happy). Hãy chọn một từ dễ nhất trong danh sách.
+        - Level 6-15: Từ vựng IELTS mức độ trung cấp, học thuật phổ biến (ví dụ: focus, group, legal, media, trend, shift).
+        - Level 16+: Từ vựng IELTS nâng cao, học thuật chuyên sâu và ít gặp hơn (ví dụ: amity, brief, vague, spark, elite). Cấp độ càng cao, từ càng học thuật và thử thách.
+
+        Sau khi đã chọn được một từ phù hợp từ danh sách trên:
+        1. Phân loại từ đó vào một chủ đề IELTS phù hợp nhất (bằng tiếng Việt, ví dụ: Môi trường, Công nghệ, Giáo dục, Y tế, Xã hội, Đời sống, Nghệ thuật, Khoa học, Kinh tế, Lịch sử, v.v.).
+        2. Tạo một gợi ý (hint) bằng tiếng Việt cho từ này. 
+           QUY TẮC GỢI Ý ĐẦY THỬ THÁCH (HẠN CHẾ DỄ ĐOÁN):
+           - KHÔNG giải nghĩa trực tiếp từ đó (ví dụ nếu từ là CLOCK thì KHÔNG được gợi ý "thiết bị đo thời gian" hoặc "dùng để xem giờ").
+           - Hãy mô tả khái niệm một cách gián tiếp, sử dụng ẩn dụ, đặt trong ngữ cảnh học thuật IELTS (ví dụ: mô tả cách nó xuất hiện trong IELTS Writing Task 2, hoặc các từ đồng nghĩa/trái nghĩa nâng cao), hoặc mô tả cách nó được sử dụng trong đời sống/khoa học/xã hội.
+           - Gợi ý phải kích thích người chơi tư duy logic và suy luận để tăng tính học thuật và giải đố của game.
+
         Trả về định dạng JSON chính xác như sau:
         {{
-            "word": "từ tiếng Anh 5 chữ cái viết hoa",
-            "theme": "{chosen_topic_vi}",
-            "hint": "Giải nghĩa ngắn gọn của từ bằng tiếng Việt hoặc gợi ý nhỏ liên quan đến chủ đề để người chơi đoán"
+            "word": "TỪ_ĐÃ_CHỌN_VIẾT_HOA",
+            "theme": "Chủ đề tiếng Việt phù hợp nhất",
+            "hint": "Gợi ý tiếng Việt nâng cao và đầy thử thách"
         }}
-        
-        Quy tắc cực kỳ quan trọng:
-        1. Từ được chọn PHẢI có đúng 5 chữ cái tiếng Anh (không tính dấu cách hay ký tự đặc biệt).
-        2. Từ phải là từ có nghĩa thông dụng hoặc học thuật phù hợp với Level {level}.
-        3. Hãy tạo từ ngẫu nhiên và đa dạng, tránh lặp lại từ của các lượt chơi trước.
         """
         try:
             response = await self.client.chat.completions.create(
@@ -617,42 +610,25 @@ Return ONLY the JSON array. Example:
             content = response.choices[0].message.content
             data = json.loads(self._clean_json(content))
             word = str(data.get("word", "")).strip().upper()
-            if len(word) != 5:
-                fallbacks = [
-                    {"word": "WATER", "theme": "Đời sống", "hint": "Nước uống hàng ngày"},
-                    {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"},
-                    {"word": "PLANT", "theme": "Môi trường", "hint": "Cây cối hoặc thực vật"},
-                    {"word": "STUDY", "theme": "Giáo dục", "hint": "Hành động học tập"},
-                    {"word": "CLONE", "theme": "Công nghệ", "hint": "Bản sao hoặc nhân bản vô tính"},
-                    {"word": "FOCUS", "theme": "Tâm lý", "hint": "Sự tập trung vào công việc"},
-                    {"word": "TRAIN", "theme": "Vận chuyển", "hint": "Tàu hỏa hoặc đào tạo"},
-                    {"word": "LEMON", "theme": "Ẩm thực", "hint": "Quả chanh vàng chua ngọt"},
-                    {"word": "SMILE", "theme": "Cảm xúc", "hint": "Nụ cười rạng rỡ"},
-                    {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"},
-                    {"word": "BASIC", "theme": "Cơ bản", "hint": "Nền tảng, đơn giản nhất"},
-                    {"word": "CLEAR", "theme": "Rõ ràng", "hint": "Dễ hiểu, không bị mờ nhạt"},
-                    {"word": "CRIME", "theme": "Xã hội", "hint": "Hành vi vi phạm pháp luật"},
-                    {"word": "DRAFT", "theme": "Học thuật", "hint": "Bản nháp trước khi hoàn chỉnh"},
-                    {"word": "EVENT", "theme": "Sự kiện", "hint": "Việc xảy ra mang tính chất đặc biệt"},
-                    {"word": "FLUID", "theme": "Khoa học", "hint": "Chất lỏng hoặc linh hoạt"},
-                    {"word": "GIANT", "theme": "Kích thước", "hint": "Kẻ khổng lồ hoặc cực kỳ lớn"},
-                    {"word": "HABIT", "theme": "Thói quen", "hint": "Hành động lặp đi lặp lại hàng ngày"},
-                    {"word": "IMAGE", "theme": "Hình ảnh", "hint": "Tranh ảnh hoặc ấn tượng"},
-                    {"word": "JUDGE", "theme": "Luật pháp", "hint": "Thẩm phán hoặc đánh giá"}
-                ]
-                # Fall back to a randomized word from the list instead of static modulo
-                fallback_item = random.choice(fallbacks)
-                return fallback_item
-            data["word"] = word
+            
+            # Ensure the selected word is 5 letters and is one of the sampled words (or at least valid)
+            if len(word) != 5 or word not in self.wordle_keywords:
+                # If Gemini returned invalid word, fallback to a random keyword from the sample
+                fallback_word = random.choice(sample_words)
+                data["word"] = fallback_word
+                data["theme"] = data.get("theme", "Học thuật")
+                data["hint"] = f"Một từ học thuật 5 chữ cái bắt đầu bằng chữ '{fallback_word[0]}'."
+            else:
+                data["word"] = word
             return data
         except Exception as e:
             print(f"Gemini generate_wordle_word failed: {e}")
-            fallbacks = [
-                {"word": "SWEET", "theme": "Ẩm thực", "hint": "Vị ngọt ngào như Matcha Latte"},
-                {"word": "OASIS", "theme": "Thiên nhiên", "hint": "Ốc đảo xanh tươi giữa sa mạc"},
-                {"word": "GREEN", "theme": "Màu sắc", "hint": "Màu của Matcha"}
-            ]
-            return random.choice(fallbacks)
+            fallback_word = random.choice(sample_words)
+            return {
+                "word": fallback_word,
+                "theme": "Từ vựng IELTS",
+                "hint": f"Từ vựng học thuật gồm 5 chữ cái, có ký tự bắt đầu là '{fallback_word[0]}'."
+            }
 
 ai_service = AIService()
 

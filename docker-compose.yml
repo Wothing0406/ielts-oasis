@@ -78,14 +78,12 @@ services:
     networks:
       - ielts-network
 
-  # --- Public Access (Ngrok Tunnel) ---
+  # --- Public Access (Cloudflare Tunnel) ---
   tunnel:
-    image: ngrok/ngrok:latest
+    image: cloudflare/cloudflared:latest
     container_name: ielts_oasis_tunnel
     restart: always
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: "http http://web:3000 --domain=${NGROK_DOMAIN} --log=stdout"
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - web
     networks:

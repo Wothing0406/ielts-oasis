@@ -23,6 +23,27 @@ from sqlalchemy.orm import Session
 from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan, WordleGame, GameLeaderboard
 from schemas import VocabIn
 
+# Load wordle vocabulary lists for fast validation
+VALID_WORDLE_DICTIONARY = set()
+try:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    keywords_path = os.path.join(current_dir, "services", "wordle_keywords.json")
+    guess_path = os.path.join(current_dir, "services", "wordle_guess_words.json")
+    
+    if os.path.exists(keywords_path):
+        with open(keywords_path, "r", encoding="utf-8") as f:
+            keywords_list = json.load(f)
+            VALID_WORDLE_DICTIONARY.update([w.upper() for w in keywords_list])
+            
+    if os.path.exists(guess_path):
+        with open(guess_path, "r", encoding="utf-8") as f:
+            guess_list = json.load(f)
+            VALID_WORDLE_DICTIONARY.update([w.upper() for w in guess_list])
+            
+    logger.info(f"Loaded {len(VALID_WORDLE_DICTIONARY)} words into local Wordle validation dictionary.")
+except Exception as e:
+    logger.error(f"Failed to load local Wordle dictionary files: {e}")
+
 class TranslateInput(BaseModel):
     text: str
 
@@ -1099,19 +1120,20 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
     if len(guess) != 5:
         raise HTTPException(status_code=400, detail="Từ đoán phải có đúng 5 chữ cái.")
         
-    # Check if guess is a valid English word using Free Dictionary API
-    import httpx
-    guess_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{guess.lower()}"
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            response = await client.get(guess_url)
-            if response.status_code == 404:
-                raise HTTPException(status_code=400, detail=f"Từ '{guess}' không có trong từ điển tiếng Anh!")
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Fallback: if dictionary API is offline or times out, allow the word
-        pass
+    # Check if guess is a valid English word using local dictionary first, then Free Dictionary API
+    if guess not in VALID_WORDLE_DICTIONARY:
+        import httpx
+        guess_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{guess.lower()}"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                response = await client.get(guess_url)
+                if response.status_code == 404:
+                    raise HTTPException(status_code=400, detail=f"Từ '{guess}' không có trong từ điển tiếng Anh!")
+        except HTTPException:
+            raise
+        except Exception as e:
+            # Fallback: if dictionary API is offline or times out, allow the word
+            pass
         
     current_guesses = list(game.guesses) if game.guesses else []
     current_guesses.append(guess)

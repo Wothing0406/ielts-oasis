@@ -9,7 +9,7 @@
 ---
 
 ## 🔗 Live Demo & Links
-* **Web Application URL:** [https://drudge-amount-charting.ngrok-free.dev](https://drudge-amount-charting.ngrok-free.dev)
+* **Web Application URL:** [https://ieltsoasis.site](https://ieltsoasis.site)
 * **Kaggle Submission:** [Kaggle Competition Overview](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google/overview)
 
 ---
@@ -25,55 +25,7 @@ By pairing a feature-rich web platform with an automated Discord tutor, IELTS Oa
 
 IELTS Oasis operates a network of autonomous agents acting collaboratively across the Next.js Web Dashboard and the Discord Bot:
 
-```mermaid
-graph TD
-    %% User Interfaces
-    Web[Next.js Web Dashboard]
-    Bot[Discord Bot Interface]
-
-    %% Matcha Lens Ingestion Flow
-    Web -->|1. Upload Image| CV[YOLOv8 & Gemini Vision]
-    CV -->|2. Detect & Crop| Crop[Crop Coordinator]
-    Crop -->|3. Vocab Refinement| Refine[Gemini Vocabulary Enrichment]
-    Refine -->|4. Generate TTS & Unsplash| TTS[TTS & Unsplash Service]
-    TTS -->|5. Save to Library| DB[(MySQL Database)]
-
-    %% Writing Sanctuary Flow
-    Web -->|6. Write Essay| Essay[Writing Sanctuary Canvas]
-    Essay -->|7. Grade Essay| Grade[Gemini Essay Grader]
-    Essay -->|8. Highlight Text| Rephrase[Gemini Rephrase API]
-    Grade -->|9. Save Log| DB
-    Essay -->|10. Send to| Radio[Matcha Radio Listening Lab]
-    Essay -->|11. Send to| Book[Matcha Book Reading Lab]
-
-    %% Reading & Listening Flow
-    Web -->|12. YT URL / Custom Text| Radio
-    Radio -->|13. Generate Quiz & TTS| GeminiQuiz[Gemini MCQ/Dictation Generator]
-    Web -->|14. Highlight Reader| Book
-    Book -->|15. Highlight Word| Translate[Gemini Quick Translate API]
-
-    %% Daily Planner & Quizzes
-    Web -->|16. Select Topic| Planner[Daily Planner Agent]
-    Planner -->|17. Generate Lesson plan| DB
-    Web -->|18. Review Flashcard| Quiz[Matcha Quiz: Vocab/AI Grammar]
-
-    %% Community Interactions
-    Web -->|19. Post Vocabulary/Essay| Feed[Oasis Community Feed]
-    Feed -->|20. Like & Comment| DB
-    Feed -->|21. Convert to Lesson| Book
-
-    %% Discord Bot Commands & Reminders
-    Bot -->|22. Slash /tuvan| BotAdvisor[Active Level Advisor Agent]
-    BotAdvisor -->|23. Interview & Test| BotAdvisor
-    BotAdvisor -->|24. Evaluate & Schedule| DB
-    Bot -->|25. Slash /xinnghi| BotAbsence[Absence Grading Agent]
-    BotAbsence -->|26. Evaluate Reason| DB
-    Bot -->|27. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
-    
-    %% Scheduler Job
-    DB -->|28. Read Schedule| Cron[APScheduler Cron Job]
-    Cron -->|29. Push DM Reminders| Bot
-```
+![The Multi-Agent Ecosystem](architecture.svg)
 
 ---
 
@@ -171,7 +123,7 @@ ielts-oasis/
 
 ### Step 1: Discord Configuration
 1. Create a new Discord Application.
-2. In the **OAuth2** tab, add your redirect URI: `https://<YOUR_NGROK_DOMAIN>/auth/callback` (or `http://localhost:3000/auth/callback` for local runs).
+2. In the **OAuth2** tab, add your redirect URI: `https://<YOUR_CUSTOM_DOMAIN>/auth/callback` (or `http://localhost:3000/auth/callback` for local runs).
 3. Under the **Bot** tab, enable **Message Content Intent** (required for the bot to read messages on channel replies/mentions).
 
 ### Step 2: Environment Setup
@@ -183,7 +135,7 @@ GEMINI_API_KEY=your_gemini_api_key
 # Discord OAuth Configuration
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_REDIRECT_URI=https://your-domain.ngrok-free.dev/auth/callback
+DISCORD_REDIRECT_URI=https://your-custom-domain.com/auth/callback
 DISCORD_BOT_TOKEN=your_discord_bot_token
 DISCORD_GUILD_ID=your_discord_server_id
 
@@ -194,18 +146,17 @@ JWT_SECRET=super-secret-key-change-me-123456
 PRIMARY_TEXT_MODEL=gemini-3.1-flash-lite
 PRIMARY_VISION_MODEL=gemini-3.1-flash-lite
 
-# Ngrok Public Tunneling
-NGROK_AUTHTOKEN=your_ngrok_authtoken
-NGROK_DOMAIN=your-domain.ngrok-free.dev
+# Cloudflare Tunnel Token
+CLOUDFLARE_TUNNEL_TOKEN=your_cloudflare_tunnel_token
 ```
 
 ### Step 3: Run with Docker Compose
-Run the following command to spin up the MySQL database, FastAPI backend, Discord Bot, Next.js web application, and the Ngrok public tunnel:
+Run the following command to spin up the MySQL database, FastAPI backend, Discord Bot, Next.js web application, and the Cloudflare Tunnel:
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Step 4: Verification
-* Open your browser and navigate to `https://your-domain.ngrok-free.dev`.
+* Open your browser and navigate to `https://your-custom-domain.com`.
 * Log in as a Guest or using Discord.
 * Try `/tuvan` inside your Discord server to begin the adaptive scheduling onboarding!
