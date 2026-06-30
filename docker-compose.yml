@@ -35,7 +35,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 300
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 300
     depends_on:
       db:
         condition: service_healthy
@@ -70,9 +70,9 @@ services:
     restart: always
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./frontend:/app
+    #   - /app/node_modules
     depends_on:
       - backend
     networks:
