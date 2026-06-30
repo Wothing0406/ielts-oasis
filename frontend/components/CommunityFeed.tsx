@@ -9,12 +9,14 @@ export default function CommunityFeed({
   onAddVocab, 
   vocabList = [], 
   onListenPost,
-  onReadPost
+  onReadPost,
+  onDeleteVocab
 }: { 
   onAddVocab?: (vocab: any) => Promise<any>, 
   vocabList?: any[], 
   onListenPost?: (text: string) => void,
-  onReadPost?: (text: string) => void
+  onReadPost?: (text: string) => void,
+  onDeleteVocab?: (id: number) => void
 }) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
@@ -204,8 +206,10 @@ export default function CommunityFeed({
         });
         if (res.ok) {
           (window as any).showToast("Đã xóa từ vựng thành công! 🍵", "success");
+          if (onDeleteVocab) {
+            onDeleteVocab(vocabId);
+          }
           fetchFeed();
-          window.location.reload();
         } else {
           const errData = await res.json();
           (window as any).showToast("Lỗi: " + (errData.detail || "Không thể xóa từ vựng"), "error");
