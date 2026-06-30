@@ -274,10 +274,6 @@ export default function CommunityFeed({
     setShowFeedback(true);
   };
 
-  if (loading) {
-    return <div className="p-10 text-center text-primary font-bold animate-pulse">Đang tải dữ liệu cộng đồng...</div>;
-  }
-
   return (
     <section className="xl:col-span-12 bg-white border-4 border-primary/20 rounded-[3rem] p-6 md:p-10 shadow-sm flex flex-col gap-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-primary/10 pb-4 gap-4 w-full">
@@ -329,12 +325,17 @@ export default function CommunityFeed({
         </div>
       </div>
 
-      <div className={`grid gap-6 mt-2 ${
-        activeTab === 'writings' 
-          ? 'grid-cols-1 lg:grid-cols-2' 
-          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start'
-      }`}>
-        {activeTab === 'writings' && data.writings.map(w => (
+      {loading ? (
+        <div className="py-20 text-center text-primary font-bold animate-pulse w-full col-span-full">
+          Đang tải dữ liệu cộng đồng... 🍵
+        </div>
+      ) : (
+        <div className={`grid gap-6 mt-2 ${
+          activeTab === 'writings' 
+            ? 'grid-cols-1 lg:grid-cols-2' 
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start'
+        }`}>
+          {activeTab === 'writings' && data.writings.map(w => (
           <div key={w.id} className="bg-[#f9fdfa] border-2 border-primary/10 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
             <div className="flex items-center gap-3 border-b border-black/5 pb-3">
               <img src={w.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${w.username}'s avatar`} className="w-8 h-8 rounded-full border border-primary/30" />
@@ -454,7 +455,8 @@ export default function CommunityFeed({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Lesson Modal */}
       <AnimatePresence>
