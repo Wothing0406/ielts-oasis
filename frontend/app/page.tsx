@@ -187,10 +187,6 @@ export default function Home() {
     }
   };
 
-  const handleGenerateTopic = async (topic: string) => {
-    console.log("Generate topic:", topic);
-  };
-
   const handleStartQuiz = () => {
     if (vocabList.length < 4) {
       (window as any).showAlert("Oops! Trạm nạp năng lượng cần ít nhất 4 từ vựng để pha chế. Thêm từ đi bạn ơi! 🍵", "Thiếu nguyên liệu rồi!", "warning");
@@ -424,7 +420,6 @@ export default function Home() {
               vocabList={vocabList}
               onAdd={async (formData: any) => { await handleAddVocab(formData); }}
               onDelete={handleDeleteVocab}
-              onGenerateTopic={handleGenerateTopic}
               onStartQuiz={handleStartQuiz}
             />
           </section>

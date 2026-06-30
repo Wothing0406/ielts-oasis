@@ -15,6 +15,13 @@ const quicksand = Quicksand({
   weight: ['300', '400', '500', '600', '700']
 });
 
+const safeJsonStringify = (obj: any) => 
+  JSON.stringify(obj)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+
+
 export const metadata: Metadata = {
   title: "IELTS Oasis - Your Zen Learning Space",
   description: "Ghé IELTS Oasis ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
@@ -70,7 +77,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonStringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               "name": "IELTS Oasis",
@@ -97,7 +104,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonStringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "url": "https://ieltsoasis.site",
