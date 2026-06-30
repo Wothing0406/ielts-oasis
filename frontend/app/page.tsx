@@ -458,6 +458,7 @@ export default function Home() {
               vocabList={vocabList} 
               onListenPost={handleSelectListening} 
               onReadPost={handleSelectReading} 
+              onDeleteVocab={handleDeleteVocab}
             />
           </section>
 
