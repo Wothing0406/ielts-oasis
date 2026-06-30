@@ -288,18 +288,21 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         except Exception as e:
             print(f"Matcha Lens crop failed: {e}")
     
-    # Force AI Refinement if enriched learning fields are missing
-    if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../" or not vocab.example or not vocab.memory_hook or not vocab.synonyms:
+    # Force AI Refinement only if core fields are missing (meaning or phonetic)
+    if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../":
         try:
             data = await ai_service.refine_vocabulary(vocab_in.word)
-            vocab.word = data.get("word", vocab.word)
-            vocab.phonetic = data.get("phonetic", vocab.phonetic)
-            vocab.meaning = data.get("meaning", vocab.meaning)
-            vocab.example = data.get("example", vocab.example)
-            vocab.synonyms = data.get("synonyms", vocab.synonyms)
-            vocab.topic = data.get("topic", vocab.topic)
-            vocab.memory_hook = data.get("memory_hook", vocab.memory_hook)
-        except: pass
+            # Only update if the API successfully returned a real translation and didn't fall back to returning the word itself
+            if data and data.get("meaning") != vocab_in.word and data.get("phonetic") != "/.../":
+                vocab.word = data.get("word", vocab.word)
+                vocab.phonetic = data.get("phonetic", vocab.phonetic)
+                vocab.meaning = data.get("meaning", vocab.meaning)
+                vocab.example = data.get("example", vocab.example)
+                vocab.synonyms = data.get("synonyms", vocab.synonyms)
+                vocab.topic = data.get("topic", vocab.topic)
+                vocab.memory_hook = data.get("memory_hook", vocab.memory_hook)
+        except Exception as e:
+            print(f"Refinement failed: {e}")
 
     # Fetch image from Unsplash if still empty
     if not vocab.image_url:

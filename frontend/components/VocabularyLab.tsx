@@ -8,6 +8,7 @@ const API_URL = '/api';
 
 interface VocabItem {
   id?: number;
+  user_id?: number | null;
   word: string;
   phonetic: string;
   meaning: string;
@@ -272,7 +273,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                <span className="material-symbols-rounded text-lg">quiz</span> Ôn tập ngay
              </button>
              
-             {current.id && (
+             {current.id && current.user_id !== null && current.user_id !== undefined && (
                <button type="button" 
                  onClick={() => onDelete(current.id!)}
                  className="w-full sm:w-auto bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all"
