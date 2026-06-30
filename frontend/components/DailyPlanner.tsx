@@ -27,6 +27,7 @@ export default function DailyPlanner({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savingWords, setSavingWords] = useState<Set<string>>(new Set());
+  const [savingAll, setSavingAll] = useState(false);
 
   const generatePlan = async () => {
     if (!topic.trim()) return;
@@ -125,21 +126,50 @@ export default function DailyPlanner({
                   <span className="material-symbols-rounded text-primary">local_library</span> 10 Từ vựng cốt lõi
                 </h3>
                 <button 
+                  type="button"
+                  disabled={savingAll || !plan.vocabulary || plan.vocabulary.length === 0}
                   onClick={async () => {
                     if (onAddVocab && plan.vocabulary) {
-                      let added = 0;
-                      let skipped = 0;
-                      for (const v of plan.vocabulary) {
-                        const res = await onAddVocab({ ...v, source: "Matcha Daily Plan" });
-                        if (res && res.success) added++;
-                        else if (res && res.status === "duplicate") skipped++;
+                      const unsavedWords = plan.vocabulary.filter((v: any) => 
+                        !vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase())
+                      );
+                      
+                      if (unsavedWords.length === 0) {
+                        (window as any).showAlert("Tất cả từ vựng trong lộ trình này đã có trong kho của bạn rồi! 🍵", "Thông báo", "info");
+                        return;
                       }
-                      (window as any).showAlert(`Đã pha chế thành công ${added} từ vựng mới vào kho! (Bỏ qua ${skipped} từ đã có sẵn) 🍵`, "Pha chế hoàn tất!", "success");
+                      
+                      setSavingAll(true);
+                      try {
+                        const results = await Promise.all(
+                          unsavedWords.map((v: any) => onAddVocab({ ...v, source: "Matcha Daily Plan" }))
+                        );
+                        let added = 0;
+                        let duplicates = 0;
+                        let errors = 0;
+                        
+                        results.forEach((res) => {
+                          if (res && res.success) added++;
+                          else if (res && res.status === "duplicate") duplicates++;
+                          else errors++;
+                        });
+                        
+                        const msg = `Đã pha chế thành công ${added} từ vựng mới vào kho!` + 
+                          (duplicates > 0 ? ` (Bỏ qua ${duplicates} từ trùng)` : "") +
+                          (errors > 0 ? ` (Lỗi ${errors} từ)` : "") + " 🍵";
+                        
+                        (window as any).showAlert(msg, "Pha chế hoàn tất!", "success");
+                      } catch (err) {
+                        console.error(err);
+                        (window as any).showAlert("Có lỗi xảy ra khi lưu từ vựng.", "Lỗi", "error");
+                      } finally {
+                        setSavingAll(false);
+                      }
                     }
                   }}
-                  className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors"
+                  className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
                 >
-                  Lưu tất cả
+                  {savingAll ? "Đang lưu..." : "Lưu tất cả"}
                 </button>
               </div>
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">

@@ -5,7 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
-export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost }: { onAddVocab?: (vocab: any) => Promise<any>, vocabList?: any[], onListenPost?: (text: string) => void }) {
+export default function CommunityFeed({ 
+  onAddVocab, 
+  vocabList = [], 
+  onListenPost,
+  onReadPost
+}: { 
+  onAddVocab?: (vocab: any) => Promise<any>, 
+  vocabList?: any[], 
+  onListenPost?: (text: string) => void,
+  onReadPost?: (text: string) => void
+}) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies'>('writings');
@@ -22,6 +32,7 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
   const [commentsList, setCommentsList] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [savingWords, setSavingWords] = useState<Set<string>>(new Set());
+  const [savingAll, setSavingAll] = useState(false);
 
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -359,14 +370,6 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {onListenPost && (
-                  <button type="button" 
-                    onClick={() => onListenPost(w.full_content || w.content)}
-                    className="bg-primary/10 text-primary text-[10px] font-bold px-4 py-2 rounded-full border border-primary/20 flex items-center gap-1 hover:bg-primary hover:text-white transition-all"
-                  >
-                    <span className="material-symbols-rounded text-[14px]">headphones</span> Matcha Radio
-                  </button>
-                )}
                 <button type="button" 
                   onClick={() => handleConvertToLesson(w.id, w.full_content || w.content)}
                   disabled={convertingId === w.id}
@@ -461,15 +464,6 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
                 <span className="material-symbols-rounded">auto_awesome</span> AI Interactive Lesson
               </h3>
 
-              {lesson.audio_url && (
-                <div className="mb-6 bg-white p-4 rounded-3xl border-2 border-primary/10 flex flex-col gap-2">
-                  <p className="text-xs font-bold text-accent">Nghe bài viết này:</p>
-                  <audio controls src={lesson.audio_url} className="w-full">
-                    <track kind="captions" />
-                  </audio>
-                </div>
-              )}
-
               {selectedWritingContent && (
                 <div className="mb-6 bg-white p-5 rounded-3xl border-2 border-primary/10">
                   <h4 className="text-sm font-bold text-accent mb-2 flex items-center gap-1">
@@ -479,57 +473,147 @@ export default function CommunityFeed({ onAddVocab, vocabList = [], onListenPost
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h4 className="text-sm font-bold text-accent mb-3 flex items-center gap-1"><span className="material-symbols-rounded text-primary">local_library</span> Từ Vựng Trích Xuất</h4>
-                  <div className="space-y-3">
-                    {lesson.vocabulary?.map((v: any, i: number) => (
-                      <div key={v.word || i} className="bg-white border border-primary/10 p-3 rounded-xl">
-                        <span className="font-bold text-primary mr-2">{v.word}</span>
-                        <span className="text-xs text-accent italic">- {v.meaning}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {/* Two Big Action Cards to Select Study Mode */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onListenPost && selectedWritingContent) {
+                      onListenPost(selectedWritingContent);
+                      setLesson(null); // Close modal
+                    }
+                  }}
+                  className="p-6 bg-primary/10 border-2 border-primary/20 hover:border-primary hover:bg-primary/25 rounded-3xl flex flex-col items-center justify-center text-center gap-2 group transition-all"
+                >
+                  <span className="material-symbols-rounded text-primary text-4xl group-hover:scale-110 transition-transform">headphones</span>
+                  <span className="font-display font-bold text-accent text-base">Luyện Nghe tại Matcha Radio</span>
+                  <span className="text-[10px] text-accent/60">Tải bài đọc vào máy phát Radio và làm bài tập trắc nghiệm nghe hiểu / điền từ</span>
+                </button>
 
-                <div>
-                  <h4 className="text-sm font-bold text-accent mb-3 flex items-center gap-1"><span className="material-symbols-rounded text-primary">quiz</span> Quiz Đọc / Nghe hiểu</h4>
-                  <div className="space-y-4">
-                    {lesson.questions?.map((q: any, i: number) => (
-                      <div key={q.id || q.question || i} className="bg-white border border-primary/10 p-4 rounded-xl space-y-2">
-                        <p className="text-xs font-bold text-accent">{i + 1}. {q.question}</p>
-                        <div className="space-y-1 mt-2">
-                          {q.options?.map((opt: string) => {
-                            const isSelected = answers[q.id] === opt;
-                            const isCorrect = opt === q.correctAnswer;
-                            let btnClass = "bg-[#f9f9f9] border-black/5 hover:border-primary/30 text-accent";
-                            if (isSelected && !showFeedback) btnClass = "bg-[#eef7f2] border-primary text-primary";
-                            if (showFeedback && isCorrect) btnClass = "bg-green-500 border-green-500 text-white";
-                            if (showFeedback && isSelected && !isCorrect) btnClass = "bg-red-500 border-red-500 text-white";
-                            
-                            return (
-                              <button type="button" key={opt} onClick={() => handleOptionSelect(q.id, opt)} className={`w-full text-left px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${btnClass}`}>
-                                {opt}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {showFeedback && (
-                          <div className="mt-2 text-[10px] italic text-accent/80 bg-blue-50 p-2 rounded border border-blue-100">
-                            <b>Giải thích:</b> {q.explanation}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onReadPost && selectedWritingContent) {
+                      onReadPost(selectedWritingContent);
+                      setLesson(null); // Close modal
+                    }
+                  }}
+                  className="p-6 bg-primary/10 border-2 border-primary/20 hover:border-primary hover:bg-primary/25 rounded-3xl flex flex-col items-center justify-center text-center gap-2 group transition-all"
+                >
+                  <span className="material-symbols-rounded text-primary text-4xl group-hover:scale-110 transition-transform">menu_book</span>
+                  <span className="font-display font-bold text-accent text-base">Luyện Đọc tại Matcha Book</span>
+                  <span className="text-[10px] text-accent/60">Tải bài đọc vào Matcha Book để luyện đọc dịch và giải bộ câu hỏi MCQ/điền từ</span>
+                </button>
+              </div>
+
+              {/* Extracted Vocabulary */}
+              <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-bold text-accent flex items-center gap-1">
+                    <span className="material-symbols-rounded text-primary">local_library</span> Từ Vựng Trích Xuất
+                  </h4>
+                  <button
+                    type="button"
+                    disabled={savingAll || !lesson.vocabulary || lesson.vocabulary.length === 0}
+                    onClick={async () => {
+                      if (onAddVocab && lesson.vocabulary) {
+                        const unsavedWords = lesson.vocabulary.filter((v: any) => 
+                          !vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase())
+                        );
+                        
+                        if (unsavedWords.length === 0) {
+                          (window as any).showAlert("Tất cả từ vựng trích xuất đã có trong kho rồi bạn ơi! 🍵", "Thông báo", "info");
+                          return;
+                        }
+                        
+                        setSavingAll(true);
+                        try {
+                          const results = await Promise.all(
+                            unsavedWords.map((v: any) => onAddVocab({ ...v, source: "Oasis Community" }))
+                          );
+                          let added = 0;
+                          let duplicates = 0;
+                          let errors = 0;
+                          
+                          results.forEach((res) => {
+                            if (res && res.success) added++;
+                            else if (res && res.status === "duplicate") duplicates++;
+                            else errors++;
+                          });
+                          
+                          const msg = `Đã lưu thành công ${added} từ vựng mới! 🍵` + 
+                            (duplicates > 0 ? ` (Trùng ${duplicates} từ)` : "") +
+                            (errors > 0 ? ` (Lỗi ${errors} từ)` : "");
+                          
+                          (window as any).showAlert(msg, "Pha chế hoàn tất", "success");
+                        } catch (err) {
+                          console.error(err);
+                          (window as any).showAlert("Có lỗi xảy ra khi lưu từ vựng.", "Lỗi", "error");
+                        } finally {
+                          setSavingAll(false);
+                        }
+                      }
+                    }}
+                    className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    {savingAll ? "Đang lưu..." : "Lưu tất cả"}
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  {lesson.vocabulary?.map((v: any, i: number) => {
+                    const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
+                    const isSaving = savingWords.has(v.word);
+                    return (
+                      <div key={v.word || i} className="p-3 bg-[#eef7f2] rounded-2xl border border-primary/10 flex justify-between items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-bold text-accent text-sm">{v.word}</p>
+                            <p className="text-xs text-accent italic">{v.meaning}</p>
                           </div>
-                        )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isSaved || isSaving}
+                          onClick={async () => {
+                            if (!isSaved && onAddVocab && !isSaving) {
+                              setSavingWords(prev => {
+                                const next = new Set(prev);
+                                next.add(v.word);
+                                return next;
+                              });
+                              try {
+                                const res = await onAddVocab({ ...v, source: "Oasis Community" });
+                                if (res && res.status === "duplicate") {
+                                  (window as any).showToast(`Từ vựng "${v.word}" đã có sẵn! 🍵`, "info");
+                                }
+                              } catch (e) {
+                                console.error(e);
+                              } finally {
+                                setSavingWords(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(v.word);
+                                  return next;
+                                });
+                              }
+                            }
+                          }}
+                          className={`flex items-center gap-1 transition-colors px-2.5 py-1 rounded-xl text-[10px] font-bold ${
+                            isSaved 
+                              ? 'bg-green-100 text-green-700 cursor-default font-semibold' 
+                              : isSaving
+                              ? 'bg-primary/5 text-primary/40 cursor-wait animate-pulse'
+                              : 'bg-primary/20 text-accent hover:bg-primary/30'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-[12px]">
+                            {isSaved ? 'check_circle' : isSaving ? 'sync' : 'bookmark_add'}
+                          </span>
+                          {isSaved ? 'Đã lưu' : isSaving ? 'Đang lưu...' : 'Lưu'}
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 flex justify-end">
-                    {showFeedback ? (
-                       <span className="text-sm font-bold text-accent mr-4">Kết quả: <b className="text-primary">{score}</b> / {lesson.questions?.length}</span>
-                    ) : (
-                      <button type="button" onClick={handleSubmitQuiz} className="bg-primary text-white text-xs font-bold px-6 py-3 rounded-full hover:scale-105">Nộp bài</button>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>

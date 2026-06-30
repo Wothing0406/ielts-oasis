@@ -453,7 +453,12 @@ export default function Home() {
 
           {/* Hàng 5: Community Feed */}
           <section className="xl:col-span-12">
-            <CommunityFeed onAddVocab={handleAddVocab} vocabList={vocabList} onListenPost={handleSelectListening} />
+            <CommunityFeed 
+              onAddVocab={handleAddVocab} 
+              vocabList={vocabList} 
+              onListenPost={handleSelectListening} 
+              onReadPost={handleSelectReading} 
+            />
           </section>
 
         </div>
