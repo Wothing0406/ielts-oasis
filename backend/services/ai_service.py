@@ -390,7 +390,14 @@ Return ONLY the JSON array. Example:
         {{
             "topic": "{topic}",
             "vocabulary": [
-                {{"word": "Từ", "meaning": "Nghĩa tiếng Việt", "phonetic": "Phiên âm"}}
+                {{
+                    "word": "Từ tiếng Anh",
+                    "meaning": "Nghĩa tiếng Việt",
+                    "phonetic": "Phiên âm IPA",
+                    "example": "Câu ví dụ tiếng Anh chứa từ này hữu ích cho IELTS",
+                    "synonyms": ["Từ đồng nghĩa 1", "Từ đồng nghĩa 2"],
+                    "memory_hook": "Mẹo ghi nhớ từ bằng tiếng Việt ngắn gọn"
+                }}
             ],
             "listening": {{"title": "Tiêu đề bài nghe", "description": "Mô tả..."}},
             "writing": {{"prompt": "Đề bài Writing Task 2"}},
@@ -421,7 +428,14 @@ Return ONLY the JSON array. Example:
         Trả về DUY NHẤT một đối tượng JSON với cấu trúc:
         {{
             "vocabulary": [
-                {{"word": "từ", "meaning": "nghĩa"}}
+                {{
+                    "word": "từ tiếng Anh",
+                    "meaning": "nghĩa tiếng Việt",
+                    "phonetic": "phiên âm IPA",
+                    "example": "câu ví dụ tiếng Anh có chứa từ này để học IELTS",
+                    "synonyms": ["đồng nghĩa 1", "đồng nghĩa 2"],
+                    "memory_hook": "mẹo nhớ từ bằng tiếng Việt ngắn gọn"
+                }}
             ],
             "questions": [
                 {{
