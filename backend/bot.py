@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from database import SessionLocal
-from models import User, Vocabulary, WritingLog, DiscordSchedule, AbsenceLog
+from models import User, Vocabulary, WritingLog, DiscordSchedule, AbsenceLog, DailyPlan, Like, Comment
 from datetime import datetime, timedelta
 from services.ai_service import ai_service
 import asyncio
@@ -176,7 +176,6 @@ async def on_message(message):
                         sched.weekly_plan = data.get("weekly_plan")
                         db.commit()
                     
-                    db.close()
                     user_states.pop(discord_id, None)
                     
                     # Create rich embed
@@ -211,6 +210,7 @@ async def on_message(message):
                             
                     embed.set_footer(text="Hãy bắt đầu bài học đầu tiên trên trang web IELTS Oasis nhé! 🎉")
                     await message.reply(embed=embed)
+                    db.close()
                     return
  
         # 2. General reply context or mention context

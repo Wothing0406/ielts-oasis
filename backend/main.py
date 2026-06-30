@@ -1070,6 +1070,7 @@ async def get_wordle_state(current_user: dict = Depends(get_current_user), db: S
             guesses=[],
             points=0,
             status="playing",
+            hint_used=False,
             level_start_time=datetime.utcnow()
         )
         db.add(game)
@@ -1086,8 +1087,49 @@ async def get_wordle_state(current_user: dict = Depends(get_current_user), db: S
         "evaluations": evaluations,
         "points": game.points,
         "status": game.status,
+        "hint_used": game.hint_used or False,
         "secret_word_revealed": game.secret_word if game.status in ["won", "lost"] else None
     }
+
+@app.post("/game/wordle/hint")
+async def get_wordle_hint(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = current_user["user_id"]
+    game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
+    if not game or game.status != "playing":
+        raise HTTPException(status_code=400, detail="Không có màn chơi nào đang diễn ra.")
+    if game.hint_used:
+        raise HTTPException(status_code=400, detail="Bạn đã dùng gợi ý cho lượt này rồi!")
+    guesses_count = len(game.guesses) if game.guesses else 0
+    if guesses_count < 5:
+        raise HTTPException(status_code=400, detail=f"Cần đoán ít nhất 5 lần mới được dùng gợi ý! (hiện tại: {guesses_count}/5)")
+    
+    import random
+    secret = game.secret_word
+    hint_types = []
+    # Type 1: Reveal a random letter position
+    unrevealed_positions = list(range(5))
+    if game.guesses:
+        evaluations = [evaluate_guess(g, secret) for g in game.guesses]
+        for ev in evaluations:
+            for i, status in enumerate(ev):
+                if status == "green" and i in unrevealed_positions:
+                    unrevealed_positions.remove(i)
+    if unrevealed_positions:
+        pos = random.choice(unrevealed_positions)
+        hint_types.append(f"Chữ cái ở vị trí {pos + 1} là '{secret[pos]}'.")
+    # Type 2: Word type hint
+    word_types = ["danh từ (noun)", "động từ (verb)", "tính từ (adjective)", "trạng từ (adverb)"]
+    hint_types.append(f"Từ này có thể là một {random.choice(word_types)} trong ngữ cảnh IELTS.")
+    # Type 3: First or last letter
+    hint_types.append(f"Chữ cái cuối cùng của từ là '{secret[-1]}'.")
+    
+    chosen_hint = random.choice(hint_types)
+    game.hint_used = True
+    db.commit()
+    
+    return {"hint_text": chosen_hint, "hint_used": True}
 
 @app.post("/game/wordle/guess")
 async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1107,6 +1149,7 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
             guesses=[],
             points=0,
             status="playing",
+            hint_used=False,
             level_start_time=datetime.utcnow()
         )
         db.add(game)
@@ -1163,7 +1206,13 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         db.add(leaderboard_entry)
         
         next_level = game.current_level + 1
-        word_data = await ai_service.generate_wordle_word(next_level)
+        try:
+            word_data = await ai_service.generate_wordle_word(next_level)
+        except Exception as e:
+            logger.error(f"Failed to generate word for level {next_level}: {e}")
+            import random
+            fallback_word = random.choice(ai_service.wordle_keywords)
+            word_data = {"word": fallback_word, "theme": "Từ vựng IELTS", "hint": f"Từ vựng học thuật 5 chữ cái bắt đầu bằng '{fallback_word[0]}'."}
         
         game.current_level = next_level
         game.secret_word = word_data["word"]
@@ -1171,6 +1220,7 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         game.hint = word_data["hint"]
         game.guesses = []
         game.status = "playing"
+        game.hint_used = False
         game.level_start_time = datetime.utcnow()
         db.commit()
         
@@ -1204,7 +1254,13 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         )
         db.add(leaderboard_entry)
         
-        word_data = await ai_service.generate_wordle_word(1)
+        try:
+            word_data = await ai_service.generate_wordle_word(1)
+        except Exception as e:
+            logger.error(f"Failed to generate word for reset: {e}")
+            import random
+            fallback_word = random.choice(ai_service.wordle_keywords)
+            word_data = {"word": fallback_word, "theme": "Từ vựng IELTS", "hint": f"Từ vựng học thuật 5 chữ cái bắt đầu bằng '{fallback_word[0]}'."}
         game.current_level = 1
         game.secret_word = word_data["word"]
         game.theme = word_data["theme"]
@@ -1212,6 +1268,7 @@ async def guess_wordle(payload: GuessInput, current_user: dict = Depends(get_cur
         game.guesses = []
         game.points = 0
         game.status = "playing"
+        game.hint_used = False
         game.level_start_time = datetime.utcnow()
         db.commit()
         
@@ -1245,7 +1302,13 @@ async def reset_wordle(current_user: dict = Depends(get_current_user), db: Sessi
     user_id = current_user["user_id"]
     
     game = db.query(WordleGame).filter(WordleGame.user_id == user_id).first()
-    word_data = await ai_service.generate_wordle_word(1)
+    try:
+        word_data = await ai_service.generate_wordle_word(1)
+    except Exception as e:
+        logger.error(f"Failed to generate word for manual reset: {e}")
+        import random
+        fallback_word = random.choice(ai_service.wordle_keywords)
+        word_data = {"word": fallback_word, "theme": "Từ vựng IELTS", "hint": f"Từ vựng học thuật 5 chữ cái bắt đầu bằng '{fallback_word[0]}'."}
     if game:
         game.current_level = 1
         game.secret_word = word_data["word"]
@@ -1254,6 +1317,7 @@ async def reset_wordle(current_user: dict = Depends(get_current_user), db: Sessi
         game.guesses = []
         game.points = 0
         game.status = "playing"
+        game.hint_used = False
         game.level_start_time = datetime.utcnow()
     else:
         game = WordleGame(

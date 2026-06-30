@@ -23,6 +23,7 @@ interface GameState {
   points: number;
   status: "playing" | "won" | "lost";
   secret_word_revealed?: string | null;
+  hint_used?: boolean;
 }
 
 export default function WordleMatchaPage() {
@@ -38,6 +39,9 @@ export default function WordleMatchaPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [message, setMessage] = useState<string>("");
   const [showHint, setShowHint] = useState<boolean>(false);
+  const [microHint, setMicroHint] = useState<string>("");
+  const [hintUsed, setHintUsed] = useState<boolean>(false);
+  const [hintLoading, setHintLoading] = useState<boolean>(false);
 
   // Keyboard state tracking (letter -> color status: 'green' | 'yellow' | 'gray')
   const [letterStatuses, setLetterStatuses] = useState<{ [key: string]: "green" | "yellow" | "gray" }>({});
@@ -148,6 +152,8 @@ export default function WordleMatchaPage() {
       if (res.ok) {
         const data = await res.json();
         setGameState(data);
+        setHintUsed(data.hint_used || false);
+        setMicroHint("");
         localStorage.setItem("matcha_wordle_local_state", JSON.stringify(data));
       } else if (res.status === 401) {
         localStorage.removeItem("oasis_token");
@@ -285,31 +291,84 @@ export default function WordleMatchaPage() {
       });
       if (res.ok) {
         localStorage.removeItem("matcha_wordle_local_state");
+        setMicroHint("");
+        setHintUsed(false);
+        setShowHint(false);
         fetchGameState();
         setCurrentGuess("");
-        setShowHint(false);
       }
     } catch (e) {
       console.error("Reset game error:", e);
     }
   };
 
-  // Keyboard physical listener
+  const requestHint = async () => {
+    if (!token || hintUsed || hintLoading) return;
+    const guessCount = gameState?.guesses?.length || 0;
+    if (guessCount < 5) {
+      setMessage(`Cần đoán ít nhất 5 lần mới dùng được gợi ý! (${guessCount}/5)`);
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+    setHintLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/game/wordle/hint`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMicroHint(data.hint_text);
+        setHintUsed(true);
+        setShowHint(true);
+      } else {
+        const err = await res.json();
+        setMessage(err.detail || "Không thể lấy gợi ý!");
+        setTimeout(() => setMessage(""), 3000);
+      }
+    } catch (e) {
+      console.error("Hint error:", e);
+    } finally {
+      setHintLoading(false);
+    }
+  };
+
+  // Block IME composition (EVKey/Unikey) from interfering with game input
+  const isComposingRef = useRef(false);
+
   useEffect(() => {
+    const handleCompositionStart = () => { isComposingRef.current = true; };
+    const handleCompositionEnd = () => { isComposingRef.current = false; };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input elsewhere
       if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
       
+      // Block IME composed characters (EVKey, Unikey, etc.)
+      if (isComposingRef.current || e.isComposing) return;
+
+      // Prevent default to stop EVKey from processing the keystroke
+      if (/^[a-zA-Z]$/.test(e.key) || e.key === "Enter" || e.key === "Backspace") {
+        e.preventDefault();
+      }
+
       if (e.key === "Enter") {
         handleKeyPress("ENTER");
       } else if (e.key === "Backspace") {
         handleKeyPress("BACKSPACE");
-      } else {
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
         handleKeyPress(e.key.toUpperCase());
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("compositionstart", handleCompositionStart);
+    window.addEventListener("compositionend", handleCompositionEnd);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("compositionstart", handleCompositionStart);
+      window.removeEventListener("compositionend", handleCompositionEnd);
+    };
   }, [currentGuess, gameState]);
 
   // Compute tile colors for Wordle grid
@@ -565,10 +624,18 @@ export default function WordleMatchaPage() {
                       <span className="material-symbols-rounded text-sm">restart_alt</span>
                     </button>
                     <button 
-                      onClick={() => setShowHint(!showHint)}
-                      className="bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border border-[#FBC02D]/30 text-[#FBC02D] p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                      onClick={requestHint}
+                      disabled={hintUsed || hintLoading || (gameState?.guesses?.length || 0) < 5}
+                      className={`p-2 rounded-full transition-all active:scale-90 flex items-center justify-center border ${
+                        hintUsed 
+                          ? 'bg-neutral-100 border-neutral-200 text-neutral-300 cursor-not-allowed' 
+                          : (gameState?.guesses?.length || 0) < 5
+                            ? 'bg-neutral-50 border-neutral-200 text-neutral-300 cursor-not-allowed'
+                            : 'bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border-[#FBC02D]/30 text-[#FBC02D]'
+                      }`}
+                      title={hintUsed ? 'Đã dùng gợi ý' : (gameState?.guesses?.length || 0) < 5 ? `Cần đoán ${5 - (gameState?.guesses?.length || 0)} lần nữa` : 'Dùng gợi ý (1 lần/level)'}
                     >
-                      <span className="material-symbols-rounded text-sm">lightbulb</span>
+                      <span className="material-symbols-rounded text-sm">{hintLoading ? 'hourglass_empty' : hintUsed ? 'lightbulb' : 'lightbulb'}</span>
                     </button>
                   </div>
                 </div>
@@ -589,25 +656,33 @@ export default function WordleMatchaPage() {
                     <span className="material-symbols-rounded text-sm sm:text-base">restart_alt</span>
                   </button>
                   <button 
-                    onClick={() => setShowHint(!showHint)}
-                    className="bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border border-[#FBC02D]/30 text-[#FBC02D] p-2 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                    onClick={requestHint}
+                    disabled={hintUsed || hintLoading || (gameState?.guesses?.length || 0) < 5}
+                    className={`p-2 rounded-full transition-all active:scale-90 flex items-center justify-center border ${
+                      hintUsed 
+                        ? 'bg-neutral-100 border-neutral-200 text-neutral-300 cursor-not-allowed' 
+                        : (gameState?.guesses?.length || 0) < 5
+                          ? 'bg-neutral-50 border-neutral-200 text-neutral-300 cursor-not-allowed'
+                          : 'bg-[#FBC02D]/10 hover:bg-[#FBC02D]/25 border-[#FBC02D]/30 text-[#FBC02D]'
+                    }`}
+                    title={hintUsed ? 'Đã dùng gợi ý' : (gameState?.guesses?.length || 0) < 5 ? `Cần đoán ${5 - (gameState?.guesses?.length || 0)} lần nữa` : 'Dùng gợi ý (1 lần/level)'}
                   >
-                    <span className="material-symbols-rounded text-sm sm:text-base">lightbulb</span>
+                    <span className="material-symbols-rounded text-sm sm:text-base">{hintLoading ? 'hourglass_empty' : 'lightbulb'}</span>
                   </button>
                 </div>
               </div>
 
               {/* Clue Panel */}
               <AnimatePresence>
-                {showHint && (
+                {showHint && microHint && (
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="w-full bg-[#FFFDF5] border border-[#FBC02D]/30 p-3 rounded-xl text-left"
                   >
-                    <p className="text-[9px] uppercase font-black tracking-widest text-[#FBC02D] mb-0.5">Gợi ý từ:</p>
-                    <p className="text-xs font-bold text-accent leading-relaxed">{gameState?.hint}</p>
+                    <p className="text-[9px] uppercase font-black tracking-widest text-[#FBC02D] mb-0.5">💡 Gợi ý cứu nguy:</p>
+                    <p className="text-xs font-bold text-accent leading-relaxed">{microHint}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

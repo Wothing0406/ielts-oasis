@@ -110,6 +110,7 @@ class WordleGame(Base):
     guesses = Column(JSON, default=[])
     points = Column(Integer, default=0)
     status = Column(String(20), default="playing") # playing, won, lost
+    hint_used = Column(Boolean, default=False)
     level_start_time = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

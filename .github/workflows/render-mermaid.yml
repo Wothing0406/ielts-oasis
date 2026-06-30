@@ -26,7 +26,8 @@ jobs:
         run: npm install -g @mermaid-js/mermaid-cli
 
       - name: Configure Puppeteer
-        run: echo '{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}' > puppeteer-config.json
+        run: |
+          echo '{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}' > puppeteer-config.json
 
       - name: Compile Mermaid diagram
         run: mmdc -i architecture.mmd -o architecture.svg -p puppeteer-config.json
