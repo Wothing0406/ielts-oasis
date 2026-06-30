@@ -39,7 +39,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   vocabList: VocabItem[], 
   onAdd: (word: any) => Promise<void>, 
   onDelete: (id: number) => Promise<void>, 
-  onGenerateTopic: (topic: string) => Promise<void>,
+  onGenerateTopic?: (topic: string) => Promise<void>,
   onStartQuiz: () => void 
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -210,7 +210,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           {['Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
             <button type="button"
               key={topic}
-              onClick={() => onGenerateTopic(topic)}
+              onClick={() => onGenerateTopic?.(topic)}
               className="px-3 py-1 rounded-full bg-secondary text-accent text-[10px] font-bold hover:bg-primary hover:text-white transition-all"
             >
               {topic}
