@@ -430,7 +430,12 @@ async def delete_vocab(id: int, user: dict = Depends(get_current_user), db: Sess
     if vocab.user_id != user_id:
         raise HTTPException(status_code=403, detail="Không có quyền xóa từ vựng này")
         
-    db.delete(vocab)
+    word_to_delete = vocab.word
+    db.query(Vocabulary).filter(
+        func.lower(Vocabulary.word) == func.lower(word_to_delete),
+        Vocabulary.user_id == user_id
+    ).delete(synchronize_session=False)
+    
     db.commit()
     return {"ok": True}
 
