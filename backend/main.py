@@ -133,7 +133,7 @@ async def backfill_vocabularies():
                         continue
                     try:
                         data = await ai_service.refine_vocabulary(v.word)
-                        if data:
+                        if data and data.get("phonetic") != "/.../":
                             v.example = data.get("example", v.example)
                             v.synonyms = data.get("synonyms", v.synonyms)
                             v.topic = data.get("topic", v.topic)
@@ -292,8 +292,8 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
     if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../":
         try:
             data = await ai_service.refine_vocabulary(vocab_in.word)
-            # Only update if the API successfully returned a real translation and didn't fall back to returning the word itself
-            if data and data.get("meaning") != vocab_in.word and data.get("phonetic") != "/.../":
+            # Only update if the API successfully returned a real translation (avoiding the fallback object)
+            if data and data.get("phonetic") != "/.../":
                 vocab.word = data.get("word", vocab.word)
                 vocab.phonetic = data.get("phonetic", vocab.phonetic)
                 vocab.meaning = data.get("meaning", vocab.meaning)
