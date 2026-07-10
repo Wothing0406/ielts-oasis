@@ -437,11 +437,12 @@ export default function Home() {
         </div>
 
         {/* Global Toast Overlay */}
-        {toast && (
-          <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-            <MatchaNotification toast={toast} onClose={() => setToast(null)} />
-          </div>
-        )}
+        <MatchaNotification
+          toast={toast}
+          onCloseToast={() => setToast(null)}
+          modal={modal}
+          onCloseModal={() => setModal(null)}
+        />
       </div>
     );
   }
