@@ -324,38 +324,45 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-tr from-[#E3EAE0] via-[#F4F7F2] to-[#FAFBF9] p-4 relative overflow-hidden select-none">
-        {/* Decorative Floating Leaves */}
-        <div className="absolute top-10 left-10 w-24 h-24 bg-[#C8D6C3]/20 rounded-full blur-xl pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-32 h-32 bg-[#C8D6C3]/30 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute top-1/4 right-1/4 w-16 h-16 bg-[#8F9E8B]/10 rounded-full blur-lg pointer-events-none" />
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-tr from-[#9BB095] via-[#C8D6C3] to-[#EAEFE8] p-4 relative overflow-hidden select-none">
+        {/* Soft Cozy Floating Leaves */}
+        <div className="absolute top-10 left-10 w-32 h-32 bg-[#8F9E8B]/30 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute bottom-10 right-10 w-48 h-48 bg-[#A7D08C]/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute top-1/4 right-1/4 w-20 h-20 bg-[#6E8269]/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute bottom-1/3 left-1/5 w-28 h-28 bg-[#E3EAE0]/50 rounded-full blur-xl pointer-events-none" />
 
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-[#8F9E8B]/30 rounded-[2rem] shadow-[0_20px_50px_rgba(62,79,57,0.1)] p-8 relative z-10 flex flex-col items-center">
-          {/* Logo Brand */}
-          <div className="w-16 h-16 bg-gradient-to-br from-[#C8D6C3] to-[#8F9E8B] rounded-2xl flex items-center justify-center mb-3 shadow-[0_8px_20px_rgba(143,158,139,0.3)] transform hover:rotate-12 transition-transform duration-300">
-            <span className="text-3xl">🍵</span>
+        <div className="w-full max-w-md bg-[#FAFBF9]/95 backdrop-blur-xl border-4 border-[#8F9E8B]/40 rounded-[2.5rem] shadow-[0_25px_60px_rgba(46,62,43,0.22)] p-8 relative z-10 flex flex-col items-center">
+          {/* Wooden Top Accent Tag */}
+          <div className="absolute -top-3.5 bg-[#5D4037] text-[#FAF8F5] px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
+            🍵 Oasis Entryway
           </div>
-          <h1 className="text-3xl font-display font-black text-[#3E4F39] tracking-tight">IELTS Oasis</h1>
-          <p className="text-xs text-[#5D6B57] font-semibold tracking-wide opacity-80 uppercase mb-8">Zen Learning Workspace</p>
+
+          {/* Logo Brand */}
+          <div className="w-18 h-18 bg-gradient-to-br from-[#A7D08C] to-[#6E8269] rounded-3xl flex items-center justify-center mb-4 shadow-[0_8px_25px_rgba(110,130,105,0.4)] transform hover:rotate-12 transition-transform duration-300">
+            <span className="text-4xl filter drop-shadow-md">🍵</span>
+          </div>
+          
+          <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">IELTS Oasis</h1>
+          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-8 opacity-90">Zen Learning Space</p>
 
           {/* Form Tabs */}
-          <div className="w-full bg-[#EBF0EA] p-1 rounded-full flex items-center mb-6">
+          <div className="w-full bg-[#E3EAE0] p-1.5 rounded-full flex items-center mb-6 border border-[#8F9E8B]/20">
             <button
               onClick={() => { setAuthMode("login"); }}
-              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all ${
+              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 ${
                 authMode === "login"
-                  ? "bg-white text-[#3E4F39] shadow-sm"
-                  : "text-[#5D6B57]/70 hover:text-[#3E4F39]"
+                  ? "bg-[#6E8269] text-white shadow-md transform scale-[1.02]"
+                  : "text-[#5D6B57] hover:text-[#2E3E2B]"
               }`}
             >
               Đăng Nhập
             </button>
             <button
               onClick={() => { setAuthMode("register"); }}
-              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all ${
+              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 ${
                 authMode === "register"
-                  ? "bg-white text-[#3E4F39] shadow-sm"
-                  : "text-[#5D6B57]/70 hover:text-[#3E4F39]"
+                  ? "bg-[#3E4F39] text-white shadow-md transform scale-[1.02]"
+                  : "text-[#5D6B57] hover:text-[#2E3E2B]"
               }`}
             >
               Đăng Ký
@@ -365,25 +372,25 @@ export default function Home() {
           {/* Auth Form */}
           <form onSubmit={handleGuestLogin} className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-[#5D6B57] tracking-wider px-2">Tên tài khoản</label>
+              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Tên tài khoản</label>
               <input
                 type="text"
                 placeholder="Nhập tên tài khoản..."
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="bg-white/90 border border-[#8F9E8B]/30 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] font-bold text-[#3E4F39] placeholder:font-normal placeholder:text-[#5D6B57]/40 shadow-sm transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-[#5D6B57] tracking-wider px-2">Mật khẩu</label>
+              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Mật khẩu</label>
               <input
                 type="password"
                 placeholder="Nhập mật khẩu..."
                 value={guestPassword}
                 onChange={(e) => setGuestPassword(e.target.value)}
-                className="bg-white/90 border border-[#8F9E8B]/30 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] font-bold text-[#3E4F39] placeholder:font-normal placeholder:text-[#5D6B57]/40 shadow-sm transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
                 required
               />
             </div>
@@ -392,25 +399,25 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#8F9E8B] hover:bg-[#7D8C79] disabled:bg-[#8F9E8B]/50 text-white py-3.5 rounded-2xl text-xs font-black transition-all shadow-[0_6px_20px_rgba(143,158,139,0.3)] hover:shadow-lg active:scale-[0.98] mt-2"
+                className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-2"
               >
-                {isGuestLoggingIn ? "Đang kết nối..." : "VÀO HỌC NGAY 🍵"}
+                {isGuestLoggingIn ? "Đang pha chế..." : "VÀO HỌC NGAY 🍵"}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleGuestRegister}
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#3E4F39] hover:bg-[#344230] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black transition-all shadow-[0_6px_20px_rgba(62,79,57,0.3)] hover:shadow-lg active:scale-[0.98] mt-2"
+                className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-2"
               >
                 {isGuestLoggingIn ? "Đang đăng ký..." : "TẠO TÀI KHOẢN MỚI 🍀"}
               </button>
             )}
           </form>
 
-          {/* Validation Rules Card */}
-          <div className="w-full bg-[#FAFBF9] border border-[#8F9E8B]/20 rounded-2xl p-4 mt-6 text-[10px] text-[#5D6B57] leading-relaxed flex flex-col gap-1">
-            <div className="font-black text-[#3E4F39] flex items-center gap-1 mb-1">
+          {/* Validation Rules Scroll Card */}
+          <div className="w-full bg-[#F5F2EB] border-l-4 border-[#8F9E8B] rounded-2xl p-4 mt-6 text-[10px] text-[#5D4037] leading-relaxed flex flex-col gap-1 shadow-sm">
+            <div className="font-black text-[#2E3E2B] flex items-center gap-1 mb-1">
               <span>📌</span> Quy tắc xác thực:
             </div>
             <div>• <b>Tên tài khoản:</b> 3-20 kí tự, chỉ dùng chữ thường (a-z), số (0-9), gạch dưới (_) và chấm (.)</div>
@@ -419,15 +426,15 @@ export default function Home() {
 
           {/* Divider */}
           <div className="w-full flex items-center my-6 gap-3">
-            <div className="flex-1 h-[1px] bg-[#8F9E8B]/20" />
-            <span className="text-[10px] font-bold text-[#5D6B57]/50 uppercase tracking-widest">hoặc đăng nhập bằng</span>
-            <div className="flex-1 h-[1px] bg-[#8F9E8B]/20" />
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
+            <span className="text-[9px] font-black text-[#5D4037]/60 uppercase tracking-widest">hoặc bằng</span>
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
           </div>
 
           {/* Discord Brand Button */}
           <button
             onClick={handleLogin}
-            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-3.5 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(88,101,242,0.3)] hover:shadow-lg transition-all active:scale-[0.98]"
+            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-3.5 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(88,101,242,0.25)] hover:shadow-lg transition-all active:scale-[0.97]"
           >
             <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
               <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
