@@ -125,6 +125,94 @@ Return ONLY the JSON array. Example:
             "example": "", "synonyms": [], "collocations": [], "topic": "General", "memory_hook": ""
         }
 
+    async def extract_scroll_vocabulary_from_text(self, text: str):
+        prompt = f"""
+        Analyze this text and extract key academic vocabulary words or idioms suitable for IELTS prep (aim for 5-15 useful words).
+        For each extracted word:
+        1. Find its IPA phonetic symbols.
+        2. Give its Vietnamese meaning matching the context in the text.
+        3. Extract the exact sentence (or a slightly shortened version) containing this word from the input text as the example.
+        4. Give a mnemonic memory hook in Vietnamese.
+        5. Provide 1-3 English synonyms.
+        6. Identify the topic (e.g. Technology, Education, Health, Environment, etc.).
+
+        Input text:
+        "{text}"
+
+        Return ONLY a valid JSON array of objects with exactly this structure:
+        [
+          {{
+            "word": "English word",
+            "phonetic": "/.../",
+            "meaning": "Vietnamese meaning",
+            "example": "Context sentence from the text",
+            "memory_hook": "Vietnamese memory hook",
+            "synonyms": ["synonym1", "synonym2"],
+            "topic": "Topic"
+          }}
+        ]
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content, expect_list=True)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"extract_scroll_vocabulary_from_text failed: {e}")
+        return []
+
+    async def extract_scroll_vocabulary_from_image(self, image: Image.Image):
+        prompt = """
+        Analyze this vocabulary document image. It contains a table, a list, or plain text containing vocabulary words.
+        Identify and extract all English academic/IELTS-level vocabulary words, phrases, or idioms listed.
+        For each word:
+        1. Reconstruct the correct pairing of the English word and its Vietnamese meaning as shown in the image (or translate if meaning is missing).
+        2. Find its IPA phonetic symbols.
+        3. If there is a context sentence in the image, extract it. Otherwise, generate a useful academic IELTS example sentence in English.
+        4. Give a mnemonic memory hook in Vietnamese.
+        5. Provide 1-3 English synonyms.
+        6. Identify the topic (e.g. Tech, Environment, Health, General, etc.).
+
+        Return ONLY a valid JSON array of objects with exactly this structure (no markdown, no other text):
+        [
+          {
+            "word": "English word",
+            "phonetic": "/.../",
+            "meaning": "Vietnamese meaning",
+            "example": "Example sentence",
+            "memory_hook": "Vietnamese memory hook",
+            "synonyms": ["synonym1", "synonym2"],
+            "topic": "Topic"
+          }
+        ]
+        """
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
+                        ]
+                    }
+                ],
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content, expect_list=True)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"extract_scroll_vocabulary_from_image failed: {e}")
+        return []
+
     async def analyze_writing(self, text: str):
         prompt = f"""
         Bạn là một giám khảo IELTS cực kỳ khắt khe (Strict IELTS Examiner). Hãy chấm điểm và phân tích bài viết sau: "{text}"

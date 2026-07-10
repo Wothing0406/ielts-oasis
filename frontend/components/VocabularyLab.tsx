@@ -46,7 +46,72 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [activeMode, setActiveMode] = useState<'ai' | 'scroll' | 'manual'>('scroll');
+  const [dragOver, setDragOver] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedWords, setExtractedWords] = useState<any[]>([]);
+  const [shareToCommunity, setShareToCommunity] = useState(true);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const processFile = async (file: File) => {
+    setIsExtracting(true);
+    setExtractedWords([]);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`${API_URL}/scroll/extract`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExtractedWords(data.extracted_words || []);
+      } else {
+        const errData = await res.json();
+        alert(errData.detail || "Có lỗi xảy ra khi trích xuất tài liệu.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối máy chủ.");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleAddExtracted = async (item: any) => {
+    const isDuplicate = vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase());
+    if (isDuplicate) return;
+    
+    try {
+      await onAdd({
+        word: item.word,
+        phonetic: item.phonetic,
+        meaning: item.meaning,
+        example: item.example,
+        synonyms: item.synonyms,
+        topic: item.topic,
+        memory_hook: item.memory_hook,
+        is_global: shareToCommunity,
+        source: "Matcha Scroll"
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Auto-focus on the newly added word when vocabulary list grows
   useEffect(() => {
@@ -122,14 +187,20 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         </h3>
         <div className="flex gap-2">
            <button type="button" 
-             onClick={() => setShowAdvanced(false)}
-             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${!showAdvanced ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+             onClick={() => setActiveMode('ai')}
+             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'ai' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
            >
              AI
            </button>
            <button type="button" 
-             onClick={() => setShowAdvanced(true)}
-             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${showAdvanced ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+             onClick={() => setActiveMode('scroll')}
+             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'scroll' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+           >
+             Scroll
+           </button>
+           <button type="button" 
+             onClick={() => setActiveMode('manual')}
+             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'manual' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
            >
              Thủ công
            </button>
@@ -138,7 +209,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
         <AnimatePresence mode="wait">
-          {showAdvanced ? (
+          {activeMode === 'manual' ? (
             <motion.form 
               key="manual"
               initial={{ opacity: 0, y: -10 }}
@@ -175,7 +246,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                  {isAdding ? "Đang thêm..." : "Thêm từ vựng"}
                </button>
             </motion.form>
-          ) : (
+          ) : activeMode === 'ai' ? (
             <motion.form 
               key="auto"
               initial={{ opacity: 0, y: -10 }}
@@ -204,6 +275,145 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                 )}
               </button>
             </motion.form>
+          ) : (
+            <motion.div
+              key="scroll"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="mb-6 space-y-4"
+            >
+              {/* Cozy Wooden Tray Upload Zone */}
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className={`w-full py-8 px-4 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${
+                  dragOver 
+                    ? 'border-primary bg-primary/5 scale-[0.98]' 
+                    : 'border-amber-950/20 bg-amber-50/10 hover:bg-amber-50/20'
+                }`}
+                style={{
+                  boxShadow: 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  backgroundImage: 'linear-gradient(to bottom right, rgba(139, 90, 43, 0.03), rgba(139, 90, 43, 0.08))',
+                  border: '3px double rgba(139, 90, 43, 0.25)'
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept=".pdf,.docx,.png,.jpg,.jpeg" 
+                  className="hidden" 
+                />
+                <span className="material-symbols-rounded text-4xl text-amber-900/60 mb-2">folder_open</span>
+                <h4 className="font-display text-sm font-bold text-amber-950">Khay gỗ mộc mạc (Drag & Drop)</h4>
+                <p className="text-xs text-amber-900/70 text-center mt-1">
+                  Kéo thả PDF, Word (.docx) hoặc Ảnh chứa từ vựng vào đây
+                </p>
+                <span className="text-[10px] text-accent/40 mt-2 bg-white px-2 py-0.5 rounded-full border border-primary/10">Tối đa 5 trang / 5MB</span>
+              </div>
+
+              {/* Loading State - Matcha Infusing */}
+              {isExtracting && (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4 bg-secondary/10 rounded-2xl border border-primary/5">
+                  <div className="relative w-20 h-20">
+                    <motion.div 
+                      className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <motion.div 
+                      className="absolute inset-3 rounded-full bg-primary/10 flex items-center justify-center"
+                      animate={{ scale: [0.9, 1.1, 0.9] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <span className="material-symbols-rounded text-primary text-3xl animate-bounce">eco</span>
+                    </motion.div>
+                  </div>
+                  <p className="text-sm font-bold text-accent animate-pulse font-display">🍵 Đang pha chế Matcha Scroll...</p>
+                  <p className="text-xs text-accent/60">Hệ thống đang trích xuất & tối ưu từ vựng IELTS</p>
+                </div>
+              )}
+
+              {/* Extracted Words List */}
+              {extractedWords.length > 0 && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-accent/70">
+                      Tìm thấy {extractedWords.length} từ vựng gợi ý:
+                    </span>
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-primary cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={shareToCommunity} 
+                        onChange={(e) => setShareToCommunity(e.target.checked)} 
+                        className="rounded border-primary/20 text-primary focus:ring-primary/20"
+                      />
+                      Chia sẻ lên Community 🍵
+                    </label>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                    {extractedWords.map((item, idx) => {
+                      const isAlreadyAdded = vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase());
+                      return (
+                        <div 
+                          key={idx}
+                          className="p-3 bg-white border border-primary/10 rounded-xl space-y-2 relative shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 pr-2">
+                              <h4 className="font-display font-bold text-sm text-accent flex items-center flex-wrap gap-1.5">
+                                <span className="text-primary">{item.word}</span>
+                                {item.phonetic && (
+                                  <span className="text-[11px] font-normal text-accent/50">{item.phonetic}</span>
+                                )}
+                                <button 
+                                  type="button" 
+                                  onClick={() => playAudio(item.word)}
+                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all"
+                                >
+                                  <span className="material-symbols-rounded text-sm">volume_up</span>
+                                </button>
+                              </h4>
+                              <p className="text-xs font-bold text-primary/80 mt-0.5">Nghĩa: {item.meaning}</p>
+                            </div>
+                            
+                            {isAlreadyAdded ? (
+                              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full shrink-0">
+                                Đã có
+                              </span>
+                            ) : (
+                              <button 
+                                type="button"
+                                onClick={() => handleAddExtracted(item)}
+                                className="bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full shadow hover:bg-primary-dark transition-all flex items-center gap-1 shrink-0"
+                              >
+                                <span className="material-symbols-rounded text-[10px]">add</span> Thêm
+                              </button>
+                            )}
+                          </div>
+                          
+                          {item.example && (
+                            <p className="text-[11px] text-accent/70 bg-secondary/20 p-2 rounded-lg italic">
+                              <strong>Ví dụ:</strong> "{item.example}"
+                            </p>
+                          )}
+                          
+                          {item.memory_hook && (
+                            <p className="text-[11px] text-amber-900/80 bg-amber-50/20 p-2 rounded-lg border border-amber-900/5">
+                              💡 {item.memory_hook}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
         

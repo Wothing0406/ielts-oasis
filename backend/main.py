@@ -240,9 +240,9 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         Vocabulary.is_global == True
     ).first() is not None
     
-    # Determine is_global: only share if not copied from community, and not already global
+    # Determine is_global: only share if not copied from community, and not already global, and user allowed it
     is_global_val = False
-    if vocab_in.source != "Oasis Community" and not is_already_global:
+    if vocab_in.is_global and vocab_in.source != "Oasis Community" and not is_already_global:
         is_global_val = True
         
     vocab = Vocabulary(
@@ -369,6 +369,62 @@ async def detect_vocabulary(file: UploadFile = File(...)):
     except Exception as e:
         print(f"Detect Error: {e}")
         return {"items": [], "image_url": ""}
+
+@app.post("/scroll/extract")
+async def extract_scroll(file: UploadFile = File(...)):
+    filename = file.filename.lower()
+    extracted_words = []
+    text_content = ""
+    layout_type = "plain_text"
+
+    try:
+        if filename.endswith((".png", ".jpg", ".jpeg")):
+            contents = await file.read()
+            img = Image.open(BytesIO(contents)).convert("RGB")
+            extracted_words = await ai_service.extract_scroll_vocabulary_from_image(img)
+            layout_type = "table"
+        elif filename.endswith(".pdf"):
+            from pypdf import PdfReader
+            contents = await file.read()
+            pdf_file = BytesIO(contents)
+            reader = PdfReader(pdf_file)
+            
+            pages_text = []
+            for i in range(min(5, len(reader.pages))):
+                page_text = reader.pages[i].extract_text()
+                if page_text:
+                    pages_text.append(page_text)
+            
+            text_content = "\n".join(pages_text)
+            if not text_content.strip():
+                raise HTTPException(status_code=400, detail="Không thể trích xuất văn bản từ PDF này. File có thể bị quét dưới dạng ảnh.")
+            
+            extracted_words = await ai_service.extract_scroll_vocabulary_from_text(text_content)
+        elif filename.endswith(".docx"):
+            import docx
+            contents = await file.read()
+            docx_file = BytesIO(contents)
+            doc = docx.Document(docx_file)
+            
+            paragraphs_text = [p.text for p in doc.paragraphs if p.text]
+            text_content = "\n".join(paragraphs_text)
+            if not text_content.strip():
+                raise HTTPException(status_code=400, detail="Văn bản trong file Word này bị trống.")
+                
+            extracted_words = await ai_service.extract_scroll_vocabulary_from_text(text_content)
+        else:
+            raise HTTPException(status_code=400, detail="Định dạng file không được hỗ trợ. Vui lòng tải lên PDF, Word (.docx) hoặc Hình ảnh.")
+            
+        return {
+            "text": text_content,
+            "layout_type": layout_type,
+            "extracted_words": extracted_words
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Scroll extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi trích xuất: {str(e)}")
 
 @app.post("/translate")
 async def translate_text(data: TranslateInput):

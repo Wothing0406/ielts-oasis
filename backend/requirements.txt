@@ -16,4 +16,6 @@ opencv-python-headless
 PyJWT
 discord.py
 apscheduler
+pypdf
+python-docx
 youtube-transcript-api
