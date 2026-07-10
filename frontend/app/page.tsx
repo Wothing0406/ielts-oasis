@@ -23,6 +23,7 @@ export default function Home() {
   const [guestName, setGuestName] = useState("");
   const [guestPassword, setGuestPassword] = useState("");
   const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
   // Custom Toast/Modal state
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -321,6 +322,130 @@ export default function Home() {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-tr from-[#E3EAE0] via-[#F4F7F2] to-[#FAFBF9] p-4 relative overflow-hidden select-none">
+        {/* Decorative Floating Leaves */}
+        <div className="absolute top-10 left-10 w-24 h-24 bg-[#C8D6C3]/20 rounded-full blur-xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-[#C8D6C3]/30 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-1/4 right-1/4 w-16 h-16 bg-[#8F9E8B]/10 rounded-full blur-lg pointer-events-none" />
+
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl border border-[#8F9E8B]/30 rounded-[2rem] shadow-[0_20px_50px_rgba(62,79,57,0.1)] p-8 relative z-10 flex flex-col items-center">
+          {/* Logo Brand */}
+          <div className="w-16 h-16 bg-gradient-to-br from-[#C8D6C3] to-[#8F9E8B] rounded-2xl flex items-center justify-center mb-3 shadow-[0_8px_20px_rgba(143,158,139,0.3)] transform hover:rotate-12 transition-transform duration-300">
+            <span className="text-3xl">🍵</span>
+          </div>
+          <h1 className="text-3xl font-display font-black text-[#3E4F39] tracking-tight">IELTS Oasis</h1>
+          <p className="text-xs text-[#5D6B57] font-semibold tracking-wide opacity-80 uppercase mb-8">Zen Learning Workspace</p>
+
+          {/* Form Tabs */}
+          <div className="w-full bg-[#EBF0EA] p-1 rounded-full flex items-center mb-6">
+            <button
+              onClick={() => { setAuthMode("login"); }}
+              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all ${
+                authMode === "login"
+                  ? "bg-white text-[#3E4F39] shadow-sm"
+                  : "text-[#5D6B57]/70 hover:text-[#3E4F39]"
+              }`}
+            >
+              Đăng Nhập
+            </button>
+            <button
+              onClick={() => { setAuthMode("register"); }}
+              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all ${
+                authMode === "register"
+                  ? "bg-white text-[#3E4F39] shadow-sm"
+                  : "text-[#5D6B57]/70 hover:text-[#3E4F39]"
+              }`}
+            >
+              Đăng Ký
+            </button>
+          </div>
+
+          {/* Auth Form */}
+          <form onSubmit={handleGuestLogin} className="w-full flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-black uppercase text-[#5D6B57] tracking-wider px-2">Tên tài khoản</label>
+              <input
+                type="text"
+                placeholder="Nhập tên tài khoản..."
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                className="bg-white/90 border border-[#8F9E8B]/30 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] font-bold text-[#3E4F39] placeholder:font-normal placeholder:text-[#5D6B57]/40 shadow-sm transition-all"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-black uppercase text-[#5D6B57] tracking-wider px-2">Mật khẩu</label>
+              <input
+                type="password"
+                placeholder="Nhập mật khẩu..."
+                value={guestPassword}
+                onChange={(e) => setGuestPassword(e.target.value)}
+                className="bg-white/90 border border-[#8F9E8B]/30 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] font-bold text-[#3E4F39] placeholder:font-normal placeholder:text-[#5D6B57]/40 shadow-sm transition-all"
+                required
+              />
+            </div>
+
+            {authMode === "login" ? (
+              <button
+                type="submit"
+                disabled={isGuestLoggingIn}
+                className="w-full bg-[#8F9E8B] hover:bg-[#7D8C79] disabled:bg-[#8F9E8B]/50 text-white py-3.5 rounded-2xl text-xs font-black transition-all shadow-[0_6px_20px_rgba(143,158,139,0.3)] hover:shadow-lg active:scale-[0.98] mt-2"
+              >
+                {isGuestLoggingIn ? "Đang kết nối..." : "VÀO HỌC NGAY 🍵"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGuestRegister}
+                disabled={isGuestLoggingIn}
+                className="w-full bg-[#3E4F39] hover:bg-[#344230] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black transition-all shadow-[0_6px_20px_rgba(62,79,57,0.3)] hover:shadow-lg active:scale-[0.98] mt-2"
+              >
+                {isGuestLoggingIn ? "Đang đăng ký..." : "TẠO TÀI KHOẢN MỚI 🍀"}
+              </button>
+            )}
+          </form>
+
+          {/* Validation Rules Card */}
+          <div className="w-full bg-[#FAFBF9] border border-[#8F9E8B]/20 rounded-2xl p-4 mt-6 text-[10px] text-[#5D6B57] leading-relaxed flex flex-col gap-1">
+            <div className="font-black text-[#3E4F39] flex items-center gap-1 mb-1">
+              <span>📌</span> Quy tắc xác thực:
+            </div>
+            <div>• <b>Tên tài khoản:</b> 3-20 kí tự, chỉ dùng chữ thường (a-z), số (0-9), gạch dưới (_) và chấm (.)</div>
+            <div>• <b>Mật khẩu:</b> Độ dài tối thiểu 6 kí tự để bảo mật bài học.</div>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full flex items-center my-6 gap-3">
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/20" />
+            <span className="text-[10px] font-bold text-[#5D6B57]/50 uppercase tracking-widest">hoặc đăng nhập bằng</span>
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/20" />
+          </div>
+
+          {/* Discord Brand Button */}
+          <button
+            onClick={handleLogin}
+            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-3.5 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(88,101,242,0.3)] hover:shadow-lg transition-all active:scale-[0.98]"
+          >
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
+            </svg>
+            Tài khoản Discord
+          </button>
+        </div>
+
+        {/* Global Toast Overlay */}
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+            <MatchaNotification toast={toast} onClose={() => setToast(null)} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen p-4 lg:p-6 gap-6 max-w-[1600px] mx-auto w-full">
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
@@ -330,68 +455,18 @@ export default function Home() {
             <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            {!user ? (
-              <div className="flex flex-col gap-2 bg-secondary/35 border border-primary/20 p-3 rounded-[1.5rem] w-full max-w-[280px] xs:max-w-[320px]">
-                <form onSubmit={handleGuestLogin} className="flex flex-col items-stretch gap-2">
-                  <div className="flex flex-col gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Tên tài khoản..."
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      className="bg-white border border-primary/20 rounded-full px-4 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-accent placeholder:font-normal placeholder:text-accent/50"
-                      title="Chỉ dùng chữ thường không dấu, số, gạch dưới (_) và chấm (.)"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Mật khẩu..."
-                      value={guestPassword}
-                      onChange={(e) => setGuestPassword(e.target.value)}
-                      className="bg-white border border-primary/20 rounded-full px-4 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-accent placeholder:font-normal placeholder:text-accent/50"
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <button
-                      type="submit"
-                      disabled={isGuestLoggingIn}
-                      className="bg-primary hover:bg-primary/95 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex-1"
-                    >
-                      Vào Học
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleGuestRegister}
-                      disabled={isGuestLoggingIn}
-                      className="bg-accent hover:bg-accent/90 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex-1"
-                    >
-                      Đăng Ký
-                    </button>
-                  </div>
-                </form>
-                <div className="text-[9px] text-accent/60 leading-tight border-b border-primary/10 pb-2">
-                  📌 Tài khoản: 3-20 kí tự (a-z, 0-9, _, .). Mật khẩu: ≥ 6 kí tự.
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="avatar" className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary" />
+              ) : (
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary text-xs sm:text-base">
+                  {user.username.slice(0, 2).toUpperCase()}
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-accent/50">hoặc dùng</span>
-                  <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm transition-all">
-                    Discord
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="avatar" className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary" />
-                ) : (
-                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary text-xs sm:text-base">
-                    {user.username.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
-                  Logout
-                </button>
-              </div>
-            )}
+              )}
+              <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
+                Đăng Xuất
+              </button>
+            </div>
             <Link
               href="/games"
               className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
