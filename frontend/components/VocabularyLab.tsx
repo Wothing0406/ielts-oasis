@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Flashcard from './Flashcard';
 
@@ -187,7 +187,21 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     meaning: ''
   });
 
-  const current = vocabList[currentIndex] || {
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+
+  const filteredVocabList = useMemo(() => {
+    if (!selectedTopic) return vocabList;
+    return vocabList.filter(
+      (v) => v.topic?.toLowerCase().includes(selectedTopic.toLowerCase()) || 
+             (selectedTopic === 'Tech' && v.topic?.toLowerCase().includes('technology'))
+    );
+  }, [vocabList, selectedTopic]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedTopic]);
+
+  const current = filteredVocabList[currentIndex] || {
     word: "Matcha",
     phonetic: "/ˈmætʃ.ə/",
     meaning: "Bột trà xanh Nhật Bản",
@@ -210,8 +224,8 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     }
   };
 
-  const next = () => setCurrentIndex((prev) => (prev + 1) % (vocabList.length || 1));
-  const prev = () => setCurrentIndex((prev) => (prev - 1 + (vocabList.length || 1)) % (vocabList.length || 1));
+  const next = () => setCurrentIndex((prev) => (prev + 1) % (filteredVocabList.length || 1));
+  const prev = () => setCurrentIndex((prev) => (prev - 1 + (filteredVocabList.length || 1)) % (filteredVocabList.length || 1));
 
 
 
@@ -474,13 +488,17 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         </AnimatePresence>
         
         <div className="flex flex-wrap gap-2 mt-4 mb-6">
-          {['Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
+          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
             <button type="button"
               key={topic}
-              onClick={() => onGenerateTopic?.(topic)}
-              className="px-3 py-1 rounded-full bg-secondary text-accent text-[10px] font-bold hover:bg-primary hover:text-white transition-all"
+              onClick={() => setSelectedTopic(topic === 'All' ? null : topic)}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                (topic === 'All' && !selectedTopic) || (selectedTopic?.toLowerCase() === topic.toLowerCase())
+                  ? 'bg-primary text-white border-primary shadow-sm'
+                  : 'bg-secondary text-accent border-transparent hover:bg-primary hover:text-white'
+              }`}
             >
-              {topic}
+              {topic === 'All' ? 'Tất cả' : topic}
             </button>
           ))}
         </div>
@@ -519,7 +537,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               <span className="material-symbols-rounded text-xl">chevron_left</span>
             </button>
             <span className="text-xs font-bold text-accent/50">
-              {vocabList.length > 0 ? `${currentIndex + 1} / ${vocabList.length}` : '0 / 0'}
+              {filteredVocabList.length > 0 ? `${currentIndex + 1} / ${filteredVocabList.length}` : '0 / 0'}
             </span>
             <button 
               type="button" 
