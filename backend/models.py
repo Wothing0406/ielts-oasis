@@ -12,6 +12,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, default=datetime.utcnow)
     last_ip = Column(String(50), nullable=True)
+    password_hash = Column(String(255), nullable=True)
 
 class Vocabulary(Base):
     __tablename__ = "vocabulary"

@@ -365,6 +365,99 @@ async def myprogress_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
     db.close()
 
+@bot.tree.command(name='mylich', description="Xem lịch nhắc học và lộ trình tuần chi tiết của bạn")
+async def mylich_cmd(interaction: discord.Interaction):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    
+    if not user:
+        await interaction.response.send_message("Vui lòng liên kết tài khoản Discord trên website trước nhé! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        await interaction.response.send_message(
+            f"Chào {user.username}! Bạn chưa có lịch nhắc học nào. Hãy dùng lệnh `/tuvan` để mình thiết lập lộ trình nhắc học hàng ngày cho bạn nhé! 🍵",
+            ephemeral=True
+        )
+        db.close()
+        return
+        
+    # Create rich embed
+    embed = discord.Embed(
+        title=f"📅 LỊCH HỌC CỦA {user.username.upper()} 🍵",
+        description=f"⏰ **Giờ nhắc học:** Hàng ngày lúc **{sched.study_time}** (Giờ VN)\n📊 **Trình độ:** {sched.level}\n🎯 **Chủ đề:** {sched.topic}",
+        color=discord.Color.from_rgb(167, 208, 140)
+    )
+    
+    weekly_plan = {}
+    if sched.weekly_plan:
+        try:
+            if isinstance(sched.weekly_plan, str):
+                weekly_plan = json.loads(sched.weekly_plan)
+            else:
+                weekly_plan = sched.weekly_plan
+        except Exception as e:
+            logger.error(f"Failed to parse weekly_plan for user {user.id}: {e}")
+            
+    day_translation = {
+        "Monday": "Thứ 2 (Monday)",
+        "Tuesday": "Thứ 3 (Tuesday)",
+        "Wednesday": "Thứ 4 (Wednesday)",
+        "Thursday": "Thứ 5 (Thursday)",
+        "Friday": "Thứ 6 (Friday)",
+        "Saturday": "Thứ 7 (Saturday)",
+        "Sunday": "Chủ nhật (Sunday)"
+    }
+    
+    for day_en, day_vi in day_translation.items():
+        day_data = weekly_plan.get(day_en, weekly_plan.get(day_vi, {}))
+        if day_data:
+            tasks = day_data.get("tasks", [])
+            tasks_str = "\n".join([f"• {t}" for t in tasks]) if tasks else "• Chưa có nhiệm vụ"
+            tip = day_data.get("tip", "")
+            val = f"**Chủ đề:** {day_data.get('topic', 'N/A')}\n**Nhiệm vụ:**\n{tasks_str}"
+            if tip:
+                val += f"\n💡 *Gợi ý:* {tip}"
+            embed.add_field(name=f"📅 {day_vi}", value=val, inline=False)
+            
+    embed.set_footer(text="Bạn có thể hủy lịch nhắc học bất cứ lúc nào qua lệnh /huylich.")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    db.close()
+
+@bot.tree.command(name='huylich', description="Hủy lịch nhắc học hàng ngày mà không xóa tài khoản")
+async def huylich_cmd(interaction: discord.Interaction):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    
+    if not user:
+        await interaction.response.send_message("Bạn chưa có tài khoản trên IELTS Oasis! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        await interaction.response.send_message("Bạn không có lịch nhắc học nào hoạt động để hủy. 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    try:
+        db.delete(sched)
+        db.commit()
+        await interaction.response.send_message(
+            f"Đã hủy lịch nhắc học hàng ngày thành công. Tài khoản `{user.username}` và kho từ vựng của bạn trên IELTS Oasis vẫn được giữ nguyên vẹn. Bạn có thể thiết lập lại bất cứ lúc nào bằng lệnh `/tuvan`. 🍵",
+            ephemeral=True
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error executing /huylich: {e}")
+        await interaction.response.send_message("Có lỗi xảy ra khi hủy lịch nhắc. Vui lòng thử lại sau.", ephemeral=True)
+    finally:
+        db.close()
+
 @bot.tree.command(name='nghihoc', description="Huỷ bỏ lịch học và xoá sạch dữ liệu của bạn trên hệ thống")
 async def nghihoc_cmd(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
@@ -375,7 +468,7 @@ async def nghihoc_cmd(interaction: discord.Interaction):
     if not user:
         await interaction.response.send_message("Bạn chưa đăng ký lộ trình học tập trên IELTS Oasis!", ephemeral=True)
         return
-
+ 
     view = ConfirmQuitView(discord_id)
     await interaction.response.send_message(
         "⚠️ **CẢNH BÁO NGUY HIỂM:** Bạn có chắc chắn muốn **NGHỈ HỌC**? Thao tác này sẽ xóa toàn bộ từ vựng, lịch sử viết bài luận, lịch nhắc học và tài khoản của bạn trên IELTS Oasis. Thao tác này **không thể khôi phục**!",
@@ -407,14 +500,14 @@ async def nghihoc_cmd(interaction: discord.Interaction):
             await interaction.followup.send("Có lỗi xảy ra khi thực hiện xoá dữ liệu. Vui lòng thử lại sau.", ephemeral=True)
         finally:
             db.close()
-
+ 
 async def schedule_checker_job():
     """Chạy mỗi phút để kiểm tra lịch học của user"""
     now = datetime.utcnow()
     local_now = datetime.utcnow() + timedelta(hours=7)
     current_time_str = f"{local_now.hour:02d}:{local_now.minute:02d}"
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
-
+ 
     db = SessionLocal()
     schedules = db.query(DiscordSchedule).all()
     
@@ -424,7 +517,7 @@ async def schedule_checker_job():
     local_weekday_idx = local_now.weekday() % 7
     day_en = weekday_en[local_weekday_idx]
     day_vi = weekday_vi[local_weekday_idx]
-
+ 
     for sched in schedules:
         if sched.study_time == current_time_str:
             # Check absence
@@ -457,6 +550,28 @@ async def schedule_checker_job():
                             tasks = day_plan.get("tasks", [])
                             tip = day_plan.get("tip", "")
                             
+                            # Let's generate vocabulary and speaking prompt via Gemini dynamically!
+                            vocab_prompt = f"""
+                            Hãy đề xuất 3 từ vựng IELTS nâng cao thuộc chủ đề '{topic_today}'.
+                            Với mỗi từ, hãy cung cấp phiên âm IPA, định nghĩa tiếng Việt ngắn gọn, và một câu ví dụ tiếng Anh.
+                            
+                            Trả về định dạng JSON chính xác như sau:
+                            {{
+                                "words": [
+                                    {{"word": "từ_vựng_1", "phonetic": "phiên_âm_1", "meaning": "nghĩa_1", "example": "ví_dụ_1"}},
+                                    {{"word": "từ_vựng_2", "phonetic": "phiên_âm_2", "meaning": "nghĩa_2", "example": "ví_dụ_2"}},
+                                    {{"word": "từ_vựng_3", "phonetic": "phiên_âm_3", "meaning": "nghĩa_3", "example": "ví_dụ_3"}}
+                                ],
+                                "speaking_prompt": "câu hỏi luyện nói tiếng Anh gợi mở về chủ đề '{topic_today}' để người học luyện nói hoặc viết đoạn văn ngắn."
+                            }}
+                            """
+                            
+                            words_data = None
+                            try:
+                                words_data = await ai_service.get_json_advice(vocab_prompt)
+                            except Exception as e:
+                                logger.error(f"Failed to generate study content for reminder DM: {e}")
+                                
                             tasks_str = "\n".join([f"• {t}" for t in tasks]) if tasks else "• Hoàn thành lộ trình hàng ngày trên website."
                             
                             embed = discord.Embed(
@@ -465,9 +580,24 @@ async def schedule_checker_job():
                                 color=discord.Color.from_rgb(167, 208, 140)
                             )
                             embed.add_field(name="📝 Nhiệm vụ hôm nay:", value=tasks_str, inline=False)
+                            
+                            # If words_data is generated, add it to embed
+                            if words_data and "words" in words_data:
+                                vocab_lines = []
+                                for w in words_data["words"]:
+                                    vocab_lines.append(f"• **{w.get('word')}** ({w.get('phonetic')}) - {w.get('meaning')}\n*Ex:* {w.get('example')}")
+                                embed.add_field(name="📚 3 từ vựng IELTS tiêu biểu hôm nay:", value="\n".join(vocab_lines), inline=False)
+                                
+                                if "speaking_prompt" in words_data:
+                                    embed.add_field(
+                                        name="💬 Luyện hội thoại (Speaking Prompt):",
+                                        value=f"*\"{words_data['speaking_prompt']}\"*\n\n👉 **Hãy reply tin nhắn này** bằng tiếng Anh để tớ chấm điểm phát âm & ngữ pháp giúp cậu nhé! 🍵",
+                                        inline=False
+                                    )
+                                    
                             if tip:
                                 embed.add_field(name="💡 Gợi ý học tập:", value=tip, inline=False)
-                            embed.set_footer(text="Truy cập IELTS Oasis ngay lập tức nhé! 🎉")
+                            embed.set_footer(text="Truy cập IELTS Oasis để luyện tập đầy đủ hơn nhé! 🎉")
                             
                             await discord_user.send(embed=embed)
                         else:

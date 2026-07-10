@@ -19,9 +19,32 @@ from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-class GuestLogin(BaseModel):
+class RegisterPayload(BaseModel):
     username: str
-    guest_id: str = None
+    password: str
+
+class LoginPayload(BaseModel):
+    username: str
+    password: str
+
+import hashlib
+
+def hash_password(password: str) -> str:
+    salt = os.urandom(16)
+    db_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return salt.hex() + ":" + db_hash.hex()
+
+def verify_password(password: str, hashed: str) -> bool:
+    if not hashed:
+        return False
+    try:
+        salt_hex, hash_hex = hashed.split(":")
+        salt = bytes.fromhex(salt_hex)
+        db_hash = bytes.fromhex(hash_hex)
+        new_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        return new_hash == db_hash
+    except Exception:
+        return False
 
 def clean_and_validate_username(username: str) -> str:
     cleaned = username.strip().lower()
@@ -38,102 +61,87 @@ def clean_and_validate_username(username: str) -> str:
         )
     return cleaned
 
-def generate_unique_guest_username(base_name: str, db: Session) -> str:
-    # If the username is not taken, use it
-    existing = db.query(User).filter(User.username == base_name).first()
-    if not existing:
-        return base_name
-        
-    # If taken, generate a random 4-digit tag
-    for _ in range(50):
-        tag = random.randint(1000, 9999)
-        candidate = f"{base_name}#{tag}"
-        existing_candidate = db.query(User).filter(User.username == candidate).first()
-        if not existing_candidate:
-            return candidate
-            
-    return f"{base_name}#{random.randint(10000, 99999)}"
-
-@router.post("/guest")
-async def guest_login(payload: GuestLogin, request: Request, db: Session = Depends(get_db)):
-    guest_id = payload.guest_id
+@router.post("/register")
+async def register_user(payload: RegisterPayload, request: Request, db: Session = Depends(get_db)):
     raw_username = payload.username.strip()
+    raw_password = payload.password.strip()
     
-    if not raw_username:
-        raise HTTPException(status_code=400, detail="Tên người dùng không được để trống")
+    if not raw_username or not raw_password:
+        raise HTTPException(status_code=400, detail="Tên đăng nhập và mật khẩu không được để trống")
         
     username = clean_and_validate_username(raw_username)
-    is_new_user = False
-    
-    user = None
-    # If they have a guest_id, try to find them
-    if guest_id:
-        user = db.query(User).filter(User.discord_id == guest_id).first()
-        if user:
-            # Update username if they changed it (ignoring the tag suffix comparison)
-            current_base = user.username.split("#")[0] if "#" in user.username else user.username
-            if current_base != username:
-                user.username = generate_unique_guest_username(username, db)
-            user.last_login = datetime.utcnow()
-            user.last_ip = request.client.host if request.client else None
-
-    # If guest_id not found or not provided, check if the exact username already exists
-    if not user:
-        user = db.query(User).filter(User.username == username).first()
-        if user:
-            # Found existing user with this exact username, reuse it!
-            guest_id = user.discord_id
-            user.last_login = datetime.utcnow()
-            user.last_ip = request.client.host if request.client else None
-
-    if not user:
-        # Create a brand new guest user
-        if not guest_id:
-            guest_id = f"guest-{uuid.uuid4()}"
-        unique_username = generate_unique_guest_username(username, db)
-        user = User(
-            discord_id=guest_id, 
-            username=unique_username,
-            last_ip=request.client.host if request.client else None
-        )
-        db.add(user)
-        is_new_user = True
+    if len(raw_password) < 6:
+        raise HTTPException(status_code=400, detail="Mật khẩu phải có ít nhất 6 ký tự.")
         
+    # Check if user already exists
+    existing = db.query(User).filter(User.username == username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.")
+        
+    guest_id = f"guest-{uuid.uuid4()}"
+    hashed_pwd = hash_password(raw_password)
+    
+    user = User(
+        discord_id=guest_id,
+        username=username,
+        password_hash=hashed_pwd,
+        last_ip=request.client.host if request.client else None
+    )
+    db.add(user)
     db.commit()
     db.refresh(user)
     
-    # Copy starter words for new guests
-    if is_new_user:
-        try:
-            starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).all()
-            for sv in starter_vocabs:
-                user_v = Vocabulary(
-                    user_id=user.id,
-                    word=sv.word,
-                    meaning=sv.meaning,
-                    phonetic=sv.phonetic,
-                    example=sv.example,
-                    topic=sv.topic,
-                    audio_url=sv.audio_url,
-                    image_url=sv.image_url,
-                    synonyms=sv.synonyms,
-                    memory_hook=sv.memory_hook,
-                    is_global=False,
-                    source=sv.source,
-                    creator_username=sv.creator_username
-                )
-                db.add(user_v)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            print(f"Failed to copy starter vocabs for guest: {e}")
-            
+    # Copy starter words
+    try:
+        starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).all()
+        for sv in starter_vocabs:
+            user_v = Vocabulary(
+                user_id=user.id,
+                word=sv.word,
+                meaning=sv.meaning,
+                phonetic=sv.phonetic,
+                example=sv.example,
+                topic=sv.topic,
+                audio_url=sv.audio_url,
+                image_url=sv.image_url,
+                synonyms=sv.synonyms,
+                memory_hook=sv.memory_hook,
+                is_global=False,
+                source=sv.source,
+                creator_username=sv.creator_username
+            )
+            db.add(user_v)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to copy starter vocabs: {e}")
+        
+    return {"message": "Đăng ký tài khoản thành công!", "username": username}
+
+@router.post("/login")
+async def login_user(payload: LoginPayload, request: Request, db: Session = Depends(get_db)):
+    raw_username = payload.username.strip()
+    raw_password = payload.password.strip()
+    
+    if not raw_username or not raw_password:
+        raise HTTPException(status_code=400, detail="Tên đăng nhập và mật khẩu không được để trống")
+        
+    username = raw_username.lower()
+    user = db.query(User).filter(User.username == username).first()
+    
+    if not user or not user.password_hash or not verify_password(raw_password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    user.last_login = datetime.utcnow()
+    user.last_ip = request.client.host if request.client else None
+    db.commit()
+    
     # Generate JWT
     jwt_payload = {
         "user_id": user.id,
-        "discord_id": user.discord_id,  # Will be "guest-..."
+        "discord_id": user.discord_id,
         "username": user.username,
-        "avatar_url": None,
+        "avatar_url": user.avatar_url,
         "exp": datetime.utcnow() + timedelta(days=7)
     }
     token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -141,7 +149,7 @@ async def guest_login(payload: GuestLogin, request: Request, db: Session = Depen
     return {
         "token": token,
         "user": jwt_payload,
-        "guest_id": guest_id
+        "guest_id": user.discord_id
     }
 
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")

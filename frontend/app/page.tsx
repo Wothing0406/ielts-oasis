@@ -21,6 +21,7 @@ export default function Home() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [guestName, setGuestName] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
   const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
 
   // Custom Toast/Modal state
@@ -238,29 +239,55 @@ export default function Home() {
 
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || isGuestLoggingIn) return;
+    if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
     setIsGuestLoggingIn(true);
 
-    const savedGuestId = localStorage.getItem("oasis_guest_id");
     try {
-      const res = await fetch(`${API_URL}/auth/guest`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: guestName.trim(),
-          guest_id: savedGuestId || undefined
+          password: guestPassword
         })
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         localStorage.setItem("oasis_token", data.token);
         localStorage.setItem("oasis_user", JSON.stringify(data.user));
         localStorage.setItem("oasis_guest_id", data.guest_id);
         setUser(data.user);
         fetchVocabs(data.token);
-        (window as any).showToast("Chào mừng bạn đến với IELTS Oasis! 🍵", "success");
+        (window as any).showToast("Đăng nhập thành công! Chào mừng cậu trở lại 🍵", "success");
       } else {
-        (window as any).showToast("Không thể đăng nhập tài khoản Khách. 🍵", "error");
+        (window as any).showToast(data.detail || "Đăng nhập thất bại.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+    } finally {
+      setIsGuestLoggingIn(false);
+    }
+  };
+
+  const handleGuestRegister = async () => {
+    if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
+    setIsGuestLoggingIn(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: guestName.trim(),
+          password: guestPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        (window as any).showToast("Đăng ký thành công! Hãy nhấn nút Vào Học để bắt đầu nhé 🍵", "success");
+      } else {
+        (window as any).showToast(data.detail || "Đăng ký thất bại.", "error");
       }
     } catch (err) {
       console.error(err);
@@ -304,27 +331,52 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {!user ? (
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-secondary/35 border border-primary/20 p-2 sm:p-2.5 rounded-3xl">
-                <form onSubmit={handleGuestLogin} className="flex items-center gap-1.5 sm:gap-2">
-                  <input
-                    type="text"
-                    placeholder="Nhập tên học nhanh..."
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    className="bg-white border border-primary/20 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-primary w-28 sm:w-40 font-bold text-accent"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isGuestLoggingIn}
-                    className="bg-primary hover:bg-primary/95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold transition-all shadow-sm"
-                  >
-                    Vào Học
-                  </button>
+              <div className="flex flex-col gap-2 bg-secondary/35 border border-primary/20 p-3 rounded-[1.5rem] w-full max-w-[280px] xs:max-w-[320px]">
+                <form onSubmit={handleGuestLogin} className="flex flex-col items-stretch gap-2">
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Tên tài khoản..."
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="bg-white border border-primary/20 rounded-full px-4 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-accent placeholder:font-normal placeholder:text-accent/50"
+                      title="Chỉ dùng chữ thường không dấu, số, gạch dưới (_) và chấm (.)"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Mật khẩu..."
+                      value={guestPassword}
+                      onChange={(e) => setGuestPassword(e.target.value)}
+                      className="bg-white border border-primary/20 rounded-full px-4 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary font-bold text-accent placeholder:font-normal placeholder:text-accent/50"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      type="submit"
+                      disabled={isGuestLoggingIn}
+                      className="bg-primary hover:bg-primary/95 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex-1"
+                    >
+                      Vào Học
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGuestRegister}
+                      disabled={isGuestLoggingIn}
+                      className="bg-accent hover:bg-accent/90 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex-1"
+                    >
+                      Đăng Ký
+                    </button>
+                  </div>
                 </form>
-                <span className="text-[10px] sm:text-xs text-accent/40 font-bold">hoặc</span>
-                <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all">
-                  Discord
-                </button>
+                <div className="text-[9px] text-accent/60 leading-tight border-b border-primary/10 pb-2">
+                  📌 Tài khoản: 3-20 kí tự (a-z, 0-9, _, .). Mật khẩu: ≥ 6 kí tự.
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-accent/50">hoặc dùng</span>
+                  <button onClick={handleLogin} className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm transition-all">
+                    Discord
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">

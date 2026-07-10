@@ -180,6 +180,12 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE users ADD COLUMN last_ip VARCHAR(50) NULL;"))
                 conn.commit()
                 logger.info("Migration: Added 'last_ip' column to users.")
+            # Check password_hash column in users table
+            res_pwd = conn.execute(text("SHOW COLUMNS FROM users LIKE 'password_hash';")).fetchone()
+            if not res_pwd:
+                conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL;"))
+                conn.commit()
+                logger.info("Migration: Added 'password_hash' column to users.")
     except Exception as e:
         logger.error(f"Migration failed: {e}")
     try:
