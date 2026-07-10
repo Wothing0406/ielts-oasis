@@ -325,5 +325,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
-    except:
-        return None
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ. Vui lòng đăng nhập lại.")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Không thể xác thực người dùng.")
