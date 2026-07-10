@@ -32,11 +32,17 @@ graph TD
     Bot[Discord Bot Interface]
 
     %% Matcha Lens Ingestion Flow
-    Web -->|1. Upload Image| CV[YOLOv8 & Gemini Vision]
+    Web -->|1a. Upload Image| CV[YOLOv8 & Gemini Vision]
     CV -->|2. Detect & Crop| Crop[Crop Coordinator]
     Crop -->|3. Vocab Refinement| Refine[Gemini Vocabulary Enrichment]
     Refine -->|4. Generate TTS & Unsplash| TTS[TTS & Unsplash Service]
     TTS -->|5. Save to Library| DB[(MySQL Database)]
+
+    %% Matcha Scroll Ingestion Flow
+    Web -->|1b. Upload PDF/DOCX/Image| Scroll[Matcha Scroll Extractor]
+    Scroll -->|2. Extract Text / Vision Scan| ScrollRefine[Gemini Document Enrichment]
+    ScrollRefine -->|3. Batch Generate TTS| TTS
+    ScrollRefine -->|4. Save all/individual to Library| DB
 
     %% Writing Sanctuary Flow
     Web -->|6. Write Essay| Essay[Writing Sanctuary Canvas]
