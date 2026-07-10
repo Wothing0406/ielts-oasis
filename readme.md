@@ -109,13 +109,15 @@ graph TD
 * **Click-to-Translate:** Features a highlight overlay where selecting any word or phrase up to 50 characters displays an instant translation popup powered by Gemini.
 
 ### 5. 📚 Vocabulary Lab & Quizzes
-* **Interactive Flashcards:** Smart flashcard sliding interface supporting swipe gestures.
+* **Matcha Scroll (Document & Image Vocabulary Extractor):** Drag & Drop documents (.pdf, .docx) or screenshots of vocabulary sheets into a cozy wooden tray. The system infuses the content (Matcha Brewing loading animation) and automatically extracts 5 to 15 advanced IELTS vocabularies, mapping context-specific definitions, phonetics, example sentences from the text, Vietnamese memory hooks, and synonyms.
+* **Save All / Batch Import:** Save all extracted vocabulary cards locally or share them to the community feed with one click, without blocking the interface.
+* **Interactive Flashcards & Topic Filters:** Smart flashcard sliding interface supporting swipe gestures and topic filters (All, Environment, Tech, Health, Education, Economy) to review specific decks.
 * **SRS reviews:** Track review counts using Spaced Repetition to prompt users when review dates are due.
 * **Multi-Mode Quiz:** Supports Vocabulary ABCD/Spelling quizzes and dynamically generated AI Grammar quizzes with detailed explanations.
 
 ### 6. 📅 Daily Planner & Community Hub
 * **Matcha Daily List:** Generates customized roadmaps containing 10 vocabularies, a listening summary task, a Writing Task 2 prompt, and a reading passage based on a selected topic.
-* **Oasis Community:** A shared public feed where students post their graded essays and vocabularies. Users can like, comment, and convert other community posts into custom listening or reading tests.
+* **Oasis Community:** A shared public feed where students post their graded essays and vocabularies. Users can like, comment, filter by topic, and convert other community posts into custom listening or reading tests.
 * **Notification Hub:** Real-time user notifications showing likes, comments, and review due counts.
 
 ### 7. 🎮 Matcha Game Center (Learning Game Hub)
@@ -124,6 +126,12 @@ graph TD
 * **State Persistence:** Automatically saves game progress to the database, allowing players to resume their active level upon return.
 * **Scoring & Leveling Mechanics:** Points scale with level progression, featuring bonuses for quick guesses (under 30s) and minimal guess counts. If a player fails to guess within 6 attempts, their level resets to 1 and accumulated points reset to 0.
 * **Leaderboard:** A dual-tab leaderboard showcasing the Top 10 weekly server high scores alongside personal bests, and highlights the all-time highest level record holder.
+
+### 8. 🔒 Security & User Experience Enhancements
+* **Instagram-style Username Validation:** Constraints guest usernames to lowercase letters, numbers, underscores, and dots (3-20 characters), preventing illegal characters and malformed names.
+* **Passwordless Guest Account Recovery:** Recognizes existing guest usernames during login, restoring their database profile and preventing data loss when logging back in.
+* **IP-based Login Audit:** Detects and records client IP addresses (`last_ip`) for audit and persistence logging.
+* **Auto-Logout Check:** Monitors API requests; any expired or invalid session token instantly triggers safe client-side logging out.
 
 ---
 
