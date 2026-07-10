@@ -641,7 +641,7 @@ from sqlalchemy import func
 from typing import Optional
 
 @app.get("/community/feed")
-async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, topic: Optional[str] = None, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
     user_id = user["user_id"] if user else None
     
     # Get vocabularies
@@ -654,6 +654,9 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         # Show global vocabularies only (prevent private leaking)
         vocab_query = vocab_query.filter(Vocabulary.is_global == True)
     
+    if topic and topic.strip() and topic.lower() != "all":
+        vocab_query = vocab_query.filter(func.lower(Vocabulary.topic) == func.lower(topic.strip()))
+
     if sort_by == "top":
         # For vocab, 'top' might just be popularity
         vocab_query = vocab_query.order_by(desc(Vocabulary.popularity))
@@ -661,7 +664,7 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         vocab_query = vocab_query.order_by(desc(Vocabulary.id))
     
     # Fetch a larger batch to filter duplicates by word name
-    vocabs = vocab_query.limit(100).all()
+    vocabs = vocab_query.limit(500).all()
     vocab_list = []
     seen_words = set()
     for v in vocabs:
@@ -690,7 +693,7 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             "memory_hook": v.memory_hook,
             "source": v.source
         })
-        if len(vocab_list) >= 20:
+        if len(vocab_list) >= 100:
             break
         
     # Get writings
@@ -706,7 +709,7 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     else:
         writing_query = writing_query.order_by(desc(WritingLog.id))
         
-    writings = writing_query.limit(20).all()
+    writings = writing_query.limit(100).all()
     writing_list = []
     for w in writings:
         user_obj = db.query(User).filter(User.id == w.user_id).first() if w.user_id else None

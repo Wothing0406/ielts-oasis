@@ -48,13 +48,15 @@ export default function CommunityFeed({
     }
   }, []);
 
+  const [selectedTopic, setSelectedTopic] = useState('All');
+
   const fetchFeed = () => {
     setLoading(true);
     const token = localStorage.getItem("oasis_token");
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}`, { headers })
+    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${selectedTopic === 'All' ? '' : selectedTopic}`, { headers })
       .then(res => res.json())
       .then(resData => {
         setData(resData);
@@ -68,7 +70,7 @@ export default function CommunityFeed({
 
   useEffect(() => {
     fetchFeed();
-  }, [sortBy, showOnlyMine]);
+  }, [sortBy, showOnlyMine, selectedTopic]);
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
@@ -324,6 +326,25 @@ export default function CommunityFeed({
           </div>
         </div>
       </div>
+
+      {activeTab === 'vocabularies' && (
+        <div className="flex flex-wrap gap-2 mt-1 mb-2">
+          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
+            <button
+              type="button"
+              key={topic}
+              onClick={() => setSelectedTopic(topic)}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                selectedTopic === topic 
+                  ? 'bg-primary border-primary text-white shadow-sm' 
+                  : 'bg-white border-primary/20 text-accent/70 hover:bg-secondary/20'
+              }`}
+            >
+              {topic === 'All' ? 'Tất cả chủ đề' : topic}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="py-20 text-center text-primary font-bold animate-pulse w-full col-span-full">

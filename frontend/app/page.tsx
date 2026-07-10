@@ -73,6 +73,10 @@ export default function Home() {
     if (token) headers["Authorization"] = `Bearer ${token}`;
     try {
       const res = await fetch(`${API_URL}/notifications`, { headers });
+      if (res.status === 401 || res.status === 403) {
+        handleLogout();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
@@ -106,6 +110,10 @@ export default function Home() {
       const res = await fetch(`${API_URL}/vocabulary`, {
         headers: { Authorization: `Bearer ${tokenStr}` },
       });
+      if (res.status === 401 || res.status === 403) {
+        handleLogout();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setVocabList(data);
@@ -262,13 +270,13 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
+  function handleLogout() {
     localStorage.removeItem("oasis_token");
     localStorage.removeItem("oasis_user");
     localStorage.removeItem("oasis_guest_id");
     setUser(null);
     window.location.reload();
-  };
+  }
 
   const handleSelectListening = (text: string) => {
     setActiveListeningContext(text);

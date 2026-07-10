@@ -113,6 +113,42 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     }
   };
 
+  const [isSavingAll, setIsSavingAll] = useState(false);
+
+  const handleSaveAll = async () => {
+    const toAdd = extractedWords.filter(
+      (item: any) => !vocabList.some((v) => v.word.toLowerCase() === item.word.toLowerCase())
+    );
+    if (toAdd.length === 0) return;
+    
+    setIsSavingAll(true);
+    try {
+      for (const item of toAdd) {
+        await onAdd({
+          word: item.word,
+          phonetic: item.phonetic,
+          meaning: item.meaning,
+          example: item.example,
+          synonyms: item.synonyms,
+          topic: item.topic,
+          memory_hook: item.memory_hook,
+          is_global: shareToCommunity,
+          source: "Matcha Scroll"
+        });
+      }
+      if ((window as any).showToast) {
+        (window as any).showToast("Đã lưu tất cả từ vựng mới! 🍵", "success");
+      }
+    } catch (e) {
+      console.error(e);
+      if ((window as any).showToast) {
+        (window as any).showToast("Lỗi khi lưu danh sách từ vựng.", "error");
+      }
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
   // Auto-focus on the newly added word when vocabulary list grows
   useEffect(() => {
     setCurrentIndex(0);
@@ -344,15 +380,35 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                     <span className="text-xs font-bold text-accent/70">
                       Tìm thấy {extractedWords.length} từ vựng gợi ý:
                     </span>
-                    <label className="flex items-center gap-2 text-[11px] font-bold text-primary cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={shareToCommunity} 
-                        onChange={(e) => setShareToCommunity(e.target.checked)} 
-                        className="rounded border-primary/20 text-primary focus:ring-primary/20"
-                      />
-                      Chia sẻ lên Community 🍵
-                    </label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-[11px] font-bold text-primary cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={shareToCommunity} 
+                          onChange={(e) => setShareToCommunity(e.target.checked)} 
+                          className="rounded border-primary/20 text-primary focus:ring-primary/20"
+                        />
+                        Chia sẻ Community 🍵
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isSavingAll || extractedWords.every(item => vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase()))}
+                        onClick={handleSaveAll}
+                        className="bg-accent text-white text-[11px] font-bold px-3 py-1 rounded-full shadow hover:bg-accent-dark transition-all disabled:opacity-50 flex items-center gap-1 shrink-0"
+                      >
+                        {isSavingAll ? (
+                          <>
+                            <span className="material-symbols-rounded text-xs animate-spin">sync</span>
+                            Đang lưu...
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-rounded text-xs">done_all</span>
+                            Lưu tất cả
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">

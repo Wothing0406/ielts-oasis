@@ -65,24 +65,29 @@ async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
     username = clean_and_validate_username(raw_username)
     is_new_user = False
     
+    user = None
     # If they have a guest_id, try to find them
     if guest_id:
         user = db.query(User).filter(User.discord_id == guest_id).first()
-        if not user:
-            # If guest_id not found, create one
-            unique_username = generate_unique_guest_username(username, db)
-            user = User(discord_id=guest_id, username=unique_username)
-            db.add(user)
-            is_new_user = True
-        else:
+        if user:
             # Update username if they changed it (ignoring the tag suffix comparison)
             current_base = user.username.split("#")[0] if "#" in user.username else user.username
             if current_base != username:
                 user.username = generate_unique_guest_username(username, db)
             user.last_login = datetime.utcnow()
-    else:
+
+    # If guest_id not found or not provided, check if the exact username already exists
+    if not user:
+        user = db.query(User).filter(User.username == username).first()
+        if user:
+            # Found existing user with this exact username, reuse it!
+            guest_id = user.discord_id
+            user.last_login = datetime.utcnow()
+
+    if not user:
         # Create a brand new guest user
-        guest_id = f"guest-{uuid.uuid4()}"
+        if not guest_id:
+            guest_id = f"guest-{uuid.uuid4()}"
         unique_username = generate_unique_guest_username(username, db)
         user = User(discord_id=guest_id, username=unique_username)
         db.add(user)
