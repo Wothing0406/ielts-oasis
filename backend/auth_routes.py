@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 import asyncio
 from database import SessionLocal, get_db
@@ -24,18 +24,18 @@ class GuestLogin(BaseModel):
     guest_id: str = None
 
 def clean_and_validate_username(username: str) -> str:
-    # 1. Strip script tags and their content first
-    temp = re.sub(r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", username, flags=re.IGNORECASE)
-    # 2. Strip any other HTML tags
-    temp = re.sub(r"<[^>]+>", "", temp)
-    # 3. Allow letters (including Vietnamese letters with accents & Đ/đ), digits, spaces, hyphens, underscores
-    cleaned = re.sub(r"[^\w\s\-\u00C0-\u1EF9\u0110\u0111]", "", temp)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    
-    if len(cleaned) < 2:
-        raise HTTPException(status_code=400, detail="Tên người dùng phải có ít nhất 2 ký tự hợp lệ.")
-    if len(cleaned) > 30:
-        raise HTTPException(status_code=400, detail="Tên người dùng không được vượt quá 30 ký tự.")
+    cleaned = username.strip().lower()
+    # Allow only lowercase letters, numbers, underscores, and dots (like Instagram)
+    if not re.match(r"^[a-z0-9_\.]+$", cleaned):
+        raise HTTPException(
+            status_code=400, 
+            detail="Tên người dùng chỉ được chứa chữ cái thường không dấu, số, dấu gạch dưới (_) và dấu chấm (.)."
+        )
+    if len(cleaned) < 3 or len(cleaned) > 20:
+        raise HTTPException(
+            status_code=400, 
+            detail="Tên người dùng phải từ 3 đến 20 ký tự."
+        )
     return cleaned
 
 def generate_unique_guest_username(base_name: str, db: Session) -> str:
@@ -55,7 +55,7 @@ def generate_unique_guest_username(base_name: str, db: Session) -> str:
     return f"{base_name}#{random.randint(10000, 99999)}"
 
 @router.post("/guest")
-async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
+async def guest_login(payload: GuestLogin, request: Request, db: Session = Depends(get_db)):
     guest_id = payload.guest_id
     raw_username = payload.username.strip()
     
@@ -75,6 +75,7 @@ async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
             if current_base != username:
                 user.username = generate_unique_guest_username(username, db)
             user.last_login = datetime.utcnow()
+            user.last_ip = request.client.host if request.client else None
 
     # If guest_id not found or not provided, check if the exact username already exists
     if not user:
@@ -83,13 +84,18 @@ async def guest_login(payload: GuestLogin, db: Session = Depends(get_db)):
             # Found existing user with this exact username, reuse it!
             guest_id = user.discord_id
             user.last_login = datetime.utcnow()
+            user.last_ip = request.client.host if request.client else None
 
     if not user:
         # Create a brand new guest user
         if not guest_id:
             guest_id = f"guest-{uuid.uuid4()}"
         unique_username = generate_unique_guest_username(username, db)
-        user = User(discord_id=guest_id, username=unique_username)
+        user = User(
+            discord_id=guest_id, 
+            username=unique_username,
+            last_ip=request.client.host if request.client else None
+        )
         db.add(user)
         is_new_user = True
         

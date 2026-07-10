@@ -11,6 +11,7 @@ class User(Base):
     avatar_url = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, default=datetime.utcnow)
+    last_ip = Column(String(50), nullable=True)
 
 class Vocabulary(Base):
     __tablename__ = "vocabulary"

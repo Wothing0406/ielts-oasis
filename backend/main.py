@@ -174,6 +174,12 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN weekly_plan JSON NULL;"))
                 conn.commit()
                 logger.info("Migration: Added 'weekly_plan' column to discord_schedules.")
+            # Check last_ip column in users table
+            res_ip = conn.execute(text("SHOW COLUMNS FROM users LIKE 'last_ip';")).fetchone()
+            if not res_ip:
+                conn.execute(text("ALTER TABLE users ADD COLUMN last_ip VARCHAR(50) NULL;"))
+                conn.commit()
+                logger.info("Migration: Added 'last_ip' column to users.")
     except Exception as e:
         logger.error(f"Migration failed: {e}")
     try:
