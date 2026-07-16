@@ -19,6 +19,30 @@ from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Secure JWT secret loading
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    import logging
+    logging.getLogger("uvicorn").warning("JWT_SECRET environment variable is not set. Using a fallback secret key, please set JWT_SECRET in production!")
+    JWT_SECRET = "super-secret-key-change-me-safely"
+
+JWT_ALGORITHM = "HS256"
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ. Vui lòng đăng nhập lại.")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Không thể xác thực người dùng.")
+
 class RegisterPayload(BaseModel):
     username: str
     password: str
@@ -253,14 +277,7 @@ DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
 # Lấy url từ frontend để chuyển hướng về
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:3000/auth/callback")
 
-# Secure JWT secret loading
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    import logging
-    logging.getLogger("uvicorn").warning("JWT_SECRET environment variable is not set. Using a fallback secret key, please set JWT_SECRET in production!")
-    JWT_SECRET = "super-secret-key-change-me-safely"
-
-JWT_ALGORITHM = "HS256"
+# JWT settings defined at the top
 
 import urllib.parse
 import hmac
@@ -421,17 +438,4 @@ async def discord_callback(payload: AuthCode, db: Session = Depends(get_db)):
     
     return {"token": token, "user": jwt_payload}
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    if not token:
-        return None
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ. Vui lòng đăng nhập lại.")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Không thể xác thực người dùng.")
+# End of auth routes
