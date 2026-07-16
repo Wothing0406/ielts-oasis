@@ -22,12 +22,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class RegisterPayload(BaseModel):
     username: str
     password: str
+    captcha_token: str
 
 class LoginPayload(BaseModel):
     username: str
     password: str
+    captcha_token: str
 
 import hashlib
+import collections
+import time
 
 def hash_password(password: str) -> str:
     salt = os.urandom(16)
@@ -61,8 +65,74 @@ def clean_and_validate_username(username: str) -> str:
         )
     return cleaned
 
+def get_client_ip(request: Request) -> str:
+    # CF-Connecting-IP
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip
+    # X-Forwarded-For
+    x_forwarded = request.headers.get("x-forwarded-for")
+    if x_forwarded:
+        return x_forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+async def verify_turnstile_captcha(token: str, remote_ip: str = None) -> bool:
+    secret_key = os.getenv("TURNSTILE_SECRET_KEY", "1x000000000000000000000000000000000")
+    url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    data = {
+        "secret": secret_key,
+        "response": token
+    }
+    if remote_ip:
+        data["remoteip"] = remote_ip
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(url, data=data)
+            if res.status_code == 200:
+                result = res.json()
+                return result.get("success", False)
+    except Exception as e:
+        print(f"Turnstile verification failed: {e}")
+    return False
+
+# In-memory IP rate limiter cache
+rate_limit_cache = {
+    "register": collections.defaultdict(list),
+    "login": collections.defaultdict(list)
+}
+
+def check_rate_limit(ip: str, action: str, limit: int, window_seconds: int):
+    now = time.time()
+    history = rate_limit_cache[action][ip]
+    history = [ts for ts in history if now - ts < window_seconds]
+    rate_limit_cache[action][ip] = history
+    if len(history) >= limit:
+        return False
+    rate_limit_cache[action][ip].append(now)
+    return True
+
+@router.get("/register")
+def get_register_guideline():
+    return {"message": "Endpoint này yêu cầu phương thức POST chứa payload đăng ký (username, password, captcha_token)."}
+
 @router.post("/register")
 async def register_user(payload: RegisterPayload, request: Request, db: Session = Depends(get_db)):
+    ip = get_client_ip(request)
+    
+    # 1. IP rate limiting (max 5 registrations per hour)
+    if not check_rate_limit(ip, "register", limit=5, window_seconds=3600):
+        raise HTTPException(
+            status_code=429,
+            detail="Bạn đã đăng ký quá nhiều lần từ IP này. Vui lòng thử lại sau 1 giờ!"
+        )
+
+    # 2. Cloudflare Turnstile verification
+    if not await verify_turnstile_captcha(payload.captcha_token, remote_ip=ip):
+        raise HTTPException(
+            status_code=400,
+            detail="Xác thực Captcha Turnstile không thành công. Hãy thử lại."
+        )
+
     raw_username = payload.username.strip()
     raw_password = payload.password.strip()
     
@@ -85,7 +155,7 @@ async def register_user(payload: RegisterPayload, request: Request, db: Session 
         discord_id=guest_id,
         username=username,
         password_hash=hashed_pwd,
-        last_ip=request.client.host if request.client else None
+        last_ip=ip
     )
     db.add(user)
     db.commit()
@@ -118,8 +188,28 @@ async def register_user(payload: RegisterPayload, request: Request, db: Session 
         
     return {"message": "Đăng ký tài khoản thành công!", "username": username}
 
+@router.get("/login")
+def get_login_guideline():
+    return {"message": "Endpoint này yêu cầu phương thức POST chứa payload đăng nhập (username, password, captcha_token)."}
+
 @router.post("/login")
 async def login_user(payload: LoginPayload, request: Request, db: Session = Depends(get_db)):
+    ip = get_client_ip(request)
+    
+    # 1. IP rate limiting (max 10 logins per 5 minutes)
+    if not check_rate_limit(ip, "login", limit=10, window_seconds=300):
+        raise HTTPException(
+            status_code=429,
+            detail="Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 5 phút!"
+        )
+
+    # 2. Cloudflare Turnstile verification
+    if not await verify_turnstile_captcha(payload.captcha_token, remote_ip=ip):
+        raise HTTPException(
+            status_code=400,
+            detail="Xác thực Captcha Turnstile không thành công. Hãy thử lại."
+        )
+
     raw_username = payload.username.strip()
     raw_password = payload.password.strip()
     
@@ -133,7 +223,7 @@ async def login_user(payload: LoginPayload, request: Request, db: Session = Depe
         raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
         
     user.last_login = datetime.utcnow()
-    user.last_ip = request.client.host if request.client else None
+    user.last_ip = ip
     db.commit()
     
     # Generate JWT
@@ -151,6 +241,12 @@ async def login_user(payload: LoginPayload, request: Request, db: Session = Depe
         "user": jwt_payload,
         "guest_id": user.discord_id
     }
+
+@router.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Phiên đăng nhập đã hết hạn hoặc không hợp lệ.")
+    return current_user
 
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")

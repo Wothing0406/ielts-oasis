@@ -24,6 +24,7 @@ export default function Home() {
   const [guestPassword, setGuestPassword] = useState("");
   const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [captchaToken, setCaptchaToken] = useState("");
 
   // Custom Toast/Modal state
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -65,6 +66,56 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    if ((window as any).turnstile) {
+      try {
+        (window as any).turnstile.reset("#turnstile-container");
+      } catch (e) {
+        console.error("Turnstile reset error", e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    const renderCaptcha = () => {
+      if (!active) return;
+      const container = document.getElementById("turnstile-container");
+      if (container && (window as any).turnstile) {
+        try {
+          container.innerHTML = "";
+          (window as any).turnstile.render("#turnstile-container", {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            theme: "light",
+            callback: (token: string) => {
+              setCaptchaToken(token);
+            },
+            "expired-callback": () => {
+              setCaptchaToken("");
+            },
+            "error-callback": () => {
+              setCaptchaToken("");
+            }
+          });
+        } catch (e) {
+          console.error("Turnstile render error", e);
+        }
+      } else {
+        setTimeout(renderCaptcha, 250);
+      }
+    };
+
+    if (!user) {
+      renderCaptcha();
+    }
+    
+    return () => {
+      active = false;
+      setCaptchaToken("");
+    };
+  }, [authMode, user]);
 
 
   const dueCount = dueCountFromApi || vocabList.length;
@@ -241,6 +292,12 @@ export default function Home() {
   const handleGuestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
+    
+    if (!captchaToken) {
+      (window as any).showToast("Vui lòng hoàn thành xác thực Captcha Turnstile! 🍵", "error");
+      return;
+    }
+    
     setIsGuestLoggingIn(true);
 
     try {
@@ -249,7 +306,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: guestName.trim(),
-          password: guestPassword
+          password: guestPassword,
+          captcha_token: captchaToken
         })
       });
       const data = await res.json();
@@ -262,10 +320,12 @@ export default function Home() {
         (window as any).showToast("Đăng nhập thành công! Chào mừng cậu trở lại 🍵", "success");
       } else {
         (window as any).showToast(data.detail || "Đăng nhập thất bại.", "error");
+        resetCaptcha();
       }
     } catch (err) {
       console.error(err);
       (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+      resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
     }
@@ -273,6 +333,12 @@ export default function Home() {
 
   const handleGuestRegister = async () => {
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
+    
+    if (!captchaToken) {
+      (window as any).showToast("Vui lòng hoàn thành xác thực Captcha Turnstile! 🍵", "error");
+      return;
+    }
+
     setIsGuestLoggingIn(true);
 
     try {
@@ -281,18 +347,23 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: guestName.trim(),
-          password: guestPassword
+          password: guestPassword,
+          captcha_token: captchaToken
         })
       });
       const data = await res.json();
       if (res.ok) {
         (window as any).showToast("Đăng ký thành công! Hãy nhấn nút Vào Học để bắt đầu nhé 🍵", "success");
+        setAuthMode("login");
+        resetCaptcha();
       } else {
         (window as any).showToast(data.detail || "Đăng ký thất bại.", "error");
+        resetCaptcha();
       }
     } catch (err) {
       console.error(err);
       (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+      resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
     }
@@ -393,6 +464,11 @@ export default function Home() {
                 className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
                 required
               />
+            </div>
+
+            {/* Cloudflare Turnstile Captcha Widget Container */}
+            <div className="w-full flex justify-center my-1 select-none">
+              <div id="turnstile-container" className="min-h-[65px] flex items-center justify-center"></div>
             </div>
 
             {authMode === "login" ? (
