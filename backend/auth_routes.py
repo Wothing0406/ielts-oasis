@@ -14,7 +14,7 @@ from pydantic import BaseModel
 import asyncio
 from database import SessionLocal, get_db
 from sqlalchemy.orm import Session
-from models import User, Vocabulary
+from models import User, Vocabulary, AuthRateLimit
 from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -119,20 +119,45 @@ async def verify_turnstile_captcha(token: str, remote_ip: str = None) -> bool:
         print(f"Turnstile verification failed: {e}")
     return False
 
-# In-memory IP rate limiter cache
-rate_limit_cache = {
-    "register": collections.defaultdict(list),
-    "login": collections.defaultdict(list)
-}
-
-def check_rate_limit(ip: str, action: str, limit: int, window_seconds: int):
+def check_rate_limit(db: Session, ip: str, action: str, limit: int, window_seconds: int) -> bool:
     now = time.time()
-    history = rate_limit_cache[action][ip]
-    history = [ts for ts in history if now - ts < window_seconds]
-    rate_limit_cache[action][ip] = history
-    if len(history) >= limit:
+    cutoff = now - window_seconds
+    
+    # 1. Clean up old entries for this IP/action to save DB space
+    try:
+        db.query(AuthRateLimit).filter(
+            AuthRateLimit.ip_address == ip,
+            AuthRateLimit.action == action,
+            AuthRateLimit.request_timestamp < cutoff
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to clear old rate limits: {e}")
+        
+    # 2. Count requests in active window
+    count = db.query(AuthRateLimit).filter(
+        AuthRateLimit.ip_address == ip,
+        AuthRateLimit.action == action,
+        AuthRateLimit.request_timestamp >= cutoff
+    ).count()
+    
+    if count >= limit:
         return False
-    rate_limit_cache[action][ip].append(now)
+        
+    # 3. Log current request
+    try:
+        new_limit = AuthRateLimit(
+            ip_address=ip,
+            action=action,
+            request_timestamp=now
+        )
+        db.add(new_limit)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to insert rate limit: {e}")
+        
     return True
 
 @router.get("/register")
@@ -144,7 +169,7 @@ async def register_user(payload: RegisterPayload, request: Request, db: Session 
     ip = get_client_ip(request)
     
     # 1. IP rate limiting (max 5 registrations per hour)
-    if not check_rate_limit(ip, "register", limit=5, window_seconds=3600):
+    if not check_rate_limit(db, ip, "register", limit=5, window_seconds=3600):
         raise HTTPException(
             status_code=429,
             detail="Bạn đã đăng ký quá nhiều lần từ IP này. Vui lòng thử lại sau 1 giờ!"
@@ -221,7 +246,7 @@ async def login_user(payload: LoginPayload, request: Request, db: Session = Depe
     ip = get_client_ip(request)
     
     # 1. IP rate limiting (max 10 logins per 5 minutes)
-    if not check_rate_limit(ip, "login", limit=10, window_seconds=300):
+    if not check_rate_limit(db, ip, "login", limit=10, window_seconds=300):
         raise HTTPException(
             status_code=429,
             detail="Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 5 phút!"

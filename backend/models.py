@@ -124,3 +124,11 @@ class GameLeaderboard(Base):
     max_level = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class AuthRateLimit(Base):
+    __tablename__ = "auth_rate_limits"
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String(50), index=True)
+    action = Column(String(50))
+    request_timestamp = Column(Float)
+
+
