@@ -140,8 +140,8 @@ export default function Home() {
 
   const fetchNotifications = async () => {
     const token = localStorage.getItem("oasis_token");
-    const headers: any = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (!token) return;
+    const headers: any = { "Authorization": `Bearer ${token}` };
     try {
       const res = await fetch(`${API_URL}/notifications`, { headers });
       if (res.status === 401 || res.status === 403) {
@@ -159,6 +159,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 20000);
     return () => clearInterval(interval);
@@ -204,8 +205,6 @@ export default function Home() {
     }
     if (savedToken) {
       fetchVocabs(savedToken);
-    } else {
-      fetch(`${API_URL}/vocabulary`).then(res => res.json()).then(setVocabList).catch(console.error);
     }
   }, []);
 
