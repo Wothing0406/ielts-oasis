@@ -12,6 +12,20 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/auth/login',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/auth/register',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     proxyTimeout: 120000,
   },

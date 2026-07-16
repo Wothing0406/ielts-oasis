@@ -22,9 +22,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # Secure JWT secret loading
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
-    import logging
-    logging.getLogger("uvicorn").warning("JWT_SECRET environment variable is not set. Using a fallback secret key, please set JWT_SECRET in production!")
-    JWT_SECRET = "super-secret-key-change-me-safely"
+    import secrets
+    JWT_SECRET = secrets.token_hex(32)
 
 JWT_ALGORITHM = "HS256"
 
