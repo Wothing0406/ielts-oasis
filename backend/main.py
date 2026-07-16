@@ -226,11 +226,9 @@ YOLO_TRANSLATIONS = {
 
 @app.get("/vocabulary")
 async def get_vocabulary(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    query = db.query(Vocabulary)
-    if user:
-        query = query.filter(Vocabulary.user_id == user["user_id"])
-    else:
-        query = query.filter(Vocabulary.is_global == True)
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem từ vựng.")
+    query = db.query(Vocabulary).filter(Vocabulary.user_id == user["user_id"])
     vocabs = query.order_by(desc(Vocabulary.id)).all()
     return vocabs
 
@@ -552,14 +550,12 @@ async def review_vocabulary(id: int, payload: ReviewPayload, user: dict = Depend
 
 @app.get("/stats")
 async def get_stats(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem thống kê.")
     db = db # keep as db
     now = datetime.utcnow()
-    
-    user_id = user["user_id"] if user else None
-    
-    query = db.query(Vocabulary)
-    if user_id:
-        query = query.filter(Vocabulary.user_id == user_id)
+    user_id = user["user_id"]
+    query = db.query(Vocabulary).filter(Vocabulary.user_id == user_id)
         
     # History: last 15 words
     recent_words = query.order_by(desc(Vocabulary.last_reviewed)).limit(15).all()
@@ -654,13 +650,13 @@ from typing import Optional
 
 @app.get("/community/feed")
 async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, topic: Optional[str] = None, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
-    user_id = user["user_id"] if user else None
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem bảng tin cộng đồng.")
+    user_id = user["user_id"]
     
     # Get vocabularies
     vocab_query = db.query(Vocabulary)
     if filter_mine:
-        if not user_id:
-            return {"vocabularies": [], "writings": []}
         vocab_query = vocab_query.filter(Vocabulary.user_id == user_id)
     else:
         # Show global vocabularies only (prevent private leaking)
@@ -970,7 +966,7 @@ class SavePlanIn(BaseModel):
 @app.get("/notifications")
 async def get_user_notifications(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not current_user:
-        return {"notifications": [], "due_count": 0}
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem thông báo.")
     
     user_id = current_user["user_id"]
     
