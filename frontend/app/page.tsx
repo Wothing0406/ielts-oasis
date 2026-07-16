@@ -71,7 +71,7 @@ export default function Home() {
     setCaptchaToken("");
     if ((window as any).turnstile) {
       try {
-        (window as any).turnstile.reset("#turnstile-container");
+        (window as any).turnstile.reset();
       } catch (e) {
         console.error("Turnstile reset error", e);
       }
@@ -80,13 +80,26 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
+    let widgetId: string | null = null;
+
     const renderCaptcha = () => {
       if (!active) return;
       const container = document.getElementById("turnstile-container");
       if (container && (window as any).turnstile) {
         try {
+          // Remove previous widget if it exists
+          if (widgetId !== null) {
+            try {
+              (window as any).turnstile.remove(widgetId);
+            } catch (e) {}
+          }
           container.innerHTML = "";
-          (window as any).turnstile.render("#turnstile-container", {
+
+          // Create a clean container for Turnstile
+          const turnstileDiv = document.createElement("div");
+          container.appendChild(turnstileDiv);
+
+          widgetId = (window as any).turnstile.render(turnstileDiv, {
             sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
             theme: "light",
             callback: (token: string) => {
@@ -113,6 +126,11 @@ export default function Home() {
     
     return () => {
       active = false;
+      if (widgetId !== null && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch (e) {}
+      }
       setCaptchaToken("");
     };
   }, [authMode, user]);
