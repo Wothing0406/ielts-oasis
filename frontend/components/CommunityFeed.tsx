@@ -49,6 +49,15 @@ export default function CommunityFeed({
   }, []);
 
   const [selectedTopic, setSelectedTopic] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const fetchFeed = () => {
     setLoading(true);
@@ -56,7 +65,8 @@ export default function CommunityFeed({
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${selectedTopic === 'All' ? '' : selectedTopic}`, { headers })
+    const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : "";
+    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${selectedTopic === 'All' ? '' : selectedTopic}${searchParam}`, { headers })
       .then(res => res.json())
       .then(resData => {
         setData(resData);
@@ -70,7 +80,7 @@ export default function CommunityFeed({
 
   useEffect(() => {
     fetchFeed();
-  }, [sortBy, showOnlyMine, selectedTopic]);
+  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch]);
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
@@ -287,6 +297,27 @@ export default function CommunityFeed({
           <p className="text-sm text-accent/70">Cùng học hỏi từ các bài viết và từ vựng xuất sắc của mọi người</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+          {/* Thanh tìm kiếm Matcha */}
+          <div className="relative flex items-center bg-[#F4F1EA] border border-primary/25 rounded-full px-3.5 py-1.5 shadow-inner w-full sm:w-auto">
+            <span className="material-symbols-rounded text-primary text-lg mr-1.5 select-none">search</span>
+            <input
+              type="text"
+              placeholder={activeTab === 'writings' ? 'Tìm bài viết, tác giả...' : 'Tìm từ vựng, nghĩa, chủ đề...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-accent text-xs font-semibold placeholder-[#3E4F39]/40 border-none outline-none w-full sm:w-44 focus:sm:w-56 transition-all duration-300"
+            />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={() => setSearchQuery("")} 
+                className="text-[#3E4F39]/50 hover:text-[#3E4F39] flex items-center ml-1"
+              >
+                <span className="material-symbols-rounded text-sm">close</span>
+              </button>
+            )}
+          </div>
+
           {currentUser && (
             <button
               type="button"

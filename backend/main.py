@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
@@ -645,11 +645,11 @@ async def generate_daily_plan(payload: DailyPlanIn):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import Optional
 
 @app.get("/community/feed")
-async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, topic: Optional[str] = None, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, topic: Optional[str] = None, search: Optional[str] = None, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem bảng tin cộng đồng.")
     user_id = user["user_id"]
@@ -664,6 +664,17 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     
     if topic and topic.strip() and topic.lower() != "all":
         vocab_query = vocab_query.filter(func.lower(Vocabulary.topic) == func.lower(topic.strip()))
+
+    if search and search.strip():
+        search_term = f"%{search.strip().lower()}%"
+        vocab_query = vocab_query.filter(
+            or_(
+                func.lower(Vocabulary.word).like(search_term),
+                func.lower(Vocabulary.meaning).like(search_term),
+                func.lower(Vocabulary.topic).like(search_term),
+                func.lower(Vocabulary.creator_username).like(search_term)
+            )
+        )
 
     if sort_by == "top":
         # For vocab, 'top' might just be popularity
@@ -710,6 +721,15 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         if not user_id:
             return {"vocabularies": [], "writings": []}
         writing_query = writing_query.filter(WritingLog.user_id == user_id)
+
+    if search and search.strip():
+        search_term = f"%{search.strip().lower()}%"
+        writing_query = writing_query.join(User, User.id == WritingLog.user_id, isouter=True).filter(
+            or_(
+                func.lower(WritingLog.content).like(search_term),
+                func.lower(User.username).like(search_term)
+            )
+        )
 
     if sort_by == "top":
         # Sort by band score (highest first). Note: band_score is string so "9.0" > "8.0"
