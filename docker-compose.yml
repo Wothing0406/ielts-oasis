@@ -65,7 +65,10 @@ services:
 
   # --- Frontend Service (Next.js) ---
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
     container_name: ielts_oasis_web
     restart: always
     ports:
