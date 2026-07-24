@@ -127,28 +127,27 @@ Return ONLY the JSON array. Example:
 
     async def extract_scroll_vocabulary_from_text(self, text: str):
         prompt = f"""
-        Analyze this text and extract key academic vocabulary words or idioms suitable for IELTS prep (aim for 5-15 useful words).
-        For each extracted word:
-        1. Find its IPA phonetic symbols.
-        2. Give its Vietnamese meaning matching the context in the text.
-        3. Extract the exact sentence (or a slightly shortened version) containing this word from the input text as the example.
-        4. Give a mnemonic memory hook in Vietnamese.
-        5. Provide 1-3 English synonyms.
-        6. Identify the topic (e.g. Technology, Education, Health, Environment, etc.).
+        You are an expert OCR & Vocabulary Extraction Assistant.
+        Analyze this text document and extract ALL English vocabulary words, phrases, or idioms listed.
+        
+        CRITICAL MANDATORY INSTRUCTIONS:
+        1. EXTRACT ALL WORDS: Extract EVERY SINGLE vocabulary entry present in the text from the very first line to the end. Do NOT limit or filter out any word regardless of how simple or advanced it is.
+        2. EXACT MEANING: For each word, preserve the EXACT Vietnamese meaning provided in the text context.
+        3. DETAILS: Provide IPA phonetic symbols, a clear English example sentence, a memorable Vietnamese memory hook, 1-3 English synonyms, and the topic category.
 
         Input text:
         "{text}"
 
-        Return ONLY a valid JSON array of objects with exactly this structure:
+        Return ONLY a valid JSON array of objects with exactly this structure (no markdown fences, no other text):
         [
           {{
             "word": "English word",
             "phonetic": "/.../",
-            "meaning": "Vietnamese meaning",
-            "example": "Context sentence from the text",
+            "meaning": "Exact Vietnamese meaning from text",
+            "example": "Context sentence in English",
             "memory_hook": "Vietnamese memory hook",
             "synonyms": ["synonym1", "synonym2"],
-            "topic": "Topic"
+            "topic": "Topic category"
           }}
         ]
         """
@@ -166,26 +165,24 @@ Return ONLY the JSON array. Example:
 
     async def extract_scroll_vocabulary_from_image(self, image: Image.Image):
         prompt = """
-        Analyze this vocabulary document image. It contains a table, a list, or plain text containing vocabulary words.
-        Identify and extract all English academic/IELTS-level vocabulary words, phrases, or idioms listed.
-        For each word:
-        1. Reconstruct the correct pairing of the English word and its Vietnamese meaning as shown in the image (or translate if meaning is missing).
-        2. Find its IPA phonetic symbols.
-        3. If there is a context sentence in the image, extract it. Otherwise, generate a useful academic IELTS example sentence in English.
-        4. Give a mnemonic memory hook in Vietnamese.
-        5. Provide 1-3 English synonyms.
-        6. Identify the topic (e.g. Tech, Environment, Health, General, etc.).
+        You are an expert OCR & Vocabulary Extraction Assistant.
+        Analyze this vocabulary document/table image thoroughly.
+        
+        CRITICAL MANDATORY INSTRUCTIONS:
+        1. EXTRACT ALL WORDS: Identify and extract EVERY SINGLE English vocabulary word, term, or phrase listed in the image from the top row to the bottom row (e.g. from row 1 to 34 or more). DO NOT skip any rows or words, regardless of whether they are basic words (like 'a', 'about', 'agree', 'am', 'and', 'apple') or advanced terms.
+        2. EXACT VIETNAMESE MEANING: For each word, preserve the EXACT Vietnamese translation/meaning printed in the image table column. Do NOT generate a different meaning if a Vietnamese translation is already given in the image.
+        3. ACCURATE IPA & DETAILS: Extract or provide accurate IPA phonetic symbols, an English example sentence, a memorable Vietnamese memory hook, 1-3 English synonyms, and an appropriate topic category (e.g. General, Tech, Environment, Education, etc.).
 
-        Return ONLY a valid JSON array of objects with exactly this structure (no markdown, no other text):
+        Return ONLY a valid JSON array of objects with exactly this structure (no markdown fences, no other text):
         [
           {
             "word": "English word",
             "phonetic": "/.../",
-            "meaning": "Vietnamese meaning",
-            "example": "Example sentence",
+            "meaning": "Exact Vietnamese meaning printed in image",
+            "example": "Example sentence in English",
             "memory_hook": "Vietnamese memory hook",
             "synonyms": ["synonym1", "synonym2"],
-            "topic": "Topic"
+            "topic": "Topic category"
           }
         ]
         """
