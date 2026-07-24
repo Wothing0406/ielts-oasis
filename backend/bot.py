@@ -59,6 +59,17 @@ async def on_ready():
     logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
     logger.info('------')
     
+    # Set rich activity status
+    try:
+        activity = discord.Activity(
+            type=discord.ActivityType.listening,
+            name="IELTS Oasis 🍵 | /tuvan /dailyplan /web"
+        )
+        await bot.change_presence(status=discord.Status.online, activity=activity)
+        logger.info("Bot presence updated to Listening activity.")
+    except Exception as e:
+        logger.error(f"Failed to set presence: {e}")
+
     # Sync slash commands
     try:
         synced = await bot.tree.sync()
