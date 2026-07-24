@@ -7,39 +7,65 @@
   --color-secondary: #FFF9E6;
   --color-accent: #5D4037;
   --color-background-light: #FFFDF5;
-  
+
   --font-display: "Lexend", sans-serif;
   --font-sans: "Quicksand", sans-serif;
-  
+
   --radius-large: 3rem;
   --radius-medium: 2rem;
 }
 
 /* NUCLEAR LIGHT MODE FORCE */
-:root, html, body, [class*="dark"] {
+:root,
+html,
+body,
+[class*="dark"] {
   background-color: #FFFDF5 !important;
   color: #5D4037 !important;
   color-scheme: light !important;
 }
 
 /* Remove aggressive transparency that breaks buttons */
-div, section, header, main, aside, nav {
+div,
+section,
+header,
+main,
+aside,
+nav {
   color: #5D4037;
 }
 
-.matcha-card, [class*="bento-card"] {
+.matcha-card,
+[class*="bento-card"] {
   background-color: white !important;
   border: 1px solid rgba(167, 208, 140, 0.3) !important;
   box-shadow: 0 10px 40px -10px rgba(167, 208, 140, 0.2) !important;
   color: #5D4037 !important;
 }
 
-.bg-primary { background-color: #A7D08C !important; }
-.bg-secondary { background-color: #FFF9E6 !important; }
-.bg-accent { background-color: #5D4037 !important; }
-.text-white { color: white !important; }
-.text-primary { color: #A7D08C !important; }
-.text-accent { color: #5D4037 !important; }
+.bg-primary {
+  background-color: #A7D08C !important;
+}
+
+.bg-secondary {
+  background-color: #FFF9E6 !important;
+}
+
+.bg-accent {
+  background-color: #5D4037 !important;
+}
+
+.text-white {
+  color: white !important;
+}
+
+.text-primary {
+  color: #A7D08C !important;
+}
+
+.text-accent {
+  color: #5D4037 !important;
+}
 
 /* Remove any dark: classes influence */
 [class*="dark:"] {
@@ -81,9 +107,11 @@ div, section, header, main, aside, nav {
   .perspective-1000 {
     perspective: 1000px;
   }
+
   .preserve-3d {
     transform-style: preserve-3d;
   }
+
   .backface-hidden {
     backface-visibility: hidden;
   }
