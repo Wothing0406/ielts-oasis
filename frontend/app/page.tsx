@@ -426,18 +426,43 @@ export default function Home() {
           </div>
 
           {/* Logo Brand */}
-          <div className="w-18 h-18 bg-gradient-to-br from-[#A7D08C] to-[#6E8269] rounded-3xl flex items-center justify-center mb-4 shadow-[0_8px_25px_rgba(110,130,105,0.4)] transform hover:rotate-12 transition-transform duration-300">
+          <div className="w-18 h-18 bg-gradient-to-br from-[#A7D08C] to-[#6E8269] rounded-3xl flex items-center justify-center mb-3 shadow-[0_8px_25px_rgba(110,130,105,0.4)] transform hover:rotate-12 transition-transform duration-300">
             <span className="text-4xl filter drop-shadow-md">🍵</span>
           </div>
           
           <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">IELTS Oasis</h1>
-          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-8 opacity-90">Zen Learning Space</p>
+          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">Zen Learning Space</p>
+
+          {/* Discord Priority Highlight Banner */}
+          <div className="w-full bg-gradient-to-r from-[#5865F2]/10 via-[#7A9A6A]/15 to-[#5865F2]/10 border-2 border-[#5865F2]/30 rounded-2xl p-3.5 mb-3 text-center shadow-sm">
+            <p className="text-xs font-black text-[#2E3E2B] flex items-center justify-center gap-1.5 leading-snug">
+              <span>🤖</span> Đăng nhập bằng Discord bạn sẽ có một trợ lý chatbot tư vấn cực kì nhiệt tình! 🍵
+            </p>
+          </div>
+
+          {/* Discord Main Priority Button */}
+          <button
+            onClick={handleLogin}
+            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2.5 shadow-[0_8px_25px_rgba(88,101,242,0.35)] hover:shadow-xl transition-all active:scale-[0.97] border-2 border-white/20 mb-4"
+          >
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
+            </svg>
+            ĐĂNG NHẬP BẰNG DISCORD (KHUYÊN DÙNG ⭐)
+          </button>
+
+          {/* Divider */}
+          <div className="w-full flex items-center my-3 gap-3">
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
+            <span className="text-[9px] font-black text-[#5D4037]/60 uppercase tracking-widest">hoặc tài khoản thường</span>
+            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
+          </div>
 
           {/* Form Tabs */}
-          <div className="w-full bg-[#E3EAE0] p-1.5 rounded-full flex items-center mb-6 border border-[#8F9E8B]/20">
+          <div className="w-full bg-[#E3EAE0] p-1.5 rounded-full flex items-center mb-4 border border-[#8F9E8B]/20">
             <button
               onClick={() => { setAuthMode("login"); }}
-              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 ${
+              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all duration-300 ${
                 authMode === "login"
                   ? "bg-[#6E8269] text-white shadow-md transform scale-[1.02]"
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
@@ -447,7 +472,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => { setAuthMode("register"); }}
-              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 ${
+              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all duration-300 ${
                 authMode === "register"
                   ? "bg-[#3E4F39] text-white shadow-md transform scale-[1.02]"
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
@@ -458,7 +483,7 @@ export default function Home() {
           </div>
 
           {/* Auth Form */}
-          <form onSubmit={handleGuestLogin} className="w-full flex flex-col gap-4">
+          <form onSubmit={handleGuestLogin} className="w-full flex flex-col gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Tên tài khoản</label>
               <input
@@ -466,7 +491,7 @@ export default function Home() {
                 placeholder="Nhập tên tài khoản..."
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
                 required
               />
             </div>
@@ -478,7 +503,7 @@ export default function Home() {
                 placeholder="Nhập mật khẩu..."
                 value={guestPassword}
                 onChange={(e) => setGuestPassword(e.target.value)}
-                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
                 required
               />
             </div>
@@ -492,7 +517,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-2"
+                className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
                 {isGuestLoggingIn ? "Đang pha chế..." : "VÀO HỌC NGAY 🍵"}
               </button>
@@ -501,7 +526,7 @@ export default function Home() {
                 type="button"
                 onClick={handleGuestRegister}
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-2"
+                className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
                 {isGuestLoggingIn ? "Đang đăng ký..." : "TẠO TÀI KHOẢN MỚI 🍀"}
               </button>
@@ -509,31 +534,13 @@ export default function Home() {
           </form>
 
           {/* Validation Rules Scroll Card */}
-          <div className="w-full bg-[#F5F2EB] border-l-4 border-[#8F9E8B] rounded-2xl p-4 mt-6 text-[10px] text-[#5D4037] leading-relaxed flex flex-col gap-1 shadow-sm">
-            <div className="font-black text-[#2E3E2B] flex items-center gap-1 mb-1">
-              <span>📌</span> Quy tắc xác thực:
+          <div className="w-full bg-[#F5F2EB] border-l-4 border-[#8F9E8B] rounded-2xl p-3.5 mt-4 text-[10px] text-[#5D4037] leading-relaxed flex flex-col gap-1 shadow-sm">
+            <div className="font-black text-[#2E3E2B] flex items-center gap-1 mb-0.5">
+              <span>📌</span> Quy tắc tài khoản thường:
             </div>
-            <div>• <b>Tên tài khoản:</b> 3-20 kí tự, chỉ dùng chữ thường (a-z), số (0-9), gạch dưới (_) và chấm (.)</div>
-            <div>• <b>Mật khẩu:</b> Độ dài tối thiểu 6 kí tự để bảo mật bài học.</div>
+            <div>• <b>Tên tài khoản:</b> 3-20 kí tự (a-z, 0-9, _, .)</div>
+            <div>• <b>Mật khẩu:</b> Tối thiểu 6 kí tự để bảo mật bài học.</div>
           </div>
-
-          {/* Divider */}
-          <div className="w-full flex items-center my-6 gap-3">
-            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
-            <span className="text-[9px] font-black text-[#5D4037]/60 uppercase tracking-widest">hoặc bằng</span>
-            <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
-          </div>
-
-          {/* Discord Brand Button */}
-          <button
-            onClick={handleLogin}
-            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-3.5 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(88,101,242,0.25)] hover:shadow-lg transition-all active:scale-[0.97]"
-          >
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
-              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
-            </svg>
-            Tài khoản Discord
-          </button>
         </div>
 
         {/* Global Toast Overlay */}
