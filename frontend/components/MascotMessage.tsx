@@ -24,7 +24,7 @@ const MascotMessage = ({ dueCount }: { dueCount: number }) => {
         >
           <div className="bg-white p-4 rounded-2xl shadow-2xl border-2 border-primary relative max-w-xs">
             <p className="text-accent text-sm font-bold leading-relaxed">
-           Cậu ơi ơi, có <span className="text-primary">{dueCount} từ vựng</span> đang bị "bỏ rơi" rồi. Ôn tập một chút cho mau thuộc nhé! 🍵
+              Hey friend! You have <span className="text-primary">{dueCount} words</span> due for SRS review. Let's do a quick review to keep your streak! 🍵
             </p>
             {/* Speech Bubble Tail */}
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white border-r-2 border-b-2 border-primary rotate-45"></div>

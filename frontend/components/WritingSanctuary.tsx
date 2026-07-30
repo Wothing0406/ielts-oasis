@@ -345,7 +345,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl shadow-sm border border-green-100 dark:border-green-900/30">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-rounded text-green-500 text-sm">check_circle</span>
-                      <span className="text-xs font-bold uppercase text-green-600 dark:text-green-400">Ưu điểm (Strengths)</span>
+                      <span className="text-xs font-bold uppercase text-green-600 dark:text-green-400">Strengths & Highlights</span>
                     </div>
                     <ul className="text-sm opacity-80 text-green-800 dark:text-green-300 list-disc pl-5 space-y-1">
                       {analysis.strengths.map((s: string, i: number) => (
@@ -359,7 +359,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/30">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-rounded text-orange-500 text-sm">warning</span>
-                      <span className="text-xs font-bold uppercase text-orange-600 dark:text-orange-400">Nhược điểm (Weaknesses)</span>
+                      <span className="text-xs font-bold uppercase text-orange-600 dark:text-orange-400">Areas for Improvement</span>
                     </div>
                     <ul className="text-sm opacity-80 text-orange-800 dark:text-orange-300 list-disc pl-5 space-y-1">
                       {analysis.weaknesses.map((w: string, i: number) => (

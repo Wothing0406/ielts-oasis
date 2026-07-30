@@ -392,7 +392,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-accent/70">
-                      Tìm thấy {extractedWords.length} từ vựng gợi ý:
+                      Found {extractedWords.length} vocabulary words:
                     </span>
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 text-[11px] font-bold text-primary cursor-pointer">
@@ -402,7 +402,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                           onChange={(e) => setShareToCommunity(e.target.checked)} 
                           className="rounded border-primary/20 text-primary focus:ring-primary/20"
                         />
-                        Chia sẻ Community 🍵
+                        Share with Community 🍵
                       </label>
                       <button
                         type="button"
@@ -413,12 +413,12 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                         {isSavingAll ? (
                           <>
                             <span className="material-symbols-rounded text-xs animate-spin">sync</span>
-                            Đang lưu...
+                            Saving...
                           </>
                         ) : (
                           <>
                             <span className="material-symbols-rounded text-xs">done_all</span>
-                            Lưu tất cả
+                            Save All
                           </>
                         )}
                       </button>
@@ -448,12 +448,12 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                                   <span className="material-symbols-rounded text-sm">volume_up</span>
                                 </button>
                               </h4>
-                              <p className="text-xs font-bold text-primary/80 mt-0.5">Nghĩa: {item.meaning}</p>
+                              <p className="text-xs font-bold text-primary/80 mt-0.5">Meaning: {item.meaning}</p>
                             </div>
                             
                             {isAlreadyAdded ? (
                               <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full shrink-0">
-                                Đã có
+                                Saved
                               </span>
                             ) : (
                               <button 
@@ -461,14 +461,14 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                                 onClick={() => handleAddExtracted(item)}
                                 className="bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full shadow hover:bg-primary-dark transition-all flex items-center gap-1 shrink-0"
                               >
-                                <span className="material-symbols-rounded text-[10px]">add</span> Thêm
+                                <span className="material-symbols-rounded text-[10px]">add</span> Add
                               </button>
                             )}
                           </div>
                           
                           {item.example && (
                             <p className="text-[11px] text-accent/70 bg-secondary/20 p-2 rounded-lg italic">
-                              <strong>Ví dụ:</strong> "{item.example}"
+                              <strong>Example:</strong> "{item.example}"
                             </p>
                           )}
                           
@@ -488,19 +488,29 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         </AnimatePresence>
         
         <div className="flex flex-wrap gap-2 mt-4 mb-6">
-          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
-            <button type="button"
-              key={topic}
-              onClick={() => setSelectedTopic(topic === 'All' ? null : topic)}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                (topic === 'All' && !selectedTopic) || (selectedTopic?.toLowerCase() === topic.toLowerCase())
-                  ? 'bg-primary text-white border-primary shadow-sm'
-                  : 'bg-secondary text-accent border-transparent hover:bg-primary hover:text-white'
-              }`}
-            >
-              {topic === 'All' ? 'Tất cả' : topic}
-            </button>
-          ))}
+          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => {
+            const topicLabels: Record<string, string> = {
+              'All': 'All Topics',
+              'Environment': 'Environment',
+              'Tech': 'Technology',
+              'Health': 'Health',
+              'Education': 'Education',
+              'Economy': 'Economy'
+            };
+            return (
+              <button type="button"
+                key={topic}
+                onClick={() => setSelectedTopic(topic === 'All' ? null : topic)}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                  (topic === 'All' && !selectedTopic) || (selectedTopic?.toLowerCase() === topic.toLowerCase())
+                    ? 'bg-primary text-white border-primary shadow-sm'
+                    : 'bg-secondary text-accent border-transparent hover:bg-primary hover:text-white'
+                }`}
+              >
+                {topicLabels[topic] || topic}
+              </button>
+            );
+          })}
         </div>
         
         <div className="flex flex-col items-center w-full mt-8">

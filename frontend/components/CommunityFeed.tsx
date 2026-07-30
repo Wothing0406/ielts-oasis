@@ -360,20 +360,30 @@ export default function CommunityFeed({
 
       {activeTab === 'vocabularies' && (
         <div className="flex flex-wrap gap-2 mt-1 mb-2">
-          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => (
-            <button
-              type="button"
-              key={topic}
-              onClick={() => setSelectedTopic(topic)}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                selectedTopic === topic 
-                  ? 'bg-primary border-primary text-white shadow-sm' 
-                  : 'bg-white border-primary/20 text-accent/70 hover:bg-secondary/20'
-              }`}
-            >
-              {topic === 'All' ? 'Tất cả chủ đề' : topic}
-            </button>
-          ))}
+          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => {
+            const topicLabels: Record<string, string> = {
+              'All': 'All Topics',
+              'Environment': 'Environment',
+              'Tech': 'Technology',
+              'Health': 'Health',
+              'Education': 'Education',
+              'Economy': 'Economy'
+            };
+            return (
+              <button
+                type="button"
+                key={topic}
+                onClick={() => setSelectedTopic(topic)}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                  selectedTopic === topic 
+                    ? 'bg-primary border-primary text-white shadow-sm' 
+                    : 'bg-white border-primary/20 text-accent/70 hover:bg-secondary/20'
+                }`}
+              >
+                {topicLabels[topic] || topic}
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -13,6 +13,21 @@ const KnowledgeGarden = ({ scannedObjects }: { scannedObjects: any[] }) => {
   ];
 
   return (
+"use client";
+
+import React from 'react';
+import { Sprout, TreeDeciduous, Flower2, Search, Info } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const KnowledgeGarden = ({ scannedObjects }: { scannedObjects: any[] }) => {
+  // Sample data if none provided
+  const gardenItems = scannedObjects.length > 0 ? scannedObjects : [
+    { word: "Chair", story: "The silent observer of your hard work.", type: "sprout" },
+    { word: "Laptop", story: "A portal to infinite digital wisdom.", type: "tree" },
+    { word: "Coffee", story: "The fuel of late-night IELTS mastery.", type: "flower" }
+  ];
+
+  return (
     <div className="flex flex-col h-full p-8 bg-matcha-soft/20">
       <div className="flex items-center justify-between mb-8">
          <div className="flex items-center gap-3">

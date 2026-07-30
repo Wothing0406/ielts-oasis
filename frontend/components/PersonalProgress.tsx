@@ -12,7 +12,7 @@ const PersonalProgress = () => {
                <PieChart className="text-matcha-primary" />
             </div>
             <div>
-               <h2 className="text-xl font-black text-latte-brown">Lab Progress</h2>
+               <h2 className="text-xl font-black text-latte-brown">Learning Progress</h2>
                <p className="text-[10px] font-bold text-matcha-primary uppercase tracking-widest">Skill Distribution</p>
             </div>
          </div>
@@ -43,9 +43,9 @@ const PersonalProgress = () => {
          </div>
          <div className="space-y-3">
             {[
-              "Scan 5 Tech Objects",
-              "Write 250 words Sanctuary",
-              "Take 1 Vocabulary Quiz"
+              "Scan 5 objects with Matcha Lens",
+              "Write 250 words in Writing Sanctuary",
+              "Complete 1 Vocabulary Quiz"
             ].map((quest, i) => (
               <div key={i} className="flex items-center gap-3 group">
                  <div className="w-5 h-5 rounded-md border-2 border-matcha-primary/30 group-hover:bg-matcha-primary transition-all" />

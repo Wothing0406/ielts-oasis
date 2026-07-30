@@ -332,7 +332,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
 
               {/* Frame Guidance Badge */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#5D4037]/80 backdrop-blur-md text-[#FFFDF5] text-[9px] font-black px-3 py-1 rounded-full border border-[#A7D08C]/40 uppercase tracking-widest shadow-md">
-                🍵 VÙNG QUÉT KHUNG ẢNH (1:1 CROP)
+                🍵 MATCHA VIEWFINDER (1:1 CROP)
               </div>
             </div>
           </div>
@@ -387,7 +387,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
                              className={`w-full px-2 py-0.5 rounded-md text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all ${isSaved ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
                            >
                              <span className="material-symbols-rounded text-[10px]">{isSaved ? 'check_circle' : 'bookmark_add'}</span>
-                             {isSaved ? 'Đã lưu' : 'Lưu từ'}
+                             {isSaved ? 'Saved' : 'Save'}
                            </button>
                          </div>
                        );
@@ -405,14 +405,14 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
              )}
              {results.length === 0 && !isUploading && !detectError && (
                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-4 py-1 rounded-full backdrop-blur-sm whitespace-nowrap">
-                 Chưa phát hiện được vật thể. Hãy thử góc khác!
+                 No objects detected yet. Try another angle!
                </div>
              )}
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-accent/20 cursor-pointer" onClick={() => startCamera()}>
              <span className="material-symbols-rounded text-6xl mb-2">add_a_photo</span>
-             <p className="text-xs font-bold uppercase tracking-widest">Chạm để mở Camera</p>
+             <p className="text-xs font-bold uppercase tracking-widest">Tap to Open Camera</p>
           </div>
         )}
 
@@ -423,7 +423,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
                 <div className="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span className="material-symbols-rounded absolute inset-0 flex items-center justify-center text-white text-2xl">search_insights</span>
               </div>
-              <span className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-4">AI ANALYZING</span>
+              <span className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-4">AI ANALYZING... 🍵</span>
            </div>
         )}
       </div>
@@ -434,13 +434,13 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
           className="bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm hover:scale-[1.02] shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           <span className="material-symbols-rounded text-lg">{isCameraOpen ? 'photo_camera' : 'videocam'}</span> 
-          {isCameraOpen ? 'Chụp ảnh' : 'Mở Camera'}
+          {isCameraOpen ? 'Take Photo' : 'Open Camera'}
         </button>
         <button type="button" 
           onClick={() => fileInputRef.current?.click()}
           className="bg-white text-accent py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-2 border-primary/20 hover:bg-primary/5 transition-all"
         >
-          <span className="material-symbols-rounded text-lg">image</span> Thư viện
+          <span className="material-symbols-rounded text-lg">image</span> Gallery
         </button>
         <input type="file" ref={fileInputRef} onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0])} className="hidden" />
       </div>
@@ -451,7 +451,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
       {results.length > 0 && (
         <div className="w-full mt-3">
           <p className="text-[10px] font-black text-accent/40 uppercase tracking-widest mb-2">
-            🔍 Phát hiện {results.length} vật thể:
+            🔍 Detected {results.length} objects:
           </p>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {results.map((item, idx) => {
@@ -476,7 +476,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
                     className={`ml-2 px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 flex-shrink-0 transition-all ${isSaved ? 'bg-green-100 text-green-600' : 'bg-primary text-white hover:bg-primary/80'}`}
                   >
                     <span className="material-symbols-rounded text-[12px]">{isSaved ? 'check_circle' : 'bookmark_add'}</span>
-                    {isSaved ? 'Đã lưu' : 'Lưu'}
+                    {isSaved ? 'Saved' : 'Save'}
                   </button>
                 </motion.div>
               );

@@ -171,9 +171,9 @@ export default function Home() {
       id: "due-vocab",
       icon: "eco",
       color: "text-green-500 bg-green-50",
-      title: "Nhắc nhở ôn tập",
-      content: `Cậu ơi ơi, có ${dueCount} từ vựng đang bị "bỏ rơi" rồi. Ôn tập một chút cho mau thuộc nhé! 🍵`,
-      time: "Bây giờ"
+      title: "SRS Review Reminder",
+      content: `Hey friend! You have ${dueCount} words due for SRS review. Take a quick quiz to keep your streak! 🍵`,
+      time: "Just now"
     });
   }
 
@@ -217,7 +217,7 @@ export default function Home() {
 
     const token = localStorage.getItem("oasis_token");
     if (!token) {
-      (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+      (window as any).showToast("Please log in to save vocabulary! 🍵", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
     const headers: any = {
@@ -267,7 +267,7 @@ export default function Home() {
 
   const handleStartQuiz = () => {
     if (vocabList.length < 4) {
-      (window as any).showAlert("Oops! Trạm nạp năng lượng cần ít nhất 4 từ vựng để pha chế. Thêm từ đi bạn ơi! 🍵", "Thiếu nguyên liệu rồi!", "warning");
+      (window as any).showAlert("Oops! Your vocabulary lab needs at least 4 words to generate a quiz. Add more words to get started! 🍵", "More words needed!", "warning");
       return;
     }
     setShowQuiz(true);
@@ -519,7 +519,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Đang pha chế..." : "VÀO HỌC NGAY 🍵"}
+                {isGuestLoggingIn ? "Preparing Matcha..." : "ENTER OASIS NOW 🍵"}
               </button>
             ) : (
               <button
@@ -528,7 +528,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Đang đăng ký..." : "TẠO TÀI KHOẢN MỚI 🍀"}
+                {isGuestLoggingIn ? "Creating Account..." : "CREATE NEW ACCOUNT 🍀"}
               </button>
             )}
           </form>

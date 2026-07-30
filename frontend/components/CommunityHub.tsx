@@ -15,6 +15,23 @@ const virtualUsers = [
 const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
 
   return (
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Users, Coffee, Trophy, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const API_URL = '/api';
+
+const virtualUsers = [
+  { name: "User", xp: 2500, level: 15, avatar: "🐻" },
+  { name: "MatchaLover", xp: 1800, level: 12, avatar: "🐨" },
+  { name: "IELTSKing", xp: 1200, level: 8, avatar: "🐼" },
+];
+
+const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
+
+  return (
     <div className="flex flex-col h-full p-6">
       <div className="flex items-center justify-between mb-8">
          <div className="flex items-center gap-3">
@@ -30,7 +47,7 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
 
       <div className="space-y-6">
         <div className="space-y-3">
-           <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top Matcha Drinkers</h3>
+           <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top Members</h3>
            {virtualUsers.map((user) => (
              <div key={user.name} className="flex items-center justify-between bg-white/40 p-4 rounded-3xl border border-white/60">
                 <div className="flex items-center gap-4">
@@ -39,7 +56,7 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
                    </div>
                    <div>
                       <p className="font-black text-latte-brown">{user.name}</p>
-                      <p className="text-[10px] font-bold text-matcha-primary uppercase">Lv.{user.level} Oasis Walker</p>
+                      <p className="text-[10px] font-bold text-matcha-primary uppercase">Lv.{user.level} Oasis Scholar</p>
                    </div>
                 </div>
                 <div className="text-right">
@@ -53,16 +70,16 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
         <div className="bg-matcha-primary/10 p-5 rounded-[2.5rem] border-2 border-dashed border-matcha-primary/20">
            <div className="flex items-center gap-3 mb-2">
               <Trophy className="text-matcha-primary w-5 h-5" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-matcha-primary">Active Challenge</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-matcha-primary">Weekly Challenge</p>
            </div>
            <p className="text-xs font-bold text-latte-brown leading-relaxed">
-              "Collect 5 Technology-related Objects this week to earn a Golden Leaf!"
+              "Collect 5 Technology-related Objects this week to earn a Golden Leaf badge 🍃!"
            </p>
         </div>
 
         <div className="flex items-center gap-2 bg-cream-yellow p-4 rounded-2xl border border-latte-brown/5 animate-pulse">
            <MessageCircle className="w-4 h-4 text-latte-brown/40" />
-           <p className="text-[10px] italic text-latte-brown/60">Someone just learned 'Ubiquitous' in the lounge...</p>
+           <p className="text-[10px] italic text-latte-brown/60">A student just learned 'Ubiquitous' in the lounge...</p>
         </div>
       </div>
     </div>
