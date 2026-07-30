@@ -146,16 +146,39 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
     const canvas = canvasRef.current;
     const video = videoRef.current;
     
-    // Resize to max 800px to reduce upload size
-    const MAX = 800;
-    const scale = Math.min(MAX / video.videoWidth, MAX / video.videoHeight, 1);
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
-    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return;
+
+    // Calculate exact 1:1 square crop from the video stream matching object-cover UI
+    let sx = 0;
+    let sy = 0;
+    let sWidth = vw;
+    let sHeight = vh;
+
+    if (vw > vh) {
+      // Landscape video: crop left & right to make 1:1 square
+      sWidth = vh;
+      sx = (vw - vh) / 2;
+    } else if (vh > vw) {
+      // Portrait video: crop top & bottom to make 1:1 square
+      sHeight = vw;
+      sy = (vh - vw) / 2;
+    }
+
+    // Set canvas resolution to a crisp 800x800 square
+    const OUTPUT_SIZE = Math.min(800, sWidth, sHeight);
+    canvas.width = OUTPUT_SIZE;
+    canvas.height = OUTPUT_SIZE;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+    }
     
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // compress
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // compress
     setPreview(dataUrl);
-    setAspectRatio(canvas.width / canvas.height);
+    setAspectRatio(1); // 1:1 square aspect ratio
     stopCamera();
     
     const blob = await (await fetch(dataUrl)).blob();
@@ -282,14 +305,37 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
       
       <div className="relative w-full aspect-square rounded-3xl overflow-hidden border-4 border-primary/10 mb-6 shadow-inner bg-secondary/30">
         {isCameraOpen ? (
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            onLoadedMetadata={handleLoadedMetadata}
-            className="w-full h-full object-cover" 
-          />
+          <div className="relative w-full h-full">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              onLoadedMetadata={handleLoadedMetadata}
+              className="w-full h-full object-cover" 
+            />
+            {/* Viewfinder Scanning Reticle Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
+              {/* Corner Bracket Markers */}
+              <div className="absolute top-4 left-4 w-7 h-7 border-t-4 border-l-4 border-[#A7D08C] rounded-tl-xl shadow-[0_0_10px_rgba(167,208,140,0.5)]" />
+              <div className="absolute top-4 right-4 w-7 h-7 border-t-4 border-r-4 border-[#A7D08C] rounded-tr-xl shadow-[0_0_10px_rgba(167,208,140,0.5)]" />
+              <div className="absolute bottom-4 left-4 w-7 h-7 border-b-4 border-l-4 border-[#A7D08C] rounded-bl-xl shadow-[0_0_10px_rgba(167,208,140,0.5)]" />
+              <div className="absolute bottom-4 right-4 w-7 h-7 border-b-4 border-r-4 border-[#A7D08C] rounded-br-xl shadow-[0_0_10px_rgba(167,208,140,0.5)]" />
+
+              {/* Center Target Pointer */}
+              <div className="w-10 h-10 border border-white/30 rounded-full flex items-center justify-center backdrop-blur-[1px]">
+                <div className="w-2 h-2 bg-[#A7D08C] rounded-full animate-ping" />
+              </div>
+
+              {/* Live Laser Scanner Line */}
+              <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-[#A7D08C] to-transparent absolute top-1/2 -translate-y-1/2 animate-pulse shadow-[0_0_12px_#A7D08C]" />
+
+              {/* Frame Guidance Badge */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#5D4037]/80 backdrop-blur-md text-[#FFFDF5] text-[9px] font-black px-3 py-1 rounded-full border border-[#A7D08C]/40 uppercase tracking-widest shadow-md">
+                🍵 VÙNG QUÉT KHUNG ẢNH (1:1 CROP)
+              </div>
+            </div>
+          </div>
         ) : preview ? (
           <div className="relative w-full h-full bg-black overflow-hidden">
              <img 
