@@ -15,23 +15,6 @@ const virtualUsers = [
 const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
 
   return (
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import { Users, Coffee, Trophy, MessageCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = '/api';
-
-const virtualUsers = [
-  { name: "User", xp: 2500, level: 15, avatar: "🐻" },
-  { name: "MatchaLover", xp: 1800, level: 12, avatar: "🐨" },
-  { name: "IELTSKing", xp: 1200, level: 8, avatar: "🐼" },
-];
-
-const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
-
-  return (
     <div className="flex flex-col h-full p-6">
       <div className="flex items-center justify-between mb-8">
          <div className="flex items-center gap-3">
