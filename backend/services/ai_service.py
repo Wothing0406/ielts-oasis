@@ -986,6 +986,107 @@ Return ONLY the JSON array. Example:
                 "next_question": "Hãy thử một chủ đề khác. What is your favorite season?"
             }
 
+    async def generate_speaking_sentence(self, level: str):
+        prompt = f"""
+        Generate a single IELTS Speaking Shadowing sentence in English for the difficulty level: "{level}".
+        - "easy": Short, simple grammatical structure, everyday vocabulary. (e.g. "I enjoy studying English in the morning.")
+        - "medium": Standard sentence structure with common academic words. (e.g. "Technology plays a significant role in modern education.")
+        - "hard": Complex sentence structure, advanced lexical resources, formal IELTS style. (e.g. "Socioeconomic disparities significantly influence access to high-quality education and career opportunities.")
+        
+        Return ONLY a JSON object:
+        {{
+            "sentence": "The generated English sentence here"
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            data = json.loads(response.choices[0].message.content.strip())
+            return data.get("sentence", "Learning English daily expands your academic opportunities.")
+        except Exception as e:
+            print(f"generate_speaking_sentence failed: {e}")
+            fallbacks = {
+                "easy": "The weather is very pleasant today.",
+                "medium": "Advanced digital learning platforms are transforming education.",
+                "hard": "Environmental conservation requires immediate international cooperation."
+            }
+            return fallbacks.get(level, fallbacks["medium"])
+
+    async def generate_speaking_cuecard(self, level: str):
+        prompt = f"""
+        Generate an IELTS Part 2 Cue Card topic and sub-prompts for the difficulty level: "{level}".
+        - "easy": Simple topic (e.g. describe a favorite book, describing a school event).
+        - "medium": Standard IELTS topics (e.g. describing a city, describing a technological device).
+        - "hard": Complex, abstract topics (e.g. describe a law that protects the environment, describe a historical event that changed your country).
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "topic": "Describe...",
+            "prompts": [
+                "Prompt bullet 1",
+                "Prompt bullet 2",
+                "Prompt bullet 3",
+                "Prompt bullet 4"
+            ]
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content.strip())
+        except Exception as e:
+            print(f"generate_speaking_cuecard failed: {e}")
+            return {
+                "topic": "Describe a book you enjoyed reading recently.",
+                "prompts": [
+                    "What book it is and when you read it",
+                    "What the main storyline or theme is",
+                    "How it made you feel",
+                    "And explain why you would recommend it to others."
+                ]
+            }
+
+    async def generate_pronunciation_guide(self, sentence: str):
+        prompt = f"""
+        Provide a complete pronunciation and speaking guide for this English sentence:
+        "{sentence}"
+        
+        Break it down into:
+        1. "ipa_sentence": Complete IPA transcription of the sentence.
+        2. "liaisons": Tips on where to connect/link words (liaison/linking sounds) in Vietnamese. (e.g. 'connect /s/ of is and /a/ of an')
+        3. "stresses": Key content words to stress/emphasize during speech.
+        4. "intonation": Tone tips (rising or falling at the end, pauses after clauses) in Vietnamese.
+        
+        Return ONLY a JSON object:
+        {{
+            "ipa_sentence": "...",
+            "liaisons": ["Tip 1", "Tip 2"],
+            "stresses": ["Word 1", "Word 2"],
+            "intonation": "..."
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content.strip())
+        except Exception as e:
+            print(f"generate_pronunciation_guide failed: {e}")
+            return {
+                "ipa_sentence": "Pronunciation guide currently loading...",
+                "liaisons": ["Đọc nối âm giữa các phụ âm tận cùng với nguyên âm đứng sau."],
+                "stresses": ["Nhấn mạnh các từ mang nội dung chính (Danh từ, Động từ, Tính từ)."],
+                "intonation": "Xuống giọng ở cuối câu khẳng định để tự nhiên hơn."
+            }
+
 ai_service = AIService()
 
 

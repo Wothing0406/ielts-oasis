@@ -1542,6 +1542,45 @@ async def speaking_reflex(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/speaking/generate-sentence")
+async def speaking_generate_sentence(level: str = "medium", current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        sentence = await ai_service.generate_speaking_sentence(level)
+        return {"sentence": sentence}
+    except Exception as e:
+        logger.error(f"Failed to generate sentence: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/speaking/generate-cuecard")
+async def speaking_generate_cuecard(level: str = "medium", current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        cuecard = await ai_service.generate_speaking_cuecard(level)
+        return cuecard
+    except Exception as e:
+        logger.error(f"Failed to generate cuecard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class GuideRequest(BaseModel):
+    sentence: str
+
+@app.post("/speaking/pronunciation-guide")
+async def speaking_pronunciation_guide(body: GuideRequest, current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        guide = await ai_service.generate_pronunciation_guide(body.sentence)
+        return guide
+    except Exception as e:
+        logger.error(f"Failed to generate guide: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

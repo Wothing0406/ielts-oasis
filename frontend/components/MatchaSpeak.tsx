@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Volume2, Info, Star, Award, AwardIcon, Compass, Play, RefreshCw, Sliders, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Mic, Square, Volume2, Info, Star, Award, AwardIcon, Compass, Play, RefreshCw, Sliders, ToggleLeft, ToggleRight, Trash2, Sparkles, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
@@ -61,17 +61,6 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-  // Load initial context if passed (e.g. from community feed)
-  useEffect(() => {
-    if (initialContext) {
-      setIsUsingCustom(true);
-      setCustomText(initialContext);
-      setSelectedSentence(initialContext);
-      setShadowResult(null);
-      setSelectedWord(null);
-    }
-  }, [initialContext]);
   
   // Microphone & Filter Settings
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -85,26 +74,46 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   
+  // AI generation and guide states for Shadowing
+  const [isGeneratingSentence, setIsGeneratingSentence] = useState(false);
+  const [isFetchingGuide, setIsFetchingGuide] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [pronunciationGuide, setPronunciationGuide] = useState<any | null>(null);
+  
   // Custom Text state
   const [customText, setCustomText] = useState<string>('');
   const [isUsingCustom, setIsUsingCustom] = useState<boolean>(false);
 
   // Sandbox state
+  const [sandboxLevel, setSandboxLevel] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [selectedCard, setSelectedCard] = useState(CUE_CARDS[0]);
   const [prepSeconds, setPrepSeconds] = useState(60);
   const [isPrepActive, setIsPrepActive] = useState(false);
   const [sandboxResult, setSandboxResult] = useState<any | null>(null);
+  const [isGeneratingCueCard, setIsGeneratingCueCard] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
   const prepTimerRef = useRef<any>(null);
 
+  // Load initial context if passed (e.g. from community feed)
+  useEffect(() => {
+    if (initialContext) {
+      setIsUsingCustom(true);
+      setCustomText(initialContext);
+      setSelectedSentence(initialContext);
+      setShadowResult(null);
+      setSelectedWord(null);
+      setPronunciationGuide(null);
+      setShowGuide(false);
+    }
+  }, [initialContext]);
+
   // Load available audio devices
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        // Request temporary mic permission to query labels
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop()); // release temporary access
         
@@ -127,6 +136,8 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       setSelectedSentence(LEVEL_SENTENCES[currentLevel][0]);
       setShadowResult(null);
       setSelectedWord(null);
+      setPronunciationGuide(null);
+      setShowGuide(false);
     }
   }, [currentLevel, isUsingCustom]);
 
@@ -165,6 +176,97 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       window.speechSynthesis.speak(utterance);
     } else {
       (window as any).showToast("Speech synthesis is not supported on this browser.", "warning");
+    }
+  };
+
+  // Generate Sentence via AI
+  const generateAISentence = async () => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    
+    setIsGeneratingSentence(true);
+    try {
+      const res = await fetch(`${API_URL}/speaking/generate-sentence?level=${currentLevel}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sentence) {
+          setSelectedSentence(data.sentence);
+          setShadowResult(null);
+          setSelectedWord(null);
+          setPronunciationGuide(null);
+          setShowGuide(false);
+          (window as any).showToast("✨ AI generated a new sentence!", "success");
+        }
+      } else {
+        (window as any).showToast("Failed to generate sentence from AI.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Network error generating sentence.", "error");
+    } finally {
+      setIsGeneratingSentence(false);
+    }
+  };
+
+  // Generate Cue Card via AI
+  const generateAICueCard = async () => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    
+    setIsGeneratingCueCard(true);
+    try {
+      const res = await fetch(`${API_URL}/speaking/generate-cuecard?level=${sandboxLevel}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.topic) {
+          setSelectedCard(data);
+          setSandboxResult(null);
+          setIsPrepActive(false);
+          if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+          (window as any).showToast("✨ AI generated a new IELTS Cue Card!", "success");
+        }
+      } else {
+        (window as any).showToast("Failed to generate cue card from AI.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Network error generating cue card.", "error");
+    } finally {
+      setIsGeneratingCueCard(false);
+    }
+  };
+
+  // Fetch Pronunciation Guide via AI
+  const fetchPronunciationGuide = async () => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    
+    setIsFetchingGuide(true);
+    setShowGuide(true);
+    try {
+      const res = await fetch(`${API_URL}/speaking/pronunciation-guide`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ sentence: selectedSentence })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPronunciationGuide(data);
+      } else {
+        (window as any).showToast("Failed to fetch pronunciation guide.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Network error fetching guide.", "error");
+    } finally {
+      setIsFetchingGuide(false);
     }
   };
 
@@ -296,9 +398,25 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     setAudioUrl(null);
     setCustomText('');
     setIsUsingCustom(false);
+    setPronunciationGuide(null);
+    setShowGuide(false);
     setSelectedSentence(LEVEL_SENTENCES[currentLevel][0]);
     (window as any).showToast("Cleared results & reset sentence! 🍵", "success");
   };
+
+  // Calculate Shadowing Score
+  const calculateShadowScore = () => {
+    if (!shadowResult || shadowResult.length === 0) return 0;
+    let correctCount = 0;
+    let warningCount = 0;
+    shadowResult.forEach(w => {
+      if (w.status === 'correct') correctCount += 1;
+      else if (w.status === 'warning') warningCount += 1;
+    });
+    return Math.round(((correctCount + warningCount * 0.5) / shadowResult.length) * 100);
+  };
+
+  const accuracyScore = calculateShadowScore();
 
   return (
     <section className="bg-white border-4 border-primary/20 rounded-[3rem] p-6 md:p-10 shadow-sm flex flex-col gap-6 w-full">
@@ -389,7 +507,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
             {/* Level Selector & Custom Text Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* Level options */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {(['easy', 'medium', 'hard'] as const).map((lvl) => (
                   <button
                     key={lvl}
@@ -419,6 +537,19 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                 >
                   Custom Text
                 </button>
+
+                {/* AI Generate Sentence Button */}
+                {!isUsingCustom && (
+                  <button
+                    type="button"
+                    onClick={generateAISentence}
+                    disabled={isGeneratingSentence}
+                    className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-4 py-1.5 rounded-full text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${isGeneratingSentence ? 'animate-spin' : ''}`} />
+                    {isGeneratingSentence ? "Generating..." : "✨ AI Generate"}
+                  </button>
+                )}
               </div>
 
               {/* Reset Actions */}
@@ -449,11 +580,12 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       setSelectedSentence(customText.trim());
                       setShadowResult(null);
                       setSelectedWord(null);
+                      setPronunciationGuide(null);
+                      setShowGuide(false);
                       (window as any).showToast("Loaded custom text successfully!", "success");
                     }
                   }}
                   className="bg-primary text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all"
-                  style={{ contentVisibility: 'auto' }}
                 >
                   Apply Custom Text
                 </button>
@@ -463,6 +595,17 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
             {/* Active reference sentence card */}
             <div className="bg-[#eef7f2] p-6 rounded-3xl border-2 border-primary/10 relative overflow-hidden">
               <div className="absolute top-4 right-4 flex gap-2">
+                {/* Guide Button */}
+                <button 
+                  type="button"
+                  onClick={fetchPronunciationGuide}
+                  disabled={isFetchingGuide}
+                  className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-primary/10 transition-colors shadow-sm text-primary disabled:opacity-50"
+                  title="Pronunciation & Linking Guide"
+                >
+                  <BookOpen className={`w-4 h-4 ${isFetchingGuide ? 'animate-pulse' : ''}`} />
+                </button>
+
                 {!isUsingCustom && (
                   <button 
                     type="button"
@@ -472,6 +615,8 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       setSelectedSentence(sentences[nextIdx]);
                       setShadowResult(null);
                       setSelectedWord(null);
+                      setPronunciationGuide(null);
+                      setShowGuide(false);
                     }}
                     className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-primary/10 transition-colors shadow-sm text-primary"
                     title="Next Sentence"
@@ -490,8 +635,76 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               </div>
 
               <span className="text-[10px] font-black text-primary uppercase tracking-wider block mb-2">Practice Sentence</span>
-              <p className="text-lg font-bold text-accent leading-relaxed pr-16">{selectedSentence}</p>
+              <p className="text-lg font-bold text-accent leading-relaxed pr-24">{selectedSentence}</p>
             </div>
+
+            {/* Pronunciation & Linking Guide Panel */}
+            <AnimatePresence>
+              {showGuide && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-[#fcfaf5] border border-amber-900/10 p-5 rounded-3xl space-y-4 overflow-hidden"
+                >
+                  <div className="flex justify-between items-center border-b border-amber-900/5 pb-2">
+                    <h4 className="text-xs font-black uppercase text-amber-800 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" /> Pronunciation & Liaison Guide
+                    </h4>
+                    <button 
+                      type="button"
+                      onClick={() => setShowGuide(false)}
+                      className="text-[10px] font-bold text-accent/50 hover:text-accent"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  {isFetchingGuide ? (
+                    <div className="flex items-center gap-2 text-xs text-amber-800/60 py-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Analyzing sentence syllables, connections and tone...
+                    </div>
+                  ) : pronunciationGuide ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-2">
+                        <p className="font-semibold text-accent">🗣️ IPA Transcription:</p>
+                        <p className="text-sm font-bold text-primary italic bg-white px-3 py-1.5 rounded-xl border border-primary/5">
+                          {pronunciationGuide.ipa_sentence}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="font-semibold text-accent">🎯 Keyword Stresses:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {pronunciationGuide.stresses?.map((word: string, idx: number) => (
+                            <span key={idx} className="bg-white border border-primary/10 px-2 py-0.5 rounded-lg font-bold text-[#4c663c]">
+                              {word}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2 border-t border-amber-900/5 pt-3">
+                        <p className="font-semibold text-accent">🔗 Liaison & Word-Linking Tips (Cách nối âm):</p>
+                        <ul className="list-disc pl-4 space-y-1 text-accent/80 font-medium">
+                          {pronunciationGuide.liaisons?.map((tip: string, idx: number) => (
+                            <li key={idx}>{tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-1">
+                        <p className="font-semibold text-accent">📈 Intonation & Pauses (Ngữ điệu & Ngắt nghỉ):</p>
+                        <p className="text-accent/80 font-medium">{pronunciationGuide.intonation}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-accent/50">Guide details failed to load.</p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="flex flex-col items-center gap-4 py-4">
               <div className="flex items-center gap-3">
@@ -541,8 +754,48 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white border border-primary/10 p-6 rounded-3xl space-y-6 shadow-sm"
                 >
+                  {/* Score Indicator */}
+                  <div className="flex flex-col md:flex-row items-center justify-between border-b border-primary/10 pb-4 gap-4">
+                    <div className="flex items-center gap-4">
+                      {/* Circle Progress Bar */}
+                      <div className="relative w-16 h-16 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                          <path
+                            className="text-gray-100"
+                            strokeWidth="3"
+                            stroke="currentColor"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                          <path
+                            className={`${
+                              accuracyScore >= 80 ? 'text-green-500' :
+                              accuracyScore >= 50 ? 'text-amber-500' : 'text-red-500'
+                            }`}
+                            strokeWidth="3"
+                            strokeDasharray={`${accuracyScore}, 100`}
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                        </svg>
+                        <span className="absolute text-sm font-black text-accent">{accuracyScore}%</span>
+                      </div>
+                      
+                      <div>
+                        <h5 className="text-xs font-black uppercase text-accent/50 tracking-wider">Pronunciation Accuracy</h5>
+                        <p className="text-sm font-bold text-accent">
+                          {accuracyScore >= 80 ? "🌟 Excellent! Native-like speech." :
+                           accuracyScore >= 50 ? "👍 Good job! Keep practicing links and ending sounds." :
+                           "⚠️ Needs Practice. Try slower with clearer sounds."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
-                    <h4 className="text-sm font-black uppercase text-accent tracking-wider mb-3">Pronunciation Evaluation</h4>
+                    <h4 className="text-xs font-black uppercase text-accent/50 tracking-wider mb-3">Word-by-word Breakdown</h4>
                     <div className="flex flex-wrap gap-2 text-xl font-bold leading-relaxed">
                       {shadowResult.map((w, i) => {
                         const statusColors = {
@@ -599,16 +852,35 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-[10px] font-black text-primary uppercase tracking-wider">IELTS Speaking Part 2</span>
-                    <button 
+                  </div>
+
+                  {/* Difficulty level selector and AI generation for Cue Card */}
+                  <div className="flex flex-wrap gap-2 items-center justify-between mb-4 border-b border-primary/10 pb-3">
+                    <div className="flex gap-1 bg-white p-0.5 rounded-full border border-primary/15">
+                      {(['easy', 'medium', 'hard'] as const).map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => setSandboxLevel(lvl)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                            sandboxLevel === lvl
+                              ? 'bg-primary text-white'
+                              : 'text-accent/60 hover:text-accent'
+                          }`}
+                        >
+                          {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
                       type="button"
-                      onClick={() => {
-                        const nextIdx = (CUE_CARDS.indexOf(selectedCard) + 1) % CUE_CARDS.length;
-                        setSelectedCard(CUE_CARDS[nextIdx]);
-                        setSandboxResult(null);
-                      }}
-                      className="text-xs bg-white text-primary border border-primary/20 px-2 py-1 rounded-full hover:bg-primary hover:text-white transition-all font-bold flex items-center gap-1 shadow-sm"
+                      onClick={generateAICueCard}
+                      disabled={isGeneratingCueCard}
+                      className="flex items-center gap-1 bg-white border border-primary/20 px-2.5 py-1 rounded-full text-[10px] font-bold text-primary hover:bg-primary/5 transition-all disabled:opacity-50 shadow-sm"
                     >
-                      <RefreshCw className="w-3 h-3" /> Change Card
+                      <Sparkles className={`w-3 h-3 ${isGeneratingCueCard ? 'animate-spin' : ''}`} />
+                      AI Generate
                     </button>
                   </div>
                   
