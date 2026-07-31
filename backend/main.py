@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import os
 import uuid
 import json
+import base64
 from datetime import datetime, timedelta
 from PIL import Image
 from io import BytesIO

@@ -258,6 +258,7 @@ export default function SpeakingReflexGame() {
           <div className="relative">
             {isRecording ? (
               <button 
+                type="button"
                 onClick={stopRecording}
                 className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all animate-pulse"
               >
@@ -265,6 +266,7 @@ export default function SpeakingReflexGame() {
               </button>
             ) : (
               <button 
+                type="button"
                 disabled={isEvaluating}
                 onClick={startRecording}
                 className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
