@@ -430,7 +430,7 @@ export default function Home() {
             <span className="text-4xl filter drop-shadow-md">🍵</span>
           </div>
           
-          <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">IELTS Oasis</h1>
+          <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">Mát Cha AI Eo</h1>
           <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">Zen Learning Space</p>
 
           {/* Discord Priority Highlight Banner */}

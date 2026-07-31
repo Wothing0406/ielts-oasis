@@ -23,15 +23,17 @@ const safeJsonStringify = (obj: any) =>
 
 
 export const metadata: Metadata = {
-  title: "IELTS Oasis - Your Zen Learning Space",
-  description: "Ghé IELTS Oasis ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+  title: "Mát Cha AI Eo - Your Zen Learning Space",
+  description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
   keywords: [
     "luyện thi ielts",
     "ielts online",
     "chấm ielts writing ai",
     "học từ vựng ielts",
     "srs vocabulary",
-    "ielts oasis",
+    "mát cha ai eo",
+    "matcha ielts",
+    "matchaaieo",
     "luyện thi ielts miễn phí",
     "matcha lens",
     "writing sanctuary",
@@ -41,16 +43,16 @@ export const metadata: Metadata = {
     icon: "/logoweb.png",
   },
   openGraph: {
-    title: "IELTS Oasis - Your Zen Learning Space",
-    description: "Ghé IELTS Oasis ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-    url: "https://ieltsoasis.site",
-    siteName: "IELTS Oasis",
+    title: "Mát Cha AI Eo - Your Zen Learning Space",
+    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+    url: "https://matchaaieo.site",
+    siteName: "Mát Cha AI Eo",
     images: [
       {
-        url: "https://ieltsoasis.site/banner.png",
+        url: "https://matchaaieo.site/banner.png",
         width: 1200,
         height: 630,
-        alt: "IELTS Oasis Banner",
+        alt: "Mát Cha AI Eo Banner",
       },
     ],
     locale: "vi_VN",
@@ -58,9 +60,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "IELTS Oasis - Your Zen Learning Space",
-    description: "Ghé IELTS Oasis ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-    images: ["https://ieltsoasis.site/banner.png"],
+    title: "Mát Cha AI Eo - Your Zen Learning Space",
+    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+    images: ["https://matchaaieo.site/banner.png"],
   },
 };
 
@@ -81,11 +83,11 @@ export default function RootLayout({
             __html: safeJsonStringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "IELTS Oasis",
+              "name": "Mát Cha AI Eo",
               "operatingSystem": "All",
               "applicationCategory": "EducationalApplication",
-              "description": "Ghé IELTS Oasis ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-              "url": "https://ieltsoasis.site",
+              "description": "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+              "url": "https://matchaaieo.site",
               "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -108,13 +110,13 @@ export default function RootLayout({
             __html: safeJsonStringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "url": "https://ieltsoasis.site",
-              "name": "IELTS Oasis",
+              "url": "https://matchaaieo.site",
+              "name": "Mát Cha AI Eo",
               "potentialAction": {
                 "@type": "SearchAction",
                 "target": {
                   "@type": "EntryPoint",
-                  "urlTemplate": "https://ieltsoasis.site/search?q={search_term_string}"
+                  "urlTemplate": "https://matchaaieo.site/search?q={search_term_string}"
                 },
                 "query-input": "required name=search_term_string"
               }
