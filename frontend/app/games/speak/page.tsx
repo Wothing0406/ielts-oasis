@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Mic, Square, Volume2, Play, Sparkles, RefreshCw, Trophy, ArrowLeft, Send } from 'lucide-react';
+import { Mic, Square, Volume2, Play, Sparkles, RefreshCw, Trophy, ArrowLeft, Send, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
@@ -23,6 +23,7 @@ export default function SpeakingReflexGame() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [showGuide, setShowGuide] = useState(true);
 
   // Conversation history
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'bear' | 'user'; text: string; data?: any }>>([
@@ -212,6 +213,62 @@ export default function SpeakingReflexGame() {
 
       {/* Game Screen */}
       <div className="flex-1 bg-white border-4 border-primary/20 rounded-[3rem] p-6 shadow-sm flex flex-col overflow-hidden relative min-h-[500px]">
+        {/* Collapsible Game Guide */}
+        <AnimatePresence>
+          {showGuide && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-[#fcfaf5] border border-amber-900/10 p-5 rounded-2xl mb-6 space-y-3"
+            >
+              <div className="flex justify-between items-center border-b border-amber-900/5 pb-2">
+                <h4 className="text-xs font-black uppercase text-amber-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> HƯỚNG DẪN CHƠI: TEA TALK WITH MATCHA BEAR
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(false)}
+                  className="text-[10px] font-bold text-accent/50 hover:text-accent bg-white border border-primary/10 px-2 py-0.5 rounded-lg"
+                >
+                  Ẩn hướng dẫn ✕
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-medium text-accent/80">
+                <div className="space-y-1">
+                  <p className="font-bold text-accent">1. Cách chơi 🐻</p>
+                  <p className="text-[11px] leading-relaxed">Bé gấu Matcha sẽ hỏi bạn bằng tiếng Anh. Hãy bấm giữ hoặc click nút Micro ở dưới để trả lời.</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-accent">2. Chỉ số chấm điểm ⚡</p>
+                  <p className="text-[11px] leading-relaxed">
+                    Hệ thống đo <strong>Tốc độ phản xạ (Reflex Delay)</strong> và đếm các <strong>từ đệm (fillers)</strong> thừa như <em>um, ah, like</em> để đánh giá độ trôi chảy.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-accent">3. Mẹo nói mượt mà 💡</p>
+                  <p className="text-[11px] leading-relaxed">
+                    Sử dụng các cụm đệm tự nhiên như <em>"Well, actually..."</em>, <em>"To be honest..."</em>, hoặc <em>"That's an interesting question..."</em> để nói trôi chảy hơn!
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* If guide is hidden, show a small button to restore it */}
+        {!showGuide && (
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              onClick={() => setShowGuide(true)}
+              className="text-[10px] font-bold text-primary hover:text-primary-dark flex items-center gap-1 bg-secondary/50 px-2.5 py-1 rounded-full border border-primary/10"
+            >
+              <Info className="w-3 h-3" /> Hiện hướng dẫn chơi
+            </button>
+          </div>
+        )}
+
         {/* Chat History Panel */}
         <div className="flex-1 overflow-y-auto space-y-4 pr-2 mb-6 custom-scrollbar flex flex-col">
           {chatHistory.map((msg, idx) => (
