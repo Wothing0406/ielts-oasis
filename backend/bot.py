@@ -47,7 +47,7 @@ class ConfirmQuitView(discord.ui.View):
             await interaction.response.send_message("Bạn không có quyền thực hiện thao tác này!", ephemeral=True)
             return
         self.value = False
-        await interaction.response.send_message("Cảm ơn bạn đã tiếp tục đồng hành cùng IELTS Oasis! 🍵", ephemeral=True)
+        await interaction.response.send_message("Cảm ơn bạn đã tiếp tục đồng hành cùng Mát Cha AI Eo! 🍵", ephemeral=True)
         self.stop()
 
 # State storage for advisory flow
@@ -63,7 +63,7 @@ async def on_ready():
     try:
         activity = discord.Activity(
             type=discord.ActivityType.listening,
-            name="IELTS Oasis 🍵 | /tuvan /dailyplan /web"
+            name="Mát Cha AI Eo 🍵 | /tuvan /dailyplan /web"
         )
         await bot.change_presence(status=discord.Status.online, activity=activity)
         logger.info("Bot presence updated to Listening activity.")
@@ -137,7 +137,7 @@ async def on_message(message):
                     Thông tin học viên: {info}.
                     Học viên trả lời câu hỏi kiểm tra: "{content}".
                     
-                    Hãy đóng vai là thầy giáo IELTS Oasis. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ.
+                    Hãy đóng vai là thầy giáo Mát Cha AI Eo. Đánh giá câu trả lời này đúng hay sai, từ đó xếp loại trình độ.
                     Đề xuất lịch nhắc học mỗi ngày (ví dụ 20:00) dựa trên thông tin thời gian rảnh.
                     Và tạo một lộ trình học chi tiết cụ thể cho cả tuần (Thứ 2 đến Chủ nhật).
                     Chủ đề của từng ngày phải cụ thể và có task list rõ ràng để học viên biết phải làm gì trên website, kèm gợi ý (tip).
@@ -191,7 +191,7 @@ async def on_message(message):
                     
                     # Create rich embed
                     embed = discord.Embed(
-                        title=f"🍵 LỘ TRÌNH HỌC TẬP IELTS OASIS",
+                        title=f"🍵 LỘ TRÌNH HỌC TẬP MÁT CHA AI EO",
                         description=f"Chúc mừng **{user.username if user else 'bạn'}** đã hoàn thành tư vấn! Dưới đây là lộ trình học tập được thiết kế riêng cho bạn.",
                         color=discord.Color.from_rgb(167, 208, 140)
                     )
@@ -219,7 +219,7 @@ async def on_message(message):
                                 val += f"\n💡 *Gợi ý:* {tip}"
                             embed.add_field(name=f"📅 {day_vi}", value=val, inline=False)
                             
-                    embed.set_footer(text="Hãy bắt đầu bài học đầu tiên trên trang web IELTS Oasis nhé! 🎉")
+                    embed.set_footer(text="Hãy bắt đầu bài học đầu tiên trên trang web Mát Cha AI Eo nhé! 🎉")
                     await message.reply(embed=embed)
                     db.close()
                     return
@@ -233,14 +233,14 @@ async def on_message(message):
                 # Direct reply to a specific bot message
                 replied_cleaned = ref_msg.content.replace(f'<@{bot.user.id}>', '').strip()
                 prompt = f"""
-                Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                Bạn là một gia sư IELTS tên là Mát Cha AI Eo. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
                 Quy tắc quan trọng:
                 1. Hãy trả lời trực tiếp phản hồi của học viên đối với câu nói trước đó của bạn.
                 2. Nếu học viên chào hỏi, hãy chào lại thân thiện.
                 3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu được làm bài tập hay luyện tập.
                 
                 Ngữ cảnh hội thoại:
-                - Bạn (IELTS Oasis) đã nói trước đó: "{replied_cleaned}"
+                - Bạn (Mát Cha AI Eo) đã nói trước đó: "{replied_cleaned}"
                 - Học viên vừa reply/phản hồi lại câu trên của bạn: "{content}"
                 
                 Hãy đưa ra phản hồi tiếp theo của bạn:
@@ -250,7 +250,7 @@ async def on_message(message):
                 history_messages = []
                 try:
                     async for msg in message.channel.history(limit=6):
-                        author_name = "Học viên" if msg.author.id != bot.user.id else "IELTS Oasis"
+                        author_name = "Học viên" if msg.author.id != bot.user.id else "Mát Cha AI Eo"
                         msg_content = msg.content.replace(f'<@{bot.user.id}>', '').strip()
                         if msg_content:
                             history_messages.append(f"{author_name}: {msg_content}")
@@ -261,16 +261,16 @@ async def on_message(message):
                 history_str = "\n".join(history_messages)
                 
                 prompt = f"""
-                Bạn là một gia sư IELTS tên là IELTS Oasis. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                Bạn là một gia sư IELTS tên là Mát Cha AI Eo. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
                 Quy tắc quan trọng:
                 1. Nếu học viên chào hỏi (ví dụ: hi, hello, chào thầy...), hãy chào lại một cách thân thiện và hỏi xem bạn có thể giúp gì cho họ, TUYỆT ĐỐI KHÔNG tự tiện đưa ra bài tập hay câu hỏi kiểm tra.
                 2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng.
                 3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu.
                 
-                Dưới đây là lịch sử hội thoại gần đây giữa bạn (IELTS Oasis) và học viên:
+                Dưới đây là lịch sử hội thoại gần đây giữa bạn (Mát Cha AI Eo) và học viên:
                 {history_str}
                 
-                Hãy đưa ra câu trả lời tiếp theo của gia sư IELTS Oasis:
+                Hãy đưa ra câu trả lời tiếp theo của gia sư Mát Cha AI Eo:
                 """
             try:
                 response = await ai_service.get_advice(prompt)
@@ -282,11 +282,11 @@ async def on_message(message):
                 logger.error(f"Chatbot error: {e}")
 
 
-@bot.tree.command(name='web', description="Xem link truy cập web IELTS Oasis")
+@bot.tree.command(name='web', description="Xem link truy cập web Mát Cha AI Eo")
 async def web(interaction: discord.Interaction):
     redirect_uri = os.getenv("DISCORD_REDIRECT_URI", "https://ieltsoasis.site/auth/callback")
     domain = redirect_uri.replace("/auth/callback", "")
-    await interaction.response.send_message(f"Truy cập IELTS Oasis tại đây nhé: {domain}")
+    await interaction.response.send_message(f"Truy cập Mát Cha AI Eo tại đây nhé: {domain}")
 
 @bot.tree.command(name='tuvan', description="Tư vấn lộ trình học tập và kiểm tra trình độ")
 async def tuvan_cmd(interaction: discord.Interaction):
@@ -296,7 +296,7 @@ async def tuvan_cmd(interaction: discord.Interaction):
     db.close()
     
     if not user:
-        await interaction.response.send_message("Bạn chưa đăng nhập trên web IELTS Oasis! Hãy đăng nhập trên web bằng Discord để mình biết bạn là ai nhé.")
+        await interaction.response.send_message("Bạn chưa đăng nhập trên web Mát Cha AI Eo! Hãy đăng nhập trên web bằng Discord để mình biết bạn là ai nhé.")
         return
 
     user_states[discord_id] = {"state": "STATE_ASK_INFO", "channel_id": interaction.channel_id}
@@ -326,7 +326,7 @@ async def xinnghi_cmd(interaction: discord.Interaction, lydo: str):
     db.commit()
     db.close()
 
-    await interaction.followup.send(f"Đã ghi nhận đơn xin nghỉ của bạn.\n\n**Lời phê của thầy Oasis:** {feedback}")
+    await interaction.followup.send(f"Đã ghi nhận đơn xin nghỉ của bạn.\n\n**Lời phê của thầy Mát Cha AI Eo:** {feedback}")
 
 @bot.tree.command(name='dailyplan', description="Tạo lộ trình học tiếng Anh hỏa tốc")
 @app_commands.describe(topic="Chủ đề bạn muốn học")
@@ -445,7 +445,7 @@ async def huylich_cmd(interaction: discord.Interaction):
     user = db.query(User).filter(User.discord_id == discord_id).first()
     
     if not user:
-        await interaction.response.send_message("Bạn chưa có tài khoản trên IELTS Oasis! 🍵", ephemeral=True)
+        await interaction.response.send_message("Bạn chưa có tài khoản trên Mát Cha AI Eo! 🍵", ephemeral=True)
         db.close()
         return
         
@@ -459,7 +459,7 @@ async def huylich_cmd(interaction: discord.Interaction):
         db.delete(sched)
         db.commit()
         await interaction.response.send_message(
-            f"Đã hủy lịch nhắc học hàng ngày thành công. Tài khoản `{user.username}` và kho từ vựng của bạn trên IELTS Oasis vẫn được giữ nguyên vẹn. Bạn có thể thiết lập lại bất cứ lúc nào bằng lệnh `/tuvan`. 🍵",
+            f"Đã hủy lịch nhắc học hàng ngày thành công. Tài khoản `{user.username}` và kho từ vựng của bạn trên Mát Cha AI Eo vẫn được giữ nguyên vẹn. Bạn có thể thiết lập lại bất cứ lúc nào bằng lệnh `/tuvan`. 🍵",
             ephemeral=True
         )
     except Exception as e:
@@ -477,12 +477,12 @@ async def nghihoc_cmd(interaction: discord.Interaction):
     db.close()
     
     if not user:
-        await interaction.response.send_message("Bạn chưa đăng ký lộ trình học tập trên IELTS Oasis!", ephemeral=True)
+        await interaction.response.send_message("Bạn chưa đăng ký lộ trình học tập trên Mát Cha AI Eo!", ephemeral=True)
         return
  
     view = ConfirmQuitView(discord_id)
     await interaction.response.send_message(
-        "⚠️ **CẢNH BÁO NGUY HIỂM:** Bạn có chắc chắn muốn **NGHỈ HỌC**? Thao tác này sẽ xóa toàn bộ từ vựng, lịch sử viết bài luận, lịch nhắc học và tài khoản của bạn trên IELTS Oasis. Thao tác này **không thể khôi phục**!",
+        "⚠️ **CẢNH BÁO NGUY HIỂM:** Bạn có chắc chắn muốn **NGHỈ HỌC**? Thao tác này sẽ xóa toàn bộ từ vựng, lịch sử viết bài luận, lịch nhắc học và tài khoản của bạn trên Mát Cha AI Eo. Thao tác này **không thể khôi phục**!",
         view=view,
         ephemeral=True
     )
@@ -608,11 +608,11 @@ async def schedule_checker_job():
                                     
                             if tip:
                                 embed.add_field(name="💡 Gợi ý học tập:", value=tip, inline=False)
-                            embed.set_footer(text="Truy cập IELTS Oasis để luyện tập đầy đủ hơn nhé! 🎉")
+                            embed.set_footer(text="Truy cập Mát Cha AI Eo để luyện tập đầy đủ hơn nhé! 🎉")
                             
                             await discord_user.send(embed=embed)
                         else:
-                            await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập IELTS Oasis ngay lập tức!")
+                            await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập Mát Cha AI Eo ngay lập tức!")
                 except Exception as e:
                     logger.error(e)
                     
