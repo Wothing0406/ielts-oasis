@@ -228,6 +228,8 @@ docker compose up -d --build
 ## 🇻🇳 Phiên Bản Tiếng Việt
 * **🌐 [English Version / Bản Tiếng Anh](#-ielts-oasis-adaptive-english-learning-platform--proactive-multi-agent-ecosystem)**
 
+![IELTS Oasis Banner](./ielts_oasis_clean_2d_matcha.png)
+
 ---
 
 ### 🌟 Ý Tưởng Cốt Lõi
@@ -237,8 +239,80 @@ Bằng cách kết hợp nền tảng web nhiều tính năng với Bot gia sư 
 
 ---
 
-### 🤖 Hệ Sinh Thượng Multi-Agent
-*(Vui lòng tham khảo sơ đồ luồng Mermaid tại [bản tiếng Anh](#-the-multi-agent-ecosystem) để biết luồng dữ liệu liên thông giữa các cấu phần).*
+### 🤖 Hệ Sinh Thái Multi-Agent
+
+IELTS Oasis vận hành một mạng lưới các tác nhân (agents) tự động phối hợp chặt chẽ trên cả giao diện Web Next.js và Bot Discord:
+
+```mermaid
+graph TD
+    %% User Interfaces
+    Web[Next.js Web Dashboard]
+    Bot[Discord Bot Interface]
+
+    %% Matcha Lens Ingestion Flow
+    Web -->|1a. Upload Image| CV[YOLOv8 & Gemini Vision]
+    CV -->|2. Detect & Crop| Crop[Crop Coordinator]
+    Crop -->|3. Vocab Refinement| Refine[Gemini Vocabulary Enrichment]
+    Refine -->|4. Generate TTS & Unsplash| TTS[TTS & Unsplash Service]
+    TTS -->|5. Save to Library| DB[(MySQL Database)]
+
+    %% Matcha Scroll Ingestion Flow
+    Web -->|1b. Upload PDF/DOCX/Image| Scroll[Matcha Scroll Extractor]
+    Scroll -->|2. Extract Text / Vision Scan| ScrollRefine[Gemini Document Enrichment]
+    ScrollRefine -->|3. Batch Generate TTS| TTS
+    ScrollRefine -->|4. Save all/individual to Library| DB
+
+    %% Writing Sanctuary Flow
+    Web -->|6. Write Essay| Essay[Writing Sanctuary Canvas]
+    Essay -->|7. Grade Essay| Grade[Gemini Essay Grader]
+    Essay -->|8. Highlight Text| Rephrase[Gemini Rephrase API]
+    Grade -->|9. Save Log| DB
+    Essay -->|10. Send to| Radio[Matcha Radio Listening Lab]
+    Essay -->|11. Send to| Book[Matcha Book Reading Lab]
+
+    %% Reading & Listening Flow
+    Web -->|12. YT URL / Custom Text| Radio
+    Radio -->|13. Generate Quiz & TTS| GeminiQuiz[Gemini MCQ/Dictation Generator]
+    Web -->|14. Highlight Reader| Book
+    Book -->|15. Highlight Word| Translate[Gemini Quick Translate API]
+
+    %% Daily Planner & Quizzes
+    Web -->|16. Select Topic| Planner[Daily Planner Agent]
+    Planner -->|17. Generate Lesson plan| DB
+    Web -->|18. Review Flashcard| Quiz[Matcha Quiz: Vocab/AI Grammar]
+
+    %% Community Interactions
+    Web -->|19. Post Vocabulary/Essay| Feed[Oasis Community Feed]
+    Feed -->|20. Like & Comment| DB
+    Feed -->|21. Convert to Lesson| Book
+    Feed -->|21b. Practice Shadowing| Speak[Mát Cha Speaking Studio]
+
+    %% Daily Planner & Speaking Studio Flow
+    Web -->|22. Speak Exercises| Speak
+    Speak -->|23. Generate AI Sentence & Cuecard| Refine
+    Speak -->|24. Generate Pronunciation Guide| Guide[Gemini Pronunciation Guide]
+    Speak -->|25. Evaluate Pronunciation & Sandbox| SpeakEvaluator[Gemini Speaking Grader]
+    SpeakEvaluator -->|26. Save Results| DB
+
+    %% Discord Bot Commands & Reminders
+    Bot -->|27. Slash /tuvan| BotAdvisor[Active Level Advisor Agent]
+    BotAdvisor -->|28. Interview & Test| BotAdvisor
+    BotAdvisor -->|29. Evaluate & Schedule| DB
+    Bot -->|30. Slash /xinnghi| BotAbsence[Absence Grading Agent]
+    BotAbsence -->|31. Evaluate Reason| DB
+    Bot -->|32. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
+    
+    %% Scheduler Job
+    DB -->|33. Read Schedule| Cron[APScheduler Cron Job]
+    Cron -->|34. Push DM Reminders| Bot
+
+    %% Matcha Game Center Flow
+    Web -->|35. Play Game| Wordle[Wordle Matcha Game]
+    Wordle -->|36. AI Generates Secret Word & Hint| Refine
+    Wordle -->|37. Update Leaderboard & Level| DB
+    Web -->|38. Speak Game| TeaTalk[Tea Talk with Matcha Bear]
+    TeaTalk -->|39. Reflex Timing & Filler Check| DB
+```
 
 ---
 
@@ -306,8 +380,32 @@ Bằng cách kết hợp nền tảng web nhiều tính năng với Bot gia sư 
 
 ---
 
-### 🏗️ Kiến Trúc Dự Án
-*(Chi tiết cấu trúc thư mục vui lòng tham khảo bảng sơ đồ mục [Project Architecture](#-project-architecture--structure) ở bản tiếng Anh)*
+### 🏗️ Cấu Trúc Thư Mục & Kiến Trúc Dự Án
+```
+ielts-oasis/
+├── backend/                  # Backend FastAPI & Discord Bot
+│   ├── services/
+│   │   ├── ai_service.py     # Gọi API Gemini (REST & SDK)
+│   │   └── tts_service.py    # Phát âm giọng đọc Text-to-Speech
+│   ├── bot.py                # Bot Discord (Mát Cha AI Eo) & APScheduler
+│   ├── main.py               # API endpoints, Luồng YOLOv8 & Ghi âm đánh giá
+│   ├── models.py             # Cơ sở dữ liệu ORM MySQL
+│   ├── schemas.py            # Cấu trúc dữ liệu Pydantic
+│   ├── database.py           # Kết nối cơ sở dữ liệu
+│   └── auth_routes.py        # Đăng ký & Đăng nhập khách, OAuth2 Discord
+├── frontend/                 # Ứng dụng Next.js Frontend
+│   ├── app/                  # Trang & Tuyến đường game
+│   └── components/           # Các thành phần giao diện động
+│       ├── MatchaSpeak.tsx   # Schattenbox, IELTS Luyện nói Part 2 & AI Cuecard
+│       ├── DailyPlanner.tsx  # Lộ trình học 4 bước hàng ngày
+│       ├── VocabularyLab.tsx # Hệ thống Flashcard học thuật SRS
+│       ├── MatchaLens.tsx    # YOLOv8 & Gemini Vision camera scanner
+│       ├── MatchaRadio.tsx   # Luyện nghe qua link YouTube hoặc bài tập dictation
+│       ├── MatchaBook.tsx    # Luyện đọc kèm nhấp dịch từ dịch câu
+│       ├── WritingSanctuary.tsx # Khung soạn thảo luận thi viết IELTS
+│       └── CommunityFeed.tsx # Mạng xã hội cùng học và chia sẻ bài làm
+└── docker-compose.yml        # Tệp cấu hình chạy container
+```
 
 ---
 
