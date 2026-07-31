@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     "srs vocabulary",
     "mát cha ai eo",
     "matcha ielts",
-    "matchaaieo",
+    "ielts oasis",
     "luyện thi ielts miễn phí",
     "matcha lens",
     "writing sanctuary",
@@ -45,11 +45,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mát Cha AI Eo - Your Zen Learning Space",
     description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-    url: "https://matchaaieo.site",
+    url: "https://ieltsoasis.site",
     siteName: "Mát Cha AI Eo",
     images: [
       {
-        url: "https://matchaaieo.site/banner.png",
+        url: "https://ieltsoasis.site/banner.png",
         width: 1200,
         height: 630,
         alt: "Mát Cha AI Eo Banner",
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Mát Cha AI Eo - Your Zen Learning Space",
     description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-    images: ["https://matchaaieo.site/banner.png"],
+    images: ["https://ieltsoasis.site/banner.png"],
   },
 };
 
@@ -87,7 +87,7 @@ export default function RootLayout({
               "operatingSystem": "All",
               "applicationCategory": "EducationalApplication",
               "description": "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
-              "url": "https://matchaaieo.site",
+              "url": "https://ieltsoasis.site",
               "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -110,13 +110,13 @@ export default function RootLayout({
             __html: safeJsonStringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "url": "https://matchaaieo.site",
+              "url": "https://ieltsoasis.site",
               "name": "Mát Cha AI Eo",
               "potentialAction": {
                 "@type": "SearchAction",
                 "target": {
                   "@type": "EntryPoint",
-                  "urlTemplate": "https://matchaaieo.site/search?q={search_term_string}"
+                  "urlTemplate": "https://ieltsoasis.site/search?q={search_term_string}"
                 },
                 "query-input": "required name=search_term_string"
               }
