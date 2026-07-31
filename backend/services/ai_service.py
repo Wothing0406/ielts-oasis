@@ -91,7 +91,75 @@ Return ONLY the JSON array. Example:
             print(f"9router detect_all_objects failed: {e}")
         return []
 
+    def _query_offline_dictionary(self, word: str):
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(__file__), 'dictionary.db')
+        if not os.path.exists(db_path):
+            return None
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            word_clean = word.strip().lower()
+            cursor.execute("SELECT id, word FROM words WHERE word = ? AND lang_code = 'en' LIMIT 1", (word_clean,))
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                return None
+            
+            word_id, word_text = row
+            
+            # Definitions
+            cursor.execute("""
+                SELECT d.definition, d.pos, wd.example 
+                FROM word_definitions wd 
+                JOIN definitions d ON wd.definition_id = d.id 
+                WHERE wd.word_id = ?
+            """, (word_id,))
+            defs = cursor.fetchall()
+            
+            # Pronunciations
+            cursor.execute("SELECT ipa FROM pronunciations WHERE word_id = ?", (word_id,))
+            ipas = cursor.fetchall()
+            
+            # Synonyms
+            cursor.execute("SELECT related_word FROM word_relations WHERE word_id = ? AND relation_type = 's' LIMIT 5", (word_id,))
+            syns = [r[0] for r in cursor.fetchall()]
+            
+            conn.close()
+            
+            if not defs:
+                return None
+                
+            meanings = []
+            for definition, pos, example in defs[:2]:
+                pos_str = f"({pos})" if pos else ""
+                meanings.append(f"{pos_str} {definition}")
+            meaning = "; ".join(meanings)
+            
+            phonetic = ipas[0][0] if ipas else "/.../"
+            example_text = next((r[2] for r in defs if r[2]), f"It is important to understand the concept of {word_clean} in academic IELTS contexts.")
+            
+            return {
+                "word": word_clean,
+                "meaning": meaning,
+                "phonetic": phonetic,
+                "example": example_text,
+                "synonyms": syns,
+                "collocations": [f"use {word_clean}", f"concept of {word_clean}"],
+                "topic": "Academic General",
+                "memory_hook": f"Ghi nhớ từ '{word_clean}' với nghĩa: {meaning[:60]}..."
+            }
+        except Exception as e:
+            print(f"Offline dictionary lookup failed: {e}")
+            return None
+
     async def refine_vocabulary(self, word: str):
+        # 1. Try local offline dictionary first
+        offline_res = self._query_offline_dictionary(word)
+        if offline_res:
+            return offline_res
+
+        # 2. Fallback to Gemini AI
         prompt = f"""
         Provide IELTS learning details for the input: "{word}"
         If the input is in Vietnamese, translate it to an English IELTS vocabulary word and use it as the "word" field, with the input as the "meaning".
@@ -852,6 +920,57 @@ Return ONLY the JSON array. Example:
                 "weaknesses": [],
                 "corrections": [],
                 "model_answer": ""
+            }
+
+    async def evaluate_speaking_reflex(self, audio_base64: str, mime_type: str, question: str):
+        prompt = f"""
+        You are a friendly, witty IELTS Coach named Matcha Bear.
+        Analyze the user's spoken audio response to your question: "{question}".
+        
+        Transcribe the audio, then evaluate their speaking reflex:
+        1. Count the number of filler words used (e.g. "um", "uh", "ah", "like", "well").
+        2. Identify grammatical errors or pronunciation warnings.
+        3. Formulate a witty, cozy, and humorous reply in English to what they said.
+        4. Ask a natural follow-up question related to the conversation to continue the game.
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "transcript": "Transcribed text of what the user said...",
+            "filler_words_count": 3,
+            "filler_words_found": ["um", "like"],
+            "feedback": "Short encouraging feedback in English on how to speak more fluently, suggesting fillers like 'Well, actually...', 'To be honest...'",
+            "witty_reply": "Matcha Bear's funny/warm reply in English...",
+            "next_question": "Next natural conversation follow-up question..."
+        }}
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"inlineData": {"mimeType": mime_type, "data": audio_base64}},
+                    {"text": prompt}
+                ]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, json=payload, timeout=30.0)
+                res_json = res.json()
+                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                cleaned = self._clean_json(text_content)
+                return json.loads(cleaned)
+        except Exception as e:
+            print(f"evaluate_speaking_reflex failed: {e}")
+            return {
+                "transcript": "Unable to transcribe.",
+                "filler_words_count": 0,
+                "filler_words_found": [],
+                "feedback": "Try speaking clearly next time!",
+                "witty_reply": "I couldn't hear you clearly, buddy! 🐻",
+                "next_question": "Let's try another topic. What is your favorite season?"
             }
 
 ai_service = AIService()

@@ -29,13 +29,13 @@ export default function GamesHubPage() {
     },
     {
       id: "speak",
-      title: "Matcha Speak 🎙️",
-      description: "Luyện phát âm chuẩn IELTS Academic cùng Mascot Matcha dễ thương nhận xét khẩu hình và âm điệu của bạn.",
+      title: "Tea Talk Reflex 🎙️",
+      description: "Challenge your speaking reflexes with Matcha Bear! Respond quickly, dodge filler words, and earn Matcha Points!",
       icon: "record_voice_over",
-      color: "bg-neutral-100 text-neutral-400 border-neutral-200",
-      badge: "Sắp ra mắt",
-      active: false,
-      link: "#"
+      color: "bg-[#A7D08C] text-[#5D4037]",
+      badge: "Đang mở",
+      active: true,
+      link: "/games/speak"
     },
     {
       id: "grammar",

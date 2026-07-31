@@ -1522,6 +1522,25 @@ async def speaking_sandbox(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/speaking/reflex")
+async def speaking_reflex(
+    file: UploadFile = File(...),
+    question: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        content = await file.read()
+        audio_base64 = base64.b64encode(content).decode("utf-8")
+        mime_type = file.content_type if file.content_type else "audio/webm"
+        result = await ai_service.evaluate_speaking_reflex(audio_base64, mime_type, question)
+        return result
+    except Exception as e:
+        logger.error(f"Speaking Reflex failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
