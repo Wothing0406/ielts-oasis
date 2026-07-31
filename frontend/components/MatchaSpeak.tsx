@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen } from 'lucide-react';
+import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
