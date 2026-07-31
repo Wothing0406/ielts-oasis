@@ -815,11 +815,10 @@ Return ONLY the JSON array. Example:
 
     async def _post_to_gemini_rest(self, model_name: str, payload: dict, timeout: float = 30.0):
         headers = {}
-        if self.gemini_api_key.startswith("AIzaSy"):
+        if self.gemini_api_key:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key}"
         else:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-            headers["Authorization"] = f"Bearer {self.gemini_api_key}"
             
         async with httpx.AsyncClient() as client:
             res = await client.post(url, headers=headers, json=payload, timeout=timeout)
@@ -860,7 +859,7 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=30.0)
+            text_content = await self._post_to_gemini_rest(self.primary_text_model, payload, timeout=30.0)
             cleaned = self._clean_json(text_content)
             return json.loads(cleaned)
         except Exception as e:
@@ -923,7 +922,7 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=45.0)
+            text_content = await self._post_to_gemini_rest(self.primary_text_model, payload, timeout=45.0)
             cleaned = self._clean_json(text_content)
             return json.loads(cleaned)
         except Exception as e:
@@ -972,7 +971,7 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=30.0)
+            text_content = await self._post_to_gemini_rest(self.primary_text_model, payload, timeout=30.0)
             cleaned = self._clean_json(text_content)
             return json.loads(cleaned)
         except Exception as e:
