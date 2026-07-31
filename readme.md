@@ -1,8 +1,5 @@
 # 🌴 IELTS Oasis: Adaptive English Learning Platform & Proactive Multi-Agent Ecosystem
 
-## 🌐 Language / Ngôn ngữ
-* **🌐 [Bản Tiếng Việt / Vietnamese Version](#-phiên-bản-tiếng-việt)**
-
 ![IELTS Oasis Banner](./ielts_oasis_clean_2d_matcha.png)
 
 [![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
@@ -10,6 +7,9 @@
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-green.svg)](#)
 
 ---
+
+<details open>
+<summary><b>🇺🇸 English Version (Click to collapse/expand)</b></summary>
 
 ## 🔗 Live Demo & Links
 * **Web Application URL:** [https://ieltsoasis.site](https://ieltsoasis.site)
@@ -223,14 +223,12 @@ Run the following command to spin up the MySQL database, FastAPI backend, Discor
 docker compose up -d --build
 ```
 
----
-
-## 🇻🇳 Phiên Bản Tiếng Việt
-* **🌐 [English Version / Bản Tiếng Anh](#-ielts-oasis-adaptive-english-learning-platform--proactive-multi-agent-ecosystem)**
-
-![IELTS Oasis Banner](./ielts_oasis_clean_2d_matcha.png)
+</details>
 
 ---
+
+<details>
+<summary><b>🇻🇳 Bản Tiếng Việt (Click để mở rộng/thu gọn)</b></summary>
 
 ### 🌟 Ý Tưởng Cốt Lõi
 Các nền tảng học tiếng Anh truyền thống thường gặp khó khăn trong việc duy trì thói quen học tập của người dùng. **IELTS Oasis** là hệ sinh thái thông minh tích hợp giao diện kép (Bảng điều khiển Web Next.js tương tác + Bot Discord hỗ trợ chủ động) nhằm biến quá trình tích lũy từ vựng thụ động thành thói quen học tập tích cực hàng ngày.
@@ -437,3 +435,5 @@ Khởi chạy lệnh sau để tự động cấu hình và chạy cơ sở dữ
 ```bash
 docker compose up -d --build
 ```
+
+</details>
