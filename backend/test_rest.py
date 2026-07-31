@@ -7,8 +7,9 @@ load_dotenv()
 
 async def test():
     key = os.getenv("GEMINI_API_KEY", "")
-    model = "gemini-1.5-flash"
+    model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
     print(f"Key preview: {key[:15]}... Length: {len(key)}")
+    print(f"Model: {model}")
     
     payload = {
         "contents": [{"parts": [{"text": "Say hello"}]}]
