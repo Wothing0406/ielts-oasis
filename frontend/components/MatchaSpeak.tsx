@@ -56,11 +56,22 @@ const CUE_CARDS = [
   }
 ];
 
-export default function MatchaSpeak() {
+export default function MatchaSpeak({ initialContext }: { initialContext?: string }) {
   const [activeMode, setActiveMode] = useState<'shadowing' | 'sandbox'>('shadowing');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  // Load initial context if passed (e.g. from community feed)
+  useEffect(() => {
+    if (initialContext) {
+      setIsUsingCustom(true);
+      setCustomText(initialContext);
+      setSelectedSentence(initialContext);
+      setShadowResult(null);
+      setSelectedWord(null);
+    }
+  }, [initialContext]);
   
   // Microphone & Filter Settings
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -393,7 +404,7 @@ export default function MatchaSpeak() {
                         : 'bg-white text-accent border-primary/15 hover:bg-secondary/20'
                     }`}
                   >
-                    Level: {lvl === 'easy' ? 'Dễ' : lvl === 'medium' ? 'Vừa' : 'Khó'}
+                    Level: {lvl === 'easy' ? 'Easy' : lvl === 'medium' ? 'Medium' : 'Hard'}
                   </button>
                 ))}
                 
@@ -406,7 +417,7 @@ export default function MatchaSpeak() {
                       : 'bg-white text-accent border-primary/15 hover:bg-secondary/20'
                   }`}
                 >
-                  Tự nhập đoạn văn
+                  Custom Text
                 </button>
               </div>
 
@@ -423,7 +434,7 @@ export default function MatchaSpeak() {
             {/* Custom Text input area */}
             {isUsingCustom && (
               <div className="space-y-2 bg-[#fcfcfc] p-4 rounded-2xl border border-primary/10">
-                <label className="text-[10px] font-black uppercase text-accent/50">Nhập đoạn văn của bạn:</label>
+                <label className="text-[10px] font-black uppercase text-accent/50">Enter your custom text:</label>
                 <textarea
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
@@ -442,8 +453,9 @@ export default function MatchaSpeak() {
                     }
                   }}
                   className="bg-primary text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all"
+                  style={{ contentVisibility: 'auto' }}
                 >
-                  Áp dụng đoạn văn
+                  Apply Custom Text
                 </button>
               </div>
             )}

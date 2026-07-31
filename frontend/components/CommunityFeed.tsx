@@ -10,12 +10,14 @@ export default function CommunityFeed({
   vocabList = [], 
   onListenPost,
   onReadPost,
+  onSpeakPost,
   onDeleteVocab
 }: { 
   onAddVocab?: (vocab: any) => Promise<any>, 
   vocabList?: any[], 
   onListenPost?: (text: string) => void,
   onReadPost?: (text: string) => void,
+  onSpeakPost?: (text: string) => void,
   onDeleteVocab?: (id: number) => void
 }) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
@@ -541,8 +543,8 @@ export default function CommunityFeed({
                 </div>
               )}
 
-              {/* Two Big Action Cards to Select Study Mode */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Three Big Action Cards to Select Study Mode */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <button
                   type="button"
                   onClick={() => {
@@ -555,7 +557,7 @@ export default function CommunityFeed({
                 >
                   <span className="material-symbols-rounded text-primary text-4xl group-hover:scale-110 transition-transform">headphones</span>
                   <span className="font-display font-bold text-accent text-base">Luyện Nghe tại Matcha Radio</span>
-                  <span className="text-[10px] text-accent/60">Tải bài đọc vào máy phát Radio và làm bài tập trắc nghiệm nghe hiểu / điền từ</span>
+                  <span className="text-[10px] text-accent/60">Tải bài đọc vào máy phát Radio và làm bài tập nghe hiểu</span>
                 </button>
 
                 <button
@@ -570,7 +572,22 @@ export default function CommunityFeed({
                 >
                   <span className="material-symbols-rounded text-primary text-4xl group-hover:scale-110 transition-transform">menu_book</span>
                   <span className="font-display font-bold text-accent text-base">Luyện Đọc tại Matcha Book</span>
-                  <span className="text-[10px] text-accent/60">Tải bài đọc vào Matcha Book để luyện đọc dịch và giải bộ câu hỏi MCQ/điền từ</span>
+                  <span className="text-[10px] text-accent/60">Tải bài đọc vào Matcha Book để luyện đọc dịch và giải câu hỏi</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSpeakPost && selectedWritingContent) {
+                      onSpeakPost(selectedWritingContent);
+                      setLesson(null); // Close modal
+                    }
+                  }}
+                  className="p-6 bg-primary/10 border-2 border-primary/20 hover:border-primary hover:bg-primary/25 rounded-3xl flex flex-col items-center justify-center text-center gap-2 group transition-all"
+                >
+                  <span className="material-symbols-rounded text-primary text-4xl group-hover:scale-110 transition-transform">record_voice_over</span>
+                  <span className="font-display font-bold text-accent text-base">Luyện Nói tại Speaking Studio</span>
+                  <span className="text-[10px] text-accent/60">Tải bài đọc vào Speaking Studio để luyện phát âm từng câu (Shadowing)</span>
                 </button>
               </div>
 

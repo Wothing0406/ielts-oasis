@@ -395,6 +395,8 @@ export default function Home() {
     window.location.reload();
   }
 
+  const [activeSpeakingContext, setActiveSpeakingContext] = useState("");
+
   const handleSelectListening = (text: string) => {
     setActiveListeningContext(text);
     const el = document.getElementById("matcha-radio");
@@ -406,6 +408,14 @@ export default function Home() {
   const handleSelectReading = (text: string) => {
     setActiveReadingContext(text);
     const el = document.getElementById("matcha-book");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSelectSpeaking = (text: string) => {
+    setActiveSpeakingContext(text);
+    const el = document.getElementById("matcha-speak");
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
@@ -692,7 +702,7 @@ export default function Home() {
 
           {/* Hàng 5: Matcha Speak */}
           <section id="matcha-speak" className="xl:col-span-12">
-            <MatchaSpeak />
+            <MatchaSpeak initialContext={activeSpeakingContext} />
           </section>
 
           {/* Hàng 6: Community Feed */}
@@ -702,6 +712,7 @@ export default function Home() {
               vocabList={vocabList} 
               onListenPost={handleSelectListening} 
               onReadPost={handleSelectReading} 
+              onSpeakPost={handleSelectSpeaking}
               onDeleteVocab={handleDeleteVocab}
             />
           </section>

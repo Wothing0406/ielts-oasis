@@ -813,6 +813,22 @@ Return ONLY the JSON array. Example:
                 "hint": f"Từ vựng học thuật gồm 5 chữ cái, có ký tự bắt đầu là '{fallback_word[0]}'."
             }
 
+    async def _post_to_gemini_rest(self, model_name: str, payload: dict, timeout: float = 30.0):
+        headers = {}
+        if self.gemini_api_key.startswith("AIzaSy"):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key}"
+        else:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            headers["Authorization"] = f"Bearer {self.gemini_api_key}"
+            
+        async with httpx.AsyncClient() as client:
+            res = await client.post(url, headers=headers, json=payload, timeout=timeout)
+            res_json = res.json()
+            if "candidates" not in res_json:
+                print(f"Gemini REST Error ({res.status_code}): {res.text}")
+                raise KeyError(f"Missing candidates: {res.text}")
+            return res_json["candidates"][0]["content"]["parts"][0]["text"]
+
     async def evaluate_pronunciation(self, audio_base64: str, mime_type: str, reference_text: str):
         prompt = f"""
         Compare the user's spoken audio with the reference text: "{reference_text}".
@@ -832,7 +848,6 @@ Return ONLY the JSON array. Example:
           }}
         ]
         """
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
         payload = {
             "contents": [{
                 "parts": [
@@ -845,16 +860,22 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(url, json=payload, timeout=30.0)
-                res_json = res.json()
-                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                cleaned = self._clean_json(text_content)
-                return json.loads(cleaned)
+            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=30.0)
+            cleaned = self._clean_json(text_content)
+            return json.loads(cleaned)
         except Exception as e:
             print(f"evaluate_pronunciation failed: {e}")
             words = reference_text.split()
-            return [{"word": w, "status": "correct", "ipa": "", "tip": ""} for w in words]
+            # Mark the first word as incorrect to show the error message in the tip, others correct
+            return [
+                {
+                    "word": w,
+                    "status": "incorrect" if i == 0 else "correct",
+                    "ipa": "⚠️" if i == 0 else "",
+                    "tip": f"Không thể chấm điểm âm thanh (Lỗi: {str(e)}). Vui lòng thử nói to rõ hơn hoặc kiểm tra Micro!" if i == 0 else ""
+                }
+                for i, w in enumerate(words)
+            ]
 
     async def evaluate_speaking_sandbox(self, audio_base64: str, mime_type: str, cue_card_prompt: str):
         prompt = f"""
@@ -864,9 +885,9 @@ Return ONLY the JSON array. Example:
         2. Lexical Resource (Vocabulary)
         3. Grammatical Range and Accuracy
         4. Pronunciation
-
+ 
         Also estimate an overall Band Score (between 0.0 and 9.0 in increments of 0.5), count/estimate the speech word-count and Words Per Minute (WPM), list key strengths and weaknesses, extract grammar corrections, and write a high-end Band 8.5+ Model Answer based on the user's ideas.
-
+ 
         Return ONLY a JSON object with this exact structure:
         {{
             "band_score": 6.5,
@@ -890,7 +911,6 @@ Return ONLY the JSON array. Example:
             "model_answer": "Full 150-250 word Band 8.5+ model response..."
         }}
         """
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
         payload = {
             "contents": [{
                 "parts": [
@@ -903,19 +923,16 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(url, json=payload, timeout=45.0)
-                res_json = res.json()
-                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                cleaned = self._clean_json(text_content)
-                return json.loads(cleaned)
+            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=45.0)
+            cleaned = self._clean_json(text_content)
+            return json.loads(cleaned)
         except Exception as e:
             print(f"evaluate_speaking_sandbox failed: {e}")
             return {
                 "band_score": 0.0,
-                "transcript": "Unable to transcribe audio.",
+                "transcript": f"Lỗi phân tích âm thanh: {str(e)}",
                 "wpm": 0,
-                "criteria": {"fluency": "", "lexical": "", "grammar": "", "pronunciation": ""},
+                "criteria": {"fluency": "Vui lòng kiểm tra lại mic của bạn.", "lexical": "", "grammar": "", "pronunciation": ""},
                 "strengths": [],
                 "weaknesses": [],
                 "corrections": [],
@@ -943,7 +960,6 @@ Return ONLY the JSON array. Example:
             "next_question": "Next natural conversation follow-up question..."
         }}
         """
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
         payload = {
             "contents": [{
                 "parts": [
@@ -956,21 +972,18 @@ Return ONLY the JSON array. Example:
             }
         }
         try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(url, json=payload, timeout=30.0)
-                res_json = res.json()
-                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                cleaned = self._clean_json(text_content)
-                return json.loads(cleaned)
+            text_content = await self._post_to_gemini_rest("gemini-1.5-flash", payload, timeout=30.0)
+            cleaned = self._clean_json(text_content)
+            return json.loads(cleaned)
         except Exception as e:
             print(f"evaluate_speaking_reflex failed: {e}")
             return {
-                "transcript": "Unable to transcribe.",
+                "transcript": "Không thể dịch giọng nói.",
                 "filler_words_count": 0,
                 "filler_words_found": [],
-                "feedback": "Try speaking clearly next time!",
-                "witty_reply": "I couldn't hear you clearly, buddy! 🐻",
-                "next_question": "Let's try another topic. What is your favorite season?"
+                "feedback": f"Lỗi kết nối: {str(e)}",
+                "witty_reply": "Tớ không nghe thấy rõ, cậu nói lại nhé! 🐻",
+                "next_question": "Hãy thử một chủ đề khác. What is your favorite season?"
             }
 
 ai_service = AIService()
