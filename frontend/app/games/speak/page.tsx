@@ -62,6 +62,12 @@ export default function SpeakingReflexGame() {
     }
   };
 
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     speakQuestion(currentQuestion);
     questionStartTimeRef.current = Date.now();
