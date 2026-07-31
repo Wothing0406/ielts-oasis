@@ -745,6 +745,115 @@ Return ONLY the JSON array. Example:
                 "hint": f"Từ vựng học thuật gồm 5 chữ cái, có ký tự bắt đầu là '{fallback_word[0]}'."
             }
 
+    async def evaluate_pronunciation(self, audio_base64: str, mime_type: str, reference_text: str):
+        prompt = f"""
+        Compare the user's spoken audio with the reference text: "{reference_text}".
+        Verify the pronunciation of each word in the reference text in exact sequence.
+        For each word, label it as "correct", "warning", or "incorrect".
+        - "correct": Good pronunciation.
+        - "warning": Minor mistake (misplaced stress, missing ending sounds like 's', 't', 'd', wrong vowel length).
+        - "incorrect": Completely mispronounced, omitted, or wrong word.
+        
+        Return ONLY a JSON array of objects, one for each word in the reference text in exact order:
+        [
+          {{
+            "word": "word",
+            "status": "correct" | "warning" | "incorrect",
+            "ipa": "accurate IPA pronunciation of the word",
+            "tip": "Short tip in Vietnamese (e.g. 'Bật âm đuôi /t/', 'Chu môi phát âm /sh/')"
+          }}
+        ]
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"inlineData": {"mimeType": mime_type, "data": audio_base64}},
+                    {"text": prompt}
+                ]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, json=payload, timeout=30.0)
+                res_json = res.json()
+                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                cleaned = self._clean_json(text_content)
+                return json.loads(cleaned)
+        except Exception as e:
+            print(f"evaluate_pronunciation failed: {e}")
+            words = reference_text.split()
+            return [{"word": w, "status": "correct", "ipa": "", "tip": ""} for w in words]
+
+    async def evaluate_speaking_sandbox(self, audio_base64: str, mime_type: str, cue_card_prompt: str):
+        prompt = f"""
+        You are an official IELTS Speaking Examiner. Evaluate the attached audio response for the IELTS Part 2 Cue Card: "{cue_card_prompt}".
+        Evaluate based on the 4 official IELTS criteria:
+        1. Fluency and Coherence
+        2. Lexical Resource (Vocabulary)
+        3. Grammatical Range and Accuracy
+        4. Pronunciation
+
+        Also estimate an overall Band Score (between 0.0 and 9.0 in increments of 0.5), count/estimate the speech word-count and Words Per Minute (WPM), list key strengths and weaknesses, extract grammar corrections, and write a high-end Band 8.5+ Model Answer based on the user's ideas.
+
+        Return ONLY a JSON object with this exact structure:
+        {{
+            "band_score": 6.5,
+            "transcript": "Transcription of what the user spoke...",
+            "wpm": 130,
+            "criteria": {{
+                "fluency": "Fluency feedback...",
+                "lexical": "Vocabulary feedback...",
+                "grammar": "Grammar feedback...",
+                "pronunciation": "Pronunciation feedback..."
+            }},
+            "strengths": ["Strength point 1", "Strength point 2"],
+            "weaknesses": ["Weakness point 1", "Weakness point 2"],
+            "corrections": [
+                {{
+                    "original": "incorrect sentence spoken by user",
+                    "corrected": "corrected version of the sentence",
+                    "reason": "Why it is incorrect and how to fix it"
+                }}
+            ],
+            "model_answer": "Full 150-250 word Band 8.5+ model response..."
+        }}
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"inlineData": {"mimeType": mime_type, "data": audio_base64}},
+                    {"text": prompt}
+                ]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, json=payload, timeout=45.0)
+                res_json = res.json()
+                text_content = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                cleaned = self._clean_json(text_content)
+                return json.loads(cleaned)
+        except Exception as e:
+            print(f"evaluate_speaking_sandbox failed: {e}")
+            return {
+                "band_score": 0.0,
+                "transcript": "Unable to transcribe audio.",
+                "wpm": 0,
+                "criteria": {"fluency": "", "lexical": "", "grammar": "", "pronunciation": ""},
+                "strengths": [],
+                "weaknesses": [],
+                "corrections": [],
+                "model_answer": ""
+            }
+
 ai_service = AIService()
 
 

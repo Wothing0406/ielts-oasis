@@ -1484,6 +1484,44 @@ async def get_game_leaderboard(db: Session = Depends(get_db)):
     }
 
 
+@app.post("/speaking/shadowing")
+async def speaking_shadowing(
+    file: UploadFile = File(...),
+    reference_text: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        content = await file.read()
+        audio_base64 = base64.b64encode(content).decode("utf-8")
+        mime_type = file.content_type if file.content_type else "audio/webm"
+        result = await ai_service.evaluate_pronunciation(audio_base64, mime_type, reference_text)
+        return result
+    except Exception as e:
+        logger.error(f"Speaking Shadowing failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/speaking/sandbox")
+async def speaking_sandbox(
+    file: UploadFile = File(...),
+    cue_card_prompt: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        content = await file.read()
+        audio_base64 = base64.b64encode(content).decode("utf-8")
+        mime_type = file.content_type if file.content_type else "audio/webm"
+        result = await ai_service.evaluate_speaking_sandbox(audio_base64, mime_type, cue_card_prompt)
+        return result
+    except Exception as e:
+        logger.error(f"Speaking Sandbox failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

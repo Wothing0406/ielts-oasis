@@ -9,6 +9,7 @@ import WritingSanctuary from "@/components/WritingSanctuary";
 import CommunityFeed from "@/components/CommunityFeed";
 import MatchaBook from "@/components/MatchaBook";
 import MatchaRadio from "@/components/MatchaRadio";
+import MatchaSpeak from "@/components/MatchaSpeak";
 import VocabularyQuiz from "@/components/VocabularyQuiz";
 import MatchaNotification, { ToastData, ModalData } from "@/components/MatchaNotification";
 
@@ -689,7 +690,12 @@ export default function Home() {
             />
           </section>
 
-          {/* Hàng 5: Community Feed */}
+          {/* Hàng 5: Matcha Speak */}
+          <section id="matcha-speak" className="xl:col-span-12">
+            <MatchaSpeak />
+          </section>
+
+          {/* Hàng 6: Community Feed */}
           <section className="xl:col-span-12">
             <CommunityFeed 
               onAddVocab={handleAddVocab} 
