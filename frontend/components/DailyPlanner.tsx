@@ -80,7 +80,7 @@ export default function DailyPlanner({
             <span className="material-symbols-rounded text-primary text-3xl">calendar_month</span>
             Matcha Daily Plan
           </h2>
-          <p className="text-sm text-accent/70 mt-1">Lộ trình học IELTS siêu tốc mỗi ngày do AI thiết kế</p>
+          <p className="text-sm text-accent/70 mt-1">AI-powered daily IELTS study plan tailored to your target score</p>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export default function DailyPlanner({
           value={topic}
           onChange={e => setTopic(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && generatePlan()}
-          placeholder="Nhập chủ đề bạn muốn học hôm nay (vd: Environment, Technology...)"
+          placeholder="Enter target study topic (e.g. Environment, Artificial Intelligence...)"
           className="flex-1 px-6 py-4 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner placeholder:text-accent/60"
         />
         <button type="button" 
@@ -99,9 +99,9 @@ export default function DailyPlanner({
           className="bg-primary text-white font-bold px-8 py-4 rounded-full flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
         >
           {loading ? (
-            <><span className="material-symbols-rounded animate-spin">sync</span> Đang lên lịch...</>
+            <><span className="material-symbols-rounded animate-spin">sync</span> Generating Plan...</>
           ) : (
-            <><span className="material-symbols-rounded">magic_button</span> Tạo lộ trình</>
+            <><span className="material-symbols-rounded">magic_button</span> Generate Daily Plan</>
           )}
         </button>
       </div>
@@ -123,7 +123,7 @@ export default function DailyPlanner({
             <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-display font-black text-accent text-lg flex items-center gap-2">
-                  <span className="material-symbols-rounded text-primary">local_library</span> 10 Từ vựng cốt lõi
+                  <span className="material-symbols-rounded text-primary">local_library</span> 10 Core Vocabulary
                 </h3>
                 <button 
                   type="button"
@@ -135,7 +135,7 @@ export default function DailyPlanner({
                       );
                       
                       if (unsavedWords.length === 0) {
-                        (window as any).showAlert("Tất cả từ vựng trong lộ trình này đã có trong kho của bạn rồi! 🍵", "Thông báo", "info");
+                        (window as any).showAlert("All vocabulary words in this plan are already in your library! 🍵", "Notice", "info");
                         return;
                       }
                       
@@ -154,14 +154,14 @@ export default function DailyPlanner({
                           else errors++;
                         });
                         
-                        const msg = `Đã pha chế thành công ${added} từ vựng mới vào kho!` + 
-                          (duplicates > 0 ? ` (Bỏ qua ${duplicates} từ trùng)` : "") +
-                          (errors > 0 ? ` (Lỗi ${errors} từ)` : "") + " 🍵";
+                        const msg = `Successfully saved ${added} new vocabulary words!` + 
+                          (duplicates > 0 ? ` (${duplicates} duplicates skipped)` : "") +
+                          (errors > 0 ? ` (${errors} errors)` : "") + " 🍵";
                         
-                        (window as any).showAlert(msg, "Pha chế hoàn tất!", "success");
+                        (window as any).showAlert(msg, "Save Completed!", "success");
                       } catch (err) {
                         console.error(err);
-                        (window as any).showAlert("Có lỗi xảy ra khi lưu từ vựng.", "Lỗi", "error");
+                        (window as any).showAlert("An error occurred while saving vocabulary.", "Error", "error");
                       } finally {
                         setSavingAll(false);
                       }
@@ -169,7 +169,7 @@ export default function DailyPlanner({
                   }}
                   className="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
                 >
-                  {savingAll ? "Đang lưu..." : "Lưu tất cả"}
+                  {savingAll ? "Saving..." : "Save All"}
                 </button>
               </div>
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
@@ -198,7 +198,7 @@ export default function DailyPlanner({
                               try {
                                 const res = await onAddVocab({ ...v, source: "Matcha Daily Plan" });
                                 if (res && res.status === "duplicate") {
-                                  (window as any).showToast(`Từ vựng "${v.word}" đã có sẵn trong kho! 🍵`, "info");
+                                  (window as any).showToast(`Vocabulary "${v.word}" is already in library! 🍵`, "info");
                                 }
                               } catch (e) {
                                 console.error(e);
@@ -222,7 +222,7 @@ export default function DailyPlanner({
                           <span className="material-symbols-rounded text-[12px]">
                             {isSaved ? 'check_circle' : savingWords.has(v.word) ? 'sync' : 'bookmark_add'}
                           </span>
-                          {isSaved ? 'Đã lưu' : savingWords.has(v.word) ? 'Đang lưu...' : 'Lưu'}
+                          {isSaved ? 'Saved' : savingWords.has(v.word) ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     </div>
@@ -232,57 +232,68 @@ export default function DailyPlanner({
             </div>
 
             <div className="space-y-6">
-              {/* Listening & Reading */}
+              {/* Listening & Writing */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white border-2 border-primary/10 rounded-3xl p-5 shadow-sm">
-                  <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
-                    <span className="material-symbols-rounded text-primary text-base">headphones</span> Ý tưởng Nghe
-                  </h3>
-                  <p className="text-xs font-bold text-accent">{plan.listening?.title}</p>
-                  <p className="text-[10px] mt-1 text-accent/70">{plan.listening?.description}</p>
+                <div className="bg-white border-2 border-primary/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
+                      <span className="material-symbols-rounded text-primary text-base">headphones</span> IELTS Listening Transcript
+                    </h3>
+                    <p className="text-xs font-bold text-accent">{plan.listening?.title}</p>
+                    <p className="text-[10px] mt-1 text-accent/70 line-clamp-3 italic">
+                      {plan.listening?.audio_script || plan.listening?.description}
+                    </p>
+                  </div>
                   <button 
-                    onClick={() => onPracticeListening && onPracticeListening(plan.listening?.description || plan.listening?.title)}
-                    className="mt-3 w-full bg-accent/5 hover:bg-accent/10 text-accent font-bold text-xs py-2 rounded-xl transition-colors"
+                    onClick={() => onPracticeListening && onPracticeListening(plan.listening?.audio_script || plan.listening?.description || plan.listening?.title)}
+                    className="mt-3 w-full bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1"
                   >
-                    Thực hành Nghe
+                    <span className="material-symbols-rounded text-sm">play_circle</span> Practice Listening
                   </button>
                 </div>
                 
-                <div className="bg-white border-2 border-primary/10 rounded-3xl p-5 shadow-sm">
-                  <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
-                    <span className="material-symbols-rounded text-primary text-base">edit_document</span> Writing Task 2
-                  </h3>
-                  <p className="text-xs text-accent italic">{plan.writing?.prompt}</p>
+                <div className="bg-white border-2 border-primary/10 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
+                      <span className="material-symbols-rounded text-primary text-base">edit_document</span> Writing Task 2
+                    </h3>
+                    <p className="text-xs text-accent italic line-clamp-3">{plan.writing?.prompt}</p>
+                  </div>
                   <button 
                     onClick={() => onPracticeWriting && onPracticeWriting(plan.writing?.prompt)}
-                    className="mt-3 w-full bg-accent/5 hover:bg-accent/10 text-accent font-bold text-xs py-2 rounded-xl transition-colors"
+                    className="mt-3 w-full bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1"
                   >
-                    Thực hành Viết
+                    <span className="material-symbols-rounded text-sm">pen</span> Practice Writing
                   </button>
                 </div>
               </div>
 
-              {/* Reading */}
+              {/* Reading Passage */}
               <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm">
                 <h3 className="font-display font-black text-accent text-lg flex items-center gap-2 mb-3">
-                  <span className="material-symbols-rounded text-primary">menu_book</span> Bài đọc ngắn
+                  <span className="material-symbols-rounded text-primary">menu_book</span> IELTS Reading Passage
                 </h3>
-                <p className="text-xs text-accent leading-relaxed bg-[#f9f9f9] p-4 rounded-2xl italic border border-black/5">
+                {plan.reading?.title && (
+                  <h4 className="text-xs font-bold text-primary mb-2 uppercase tracking-wide">{plan.reading.title}</h4>
+                )}
+                <p className="text-xs text-accent leading-relaxed bg-[#f9f9f9] p-4 rounded-2xl italic border border-black/5 max-h-48 overflow-y-auto custom-scrollbar">
                   {plan.reading?.text}
                 </p>
-                <div className="mt-4 space-y-2">
-                  <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Câu hỏi ôn tập:</p>
-                  {plan.reading?.questions?.map((q: string, i: number) => (
-                    <p key={i} className="text-xs font-medium text-accent flex gap-2">
-                      <span className="text-primary font-black">{i+1}.</span> {q}
-                    </p>
-                  ))}
-                </div>
+                {plan.reading?.questions && plan.reading.questions.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Comprehension Questions:</p>
+                    {plan.reading.questions.map((q: string, i: number) => (
+                      <p key={i} className="text-xs font-medium text-accent flex gap-2">
+                        <span className="text-primary font-black">{i+1}.</span> {q}
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <button 
                   onClick={() => onPracticeReading && onPracticeReading(plan.reading?.text)}
-                  className="mt-4 w-full bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-sm py-3 rounded-xl transition-all"
+                  className="mt-4 w-full bg-primary text-white hover:bg-primary-dark font-bold text-sm py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  Thực hành Đọc ngay
+                  <span className="material-symbols-rounded text-base">auto_stories</span> Practice Reading Now
                 </button>
               </div>
             </div>
@@ -294,11 +305,11 @@ export default function DailyPlanner({
                 className="bg-primary text-white font-bold px-8 py-3 rounded-full flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:pointer-events-none"
               >
                 {saved ? (
-                  <><span className="material-symbols-rounded">check_circle</span> Đã lưu lộ trình</>
+                  <><span className="material-symbols-rounded">check_circle</span> Daily Plan Saved</>
                 ) : saving ? (
-                  <><span className="material-symbols-rounded animate-spin">sync</span> Đang lưu...</>
+                  <><span className="material-symbols-rounded animate-spin">sync</span> Saving Plan...</>
                 ) : (
-                  <><span className="material-symbols-rounded">bookmark</span> Lưu lộ trình này</>
+                  <><span className="material-symbols-rounded">bookmark</span> Save Daily Plan</>
                 )}
               </button>
             </div>

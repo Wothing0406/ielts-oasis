@@ -464,29 +464,45 @@ Return ONLY the JSON array. Example:
 
     async def generate_daily_plan(self, topic: str):
         prompt = f"""
-        Học viên muốn học IELTS trong ngày hôm nay với chủ đề: "{topic}".
-        Hãy tạo một lộ trình học siêu tốc "Matcha Daily List" bao gồm:
-        1. 10 từ vựng cốt lõi.
-        2. Một bài nghe ngắn gọn (tóm tắt ý tưởng hoặc link/podcast idea).
-        3. Một câu hỏi Writing Task 2.
-        4. Một đoạn Reading ngắn (khoảng 100 chữ).
-        
-        Trả về DUY NHẤT định dạng JSON có cấu trúc sau, KHÔNG giải thích thêm:
+        GUARDRAIL RULE: You are an exclusive IELTS Academic Assistant for IELTS Oasis.
+        FIRST, check if the input topic "{topic}" is related to education, science, technology, environment, society, culture, work, health, or general English/IELTS learning.
+        If the input topic is inappropriate, malicious, or completely unrelated to learning (e.g. hacking, violence, off-topic requests):
+        Return JSON: {{"error": "Off-topic request. Please enter a valid IELTS study topic (e.g. Environment, Education, Artificial Intelligence).", "is_off_topic": true}}
+
+        Otherwise, generate a COMPLETE, high-quality IELTS study package ("Matcha Daily Plan") for "{topic}" containing:
+        1. "vocabulary": 10 essential IELTS academic words with English word, Vietnamese meaning, IPA phonetic, English example sentence, 1-2 synonyms, and a short Vietnamese memory hook.
+        2. "listening": A FULL authentic IELTS Listening dialogue/monologue transcript (150-250 words with Speaker A & Speaker B), a descriptive title, full audio_script text, and 3 comprehension questions.
+        3. "reading": A FULL authentic IELTS Reading academic passage (200-300 words), a descriptive title, full text, and 3 comprehension questions.
+        4. "writing": An official IELTS Writing Task 2 essay question related to "{topic}" with key argument points.
+
+        Return ONLY a valid JSON object with this exact structure (no markdown fences, no other text):
         {{
             "topic": "{topic}",
             "vocabulary": [
                 {{
-                    "word": "Từ tiếng Anh",
+                    "word": "English word",
                     "meaning": "Nghĩa tiếng Việt",
-                    "phonetic": "Phiên âm IPA",
-                    "example": "Câu ví dụ tiếng Anh chứa từ này hữu ích cho IELTS",
-                    "synonyms": ["Từ đồng nghĩa 1", "Từ đồng nghĩa 2"],
-                    "memory_hook": "Mẹo ghi nhớ từ bằng tiếng Việt ngắn gọn"
+                    "phonetic": "/.../",
+                    "example": "Useful academic example sentence",
+                    "synonyms": ["synonym1", "synonym2"],
+                    "memory_hook": "Mẹo nhớ bằng tiếng Việt"
                 }}
             ],
-            "listening": {{"title": "Tiêu đề bài nghe", "description": "Mô tả..."}},
-            "writing": {{"prompt": "Đề bài Writing Task 2"}},
-            "reading": {{"text": "Đoạn văn reading ngắn", "questions": ["Câu hỏi 1", "Câu hỏi 2"]}}
+            "listening": {{
+                "title": "IELTS Listening: Topic Title",
+                "description": "Dialogue between Speaker A and Speaker B regarding...",
+                "audio_script": "Speaker A: Welcome to today's discussion... \\nSpeaker B: Thank you...",
+                "questions": ["Question 1 text?", "Question 2 text?", "Question 3 text?"]
+            }},
+            "writing": {{
+                "prompt": "Official IELTS Writing Task 2 Essay Question...",
+                "key_points": ["Key Point 1", "Key Point 2"]
+            }},
+            "reading": {{
+                "title": "IELTS Reading: Academic Passage Title",
+                "text": "Full 200-300 word academic reading passage text...",
+                "questions": ["Question 1 text?", "Question 2 text?", "Question 3 text?"]
+            }}
         }}
         """
         try:

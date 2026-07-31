@@ -333,13 +333,13 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
 
           {activeTab === "manual" && (
             <div className="animate-fade-in">
-              <h4 className="font-bold mb-2">Dán đoạn {manualMode === 'conversation' ? 'hội thoại' : 'văn'} tiếng Anh để AI tạo Audio:</h4>
+              <h4 className="font-bold mb-2">Paste English {manualMode === 'conversation' ? 'dialogue script' : 'passage text'} to generate Audio:</h4>
               <p className="text-xs text-primary mb-4 opacity-80 bg-primary/5 p-3 rounded-lg border border-primary/20">
-                💡 <b>Mẹo:</b> Để AI đọc chuẩn giọng, hãy dùng định dạng JSON. Bạn có thể chép prompt này đưa cho Gemini/ChatGPT: 
+                💡 <b>Pro Tip:</b> For multi-speaker narration, use JSON format. You can copy this prompt to Gemini/ChatGPT: 
                 <br/><code className="bg-primary/20 px-1 py-0.5 rounded mt-1 inline-block select-all">
                   {manualMode === 'conversation' 
-                    ? `Hãy chuyển đoạn hội thoại dưới đây thành 1 mảng JSON, trong đó mỗi câu thoại là một object có key là tên nhân vật (viết thường), ví dụ: [{"a": "hello"}, {"b": "hi"}]` 
-                    : `Hãy chuyển đoạn văn dưới đây thành 1 mảng JSON có đúng 1 object duy nhất với key là "text", ví dụ: [{"text": "I am an authentic, adaptive, and witty AI collaborator..."}]`
+                    ? `Convert the dialogue below into a JSON array of objects with speaker keys: [{"a": "hello"}, {"b": "hi"}]` 
+                    : `Convert the text below into a JSON array with one object: [{"text": "I am an authentic, adaptive, and witty AI collaborator..."}]`
                   }
                 </code>
               </p>
@@ -348,18 +348,18 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
                 onChange={e => setManualText(e.target.value)}
                 className="w-full h-48 p-4 rounded-xl border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 outline-none focus:ring-2 focus:ring-primary mb-4 font-mono text-sm"
                 placeholder={manualMode === 'conversation'
-                  ? `Ví dụ định dạng JSON hội thoại:\n[\n  {\n    "a": "Hey, are you ready for the English exam tomorrow?"\n  },\n  {\n    "b": "Not really. I'm still trying to memorize the vocabulary."\n  }\n]\n\nHoặc dán đoạn văn bình thường vào đây...`
-                  : `Ví dụ định dạng JSON đoạn văn:\n[\n  {\n    "text": "I am an authentic, adaptive, and witty AI collaborator designed to work alongside you on any project or idea..."\n  }\n]\n\nHoặc dán đoạn văn bình thường vào đây...`
+                  ? `Example Dialogue JSON:\n[\n  {\n    "a": "Hey, are you ready for the English exam tomorrow?"\n  },\n  {\n    "b": "Not really. I'm still trying to memorize the vocabulary."\n  }\n]\n\nOr paste plain dialogue text here...`
+                  : `Example Passage JSON:\n[\n  {\n    "text": "Academic writing requires clarity, coherence, and precise lexical choices..."\n  }\n]\n\nOr paste plain passage text here...`
                 }
               />
               <div className="flex gap-4 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" checked={manualMode === 'conversation'} onChange={() => setManualMode('conversation')} className="text-primary focus:ring-primary" />
-                  <span>Hội thoại (Sinh 10-20 câu ABCD khó dần)</span>
+                  <span>Dialogue (10-20 progressive MCQs)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" checked={manualMode === 'paragraph'} onChange={() => setManualMode('paragraph')} className="text-primary focus:ring-primary" />
-                  <span>Đoạn văn (Trắc nghiệm + Điền từ)</span>
+                  <span>Monologue (MCQs + Fill-in-the-blanks)</span>
                 </label>
               </div>
               <button type="button"
