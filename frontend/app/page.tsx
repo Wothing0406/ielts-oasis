@@ -572,7 +572,7 @@ export default function Home() {
                 </div>
               )}
               <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
-                Đăng Xuất
+                Log Out
               </button>
             </div>
             <Link

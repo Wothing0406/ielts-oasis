@@ -233,7 +233,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     <div className="w-full h-full p-4 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display text-lg font-bold flex items-center gap-2">
-          <span className="material-symbols-rounded text-primary">edit_note</span> Thêm từ mới
+          <span className="material-symbols-rounded text-primary">edit_note</span> Add New Vocab
         </h3>
         <div className="flex gap-2">
            <button type="button" 
@@ -252,7 +252,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
              onClick={() => setActiveMode('manual')}
              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'manual' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
            >
-             Thủ công
+             Manual
            </button>
         </div>
       </div>
@@ -271,20 +271,20 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input 
                     className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                    placeholder="Từ tiếng Anh"
+                    placeholder="English Word"
                     value={formData.word}
                     onChange={(e) => setFormData({...formData, word: e.target.value})}
                   />
                   <input 
                     className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                    placeholder="Phiên âm /.../"
+                    placeholder="IPA Phonetics /.../"
                     value={formData.phonetic}
                     onChange={(e) => setFormData({...formData, phonetic: e.target.value})}
                   />
                </div>
                <input 
                  className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                 placeholder="Nghĩa tiếng Việt"
+                 placeholder="Vietnamese Meaning"
                  value={formData.meaning}
                  onChange={(e) => setFormData({...formData, meaning: e.target.value})}
                />
@@ -293,7 +293,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                  disabled={isAdding || !formData.word}
                  className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
                >
-                 {isAdding ? "Đang thêm..." : "Thêm từ vựng"}
+                 {isAdding ? "Adding..." : "Add Vocabulary"}
                </button>
             </motion.form>
           ) : activeMode === 'ai' ? (
@@ -307,7 +307,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             >
               <input 
                 className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60" 
-                placeholder="Gõ từ để AI tự điền..."
+                placeholder="Type a word for AI auto-fill..."
                 type="text"
                 value={formData.word}
                 onChange={(e) => setFormData({...formData, word: e.target.value})}
@@ -358,11 +358,11 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                   className="hidden" 
                 />
                 <span className="material-symbols-rounded text-4xl text-amber-900/60 mb-2">folder_open</span>
-                <h4 className="font-display text-sm font-bold text-amber-950">Khay gỗ mộc mạc (Drag & Drop)</h4>
+                <h4 className="font-display text-sm font-bold text-amber-950">Matcha Dropzone (Drag & Drop)</h4>
                 <p className="text-xs text-amber-900/70 text-center mt-1">
-                  Kéo thả PDF, Word (.docx) hoặc Ảnh chứa từ vựng vào đây
+                  Drag & drop PDF, Word (.docx), or Image files containing vocabulary here
                 </p>
-                <span className="text-[10px] text-accent/40 mt-2 bg-white px-2 py-0.5 rounded-full border border-primary/10">Tối đa 5 trang / 5MB</span>
+                <span className="text-[10px] text-accent/40 mt-2 bg-white px-2 py-0.5 rounded-full border border-primary/10">Max 5 pages / 5MB</span>
               </div>
 
               {/* Loading State - Matcha Infusing */}

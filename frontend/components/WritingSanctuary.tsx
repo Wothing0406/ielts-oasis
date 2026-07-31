@@ -260,7 +260,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   </button>
                 )}
                 <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap">
-                  {analysis ? `Band ${analysis.band_score}` : isAnalyzing ? "Đang chấm..." : "Chưa chấm"}
+                  {analysis ? `Band ${analysis.band_score}` : isAnalyzing ? "Grading..." : "Not Graded"}
                 </div>
               </div>
             </div>
@@ -295,27 +295,11 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                             <span className="material-symbols-rounded text-xs animate-spin">refresh</span>
                             Đang tìm gợi ý...
                           </>
-                        ) : (
                           <>
                             <span className="material-symbols-rounded text-xs">auto_awesome</span>
                             Gợi ý viết lại cụm từ
                           </>
-                        )}
                       </button>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-[10px] uppercase font-black text-accent/40 tracking-wider">Gợi ý từ AI (Click để áp dụng):</p>
-                        {rephraseSuggestions.map((suggestion) => (
-                          <button type="button"
-                            key={suggestion}
-                            onClick={() => applyRephrase(suggestion)}
-                            className="w-full text-left p-2.5 bg-white border border-primary/10 hover:border-primary rounded-xl text-xs text-accent font-medium hover:bg-primary/5 transition-all shadow-sm flex items-start gap-1"
-                          >
-                            <span className="material-symbols-rounded text-primary text-xs mt-0.5">check_circle</span>
-                            <span>{suggestion}</span>
-                          </button>
-                        ))}
-                      </div>
                     )}
                   </div>
                 )}
@@ -373,10 +357,10 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   <div className="p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-rounded text-primary text-sm">psychology</span>
-                      <span className="text-xs font-bold uppercase text-accent dark:text-primary">Phân tích</span>
+                      <span className="text-xs font-bold uppercase text-accent dark:text-primary">Analysis</span>
                     </div>
                     <p className="text-sm opacity-70 text-accent dark:text-secondary">
-                      Bắt đầu viết để nhận được phân tích chi tiết về điểm mạnh và điểm yếu.
+                      Start writing your essay to receive detailed AI insights on your strengths and weaknesses.
                     </p>
                   </div>
                 )}

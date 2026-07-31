@@ -294,15 +294,15 @@ export default function CommunityFeed({
             <span className="material-symbols-rounded text-primary text-3xl">public</span>
             Oasis Community
           </h2>
-          <p className="text-sm text-accent/70">Cùng học hỏi từ các bài viết và từ vựng xuất sắc của mọi người</p>
+          <p className="text-sm text-accent/70">Learn together from community essays and vocabulary highlights</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-          {/* Thanh tìm kiếm Matcha */}
+          {/* Matcha Search Bar */}
           <div className="relative flex items-center bg-[#F4F1EA] border border-primary/25 rounded-full px-3.5 py-1.5 shadow-inner w-full sm:w-auto">
             <span className="material-symbols-rounded text-primary text-lg mr-1.5 select-none">search</span>
             <input
               type="text"
-              placeholder={activeTab === 'writings' ? 'Tìm bài viết, tác giả...' : 'Tìm từ vựng, nghĩa, chủ đề...'}
+              placeholder={activeTab === 'writings' ? 'Search essays, authors...' : 'Search vocabulary, meaning, topic...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-accent text-xs font-semibold placeholder-[#3E4F39]/40 border-none outline-none w-full sm:w-44 focus:sm:w-56 transition-all duration-300"
@@ -329,7 +329,7 @@ export default function CommunityFeed({
               }`}
             >
               <span className="material-symbols-rounded text-sm">person</span>
-              Của tôi
+              My Essays
             </button>
           )}
           <select 
@@ -337,22 +337,22 @@ export default function CommunityFeed({
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="new">Mới nhất</option>
-            <option value="hot">Đang Hot</option>
-            <option value="top">Điểm cao nhất</option>
+            <option value="new">Latest</option>
+            <option value="hot">Trending</option>
+            <option value="top">Top Score</option>
           </select>
           <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10">
             <button type="button" 
               onClick={() => setActiveTab('writings')}
               className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'writings' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
             >
-              Bài luận hay
+              Featured Essays
             </button>
             <button type="button" 
               onClick={() => setActiveTab('vocabularies')}
               className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'vocabularies' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
             >
-              Từ vựng nổi bật
+              Vocab Highlights
             </button>
           </div>
         </div>
