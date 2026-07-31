@@ -295,11 +295,34 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                             <span className="material-symbols-rounded text-xs animate-spin">refresh</span>
                             Đang tìm gợi ý...
                           </>
+                        ) : (
                           <>
                             <span className="material-symbols-rounded text-xs">auto_awesome</span>
                             Gợi ý viết lại cụm từ
                           </>
+                        )}
                       </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-bold text-accent/50 uppercase">Gợi ý từ AI:</p>
+                        {rephraseSuggestions.map((suggestion, i) => (
+                          <div 
+                            key={i} 
+                            onClick={() => {
+                              const newText = text.replace(selectedPhrase, suggestion);
+                              setText(newText);
+                              setSelectedPhrase('');
+                              setRephraseSuggestions([]);
+                              if ((window as any).showToast) {
+                                (window as any).showToast("Đã thay thế cụm từ thành công! 📝", "success");
+                              }
+                            }}
+                            className="p-2.5 bg-white dark:bg-neutral-800 hover:bg-primary/5 rounded-xl border border-primary/10 text-xs text-accent dark:text-secondary font-medium cursor-pointer transition-colors shadow-sm"
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
