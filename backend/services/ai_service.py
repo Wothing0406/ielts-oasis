@@ -1014,11 +1014,24 @@ Return ONLY the JSON array. Example:
             }
 
     async def generate_speaking_sentence(self, level: str):
+        import random
+        topics = [
+            "hobbies and leisure activities", "travel and tourism", "family and relationships", 
+            "education and school memories", "jobs and career aspirations", "modern technology and AI", 
+            "environmental issues and nature", "food, cooking and restaurants", "sports and physical health", 
+            "art, museums and design", "music and concerts", "childhood memories", 
+            "shopping and fashion trends", "public transportation and cities", "future plans and goals", 
+            "famous people and role models", "national culture and traditions", "daily routines", 
+            "learning foreign languages", "hometown changes over time"
+        ]
+        random_topic = random.choice(topics)
+        
         prompt = f"""
         Generate a single IELTS Speaking Shadowing sentence in English for the difficulty level: "{level}".
+        The generated sentence MUST be about the topic of: "{random_topic}". Make sure it is completely unique, creative, and different from typical boilerplate examples.
         - "easy": Short, simple grammatical structure, everyday vocabulary. (e.g. "I enjoy studying English in the morning.")
         - "medium": Standard sentence structure with common academic words. (e.g. "Technology plays a significant role in modern education.")
-        - "hard": Complex sentence structure, advanced lexical resources, formal IELTS style. (e.g. "Socioeconomic disparities significantly influence access to high-quality education and career opportunities.")
+        - "hard": Complex sentence structure, advanced lexical resources, formal IELTS style. (e.g. "Socioeconomic disparities significantly influence access to high-quality education.")
         
         Return ONLY a JSON object:
         {{
@@ -1043,13 +1056,23 @@ Return ONLY the JSON array. Example:
             return fallbacks.get(level, fallbacks["medium"])
 
     async def generate_speaking_cuecard(self, level: str):
+        import random
+        topics = [
+            "a person who inspired you", "a place you visited recently", "a book or movie that touched you",
+            "an important life decision", "a difficult challenge you overcame", "a technological innovation",
+            "an environmental conservation effort", "a memorable school or university memory", "a custom or tradition from your country",
+            "a hobby or sport you enjoy", "a job or career path you find interesting", "a city or town you would like to live in"
+        ]
+        random_topic = random.choice(topics)
+
         prompt = f"""
         Generate an IELTS Part 2 Cue Card topic and sub-prompts for the difficulty level: "{level}".
+        The generated cue card MUST be related to: "{random_topic}". Make it creative and unique.
         - "easy": Simple topic (e.g. describe a favorite book, describing a school event).
         - "medium": Standard IELTS topics (e.g. describing a city, describing a technological device).
         - "hard": Complex, abstract topics (e.g. describe a law that protects the environment, describe a historical event that changed your country).
         
-        Return ONLY a JSON object with this structure:
+        Return ONLY a JSON object with this exact structure:
         {{
             "topic": "Describe...",
             "prompts": [
