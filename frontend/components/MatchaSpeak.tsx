@@ -336,6 +336,9 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       peakVolumeRef.current = 0;
       try {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -446,8 +449,9 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       return;
     }
 
-    // Client-side silence check (peak RMS volume must exceed 0.015)
-    if (peakVolumeRef.current < 0.015) {
+    console.log("Peak audio RMS volume analyzed:", peakVolumeRef.current);
+    // Client-side silence check (peak RMS volume must exceed 0.003)
+    if (peakVolumeRef.current > 0 && peakVolumeRef.current < 0.003) {
       (window as any).showToast("No speech detected from microphone. Please speak louder and clearer! 🎙️", "warning");
       setIsEvaluating(false);
       return;
