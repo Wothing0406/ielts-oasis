@@ -832,10 +832,21 @@ Return ONLY the JSON array. Example:
         prompt = f"""
         Compare the user's spoken audio with the reference text: "{reference_text}".
         Verify the pronunciation of each word in the reference text in exact sequence.
-        For each word, label it as "correct", "warning", or "incorrect".
-        - "correct": Good pronunciation.
-        - "warning": Minor mistake (misplaced stress, missing ending sounds like 's', 't', 'd', wrong vowel length).
-        - "incorrect": Completely mispronounced, omitted, or wrong word.
+        The speaker is a Vietnamese student studying English. Listen carefully to their pronunciation.
+        
+        CRITICAL NOISE, SILENCE & LANGUAGE RULES:
+        - If the audio is silent, consists only of static noise, heavy breathing, or unintelligible mumbling, mark ALL words as "incorrect" and set the "tip" of the first word to "Không phát hiện giọng nói hoặc âm thanh không rõ ràng. Vui lòng nói to rõ hơn!".
+        - If the user is speaking Vietnamese (Tiếng Việt) instead of English (e.g. speaking Vietnamese words like "xin chào", "đọc thế này à", or translating), detect this immediately. Mark ALL words as "incorrect" and set the "tip" of the first word to "Tớ nghe hình như cậu đang nói tiếng Việt? Hãy phát âm câu tiếng Anh nhé! 🐻".
+        
+        PRONUNCIATION EVALUATION RULES:
+        If the audio is valid English speech, analyze each word:
+          - "correct": Good pronunciation matching native speech.
+          - "warning": Minor mistake. Pay close attention to typical Vietnamese student pitfalls:
+            * Dropping ending sounds (e.g., omitting final consonants like /s/, /z/, /t/, /d/, /k/, /g/, /v/, /f/).
+            * Confusing consonant sounds (e.g., pronouncing /ʃ/ as /s/, or /tʃ/ as /s/).
+            * Flat/monotone intonation or wrong word stress (e.g., flat pitch, not stressing keywords).
+            * Vowel length confusion (e.g., confusing long /i:/ with short /ɪ/).
+          - "incorrect": Completely mispronounced, omitted, or wrong word.
         
         Return ONLY a JSON array of objects, one for each word in the reference text in exact order:
         [
@@ -843,7 +854,7 @@ Return ONLY the JSON array. Example:
             "word": "word",
             "status": "correct" | "warning" | "incorrect",
             "ipa": "accurate IPA pronunciation of the word",
-            "tip": "Short tip in Vietnamese (e.g. 'Bật âm đuôi /t/', 'Chu môi phát âm /sh/')"
+            "tip": "Short tip in Vietnamese (e.g. 'Bật âm đuôi /t/', 'Nhớ bật hơi âm cuối /s/', 'Chu môi phát âm /sh/', 'Nhấn trọng âm ở âm tiết 2')"
           }}
         ]
         """
@@ -879,13 +890,18 @@ Return ONLY the JSON array. Example:
     async def evaluate_speaking_sandbox(self, audio_base64: str, mime_type: str, cue_card_prompt: str):
         prompt = f"""
         You are an official IELTS Speaking Examiner. Evaluate the attached audio response for the IELTS Part 2 Cue Card: "{cue_card_prompt}".
-        Evaluate based on the 4 official IELTS criteria:
+        The speaker is a Vietnamese IELTS student. Listen to their spoken English response.
+        
+        CRITICAL NOISE & SILENCE RULES:
+        - If the audio is silent, consists only of background noise, static, heavy breathing, or non-English speech, set "band_score" to 0.0, "wpm" to 0, "transcript" to "No speech detected", and set criteria.fluency to "No speech detected or audio unclear. Please check your microphone and try again!".
+        
+        If valid English speech is detected, evaluate based on the 4 official IELTS criteria:
         1. Fluency and Coherence
         2. Lexical Resource (Vocabulary)
         3. Grammatical Range and Accuracy
         4. Pronunciation
  
-        Also estimate an overall Band Score (between 0.0 and 9.0 in increments of 0.5), count/estimate the speech word-count and Words Per Minute (WPM), list key strengths and weaknesses, extract grammar corrections, and write a high-end Band 8.5+ Model Answer based on the user's ideas.
+        Also estimate an overall Band Score (between 0.0 and 9.0 in increments of 0.5), count/estimate the speech word-count and Words Per Minute (WPM), list key strengths and weaknesses, extract grammar corrections, list specific mispronounced words, and write a high-end Band 8.5+ Model Answer based on the user's ideas.
  
         Return ONLY a JSON object with this exact structure:
         {{
@@ -898,6 +914,13 @@ Return ONLY the JSON array. Example:
                 "grammar": "Grammar feedback...",
                 "pronunciation": "Pronunciation feedback..."
             }},
+            "mispronounced_words": [
+                {{
+                    "word": "mispronounced word",
+                    "ipa": "IPA transcription of word",
+                    "tip": "Short correction tip in English (e.g. 'Dropping final /s/', 'Wrong vowel stress')"
+                }}
+            ],
             "strengths": ["Strength point 1", "Strength point 2"],
             "weaknesses": ["Weakness point 1", "Weakness point 2"],
             "corrections": [
@@ -929,9 +952,10 @@ Return ONLY the JSON array. Example:
             print(f"evaluate_speaking_sandbox failed: {e}")
             return {
                 "band_score": 0.0,
-                "transcript": f"Lỗi phân tích âm thanh: {str(e)}",
+                "transcript": f"Audio analysis error: {str(e)}",
                 "wpm": 0,
-                "criteria": {"fluency": "Vui lòng kiểm tra lại mic của bạn.", "lexical": "", "grammar": "", "pronunciation": ""},
+                "criteria": {"fluency": "Please check your microphone and try again.", "lexical": "", "grammar": "", "pronunciation": ""},
+                "mispronounced_words": [],
                 "strengths": [],
                 "weaknesses": [],
                 "corrections": [],
@@ -941,22 +965,26 @@ Return ONLY the JSON array. Example:
     async def evaluate_speaking_reflex(self, audio_base64: str, mime_type: str, question: str):
         prompt = f"""
         You are a friendly, witty IELTS Coach named Matcha Bear.
-        Analyze the user's spoken audio response to your question: "{question}".
+        The speaker is a Vietnamese student studying English. Analyze their spoken audio response to your question: "{question}".
         
-        Transcribe the audio, then evaluate their speaking reflex:
-        1. Count the number of filler words used (e.g. "um", "uh", "ah", "like", "well").
-        2. Identify grammatical errors or pronunciation warnings.
+        CRITICAL NOISE, SILENCE & LANGUAGE AUDIT RULES:
+        - If the audio is silent, consists only of background static/noise, or heavy breathing, set "transcript" to "No speech detected", "filler_words_count" to 0, "filler_words_found": [], "feedback" to "I couldn't hear you clearly, please speak up! 🐻", and "witty_reply" to "I couldn't hear you clearly, could you repeat that? 🐻", "next_question" to the current question: "{question}".
+        - If the speaker speaks Vietnamese instead of English, detect this. Set "transcript" to "Spoke in Vietnamese", "filler_words_count" to 0, "filler_words_found": [], "feedback" to "It seems you are speaking Vietnamese! Please respond in English so I can help you practice. 🐻", "witty_reply" to "I caught some Vietnamese! Please answer in English so I can understand you. 😉 🐻", "next_question" to the current question: "{question}".
+        
+        If valid English speech is detected, evaluate their speaking reflex:
+        1. Count the number of filler words used. Pay attention to both English fillers ("um", "uh", "ah", "like", "well") and typical Vietnamese fillers.
+        2. Identify grammatical errors or pronunciation warnings typical for Vietnamese learners (e.g. dropping ending sounds /s/, /t/, /d/, flat tone).
         3. Formulate a witty, cozy, and humorous reply in English to what they said.
-        4. Ask a natural follow-up question related to the conversation to continue the game.
+        4. Ask a natural follow-up question in English related to the conversation to continue the game.
         
         Return ONLY a JSON object with this structure:
         {{
-            "transcript": "Transcribed text of what the user said...",
+            "transcript": "Transcribed text of what the user said in English...",
             "filler_words_count": 3,
-            "filler_words_found": ["um", "like"],
-            "feedback": "Short encouraging feedback in English on how to speak more fluently, suggesting fillers like 'Well, actually...', 'To be honest...'",
+            "filler_words_found": ["um", "like", "ờ"],
+            "feedback": "Encouraging feedback in English/Vietnamese focusing on flow, suggesting fillers like 'Well, actually...', 'To be honest...' instead of silent pauses or 'um/ah'",
             "witty_reply": "Matcha Bear's funny/warm reply in English...",
-            "next_question": "Next natural conversation follow-up question..."
+            "next_question": "Next natural conversation follow-up question in English..."
         }}
         """
         payload = {
@@ -977,12 +1005,12 @@ Return ONLY the JSON array. Example:
         except Exception as e:
             print(f"evaluate_speaking_reflex failed: {e}")
             return {
-                "transcript": "Không thể dịch giọng nói.",
+                "transcript": "Could not transcribe speech.",
                 "filler_words_count": 0,
                 "filler_words_found": [],
-                "feedback": f"Lỗi kết nối: {str(e)}",
-                "witty_reply": "Tớ không nghe thấy rõ, cậu nói lại nhé! 🐻",
-                "next_question": "Hãy thử một chủ đề khác. What is your favorite season?"
+                "feedback": f"Connection error: {str(e)}",
+                "witty_reply": "I couldn't hear you clearly, could you repeat that? 🐻",
+                "next_question": "Let's try another topic. What is your favorite season?"
             }
 
     async def generate_speaking_sentence(self, level: str):

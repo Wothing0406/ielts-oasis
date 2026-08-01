@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw } from 'lucide-react';
+import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
@@ -26,8 +26,17 @@ const LEVEL_SENTENCES = {
   ]
 };
 
-const CUE_CARDS = [
-  {
+const LEVEL_CUE_CARDS = {
+  easy: {
+    topic: "Describe a favorite book that you read recently.",
+    prompts: [
+      "What the book is and who wrote it",
+      "When you read it and what it is about",
+      "How you felt after reading it",
+      "And explain why you would recommend it to others."
+    ]
+  },
+  medium: {
     topic: "Describe a technological device you use daily.",
     prompts: [
       "What device it is and when you got it",
@@ -36,16 +45,7 @@ const CUE_CARDS = [
       "And explain whether you could live without it."
     ]
   },
-  {
-    topic: "Describe a memorable journey you took.",
-    prompts: [
-      "Where you went and how you traveled",
-      "Who you went with",
-      "What memorable activities you did",
-      "And explain why this journey stands out in your memory."
-    ]
-  },
-  {
+  hard: {
     topic: "Describe an environmental problem in your country.",
     prompts: [
       "What the environmental problem is",
@@ -53,6 +53,30 @@ const CUE_CARDS = [
       "How it affects people's health and lifestyle",
       "And explain what measures could be taken to solve it."
     ]
+  }
+};
+
+const STATIC_COMMUNITY_SUGGESTIONS = [
+  {
+    id: "static_1",
+    username: "ielts_champion",
+    content: "The rapid pace of urbanization has placed immense pressure on public infrastructure and housing. Many major cities around the globe face severe challenges.",
+    likes: 24,
+    comments: 5
+  },
+  {
+    id: "static_2",
+    username: "green_future",
+    content: "Environmental conservation requires immediate international cooperation to combat global warming. Individual actions alone are no longer sufficient to solve it.",
+    likes: 18,
+    comments: 2
+  },
+  {
+    id: "static_3",
+    username: "ai_educator",
+    content: "Traditional educational methods are being revolutionized by advanced digital learning platforms. Students now have access to customized tutoring globally.",
+    likes: 31,
+    comments: 9
   }
 ];
 
@@ -68,8 +92,8 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const [noiseCancellation, setNoiseCancellation] = useState<boolean>(true);
 
   // Shadowing state
-  const [currentLevel, setCurrentLevel] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [selectedSentence, setSelectedSentence] = useState<string>(LEVEL_SENTENCES.medium[0]);
+  const [currentLevel, setCurrentLevel] = useState<'easy' | 'medium' | 'hard' | null>(null);
+  const [selectedSentence, setSelectedSentence] = useState<string>("");
   const [shadowResult, setShadowResult] = useState<any[] | null>(null);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -83,10 +107,12 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   // Custom Text state
   const [customText, setCustomText] = useState<string>('');
   const [isUsingCustom, setIsUsingCustom] = useState<boolean>(false);
+  const [communitySuggestions, setCommunitySuggestions] = useState<any[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(false);
 
   // Sandbox state
   const [sandboxLevel, setSandboxLevel] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [selectedCard, setSelectedCard] = useState(CUE_CARDS[0]);
+  const [selectedCard, setSelectedCard] = useState(LEVEL_CUE_CARDS.medium);
   const [prepSeconds, setPrepSeconds] = useState(60);
   const [isPrepActive, setIsPrepActive] = useState(false);
   const [sandboxResult, setSandboxResult] = useState<any | null>(null);
@@ -96,6 +122,9 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
   const prepTimerRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const volumeTimerRef = useRef<any>(null);
+  const peakVolumeRef = useRef<number>(0);
 
   // Load initial context if passed (e.g. from community feed)
   useEffect(() => {
@@ -110,9 +139,34 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     }
   }, [initialContext]);
 
+  const loadCommunitySuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      const token = localStorage.getItem("oasis_token");
+      const headers: any = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      const res = await fetch(`${API_URL}/community/feed?sort_by=hot`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setCommunitySuggestions(data.writings || []);
+      }
+    } catch (e) {
+      console.error("Failed to load community suggestions:", e);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isUsingCustom) {
+      loadCommunitySuggestions();
+    }
+  }, [isUsingCustom]);
+
   // Update sentence when level changes
   useEffect(() => {
-    if (!isUsingCustom) {
+    if (!isUsingCustom && currentLevel) {
       setSelectedSentence(LEVEL_SENTENCES[currentLevel][0]);
       setShadowResult(null);
       setSelectedWord(null);
@@ -120,6 +174,16 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       setShowGuide(false);
     }
   }, [currentLevel, isUsingCustom]);
+  
+  // Update sandbox cue card when sandboxLevel changes
+  useEffect(() => {
+    if (sandboxLevel) {
+      setSelectedCard(LEVEL_CUE_CARDS[sandboxLevel]);
+      setSandboxResult(null);
+      setIsPrepActive(false);
+      if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+    }
+  }, [sandboxLevel]);
 
   // Format timer
   const formatTime = (secs: number) => {
@@ -167,7 +231,8 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     
     setIsGeneratingSentence(true);
     try {
-      const res = await fetch(`${API_URL}/speaking/generate-sentence?level=${currentLevel}`, {
+      const lvl = currentLevel || 'medium';
+      const res = await fetch(`${API_URL}/speaking/generate-sentence?level=${lvl}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -266,6 +331,34 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       audioChunksRef.current = [];
+      
+      // Setup Web Audio API volume analyzer
+      peakVolumeRef.current = 0;
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        audioContextRef.current = audioContext;
+        
+        const dataArray = new Uint8Array(analyser.fftSize);
+        volumeTimerRef.current = setInterval(() => {
+          analyser.getByteTimeDomainData(dataArray);
+          let sumSq = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const val = (dataArray[i] - 128) / 128;
+            sumSq += val * val;
+          }
+          const rms = Math.sqrt(sumSq / dataArray.length);
+          if (rms > peakVolumeRef.current) {
+            peakVolumeRef.current = rms;
+          }
+        }, 100);
+      } catch (e) {
+        console.error("Audio analyzer failed to initialize:", e);
+      }
+
       const options = { mimeType: 'audio/webm' };
       
       let mediaRecorder;
@@ -329,6 +422,14 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
 
   // Stop Recording
   const stopRecording = () => {
+    if (volumeTimerRef.current) {
+      clearInterval(volumeTimerRef.current);
+      volumeTimerRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
@@ -342,6 +443,13 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     const token = localStorage.getItem("oasis_token");
     if (!token) {
       (window as any).showToast("Please log in to practice speaking! 🍵", "info");
+      return;
+    }
+
+    // Client-side silence check (peak RMS volume must exceed 0.015)
+    if (peakVolumeRef.current < 0.015) {
+      (window as any).showToast("No speech detected from microphone. Please speak louder and clearer! 🎙️", "warning");
+      setIsEvaluating(false);
       return;
     }
 
@@ -574,22 +682,67 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   className="w-full text-xs p-3 border border-primary/10 rounded-xl focus:outline-none focus:border-primary/40 bg-white"
                   rows={3}
                 />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customText.trim()) {
-                      setSelectedSentence(customText.trim());
-                      setShadowResult(null);
-                      setSelectedWord(null);
-                      setPronunciationGuide(null);
-                      setShowGuide(false);
-                      (window as any).showToast("Loaded custom text successfully!", "success");
-                    }
-                  }}
-                  className="bg-primary text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all"
-                >
-                  Apply Custom Text
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customText.trim()) {
+                        setSelectedSentence(customText.trim());
+                        setShadowResult(null);
+                        setSelectedWord(null);
+                        setPronunciationGuide(null);
+                        setShowGuide(false);
+                        (window as any).showToast("Loaded custom text successfully!", "success");
+                      }
+                    }}
+                    className="bg-primary text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Apply Custom Text
+                  </button>
+                  <span className="text-[10px] font-bold text-primary/80 bg-primary/5 px-2 py-0.5 rounded-md">
+                    ✨ 100% AI Grading Supported
+                  </span>
+                </div>
+
+                {/* Community Suggestions */}
+                <div className="mt-4 pt-3 border-t border-primary/10 space-y-2">
+                  <span className="text-[10px] font-black text-primary uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Suggestions from Oasis Community:
+                  </span>
+                  {isLoadingSuggestions ? (
+                    <p className="text-[10px] text-accent/50 animate-pulse">Loading hot community posts...</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1">
+                      {(communitySuggestions.length > 0 ? communitySuggestions : STATIC_COMMUNITY_SUGGESTIONS).slice(0, 4).map((post) => (
+                        <button
+                          key={post.id}
+                          type="button"
+                          onClick={() => {
+                            const content = post.full_content || post.content;
+                            setCustomText(content);
+                            setSelectedSentence(content);
+                            setShadowResult(null);
+                            setSelectedWord(null);
+                            setPronunciationGuide(null);
+                            setShowGuide(false);
+                            (window as any).showToast(`Loaded post by @${post.username}! 🍵`, "success");
+                          }}
+                          className="text-left p-2.5 bg-white hover:bg-primary/5 rounded-xl border border-primary/10 transition-all group flex flex-col justify-between"
+                        >
+                          <p className="text-[11px] text-accent font-semibold line-clamp-2 italic mb-1.5 group-hover:text-primary">
+                            "{post.content}"
+                          </p>
+                          <div className="flex justify-between items-center text-[9px] text-accent/50 w-full mt-auto">
+                            <span className="font-bold text-primary">@{post.username}</span>
+                            <span className="flex items-center gap-0.5">
+                              <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" /> {post.likes || 0}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1041,6 +1194,24 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       </ul>
                     </div>
                   </div>
+
+                  {/* Pronunciation & Accent Feedback */}
+                  {sandboxResult.mispronounced_words && sandboxResult.mispronounced_words.length > 0 && (
+                    <div className="bg-white border border-primary/10 p-6 rounded-3xl space-y-3">
+                      <h4 className="text-xs font-black uppercase text-accent tracking-wider">Pronunciation & Accent Feedback</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {sandboxResult.mispronounced_words.map((w: any, idx: number) => (
+                          <div key={idx} className="p-3.5 bg-amber-50/40 rounded-2xl border border-amber-100/50 flex flex-col gap-1">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-accent text-xs">"{w.word}"</span>
+                              {w.ipa && <span className="text-[10px] text-primary italic font-bold">IPA: {w.ipa}</span>}
+                            </div>
+                            {w.tip && <p className="text-[10px] text-accent/70 font-semibold mt-1">💡 {w.tip}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Grammatical Corrections */}
                   {sandboxResult.corrections && sandboxResult.corrections.length > 0 && (

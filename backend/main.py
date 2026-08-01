@@ -197,9 +197,55 @@ async def startup_event():
     # Start background enrichment
     asyncio.create_task(backfill_vocabularies())
 
+def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: list):
+    content_type = file.content_type if file.content_type else ""
+    # Check if content type contains any of allowed mimes
+    is_allowed = any(mime.lower() in content_type.lower() for mime in allowed_mimes)
+    
+    if not is_allowed:
+        # Fallback check file extension if MIME type check fails or is generic
+        ext = os.path.splitext(file.filename.lower())[1] if file.filename else ""
+        allowed_exts = []
+        for m in allowed_mimes:
+            if "image/" in m:
+                allowed_exts.extend([".jpg", ".jpeg", ".png", ".webp"])
+            elif "audio/" in m:
+                allowed_exts.extend([".webm", ".wav", ".mp3", ".ogg", ".m4a"])
+            elif "pdf" in m:
+                allowed_exts.append(".pdf")
+            elif "document" in m:
+                allowed_exts.append(".docx")
+            elif "text/" in m:
+                allowed_exts.append(".txt")
+        if ext not in allowed_exts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type. Allowed categories: {', '.join(allowed_mimes)}"
+            )
+
+    # Validate file size
+    try:
+        # Seek to end to get file size
+        file.file.seek(0, 2)
+        size = file.file.tell()
+        file.file.seek(0) # Seek back to start
+        
+        max_bytes = max_size_mb * 1024 * 1024
+        if size > max_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large: {size / (1024 * 1024):.2f}MB. Max allowed size is {max_size_mb}MB."
+            )
+    except Exception as e:
+        # Avoid failing if seek/tell fails on empty/stream files
+        pass
+
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in allowed_origins_str.split(",")] if allowed_origins_str else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -336,6 +382,7 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
 
 @app.post("/vocabulary/detect")
 async def detect_vocabulary(file: UploadFile = File(...)):
+    validate_uploaded_file(file, 10.0, ["image/jpeg", "image/png", "image/webp"])
     try:
         contents = await file.read()
         img = Image.open(BytesIO(contents)).convert("RGB")
@@ -383,6 +430,7 @@ async def detect_vocabulary(file: UploadFile = File(...)):
 
 @app.post("/scroll/extract")
 async def extract_scroll(file: UploadFile = File(...)):
+    validate_uploaded_file(file, 10.0, ["image/jpeg", "image/png", "image/webp", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"])
     filename = file.filename.lower()
     extracted_words = []
     text_content = ""
@@ -1493,6 +1541,7 @@ async def speaking_shadowing(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    validate_uploaded_file(file, 5.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")
@@ -1512,6 +1561,7 @@ async def speaking_sandbox(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    validate_uploaded_file(file, 10.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")
@@ -1531,6 +1581,7 @@ async def speaking_reflex(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    validate_uploaded_file(file, 5.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")

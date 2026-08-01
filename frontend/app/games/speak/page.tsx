@@ -40,6 +40,9 @@ export default function SpeakingReflexGame() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
   const questionStartTimeRef = useRef<number>(Date.now());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const volumeTimerRef = useRef<any>(null);
+  const peakVolumeRef = useRef<number>(0);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
@@ -81,8 +84,42 @@ export default function SpeakingReflexGame() {
       const delay = (now - questionStartTimeRef.current) / 1000;
       setResponseDelay(delay);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
       audioChunksRef.current = [];
+      
+      // Setup Web Audio API volume analyzer
+      peakVolumeRef.current = 0;
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        audioContextRef.current = audioContext;
+        
+        const dataArray = new Uint8Array(analyser.fftSize);
+        volumeTimerRef.current = setInterval(() => {
+          analyser.getByteTimeDomainData(dataArray);
+          let sumSq = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const val = (dataArray[i] - 128) / 128;
+            sumSq += val * val;
+          }
+          const rms = Math.sqrt(sumSq / dataArray.length);
+          if (rms > peakVolumeRef.current) {
+            peakVolumeRef.current = rms;
+          }
+        }, 100);
+      } catch (e) {
+        console.error("Audio analyzer failed to initialize:", e);
+      }
+
       const options = { mimeType: 'audio/webm' };
       
       let mediaRecorder;
@@ -125,6 +162,14 @@ export default function SpeakingReflexGame() {
   };
 
   const stopRecording = () => {
+    if (volumeTimerRef.current) {
+      clearInterval(volumeTimerRef.current);
+      volumeTimerRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
@@ -137,6 +182,13 @@ export default function SpeakingReflexGame() {
     const token = localStorage.getItem("oasis_token");
     if (!token) {
       (window as any).showToast("Please log in to play!", "info");
+      return;
+    }
+
+    // Client-side silence check (peak RMS volume must exceed 0.015)
+    if (peakVolumeRef.current < 0.015) {
+      (window as any).showToast("No speech detected from microphone. Please speak louder and clearer! 🎙️", "warning");
+      setIsEvaluating(false);
       return;
     }
 
