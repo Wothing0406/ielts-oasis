@@ -112,7 +112,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
 
   // Sandbox state
   const [sandboxLevel, setSandboxLevel] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [selectedCard, setSelectedCard] = useState(LEVEL_CUE_CARDS.medium);
+  const [selectedCard, setSelectedCard] = useState<any>(null);
   const [prepSeconds, setPrepSeconds] = useState(60);
   const [isPrepActive, setIsPrepActive] = useState(false);
   const [sandboxResult, setSandboxResult] = useState<any | null>(null);
@@ -164,10 +164,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     }
   }, [isUsingCustom]);
 
-  // Update sentence when level changes
+  // Reset sentence when level changes (user must click AI Generate)
   useEffect(() => {
     if (!isUsingCustom && currentLevel) {
-      setSelectedSentence(LEVEL_SENTENCES[currentLevel][0]);
+      setSelectedSentence("");
       setShadowResult(null);
       setSelectedWord(null);
       setPronunciationGuide(null);
@@ -175,10 +175,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     }
   }, [currentLevel, isUsingCustom]);
   
-  // Update sandbox cue card when sandboxLevel changes
+  // Clear sandbox cue card when sandboxLevel changes (user must click AI Generate)
   useEffect(() => {
     if (sandboxLevel) {
-      setSelectedCard(LEVEL_CUE_CARDS[sandboxLevel]);
+      setSelectedCard(null);
       setSandboxResult(null);
       setIsPrepActive(false);
       if (prepTimerRef.current) clearInterval(prepTimerRef.current);
@@ -778,7 +778,11 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               <div className="bg-[#f7fdf9] p-8 rounded-3xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center text-center gap-3">
                 <Info className="text-primary w-8 h-8 animate-bounce" />
                 <h4 className="font-display font-bold text-accent text-sm">No Practice Sentence Selected</h4>
-                <p className="text-xs text-accent/60 max-w-sm">Select a difficulty level above (Easy/Medium/Hard) to practice, or switch to "Custom Text" to paste your own sentence.</p>
+                <p className="text-xs text-accent/60 max-w-sm">
+                  {currentLevel 
+                    ? `Click the "✨ AI Generate" button above to generate a new English shadowing sentence for the ${currentLevel} level!` 
+                    : "Select a difficulty level above (Easy/Medium/Hard) and click 'AI Generate' to practice, or switch to 'Custom Text' to paste your own sentence."}
+                </p>
               </div>
             )}
 
@@ -1031,15 +1035,23 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                     </button>
                   </div>
                   
-                  <div className="p-4 bg-white rounded-2xl border border-primary/5 shadow-inner">
-                    <h4 className="font-bold text-accent text-sm leading-snug mb-3">Topic: "{selectedCard.topic}"</h4>
-                    <p className="text-xs text-accent/60 mb-2 font-semibold">You should say:</p>
-                    <ul className="text-xs text-accent/80 space-y-1.5 list-disc pl-4 font-medium">
-                      {selectedCard.prompts.map((p, idx) => (
-                        <li key={idx}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  {selectedCard?.topic ? (
+                    <div className="p-4 bg-white rounded-2xl border border-primary/5 shadow-inner">
+                      <h4 className="font-bold text-accent text-sm leading-snug mb-3">Topic: "{selectedCard.topic}"</h4>
+                      <p className="text-xs text-accent/60 mb-2 font-semibold">You should say:</p>
+                      <ul className="text-xs text-accent/80 space-y-1.5 list-disc pl-4 font-medium">
+                        {selectedCard.prompts.map((p: string, idx: number) => (
+                          <li key={idx}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="p-6 bg-white rounded-2xl border border-dashed border-primary/20 flex flex-col items-center justify-center text-center gap-2">
+                      <Sparkles className="text-primary w-5 h-5 animate-pulse" />
+                      <h5 className="font-bold text-accent text-xs">No IELTS Card Generated</h5>
+                      <p className="text-[10px] text-accent/50 max-w-[200px]">Select a level and click 'AI Generate' above to create your IELTS Part 2 cue card.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 flex items-center justify-between gap-4">
