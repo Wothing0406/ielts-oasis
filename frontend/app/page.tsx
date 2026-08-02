@@ -42,16 +42,16 @@ export default function Home() {
     (window as any).showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
       setToast({ message, type });
     };
-    (window as any).showAlert = (message: string, title: string = "Thông báo", type: 'success' | 'error' | 'warning' = 'success') => {
+    (window as any).showAlert = (message: string, title: string = "Notification", type: 'success' | 'error' | 'warning' = 'success') => {
       setModal({ title, message, type, onConfirm: () => setModal(null) });
     };
-    (window as any).showConfirm = (message: string, onConfirm: () => void, title: string = "Xác nhận") => {
+    (window as any).showConfirm = (message: string, onConfirm: () => void, title: string = "Confirm") => {
       setModal({
         title,
         message,
         type: 'confirm',
-        confirmText: 'Đồng ý',
-        cancelText: 'Hủy',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
         onConfirm: () => {
           onConfirm();
           setModal(null);
@@ -312,7 +312,7 @@ export default function Home() {
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
     
     if (!captchaToken) {
-      (window as any).showToast("Vui lòng hoàn thành xác thực Captcha Turnstile! 🍵", "error");
+      (window as any).showToast("Please complete the Turnstile Captcha verification! 🍵", "error");
       return;
     }
     
@@ -335,14 +335,14 @@ export default function Home() {
         localStorage.setItem("oasis_guest_id", data.guest_id);
         setUser(data.user);
         fetchVocabs(data.token);
-        (window as any).showToast("Đăng nhập thành công! Chào mừng cậu trở lại 🍵", "success");
+        (window as any).showToast("Login successful! Welcome back 🍵", "success");
       } else {
-        (window as any).showToast(data.detail || "Đăng nhập thất bại.", "error");
+        (window as any).showToast(data.detail || "Login failed.", "error");
         resetCaptcha();
       }
     } catch (err) {
       console.error(err);
-      (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+      (window as any).showToast("Server connection error. 🍵", "error");
       resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
@@ -353,7 +353,7 @@ export default function Home() {
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
     
     if (!captchaToken) {
-      (window as any).showToast("Vui lòng hoàn thành xác thực Captcha Turnstile! 🍵", "error");
+      (window as any).showToast("Please complete the Turnstile Captcha verification! 🍵", "error");
       return;
     }
 
@@ -371,16 +371,16 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
-        (window as any).showToast("Đăng ký thành công! Hãy nhấn nút Vào Học để bắt đầu nhé 🍵", "success");
+        (window as any).showToast("Registration successful! Click Enter Oasis to start learning 🍵", "success");
         setAuthMode("login");
         resetCaptcha();
       } else {
-        (window as any).showToast(data.detail || "Đăng ký thất bại.", "error");
+        (window as any).showToast(data.detail || "Registration failed.", "error");
         resetCaptcha();
       }
     } catch (err) {
       console.error(err);
-      (window as any).showToast("Lỗi kết nối máy chủ. 🍵", "error");
+      (window as any).showToast("Server connection error. 🍵", "error");
       resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
@@ -433,7 +433,7 @@ export default function Home() {
         <div className="w-full max-w-md bg-[#FAFBF9]/95 backdrop-blur-xl border-4 border-[#8F9E8B]/40 rounded-[2.5rem] shadow-[0_25px_60px_rgba(46,62,43,0.22)] p-8 relative z-10 flex flex-col items-center">
           {/* Wooden Top Accent Tag */}
           <div className="absolute -top-3.5 bg-[#5D4037] text-[#FAF8F5] px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
-            🍵 Cổng vào Oasis
+            🍵 Oasis Entryway
           </div>
 
           {/* Logo Brand */}
@@ -441,13 +441,13 @@ export default function Home() {
             <span className="text-4xl filter drop-shadow-md">🍵</span>
           </div>
           
-          <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">Mát Cha AI Eo</h1>
-          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">Không Gian Học Tập Yên Bình</p>
+          <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">Matcha IELTS</h1>
+          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">A Peaceful Academic Haven</p>
 
           {/* Discord Priority Highlight Banner */}
           <div className="w-full bg-gradient-to-r from-[#5865F2]/10 via-[#7A9A6A]/15 to-[#5865F2]/10 border-2 border-[#5865F2]/30 rounded-2xl p-3.5 mb-3 text-center shadow-sm">
             <p className="text-xs font-black text-[#2E3E2B] flex items-center justify-center gap-1.5 leading-snug">
-              <span>🤖</span> Đăng nhập bằng Discord bạn sẽ có một trợ lý chatbot tư vấn cực kì nhiệt tình! 🍵
+              <span>🤖</span> Log in with Discord to get a personalized dynamic study buddy! 🍵
             </p>
           </div>
 
@@ -459,13 +459,13 @@ export default function Home() {
             <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
               <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
             </svg>
-            ĐĂNG NHẬP BẰNG DISCORD (KHUYÊN DÙNG ⭐)
+            LOG IN WITH DISCORD (RECOMMENDED ⭐)
           </button>
 
           {/* Divider */}
           <div className="w-full flex items-center my-3 gap-3">
             <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
-            <span className="text-[9px] font-black text-[#5D4037]/60 uppercase tracking-widest">hoặc tài khoản thường</span>
+            <span className="text-[9px] font-black text-[#5D4037]/60 uppercase tracking-widest">or guest account</span>
             <div className="flex-1 h-[1px] bg-[#8F9E8B]/25" />
           </div>
 
@@ -479,7 +479,7 @@ export default function Home() {
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
               }`}
             >
-              Đăng Nhập
+              Log In
             </button>
             <button
               onClick={() => { setAuthMode("register"); }}
@@ -489,17 +489,17 @@ export default function Home() {
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
               }`}
             >
-              Đăng Ký
+              Register
             </button>
           </div>
 
           {/* Auth Form */}
           <form onSubmit={handleGuestLogin} className="w-full flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Tên tài khoản</label>
+              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Username</label>
               <input
                 type="text"
-                placeholder="Nhập tên tài khoản..."
+                placeholder="Enter username..."
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
@@ -508,10 +508,10 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Mật khẩu</label>
+              <label className="text-[10px] font-black uppercase text-[#5D4037] tracking-wider px-2">Password</label>
               <input
                 type="password"
-                placeholder="Nhập mật khẩu..."
+                placeholder="Enter password..."
                 value={guestPassword}
                 onChange={(e) => setGuestPassword(e.target.value)}
                 className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
@@ -530,7 +530,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Đang pha Matcha..." : "BẮT ĐẦU VÀO HỌC NGAY 🍵"}
+                {isGuestLoggingIn ? "Brewing Matcha..." : "ENTER OASIS NOW 🍵"}
               </button>
             ) : (
               <button
@@ -539,7 +539,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Đang tạo tài khoản..." : "ĐĂNG KÝ TÀI KHOẢN MỚI 🍀"}
+                {isGuestLoggingIn ? "Creating Account..." : "CREATE NEW ACCOUNT 🍀"}
               </button>
             )}
           </form>
@@ -547,10 +547,10 @@ export default function Home() {
           {/* Validation Rules Scroll Card */}
           <div className="w-full bg-[#F5F2EB] border-l-4 border-[#8F9E8B] rounded-2xl p-3.5 mt-4 text-[10px] text-[#5D4037] leading-relaxed flex flex-col gap-1 shadow-sm">
             <div className="font-black text-[#2E3E2B] flex items-center gap-1 mb-0.5">
-              <span>📌</span> Quy tắc tài khoản thường:
+              <span>📌</span> Guest Account Rules:
             </div>
-            <div>• <b>Tên tài khoản:</b> 3-20 kí tự (a-z, 0-9, _, .)</div>
-            <div>• <b>Mật khẩu:</b> Tối thiểu 6 kí tự để bảo mật bài học.</div>
+            <div>• <b>Username:</b> 3-20 characters (a-z, 0-9, _, .)</div>
+            <div>• <b>Password:</b> Minimum 6 characters for security.</div>
           </div>
         </div>
 
@@ -570,8 +570,8 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
           <div>
-            <h2 className="text-4xl font-display font-bold">Chào cậu, {user ? user.username : 'nhé'} :3<span className="animate-pulse">🍵</span></h2>
-            <p className="text-lg opacity-70">Hôm nay cậu muốn học kỹ năng gì nào?</p>
+            <h2 className="text-4xl font-display font-bold">Hello {user ? user.username : 'there'} :3<span className="animate-pulse">🍵</span></h2>
+            <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
@@ -583,7 +583,7 @@ export default function Home() {
                 </div>
               )}
               <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
-                Đăng xuất
+                Log Out
               </button>
             </div>
             <Link
@@ -613,13 +613,13 @@ export default function Home() {
                   style={{ opacity: 1, backgroundColor: '#ffffff' }}
                 >
                   <h4 className="font-bold text-sm text-accent mb-3 flex items-center justify-between">
-                    <span>Thông báo mới</span>
+                    <span>New Notifications</span>
                     <button
                       type="button"
                       onClick={() => setShowNotifications(false)}
                       className="text-xs text-primary font-bold hover:underline"
                     >
-                      Đóng
+                      Close
                     </button>
                   </h4>
                   <div className="flex flex-col gap-2">
@@ -636,7 +636,7 @@ export default function Home() {
                       </div>
                     ))}
                     {displayNotifications.length === 0 && (
-                      <p className="text-center text-xs text-accent/40 py-6">Không có thông báo mới nào.</p>
+                      <p className="text-center text-xs text-accent/40 py-6">No new notifications.</p>
                     )}
                   </div>
                 </div>

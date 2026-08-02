@@ -15,13 +15,13 @@ interface DailyPlannerProps {
 }
 
 const DAY_LABELS: { [key: string]: string } = {
-  "Monday": "Thứ 2",
-  "Tuesday": "Thứ 3",
-  "Wednesday": "Thứ 4",
-  "Thursday": "Thứ 5",
-  "Friday": "Thứ 6",
-  "Saturday": "Thứ 7",
-  "Sunday": "Chủ nhật"
+  "Monday": "Mon",
+  "Tuesday": "Tue",
+  "Wednesday": "Wed",
+  "Thursday": "Thu",
+  "Friday": "Fri",
+  "Saturday": "Sat",
+  "Sunday": "Sun"
 };
 
 const DAYS_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -88,7 +88,7 @@ export default function DailyPlanner({
   const updatePreferences = async () => {
     if (!topic.trim()) return;
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu cấu hình lộ trình! 🍵", "info");
+    if (!token) return (window as any).showToast("You need to log in to save your study plan! 🍵", "info");
     
     setLoading(true);
     setError("");
@@ -102,7 +102,7 @@ export default function DailyPlanner({
         body: JSON.stringify({ topic, study_focus: studyFocus, study_time: studyTime, active_days: activeDays.join(",") }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Có lỗi xảy ra");
+      if (!res.ok) throw new Error(data.detail || "An error occurred");
       
       setWeeklyPlan(data.weekly_plan);
       setTopic(data.preferences.topic);
@@ -123,7 +123,7 @@ export default function DailyPlanner({
       }
       
       setShowSettings(false);
-      (window as any).showToast("Lộ trình học đã được thiết lập thành công! 🍵", "success");
+      (window as any).showToast("Study plan configured successfully! 🍵", "success");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -136,7 +136,7 @@ export default function DailyPlanner({
     if (!token) return;
     
     (window as any).showConfirm(
-      "Bạn có chắc chắn muốn xóa lộ trình học tập hiện tại không? Việc này cũng sẽ xóa lịch hẹn nhắc học hàng ngày trên Discord.",
+      "Are you sure you want to delete your current study plan? This will also remove your daily Discord study schedule reminders.",
       async () => {
         setLoading(true);
         setError("");
@@ -152,10 +152,10 @@ export default function DailyPlanner({
             setStudyTime("20:00");
             setActiveDays(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
             setShowSettings(false);
-            (window as any).showToast("Lộ trình học đã được xóa thành công! 🍵", "success");
+            (window as any).showToast("Study plan deleted successfully! 🍵", "success");
           } else {
             const data = await res.json();
-            throw new Error(data.detail || "Có lỗi xảy ra");
+            throw new Error(data.detail || "An error occurred");
           }
         } catch (err: any) {
           setError(err.message);
@@ -163,24 +163,24 @@ export default function DailyPlanner({
           setLoading(false);
         }
       },
-      "Xóa Lộ Trình"
+      "Delete Plan"
     );
   };
 
   const copyCalendarLink = () => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lấy link lịch! 🍵", "info");
+    if (!token) return (window as any).showToast("You need to log in to get the calendar link! 🍵", "info");
     
     const calUrl = `${window.location.origin}${API_URL}/study-plan/calendar.ics?token=${token}`;
     navigator.clipboard.writeText(calUrl);
     
     (window as any).showAlert(
-      "Đã sao chép link lịch vào bộ nhớ tạm! Để đồng bộ lên Google Calendar:\n\n" +
-      "1. Mở trang Google Calendar (Lịch Google).\n" +
-      "2. Nhấn vào nút '+' ở cạnh mục 'Lịch khác' (Other Calendars) bên trái.\n" +
-      "3. Chọn 'Từ URL' (From URL) và dán link vừa copy vào.\n" +
-      "4. Nhấn 'Thêm lịch' để hoàn tất! Lịch học sẽ tự động đồng bộ hàng ngày. 🍵", 
-      "Đồng bộ Google Lịch!", 
+      "Calendar link copied to clipboard! To sync with Google Calendar:\n\n" +
+      "1. Open Google Calendar.\n" +
+      "2. Click '+' next to 'Other calendars' on the left side.\n" +
+      "3. Select 'From URL' and paste the copied link.\n" +
+      "4. Click 'Add calendar' to complete! It will sync automatically daily. 🍵", 
+      "Google Calendar Sync", 
       "success"
     );
   };
@@ -197,7 +197,7 @@ export default function DailyPlanner({
             <span className="material-symbols-rounded text-primary text-3xl">calendar_month</span>
             Matcha Daily Plan
           </h2>
-          <p className="text-sm text-accent/70 mt-1">Lộ trình học IELTS 7 ngày thông minh, đồng bộ hóa đa nền tảng</p>
+          <p className="text-sm text-accent/70 mt-1">Smart 7-day IELTS adaptive study plan, synced across platforms</p>
         </div>
         <div className="flex gap-2">
           {weeklyPlan && (
@@ -207,7 +207,7 @@ export default function DailyPlanner({
               className="bg-[#eef7f2] border-2 border-primary/20 text-primary font-bold px-4 py-2 rounded-full flex items-center gap-2 hover:scale-105 transition-all text-xs"
             >
               <span className="material-symbols-rounded text-sm">edit_calendar</span>
-              Đồng bộ Google Lịch
+              Sync Google Calendar
             </button>
           )}
           <button 
@@ -218,7 +218,7 @@ export default function DailyPlanner({
             }`}
           >
             <span className="material-symbols-rounded text-sm">settings</span>
-            Cài đặt lộ trình
+            Plan Settings
           </button>
         </div>
       </div>
@@ -233,44 +233,44 @@ export default function DailyPlanner({
             className="overflow-hidden bg-[#FFFDF5] border-2 border-primary/10 p-6 rounded-3xl flex flex-col gap-4 shadow-sm"
           >
             <h3 className="font-display font-bold text-accent flex items-center gap-2 border-b border-primary/10 pb-2">
-              <span className="material-symbols-rounded text-primary">tune</span> Cấu hình lộ trình học cá nhân hóa
+              <span className="material-symbols-rounded text-primary">tune</span> Configure Personalized Study Plan
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Topic Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-accent/80">Chủ đề học mục tiêu</label>
+                <label className="text-xs font-bold text-accent/80">Target Study Topic</label>
                 <input 
                   type="text"
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
-                  placeholder="Nhập chủ đề (ví dụ: Environment, Education...)"
+                  placeholder="Enter topic (e.g. Environment, Education...)"
                   className="px-4 py-2.5 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner placeholder:text-accent/60 text-sm"
                 />
               </div>
 
               {/* Study Focus */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-accent/80">Trọng tâm học thuật</label>
+                <label className="text-xs font-bold text-accent/80">Study Focus</label>
                 <select
                   value={studyFocus}
                   onChange={e => setStudyFocus(e.target.value)}
                   className="px-4 py-2.5 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium bg-white text-sm"
                 >
-                  <option value="Toàn diện">Toàn diện (Đều các kỹ năng)</option>
-                  <option value="Từ vựng">Chuyên sâu Từ vựng (SRS, Đọc báo)</option>
-                  <option value="Nói">Chuyên sâu Nói (Shadowing, Sandbox)</option>
-                  <option value="Viết">Chuyên sâu Viết (Writing Sanctuary)</option>
+                  <option value="Toàn diện">Comprehensive (All Skills)</option>
+                  <option value="Từ vựng">Vocabulary Focus (SRS, News)</option>
+                  <option value="Nói">Speaking Focus (Shadowing, Sandbox)</option>
+                  <option value="Viết">Writing Focus (Writing Sanctuary)</option>
                 </select>
               </div>
 
               {/* Study Time */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-accent/80">Giờ nhắc học hàng ngày (Discord)</label>
+                <label className="text-xs font-bold text-accent/80">Daily Discord Reminder Time</label>
                 <input 
                   type="text"
                   value={studyTime}
                   onChange={e => setStudyTime(e.target.value)}
-                  placeholder="Ví dụ: 20:00 hoặc 08:30"
+                  placeholder="e.g. 20:00 or 08:30"
                   className="px-4 py-2.5 rounded-full border-2 border-primary/20 focus:border-primary outline-none text-accent font-medium shadow-inner text-sm"
                 />
               </div>
@@ -278,7 +278,7 @@ export default function DailyPlanner({
 
             {/* Active Study Days */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-accent/80">Chọn ngày học trong tuần</label>
+              <label className="text-xs font-bold text-accent/80">Active Study Days of Week</label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {DAYS_ORDER.map((day) => {
                   const isSelected = activeDays.includes(day);
@@ -291,7 +291,7 @@ export default function DailyPlanner({
                           if (activeDays.length > 1) {
                             setActiveDays(activeDays.filter(d => d !== day));
                           } else {
-                            (window as any).showToast("Bạn cần chọn ít nhất 1 ngày học! 🍵", "info");
+                            (window as any).showToast("You must select at least 1 study day! 🍵", "info");
                           }
                         } else {
                           setActiveDays([...activeDays, day]);
@@ -317,7 +317,7 @@ export default function DailyPlanner({
                   onClick={clearPlan}
                   className="px-5 py-2.5 rounded-full font-bold text-red-600 border-2 border-red-500/20 hover:bg-red-50 text-sm transition-all"
                 >
-                  Xóa Lộ Trình Hiện Tại
+                  Delete Current Plan
                 </button>
               ) : (
                 <div />
@@ -329,7 +329,7 @@ export default function DailyPlanner({
                     onClick={() => setShowSettings(false)}
                     className="px-6 py-2.5 rounded-full font-bold text-accent hover:bg-black/5 text-sm"
                   >
-                    Hủy
+                    Cancel
                   </button>
                 )}
               <button 
@@ -339,9 +339,9 @@ export default function DailyPlanner({
                 className="bg-primary text-white font-bold px-8 py-2.5 rounded-full flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none text-sm"
               >
                 {loading ? (
-                  <><span className="material-symbols-rounded animate-spin text-sm">sync</span> Đang khởi tạo...</>
+                  <><span className="material-symbols-rounded animate-spin text-sm">sync</span> Generating...</>
                 ) : (
-                  <><span className="material-symbols-rounded text-sm">magic_button</span> Tạo Lộ Trình Mới</>
+                  <><span className="material-symbols-rounded text-sm">magic_button</span> Generate New Plan</>
                 )}
               </button>
               </div>
@@ -387,8 +387,8 @@ export default function DailyPlanner({
           {!activeDays.includes(activeDay) ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white border-2 border-primary/10 rounded-3xl shadow-sm">
               <span className="material-symbols-rounded text-6xl text-primary/40 animate-pulse">spa</span>
-              <h3 className="font-display font-black text-accent text-lg mt-4">Hôm nay là Ngày Nghỉ Ngơi của bạn! 🍵</h3>
-              <p className="text-sm text-accent/60 mt-2 max-w-md">Hãy thư giãn để nạp lại năng lượng, hoặc bạn vẫn có thể mở các phòng học khác ở thanh menu để tự luyện tập thêm nhé.</p>
+              <h3 className="font-display font-black text-accent text-lg mt-4">Today is your Rest Day! 🍵</h3>
+              <p className="text-sm text-accent/60 mt-2 max-w-md">Relax and recharge. You can still access other practice labs from the menu to study on your own!</p>
             </div>
           ) : currentDayPlan ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -399,7 +399,7 @@ export default function DailyPlanner({
                   <div className="flex justify-between items-start mb-2 gap-4">
                     <div>
                       <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider mb-2">
-                        Kỹ năng: {currentDayPlan.focus}
+                        Focus: {currentDayPlan.focus}
                       </span>
                       <h3 className="font-display font-black text-accent text-lg">
                         {currentDayPlan.topic}
@@ -408,7 +408,7 @@ export default function DailyPlanner({
                   </div>
 
                   <div className="mt-4 border-t border-primary/5 pt-4">
-                    <p className="text-xs font-black text-primary uppercase tracking-widest mb-3">Nhiệm vụ hôm nay:</p>
+                    <p className="text-xs font-black text-primary uppercase tracking-widest mb-3">Today's Tasks:</p>
                     <div className="space-y-2">
                       {currentDayPlan.tasks?.map((t: string, idx: number) => (
                         <div key={idx} className="flex items-start gap-2 text-sm text-accent/80 font-medium">
@@ -424,7 +424,7 @@ export default function DailyPlanner({
                 <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex-1">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-display font-black text-accent text-base flex items-center gap-2">
-                      <span className="material-symbols-rounded text-primary">local_library</span> 3 Từ vựng tiêu biểu
+                      <span className="material-symbols-rounded text-primary">local_library</span> 3 Target Vocabulary Words
                     </h3>
                     <button 
                       type="button"
@@ -436,7 +436,7 @@ export default function DailyPlanner({
                           );
                           
                           if (unsavedWords.length === 0) {
-                            (window as any).showAlert("Tất cả từ vựng này đều đã có sẵn trong thư viện của bạn! 🍵", "Thông báo", "info");
+                            (window as any).showAlert("All of these vocabulary words are already in your library! 🍵", "Information", "info");
                             return;
                           }
                           
@@ -455,13 +455,13 @@ export default function DailyPlanner({
                               else errors++;
                             });
                             
-                            const msg = `Đã lưu thành công ${added} từ vựng mới!` + 
-                              (duplicates > 0 ? ` (${duplicates} từ trùng lặp)` : "") + " 🍵";
+                            const msg = `Successfully saved ${added} new words!` + 
+                              (duplicates > 0 ? ` (${duplicates} duplicates)` : "") + " 🍵";
                             
-                            (window as any).showAlert(msg, "Lưu hoàn tất!", "success");
+                            (window as any).showAlert(msg, "Save Completed!", "success");
                           } catch (err) {
                             console.error(err);
-                            (window as any).showAlert("Lỗi xảy ra khi lưu từ vựng.", "Lỗi", "error");
+                            (window as any).showAlert("An error occurred while saving vocabulary.", "Error", "error");
                           } finally {
                             setSavingAll(false);
                           }
@@ -469,7 +469,7 @@ export default function DailyPlanner({
                       }}
                       className="text-[10px] bg-primary/10 text-primary font-bold px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
                     >
-                      {savingAll ? "Đang lưu..." : "Lưu Tất Cả"}
+                      {savingAll ? "Saving..." : "Save All"}
                     </button>
                   </div>
                   
@@ -492,14 +492,14 @@ export default function DailyPlanner({
                             onClick={async () => {
                               if (!isSaved && onAddVocab && !savingWords.has(v.word)) {
                                 setSavingWords(prev => {
-                                  const next = new Set(prev);
-                                  next.add(v.word);
-                                  return next;
+                                    const next = new Set(prev);
+                                    next.add(v.word);
+                                    return next;
                                 });
                                 try {
                                   const res = await onAddVocab({ ...v, source: "Discord Reminder" });
                                   if (res && res.status === "duplicate") {
-                                    (window as any).showToast(`Từ "${v.word}" đã tồn tại trong thư viện! 🍵`, "info");
+                                    (window as any).showToast(`Word "${v.word}" already exists in library! 🍵`, "info");
                                   }
                                 } catch (e) {
                                   console.error(e);
@@ -523,7 +523,7 @@ export default function DailyPlanner({
                             <span className="material-symbols-rounded text-[12px]">
                               {isSaved ? 'check_circle' : savingWords.has(v.word) ? 'sync' : 'bookmark_add'}
                             </span>
-                            {isSaved ? 'Đã lưu' : savingWords.has(v.word) ? 'Lưu...' : 'Lưu'}
+                            {isSaved ? 'Saved' : savingWords.has(v.word) ? 'Saving...' : 'Save'}
                           </button>
                         </div>
                       );
@@ -535,7 +535,7 @@ export default function DailyPlanner({
               {/* Day Skill Practice Card */}
               <div className="flex flex-col">
                 {/* Render corresponding practice widget based on focus skill */}
-                {currentDayPlan.focus === "Nghe" && currentDayPlan.listening && (
+                {(currentDayPlan.focus === "Nghe" || currentDayPlan.focus === "Listening") && currentDayPlan.listening && (
                   <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full">
                     <div>
                       <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
@@ -547,7 +547,7 @@ export default function DailyPlanner({
                       </p>
                       {currentDayPlan.listening.questions && (
                         <div className="mt-4 space-y-1">
-                          <p className="text-[10px] font-bold text-primary uppercase">CÂU HỎI ĐỌC HIỂU:</p>
+                          <p className="text-[10px] font-bold text-primary uppercase">Comprehension Questions:</p>
                           {currentDayPlan.listening.questions.map((q: string, qIdx: number) => (
                             <p key={qIdx} className="text-xs font-semibold text-accent/80">{qIdx+1}. {q}</p>
                           ))}
@@ -559,12 +559,12 @@ export default function DailyPlanner({
                       onClick={() => onPracticeListening && onPracticeListening(currentDayPlan.listening.audio_script || currentDayPlan.listening.description)}
                       className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/10"
                     >
-                      <span className="material-symbols-rounded text-base">play_circle</span> Luyện Nghe Ngay
+                      <span className="material-symbols-rounded text-base">play_circle</span> Start Listening
                     </button>
                   </div>
                 )}
 
-                {currentDayPlan.focus === "Đọc" && currentDayPlan.reading && (
+                {(currentDayPlan.focus === "Đọc" || currentDayPlan.focus === "Reading") && currentDayPlan.reading && (
                   <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full">
                     <div>
                       <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
@@ -576,7 +576,7 @@ export default function DailyPlanner({
                       </p>
                       {currentDayPlan.reading.questions && (
                         <div className="mt-4 space-y-1">
-                          <p className="text-[10px] font-bold text-primary uppercase">CÂU HỎI:</p>
+                          <p className="text-[10px] font-bold text-primary uppercase">Questions:</p>
                           {currentDayPlan.reading.questions.map((q: string, qIdx: number) => (
                             <p key={qIdx} className="text-xs font-semibold text-accent/80">{qIdx+1}. {q}</p>
                           ))}
@@ -588,12 +588,12 @@ export default function DailyPlanner({
                       onClick={() => onPracticeReading && onPracticeReading(currentDayPlan.reading.text)}
                       className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/10"
                     >
-                      <span className="material-symbols-rounded text-base">auto_stories</span> Luyện Đọc Ngay
+                      <span className="material-symbols-rounded text-base">auto_stories</span> Start Reading
                     </button>
                   </div>
                 )}
 
-                {currentDayPlan.focus === "Viết" && currentDayPlan.writing && (
+                {(currentDayPlan.focus === "Viết" || currentDayPlan.focus === "Writing") && currentDayPlan.writing && (
                   <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full">
                     <div>
                       <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
@@ -604,7 +604,7 @@ export default function DailyPlanner({
                       </p>
                       {currentDayPlan.writing.key_points && (
                         <div className="mt-4 space-y-1">
-                          <p className="text-[10px] font-bold text-primary uppercase">GỢI Ý CÁC Ý CHÍNH (KEY POINTS):</p>
+                          <p className="text-[10px] font-bold text-primary uppercase">Suggested Key Points:</p>
                           {currentDayPlan.writing.key_points.map((pt: string, ptIdx: number) => (
                             <p key={ptIdx} className="text-xs text-accent/80 flex gap-2">
                               <span className="text-primary font-black">•</span> {pt}
@@ -618,25 +618,25 @@ export default function DailyPlanner({
                       onClick={() => onPracticeWriting && onPracticeWriting(currentDayPlan.writing.prompt)}
                       className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/10"
                     >
-                      <span className="material-symbols-rounded text-base">edit</span> Luyện Viết Ngay
+                      <span className="material-symbols-rounded text-base">edit</span> Start Writing
                     </button>
                   </div>
                 )}
 
-                {currentDayPlan.focus === "Nói" && currentDayPlan.speaking && (
+                {(currentDayPlan.focus === "Nói" || currentDayPlan.focus === "Speaking") && currentDayPlan.speaking && (
                   <div className="bg-white border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full">
                     <div>
                       <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
                         <span className="material-symbols-rounded text-primary text-base">record_voice_over</span> IELTS Speaking Prompt
                       </h3>
                       <div className="bg-[#f9f9f9] p-5 rounded-2xl border border-black/5 flex flex-col gap-2">
-                        <p className="text-[10px] font-bold text-primary uppercase">CÂU HỎI LUYỆN NÓI:</p>
+                        <p className="text-[10px] font-bold text-primary uppercase">Speaking Topic:</p>
                         <p className="text-base text-accent italic font-semibold leading-relaxed">
                           "{currentDayPlan.speaking.prompt}"
                         </p>
                       </div>
                       <p className="text-xs text-accent/60 mt-4 leading-relaxed">
-                        💡 **Gợi ý:** Nhấn nút bên dưới để chuyển thẳng prompt này sang **Speaking Studio**, thực hiện ghi âm 2 phút và nhận phân tích phát âm, ngữ pháp từ AI IELTS Oasis!
+                        💡 **Hint:** Click the button below to send this prompt to **Speaking Studio**, record a 2-minute response, and get pronunciation and grammar feedback from IELTS Oasis AI!
                       </p>
                     </div>
                     <button 
@@ -644,26 +644,26 @@ export default function DailyPlanner({
                       onClick={() => onPracticeSpeaking && onPracticeSpeaking(currentDayPlan.speaking.prompt)}
                       className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/10"
                     >
-                      <span className="material-symbols-rounded text-base">mic</span> Luyện Nói Tại Studio
+                      <span className="material-symbols-rounded text-base">mic</span> Start Speaking Studio
                     </button>
                   </div>
                 )}
 
                 {/* Default Vocabulary/Quiz Focus */}
-                {(!currentDayPlan.focus || currentDayPlan.focus === "Từ vựng") && (
+                {(!currentDayPlan.focus || currentDayPlan.focus === "Từ vựng" || currentDayPlan.focus === "Vocabulary") && (
                   <div className="bg-[#FFFDF5] border-2 border-primary/10 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full border-dashed">
                     <div>
                       <h3 className="font-display font-black text-accent text-sm flex items-center gap-2 mb-2">
-                        <span className="material-symbols-rounded text-primary text-base">spellcheck</span> Luyện tập Từ vựng hàng ngày
+                        <span className="material-symbols-rounded text-primary text-base">spellcheck</span> Daily Vocabulary Practice
                       </h3>
                       <p className="text-xs text-accent/70 leading-relaxed mt-2">
-                        Hôm nay là ngày học tập trung chuyên sâu vào từ vựng học thuật. Hãy thực hiện lưu các từ vựng tiêu biểu bên cạnh vào **Vocabulary Lab** để tiến hành ôn luyện lặp lại ngắt quãng (SRS).
+                        Today is dedicated to academic vocabulary acquisition. Save target words to your Vocabulary Lab to practice Spaced Repetition (SRS).
                       </p>
                       <div className="mt-4 p-4 bg-primary/5 rounded-2xl flex items-center gap-3 border border-primary/10">
                         <span className="material-symbols-rounded text-primary text-2xl">auto_stories</span>
                         <div>
-                          <p className="text-xs font-bold text-accent">Đọc báo MatchaScroll</p>
-                          <p className="text-[10px] text-accent/60">Tải các bài báo tin tức học thuật và quét từ vựng để lưu vào thư viện.</p>
+                          <p className="text-xs font-bold text-accent">Read with MatchaScroll</p>
+                          <p className="text-[10px] text-accent/60">Import news articles/documents and extract vocabulary to save to your library.</p>
                         </div>
                       </div>
                     </div>
@@ -671,7 +671,7 @@ export default function DailyPlanner({
                       href="/scroll"
                       className="mt-6 w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/10 text-center"
                     >
-                      <span className="material-symbols-rounded text-base">article</span> Mở MatchaScroll Đọc Báo
+                      <span className="material-symbols-rounded text-base">article</span> Open MatchaScroll Reader
                     </a>
                   </div>
                 )}
@@ -679,21 +679,21 @@ export default function DailyPlanner({
             </div>
           ) : (
             <div className="text-center py-10 bg-white rounded-3xl border border-primary/10">
-              <p className="text-accent/60">Không tìm thấy lộ trình học cho ngày này.</p>
+              <p className="text-accent/60">No study plan found for this day.</p>
             </div>
           )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center py-16 bg-white rounded-[2rem] border-2 border-dashed border-primary/20 p-8">
           <span className="material-symbols-rounded text-primary/40 text-5xl mb-3">auto_awesome</span>
-          <h3 className="font-display font-bold text-accent text-lg">Bạn chưa khởi tạo lộ trình học IELTS</h3>
-          <p className="text-sm text-accent/60 max-w-sm mt-1 mb-6">Nhập chủ đề học tập mục tiêu của bạn ở phần Cài đặt phía trên để AI sinh giáo án 7 ngày cá nhân hóa!</p>
+          <h3 className="font-display font-bold text-accent text-lg">You haven't generated an IELTS study plan yet</h3>
+          <p className="text-sm text-accent/60 max-w-sm mt-1 mb-6">Enter your target study topic in Settings above to generate your customized 7-day plan!</p>
           <button 
             type="button"
             onClick={() => setShowSettings(true)}
             className="bg-primary text-white font-bold px-6 py-2.5 rounded-full hover:scale-105 transition-all text-xs shadow-md"
           >
-            Bắt đầu Thiết lập Lộ trình
+            Configure Study Plan
           </button>
         </div>
       )}
