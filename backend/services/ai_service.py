@@ -40,7 +40,7 @@ class AIService:
             if "```json" in text: text = text.split("```json")[1].split("```")[0]
             elif "```" in text: text = text.split("```")[1].split("```")[0]
             return text.strip()
-        except:
+        except Exception:
             return "[]" if expect_list else "{}"
 
     async def detect_all_objects(self, image: Image.Image):
@@ -454,7 +454,7 @@ Return ONLY the JSON array. Example:
             try:
                 api = YouTubeTranscriptApi()
                 transcript_list = api.fetch(video_id, languages=['en', 'en-US', 'en-GB'])
-            except:
+            except Exception:
                 # Fallback to list
                 api = YouTubeTranscriptApi()
                 transcript_list = api.list(video_id).find_transcript(['en', 'en-US', 'en-GB']).fetch()

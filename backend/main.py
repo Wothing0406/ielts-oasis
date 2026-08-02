@@ -373,7 +373,8 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
     try:
         audio_file = await tts_service.generate_speech(vocab.word)
         vocab.audio_url = f"/static/{audio_file}"
-    except: pass
+    except Exception:
+        pass
 
     db.add(vocab)
     db.commit()
@@ -889,7 +890,7 @@ async def get_listening_mock_test():
     audio_file = "matcha-default.jpg"
     try:
         audio_file = await tts_service.generate_speech(context_text)
-    except:
+    except Exception:
         pass
     
     return {

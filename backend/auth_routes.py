@@ -322,7 +322,7 @@ def verify_state(state: str):
             return False
         expected_sig = hmac.new(JWT_SECRET.encode(), timestamp.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(signature, expected_sig)
-    except:
+    except Exception:
         return False
 
 @router.get("/discord/login")

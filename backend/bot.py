@@ -98,7 +98,7 @@ async def on_message(message):
             ref_msg = await message.channel.fetch_message(message.reference.message_id)
             if ref_msg.author.id == bot.user.id:
                 is_reply_to_bot = True
-        except:
+        except Exception:
             pass
             
     if isinstance(message.channel, discord.DMChannel) or bot.user in message.mentions or is_reply_to_bot:
@@ -163,7 +163,7 @@ async def on_message(message):
                         data = await ai_service.get_json_advice(e_prompt)
                         if not data or "evaluation" not in data:
                             data = {"evaluation": "Khá tốt!", "level": "Intermediate", "time": "20:00", "topic": "General", "weekly_plan": {}}
-                    except:
+                    except Exception:
                         data = {"evaluation": "Mình đã ghi nhận câu trả lời.", "level": "Beginner", "time": "20:00", "topic": "General", "weekly_plan": {}}
                         
                     # Extract just the HH:MM from whatever the AI returned
