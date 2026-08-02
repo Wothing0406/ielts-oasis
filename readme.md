@@ -1,29 +1,39 @@
 # 🌴 IELTS Oasis: Adaptive English Learning Platform & Proactive Multi-Agent Ecosystem
 
-🌐 [Bản Tiếng Việt / Vietnamese Version](./README_VI.md)
+🌐 **[Bản Tiếng Việt / Vietnamese Version](./README_VI.md)**
 
 ![IELTS Oasis Banner](./ielts_oasis_clean_2d_matcha.png)
 
-[![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
-[![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%203.1%20Flash%20Lite-orange.svg)](https://deepmind.google/technologies/gemini/)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-green.svg)](#)
+<div align="center">
+
+[![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg?style=for-the-badge&logo=google)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
+[![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%203.1%20Flash%20Lite-orange.svg?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
+[![Next.js](https://img.shields.io/badge/Next.js%2014-black.svg?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-green.svg?style=for-the-badge&logo=docker)](#)
+
+</div>
 
 ---
 
-## 🔗 Live Demo & Links
+## 🔗 Live Demo & Project Links
 * **Web Application URL:** [https://ieltsoasis.site](https://ieltsoasis.site)
 * **Kaggle Submission:** [Kaggle Competition Overview](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google/overview)
 
 ---
 
-## 🌟 The Core Concept
-Traditional language learning platforms suffer from low user retention. **IELTS Oasis** is a smart, dual-interface (Interactive Next.js Dashboard + Proactive Discord Bot) ecosystem designed to turn passive vocabulary accumulation into active learning habits.
+## 🌟 The Core Concept & Innovation Pitch
+Traditional language learning applications suffer from **critical low user retention**. Users download them, practice for a few days, and then abandon them due to a lack of accountability and integrated daily habits.
 
-By pairing a feature-rich web platform with an automated Discord tutor, IELTS Oasis checks user knowledge, diagnoses levels, structures custom daily schedules, and enforces daily learning prompts—orchestrated **100% using Google's Gemini models (`gemini-3.1-flash-lite`)**.
+**IELTS Oasis** addresses this retention crisis by introducing a **Proactive Engagement Loop** that bridges two interfaces:
+1. **Interactive Next.js Dashboard**: A feature-rich, high-performance web sandbox containing speech evaluators, timed writing interfaces, multimodal vocabulary detectors, and reading/listening labs.
+2. **Proactive Discord AI Tutor**: A companion bot that checks user knowledge, evaluates levels, schedules custom daily tasks, registers vocabulary dynamically to the user's database, and pushes daily SMS-like DM reminders.
+
+By utilizing Google's Gemini models (`gemini-3.1-flash-lite`), the ecosystem acts as a unified tutor that **remembers who you are**, monitors your real-time website statistics (word mastery count, Wordle game status, recent writing band scores), and tailors learning prompts directly to your performance!
 
 ---
 
-## 🤖 The Multi-Agent Ecosystem
+## 🤖 Collaborative Multi-Agent Architecture
 
 IELTS Oasis operates a network of autonomous agents acting collaboratively across the Next.js Web Dashboard and the Discord Bot:
 
@@ -100,9 +110,9 @@ graph TD
 
 ---
 
-## ⚡ Main Features
+## ⚡ Advanced Web Core Features
 
-### 1. 🎙️ Mát Cha Speaking Studio (Pronunciation & Speaking Lab)
+### 1. 🎙️ Mát Cha Speaking Studio (Pronunciation & Sandbox Lab)
 * **Matcha Shadowing (Sentence-level Pronunciation)**:
   * **AI Sentence Generation**: Dynamically generate shadowing sentences tailored to selected difficulty levels (`Easy`, `Medium`, `Hard`) using Gemini.
   * **Interactive Phonetic Colors**: Colors words dynamically based on correctness—`Green` (Perfect), `Yellow` (Ending sounds/Stress warning), and `Red` (Incorrect/Missed).
@@ -136,7 +146,7 @@ graph TD
 ### 4. ✍️ Writing Sanctuary (IELTS Essay Evaluator)
 * **Official Criteria Check**: Grades essays on Task Achievement, Coherence, Vocabulary, and Grammar.
 * **AI Rephraser**: Highlight any sentence or phrase to generate 3 alternative rewrites and replace it instantly.
-* **Timed Mode**: Emulates physical exam pressure (20 or 40 minutes).
+* **Timed Mode & Exam Conditions**: Emulates physical exam pressure (20 or 40 minutes). **The editor locks input permanently and submits automatically once the timer hits 00:00** to guarantee strict test conditions.
 * **Cross-Lab Redirection**: Send essay drafts to *Matcha Radio* for listening drills or *Matcha Book* for reading comprehension questions.
 
 ### 5. 🎧 Matcha Radio (Listening Practice Lab)
@@ -147,29 +157,43 @@ graph TD
 * **Reading Passages**: Generate reading tests from custom texts, essays, or community feeds.
 * **Highlight Translate**: Instantly translate words or phrases using Gemini on selecting text.
 
-### 7. 📚 Vocabulary Lab & Daily Planner
-* **Matcha Scroll**: Drop PDFs, DOCX, or text files into a visual tray to auto-extract 5-15 advanced vocabularies with contextual examples.
-* **Spaced Repetition System (SRS)**: Tracks review states and notifications.
-* **Daily Planner**: Tailors a 4-step daily study roadmap based on chosen topics.
-* **Community Hub**: Public feed to share graded essays, like, comment, or convert posts into listening/reading labs.
+### 7. 📅 Adaptive Daily Planner & Google Calendar Subscription
+* **Weekday Navigator**: A calendar dashboard providing tailored exercises based on your active study focus.
+* **Google Calendar Subscription (`.ics`)**: Exports a dynamic subscription feed. Copy the calendar sync link and subscribe to it directly in Google Calendar, Apple Calendar, or Outlook.
+* **Dynamic Generation**: Generating your weekly study schedule, vocabulary targets, and practice prompts is completed in a **single, optimized Gemini API call** to minimize cost and latency.
 
 ---
 
-## 🤖 Discord Bot Features
+## 🤖 Proactive Discord Bot Features
+
 * **/tuvan**: Conducts an interactive conversational placement test via Gemini, evaluates user level, and schedules daily learning schedules.
+* **/studytime [HH:MM]**: Updates your daily study reminder time dynamically.
+* **/studyfocus [focus]**: Adjusts your weekly study focus ("Toàn diện", "Từ vựng", "Nói", "Viết") and automatically updates the web planner.
 * **/xinnghi**: Request a temporary 1-day study pause. Gemini evaluates justification validity in under 50 words.
-* **/dailyplan & /myprogress**: Manage plan topics and retrieve SRS progression statistics from the MySQL DB.
-* **Scheduler Daemon**: Minute-by-minute cron daemon sending active DM reminders.
-* **Conversational Threading**: Context-aware thread interactions remembering the last 6 messages.
+* **Daily Vocabulary Sync**: The scheduler daemon automatically extracts today's recommended vocabulary from your active weekly plan and inserts it into the Web database, populating your Web Vocabulary Lab.
+* **Personalized Chatbot**: The bot remembers who you are! If you chat with the bot, it reads your live website statistics (vocabulary counts, recent writing band scores, Wordle game status) to formulate tailored coaching responses.
 
 ---
 
-## 🏗️ Project Architecture & Structure
+## 🛠️ Technology Stack
+
+| Layer | Technologies Used | Key Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, Next.js 14, Tailwind CSS, Framer Motion, Lucide icons | Premium, fluid responsive UI with micro-interactions |
+| **Backend** | Python 3.10, FastAPI, SQLAlchemy, APScheduler | High-throughput async REST API and daemon jobs |
+| **Database** | MySQL 8.0 / MariaDB | Structured persistent relational database storage |
+| **AI Models** | Google Gemini 3.1 Flash Lite (Vision & Text) | NLP grading, vocabulary extraction, study plans, chatbot |
+| **ML Engine** | Ultralytics YOLOv8 (Local Inference) | High-speed, offline physical object bounding box detection |
+| **Orchestrator** | Docker, Docker Compose, Cloudflare Tunnels | Scalable deployment, automated container stacks, public SSL |
+
+---
+
+## 🏗️ Project Directory Structure
 ```
 ielts-oasis/
 ├── backend/                  # FastAPI Backend & Discord Bot
 │   ├── services/
-│   │   ├── ai_service.py     # Gemini REST Auth & API integration wrapper
+│   │   ├── ai_service.py     # Gemini API integration and weekly plan generators
 │   │   └── tts_service.py    # Text-to-Speech audio generation
 │   ├── bot.py                # Python Discord Bot (Mát Cha AI Eo) & Scheduler
 │   ├── main.py               # FastAPI App endpoints, YOLOv8 & speech routes
@@ -194,10 +218,12 @@ ielts-oasis/
 ---
 
 ## 🛠️ Step-by-Step Deployment Guide
+
+### 1. Configure the Environment Variables
 Create a `.env` file in the root folder of the project:
 ```env
 # AI Keys
-GEMINI_API_KEY=your_gemini_api_key  # Supports standard AIzaSy... keys or Bearer AQ... developer tokens
+GEMINI_API_KEY=your_gemini_api_key  # Supports standard AIzaSy... keys
 
 # Discord Bot & OAuth Configuration
 DISCORD_CLIENT_ID=your_discord_client_id
@@ -217,7 +243,16 @@ PRIMARY_VISION_MODEL=gemini-3.1-flash-lite
 CLOUDFLARE_TUNNEL_TOKEN=your_cloudflare_tunnel_token
 ```
 
-Run the following command to spin up the MySQL database, FastAPI backend, Discord Bot, Next.js web application, and the Cloudflare Tunnel:
+### 2. Launching Docker Container Stack
+Run the following command in the root workspace folder to build and launch all containers (database, backend, bot, web app, and Cloudflare tunnel):
 ```bash
 docker compose up -d --build
 ```
+
+---
+
+## 🏆 Hackathon & Production Performance Focus
+* **API Cost Optimization**: Generating a weekly study schedule, specific daily exercises, vocabulary definitions, and pronunciation guide bullet points is consolidated into **one single Gemini model call** inside the weekly planner. This cuts token consumption by over 70% compared to traditional daily polling setups.
+* **Self-Healing Databases**: Schema upgrades (e.g. adding new focus columns) are implemented inside the FastAPI `startup_event` using SQLAlchemy inspection. The database self-heals dynamically on startup without requiring manual migration scripts.
+* **Resource Leak Protections**: Added React `useEffect` cleanups to close all running timers, volume thresholds, and browser `AudioContext` structures, preventing browser-level microphone memory leaks.
+* **Server Storage Safety**: Implemented a background clean-up loop in the FastAPI event stack that dynamically purges generated temporary audio, text, or image files older than 24 hours to prevent storage exhaustion.
