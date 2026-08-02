@@ -433,7 +433,7 @@ export default function Home() {
         <div className="w-full max-w-md bg-[#FAFBF9]/95 backdrop-blur-xl border-4 border-[#8F9E8B]/40 rounded-[2.5rem] shadow-[0_25px_60px_rgba(46,62,43,0.22)] p-8 relative z-10 flex flex-col items-center">
           {/* Wooden Top Accent Tag */}
           <div className="absolute -top-3.5 bg-[#5D4037] text-[#FAF8F5] px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
-            🍵 Oasis Entryway
+            🍵 Cổng vào Oasis
           </div>
 
           {/* Logo Brand */}
@@ -442,7 +442,7 @@ export default function Home() {
           </div>
           
           <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">Mát Cha AI Eo</h1>
-          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">Zen Learning Space</p>
+          <p className="text-xs text-[#5D4037] font-extrabold tracking-widest uppercase mb-5 opacity-90">Không Gian Học Tập Yên Bình</p>
 
           {/* Discord Priority Highlight Banner */}
           <div className="w-full bg-gradient-to-r from-[#5865F2]/10 via-[#7A9A6A]/15 to-[#5865F2]/10 border-2 border-[#5865F2]/30 rounded-2xl p-3.5 mb-3 text-center shadow-sm">
@@ -530,7 +530,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Preparing Matcha..." : "ENTER OASIS NOW 🍵"}
+                {isGuestLoggingIn ? "Đang pha Matcha..." : "BẮT ĐẦU VÀO HỌC NGAY 🍵"}
               </button>
             ) : (
               <button
@@ -539,7 +539,7 @@ export default function Home() {
                 disabled={isGuestLoggingIn}
                 className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
               >
-                {isGuestLoggingIn ? "Creating Account..." : "CREATE NEW ACCOUNT 🍀"}
+                {isGuestLoggingIn ? "Đang tạo tài khoản..." : "ĐĂNG KÝ TÀI KHOẢN MỚI 🍀"}
               </button>
             )}
           </form>
@@ -570,8 +570,8 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
           <div>
-            <h2 className="text-4xl font-display font-bold">Hello {user ? user.username : 'Cậu nhé'}:3<span className="animate-pulse">🍵</span></h2>
-            <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
+            <h2 className="text-4xl font-display font-bold">Chào cậu, {user ? user.username : 'nhé'} :3<span className="animate-pulse">🍵</span></h2>
+            <p className="text-lg opacity-70">Hôm nay cậu muốn học kỹ năng gì nào?</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
@@ -583,7 +583,7 @@ export default function Home() {
                 </div>
               )}
               <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
-                Log Out
+                Đăng xuất
               </button>
             </div>
             <Link
