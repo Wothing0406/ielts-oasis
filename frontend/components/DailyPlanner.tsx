@@ -131,6 +131,42 @@ export default function DailyPlanner({
     }
   };
 
+  const clearPlan = async () => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return;
+    
+    (window as any).showConfirm(
+      "Bạn có chắc chắn muốn xóa lộ trình học tập hiện tại không? Việc này cũng sẽ xóa lịch hẹn nhắc học hàng ngày trên Discord.",
+      async () => {
+        setLoading(true);
+        setError("");
+        try {
+          const res = await fetch(`${API_URL}/study-plan/delete`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setWeeklyPlan(null);
+            setTopic("");
+            setStudyFocus("Toàn diện");
+            setStudyTime("20:00");
+            setActiveDays(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+            setShowSettings(false);
+            (window as any).showToast("Lộ trình học đã được xóa thành công! 🍵", "success");
+          } else {
+            const data = await res.json();
+            throw new Error(data.detail || "Có lỗi xảy ra");
+          }
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      },
+      "Xóa Lộ Trình"
+    );
+  };
+
   const copyCalendarLink = () => {
     const token = localStorage.getItem("oasis_token");
     if (!token) return (window as any).showToast("Bạn cần đăng nhập để lấy link lịch! 🍵", "info");
@@ -274,16 +310,28 @@ export default function DailyPlanner({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-2">
-              {weeklyPlan && (
+            <div className="flex justify-between items-center gap-2 mt-2 w-full">
+              {weeklyPlan ? (
                 <button 
                   type="button" 
-                  onClick={() => setShowSettings(false)}
-                  className="px-6 py-2.5 rounded-full font-bold text-accent hover:bg-black/5 text-sm"
+                  onClick={clearPlan}
+                  className="px-5 py-2.5 rounded-full font-bold text-red-600 border-2 border-red-500/20 hover:bg-red-50 text-sm transition-all"
                 >
-                  Hủy
+                  Xóa Lộ Trình Hiện Tại
                 </button>
+              ) : (
+                <div />
               )}
+              <div className="flex gap-2">
+                {weeklyPlan && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSettings(false)}
+                    className="px-6 py-2.5 rounded-full font-bold text-accent hover:bg-black/5 text-sm"
+                  >
+                    Hủy
+                  </button>
+                )}
               <button 
                 type="button" 
                 onClick={updatePreferences}
@@ -296,6 +344,7 @@ export default function DailyPlanner({
                   <><span className="material-symbols-rounded text-sm">magic_button</span> Tạo Lộ Trình Mới</>
                 )}
               </button>
+              </div>
             </div>
           </motion.div>
         )}

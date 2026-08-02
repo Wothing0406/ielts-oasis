@@ -1301,6 +1301,20 @@ async def get_study_plan(current_user: dict = Depends(get_current_user), db: Ses
         "weekly_plan": sched.weekly_plan
     }
 
+@app.delete("/study-plan/delete")
+async def delete_study_plan(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập.")
+    user_id = current_user["user_id"]
+    
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user_id).first()
+    if sched:
+        sched.weekly_plan = None
+        db.commit()
+        return {"status": "success", "message": "Lộ trình học đã được xóa thành công."}
+    
+    raise HTTPException(status_code=404, detail="Không tìm thấy lộ trình học để xóa.")
+
 @app.get("/study-plan/calendar.ics")
 async def get_calendar_ics(token: str, db: Session = Depends(get_db)):
     from auth_routes import JWT_SECRET, JWT_ALGORITHM
