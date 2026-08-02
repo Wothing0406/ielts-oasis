@@ -22,7 +22,7 @@ logger = setup_logger("fastapi_main")
 
 from database import SessionLocal, engine, Base, get_db
 from sqlalchemy.orm import Session
-from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan, WordleGame, GameLeaderboard
+from models import Vocabulary, WritingLog, User, Like, Comment, DailyPlan, WordleGame, GameLeaderboard, DiscordSchedule
 from schemas import VocabIn
 
 # Load wordle vocabulary lists for fast validation
@@ -206,6 +206,12 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN study_focus VARCHAR(50) DEFAULT 'Toàn diện';"))
                 conn.commit()
                 logger.info("Migration: Added 'study_focus' column to discord_schedules.")
+            # Check active_days column in discord_schedules
+            res_active = conn.execute(text("SHOW COLUMNS FROM discord_schedules LIKE 'active_days';")).fetchone()
+            if not res_active:
+                conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN active_days VARCHAR(255) DEFAULT 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';"))
+                conn.commit()
+                logger.info("Migration: Added 'active_days' column to discord_schedules.")
             # Check last_ip column in users table
             res_ip = conn.execute(text("SHOW COLUMNS FROM users LIKE 'last_ip';")).fetchone()
             if not res_ip:
@@ -1226,6 +1232,7 @@ class UpdatePreferencesIn(BaseModel):
     topic: str
     study_focus: str
     study_time: str
+    active_days: str = "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
 
 @app.post("/study-plan/update-preferences")
 async def update_preferences(payload: UpdatePreferencesIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1246,6 +1253,7 @@ async def update_preferences(payload: UpdatePreferencesIn, current_user: dict = 
             level="General",
             topic=payload.topic,
             study_focus=payload.study_focus,
+            active_days=payload.active_days,
             weekly_plan=weekly_plan
         )
         db.add(sched)
@@ -1253,6 +1261,7 @@ async def update_preferences(payload: UpdatePreferencesIn, current_user: dict = 
         sched.study_time = payload.study_time
         sched.topic = payload.topic
         sched.study_focus = payload.study_focus
+        sched.active_days = payload.active_days
         sched.weekly_plan = weekly_plan
         
     db.commit()
@@ -1265,7 +1274,8 @@ async def update_preferences(payload: UpdatePreferencesIn, current_user: dict = 
         "preferences": {
             "topic": sched.topic,
             "study_focus": sched.study_focus,
-            "study_time": sched.study_time
+            "study_time": sched.study_time,
+            "active_days": sched.active_days
         }
     }
 
@@ -1285,7 +1295,8 @@ async def get_study_plan(current_user: dict = Depends(get_current_user), db: Ses
         "preferences": {
             "topic": sched.topic,
             "study_focus": sched.study_focus,
-            "study_time": sched.study_time
+            "study_time": sched.study_time,
+            "active_days": sched.active_days or "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
         },
         "weekly_plan": sched.weekly_plan
     }
@@ -1329,7 +1340,11 @@ async def get_calendar_ics(token: str, db: Session = Depends(get_db)):
     ical.append("CALSCALE:GREGORIAN")
     ical.append("METHOD:PUBLISH")
     
+    active_days_list = [d.strip() for d in (sched.active_days or "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday").split(",")]
+    
     for day_name, offset in days_mapping.items():
+        if day_name not in active_days_list:
+            continue
         day_data = sched.weekly_plan.get(day_name)
         if not day_data:
             continue

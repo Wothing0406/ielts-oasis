@@ -37,6 +37,7 @@ export default function DailyPlanner({
   const [topic, setTopic] = useState("");
   const [studyFocus, setStudyFocus] = useState("Toàn diện");
   const [studyTime, setStudyTime] = useState("20:00");
+  const [activeDays, setActiveDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
   const [weeklyPlan, setWeeklyPlan] = useState<any>(null);
   const [activeDay, setActiveDay] = useState<string>("Monday");
   
@@ -60,6 +61,9 @@ export default function DailyPlanner({
           setTopic(data.preferences.topic);
           setStudyFocus(data.preferences.study_focus);
           setStudyTime(data.preferences.study_time);
+          if (data.preferences.active_days) {
+            setActiveDays(data.preferences.active_days.split(',').map((s: string) => s.trim()));
+          }
           
           // Auto select today
           const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -95,7 +99,7 @@ export default function DailyPlanner({
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ topic, study_focus: studyFocus, study_time: studyTime }),
+        body: JSON.stringify({ topic, study_focus: studyFocus, study_time: studyTime, active_days: activeDays.join(",") }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Có lỗi xảy ra");
@@ -104,6 +108,9 @@ export default function DailyPlanner({
       setTopic(data.preferences.topic);
       setStudyFocus(data.preferences.study_focus);
       setStudyTime(data.preferences.study_time);
+      if (data.preferences.active_days) {
+        setActiveDays(data.preferences.active_days.split(',').map((s: string) => s.trim()));
+      }
       
       // Auto select today or Monday
       const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -233,6 +240,40 @@ export default function DailyPlanner({
               </div>
             </div>
 
+            {/* Active Study Days */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-accent/80">Chọn ngày học trong tuần</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {DAYS_ORDER.map((day) => {
+                  const isSelected = activeDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          if (activeDays.length > 1) {
+                            setActiveDays(activeDays.filter(d => d !== day));
+                          } else {
+                            (window as any).showToast("Bạn cần chọn ít nhất 1 ngày học! 🍵", "info");
+                          }
+                        } else {
+                          setActiveDays([...activeDays, day]);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${
+                        isSelected
+                          ? "bg-primary border-primary text-white shadow-sm"
+                          : "bg-white border-primary/20 text-accent/70 hover:bg-[#eef7f2]"
+                      }`}
+                    >
+                      {DAY_LABELS[day]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 mt-2">
               {weeklyPlan && (
                 <button 
@@ -294,7 +335,13 @@ export default function DailyPlanner({
           </div>
 
           {/* Active Day Content */}
-          {currentDayPlan ? (
+          {!activeDays.includes(activeDay) ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-white border-2 border-primary/10 rounded-3xl shadow-sm">
+              <span className="material-symbols-rounded text-6xl text-primary/40 animate-pulse">spa</span>
+              <h3 className="font-display font-black text-accent text-lg mt-4">Hôm nay là Ngày Nghỉ Ngơi của bạn! 🍵</h3>
+              <p className="text-sm text-accent/60 mt-2 max-w-md">Hãy thư giãn để nạp lại năng lượng, hoặc bạn vẫn có thể mở các phòng học khác ở thanh menu để tự luyện tập thêm nhé.</p>
+            </div>
+          ) : currentDayPlan ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Day Overview & Tasks */}
               <div className="flex flex-col gap-6">

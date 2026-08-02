@@ -91,6 +91,7 @@ class DiscordSchedule(Base):
     level = Column(String(50))
     topic = Column(String(100), default="General")
     study_focus = Column(String(50), default="Toàn diện") # "Toàn diện", "Từ vựng", "Nói", "Viết"
+    active_days = Column(String(255), default="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday")
     weekly_plan = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
