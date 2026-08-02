@@ -659,6 +659,9 @@ async def schedule_checker_job():
             if absence:
                 continue # They took a day off
                 
+            if not sched.weekly_plan:
+                continue # No active study plan exists
+                
             user = db.query(User).filter(User.id == sched.user_id).first()
             if user:
                 try:
@@ -791,11 +794,41 @@ async def schedule_checker_job():
                                     
                             if tip:
                                 embed.add_field(name="💡 Gợi ý học tập:", value=tip, inline=False)
+                            
+                            # Generate dynamic calendar sync link
+                            try:
+                                import jwt
+                                from auth_routes import JWT_SECRET, JWT_ALGORITHM
+                                cal_token = jwt.encode({
+                                    "user_id": user.id,
+                                    "exp": datetime.utcnow() + timedelta(days=365)
+                                }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+                                cal_url = f"https://ieltsoasis.site/api/study-plan/calendar.ics?token={cal_token}"
+                                embed.add_field(
+                                    name="📅 Google Calendar Sync:",
+                                    value=f"Đồng bộ lịch học một chạm vào điện thoại/máy tính của cậu:\n👉 [Nhấn vào đây để liên kết Lịch]({cal_url})",
+                                    inline=False
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to generate calendar link in bot: {e}")
+                                cal_url = ""
+
                             embed.set_footer(text="Truy cập Mát Cha AI Eo để luyện tập đầy đủ hơn nhé! 🎉")
                             
                             await discord_user.send(embed=embed)
                         else:
-                            await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập Mát Cha AI Eo ngay lập tức!")
+                            try:
+                                import jwt
+                                from auth_routes import JWT_SECRET, JWT_ALGORITHM
+                                cal_token = jwt.encode({
+                                    "user_id": user.id,
+                                    "exp": datetime.utcnow() + timedelta(days=365)
+                                }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+                                cal_url = f"https://ieltsoasis.site/api/study-plan/calendar.ics?token={cal_token}"
+                                cal_msg = f"\n📅 Đồng bộ Google Calendar: {cal_url}"
+                            except Exception:
+                                cal_msg = ""
+                            await discord_user.send(f"🔥 ĐẾN GIỜ HỌC RỒI! Đừng lười biếng nữa. Hôm nay bạn phải hoàn thành lộ trình chủ đề **{sched.topic}**. Truy cập Mát Cha AI Eo ngay lập tức!{cal_msg}")
                 except Exception as e:
                     logger.error(e)
                     
