@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./frontend/*"]
+    }
+  },
+  "exclude": ["node_modules", ".next"]
+}
