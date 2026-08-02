@@ -439,9 +439,9 @@ async def mylich_cmd(interaction: discord.Interaction):
         return
         
     sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
-    if not sched:
+    if not sched or not sched.weekly_plan:
         await interaction.response.send_message(
-            f"Chào {user.username}! Bạn chưa có lịch nhắc học nào. Hãy dùng lệnh `/tuvan` để mình thiết lập lộ trình nhắc học hàng ngày cho bạn nhé! 🍵",
+            f"Chào {user.username}! Bạn chưa có lộ trình học tập nào hoạt động. Hãy thiết lập lộ trình trên Website hoặc dùng lệnh `/tuvan` để kích hoạt nhé! 🍵",
             ephemeral=True
         )
         db.close()
@@ -516,6 +516,38 @@ async def studytime_cmd(interaction: discord.Interaction, time: str):
     db.close()
     await interaction.response.send_message(f"Đã cập nhật giờ nhắc học hàng ngày của bạn thành **{time}**! 🍵", ephemeral=True)
 
+@bot.tree.command(name='studytopic', description="Thay đổi chủ đề học tập và sinh lại lộ trình mới")
+@app_commands.describe(topic="Nhập chủ đề học tập mới (ví dụ: Technology, Travel, Education...)")
+async def studytopic_cmd(interaction: discord.Interaction, topic: str):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        await interaction.response.send_message("Bạn chưa liên kết tài khoản Discord trên website! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        sched = DiscordSchedule(user_id=user.id, study_time="20:00", level="General", topic=topic, study_focus="Toàn diện")
+        db.add(sched)
+        db.commit()
+        
+    await interaction.response.defer(ephemeral=True)
+    sched.topic = topic
+    db.commit()
+    
+    try:
+        new_plan = await ai_service.generate_weekly_plan(topic, sched.study_focus)
+        sched.weekly_plan = new_plan
+        db.commit()
+        await interaction.followup.send(f"Đã cập nhật chủ đề học tập thành **{topic}** và sinh lại lộ trình học mới thành công! 🍵")
+    except Exception as e:
+        logger.error(f"Failed to generate plan in /studytopic: {e}")
+        await interaction.followup.send("Đã lưu cấu hình nhưng gặp lỗi khi tự động tạo lộ trình mới. Vui lòng thử lại sau!")
+    finally:
+        db.close()
+
 @bot.tree.command(name='studyfocus', description="Thay đổi trọng tâm học tập và sinh lại lộ trình")
 @app_commands.describe(focus="Chọn trọng tâm học tập")
 @app_commands.choices(focus=[
@@ -557,7 +589,46 @@ async def studyfocus_cmd(interaction: discord.Interaction, focus: app_commands.C
     finally:
         db.close()
 
-@bot.tree.command(name='huylich', description="Hủy lịch nhắc học hàng ngày mà không xóa tài khoản")
+@bot.tree.command(name='studydays', description="Chọn các ngày trong tuần cậu muốn học (ví dụ: Monday,Wednesday,Friday)")
+@app_commands.describe(days="Các ngày cách nhau bởi dấu phẩy (ví dụ: Monday,Wednesday,Friday)")
+async def studydays_cmd(interaction: discord.Interaction, days: str):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        await interaction.response.send_message("Bạn chưa liên kết tài khoản Discord trên website! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    # Basic validation
+    valid_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    input_days = [d.strip() for d in days.split(",") if d.strip()]
+    cleaned_days = []
+    for d in input_days:
+        matching = [vd for vd in valid_days if vd.lower() == d.lower()]
+        if matching:
+            cleaned_days.append(matching[0])
+        else:
+            await interaction.response.send_message(f"Ngày '{d}' không hợp lệ. Vui lòng nhập các thứ bằng tiếng Anh (Monday, Tuesday...) cách nhau bởi dấu phẩy. 🍵", ephemeral=True)
+            db.close()
+            return
+            
+    if not cleaned_days:
+        await interaction.response.send_message("Vui lòng chọn ít nhất 1 ngày học trong tuần! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        sched = DiscordSchedule(user_id=user.id, study_time="20:00", level="General", topic="General", study_focus="Toàn diện")
+        db.add(sched)
+        
+    sched.active_days = ",".join(cleaned_days)
+    db.commit()
+    db.close()
+    await interaction.response.send_message(f"Đã cập nhật lịch học các ngày hoạt động trong tuần thành: **{', '.join(cleaned_days)}**! 🍵", ephemeral=True)
+
+@bot.tree.command(name='huylich', description="Hủy lộ trình học tập hiện tại của bạn")
 async def huylich_cmd(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
     db = SessionLocal()
@@ -569,22 +640,22 @@ async def huylich_cmd(interaction: discord.Interaction):
         return
         
     sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
-    if not sched:
-        await interaction.response.send_message("Bạn không có lịch nhắc học nào hoạt động để hủy. 🍵", ephemeral=True)
+    if not sched or not sched.weekly_plan:
+        await interaction.response.send_message("Bạn không có lộ trình học tập nào hoạt động để hủy. 🍵", ephemeral=True)
         db.close()
         return
         
     try:
-        db.delete(sched)
+        sched.weekly_plan = None
         db.commit()
         await interaction.response.send_message(
-            f"Đã hủy lịch nhắc học hàng ngày thành công. Tài khoản `{user.username}` và kho từ vựng của bạn trên Mát Cha AI Eo vẫn được giữ nguyên vẹn. Bạn có thể thiết lập lại bất cứ lúc nào bằng lệnh `/tuvan`. 🍵",
+            f"Đã hủy lộ trình học tập hiện tại thành công. Tài khoản `{user.username}` và kho từ vựng của bạn trên Mát Cha AI Eo vẫn được giữ nguyên vẹn. Bạn có thể thiết lập lộ trình mới bất cứ lúc nào trên website hoặc qua lệnh `/tuvan`. 🍵",
             ephemeral=True
         )
     except Exception as e:
         db.rollback()
         logger.error(f"Error executing /huylich: {e}")
-        await interaction.response.send_message("Có lỗi xảy ra khi hủy lịch nhắc. Vui lòng thử lại sau.", ephemeral=True)
+        await interaction.response.send_message("Có lỗi xảy ra khi hủy lộ trình. Vui lòng thử lại sau.", ephemeral=True)
     finally:
         db.close()
 
