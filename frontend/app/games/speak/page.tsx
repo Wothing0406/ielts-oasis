@@ -53,6 +53,17 @@ export default function SpeakingReflexGame() {
     }
     // Start timing first question
     questionStartTimeRef.current = Date.now();
+
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (volumeTimerRef.current) clearInterval(volumeTimerRef.current);
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   // Web Speech synthesis for Matcha Bear
@@ -97,6 +108,9 @@ export default function SpeakingReflexGame() {
       peakVolumeRef.current = 0;
       try {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -185,8 +199,9 @@ export default function SpeakingReflexGame() {
       return;
     }
 
-    // Client-side silence check (peak RMS volume must exceed 0.015)
-    if (peakVolumeRef.current < 0.015) {
+    console.log("Peak audio RMS volume analyzed:", peakVolumeRef.current);
+    // Client-side silence check (peak RMS volume must exceed 0.003)
+    if (peakVolumeRef.current > 0 && peakVolumeRef.current < 0.003) {
       (window as any).showToast("No speech detected from microphone. Please speak louder and clearer! 🎙️", "warning");
       setIsEvaluating(false);
       return;

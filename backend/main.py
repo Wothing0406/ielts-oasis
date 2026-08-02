@@ -471,8 +471,15 @@ async def extract_scroll(file: UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail="Văn bản trong file Word này bị trống.")
                 
             extracted_words = await ai_service.extract_scroll_vocabulary_from_text(text_content)
+        elif filename.endswith(".txt"):
+            contents = await file.read()
+            text_content = contents.decode("utf-8", errors="ignore")
+            if not text_content.strip():
+                raise HTTPException(status_code=400, detail="Văn bản trong file TXT này bị trống.")
+                
+            extracted_words = await ai_service.extract_scroll_vocabulary_from_text(text_content)
         else:
-            raise HTTPException(status_code=400, detail="Định dạng file không được hỗ trợ. Vui lòng tải lên PDF, Word (.docx) hoặc Hình ảnh.")
+            raise HTTPException(status_code=400, detail="Định dạng file không được hỗ trợ. Vui lòng tải lên PDF, Word (.docx), file Text (.txt) hoặc Hình ảnh.")
             
         return {
             "text": text_content,

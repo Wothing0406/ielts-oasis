@@ -185,6 +185,18 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     }
   }, [sandboxLevel]);
 
+  // Cleanup timers and audio contexts on component unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (volumeTimerRef.current) clearInterval(volumeTimerRef.current);
+      if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
   // Format timer
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -1069,7 +1081,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   <button 
                     type="button"
                     onClick={startPrepTimer}
-                    disabled={isRecording || isPrepActive}
+                    disabled={isRecording || isPrepActive || !selectedCard?.topic}
                     className="bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
                   >
                     Start 1-Min Prep
@@ -1091,7 +1103,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   ) : (
                     <button 
                       type="button"
-                      disabled={isEvaluating}
+                      disabled={isEvaluating || !selectedCard?.topic}
                       onClick={startRecording}
                       className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
                     >
