@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
 import os
+import time
 import uuid
 import json
 import base64
@@ -114,6 +115,30 @@ from fastapi import Depends
 app = FastAPI(title="IELTS Oasis API")
 app.include_router(auth_router)
 
+async def cleanup_static_files_loop():
+    logger.info("Static files cleanup background task started.")
+    while True:
+        try:
+            await asyncio.sleep(3600)  # Sleep for 1 hour
+            static_dir = "static"
+            if os.path.exists(static_dir):
+                now = time.time()
+                for filename in os.listdir(static_dir):
+                    if filename.endswith((".mp3", ".wav", ".webm", ".webp", ".jpg", ".jpeg", ".png", ".pdf", ".txt")):
+                        # Skip protected assets
+                        if filename in ("matcha-default.jpg", "yolov8n.pt"):
+                            continue
+                        filepath = os.path.join(static_dir, filename)
+                        file_age = now - os.path.getmtime(filepath)
+                        if file_age > 86400:  # 24 hours
+                            try:
+                                os.remove(filepath)
+                                logger.info(f"Cleaned up old static file: {filename}")
+                            except Exception as ex:
+                                logger.error(f"Failed to delete {filename}: {ex}")
+        except Exception as e:
+            logger.error(f"Error in static file cleanup loop: {e}")
+
 async def backfill_vocabularies():
     # Wait a bit for the server to be fully up
     await asyncio.sleep(3)
@@ -175,6 +200,12 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN weekly_plan JSON NULL;"))
                 conn.commit()
                 logger.info("Migration: Added 'weekly_plan' column to discord_schedules.")
+            # Check study_focus column in discord_schedules
+            res_focus = conn.execute(text("SHOW COLUMNS FROM discord_schedules LIKE 'study_focus';")).fetchone()
+            if not res_focus:
+                conn.execute(text("ALTER TABLE discord_schedules ADD COLUMN study_focus VARCHAR(50) DEFAULT 'Toàn diện';"))
+                conn.commit()
+                logger.info("Migration: Added 'study_focus' column to discord_schedules.")
             # Check last_ip column in users table
             res_ip = conn.execute(text("SHOW COLUMNS FROM users LIKE 'last_ip';")).fetchone()
             if not res_ip:
@@ -196,6 +227,7 @@ async def startup_event():
         
     # Start background enrichment
     asyncio.create_task(backfill_vocabularies())
+    asyncio.create_task(cleanup_static_files_loop())
 
 def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: list):
     content_type = file.content_type if file.content_type else ""
@@ -1189,6 +1221,181 @@ def evaluate_guess(guess: str, secret: str) -> list[str]:
             secret_letters[idx] = None
             
     return result
+
+class UpdatePreferencesIn(BaseModel):
+    topic: str
+    study_focus: str
+    study_time: str
+
+@app.post("/study-plan/update-preferences")
+async def update_preferences(payload: UpdatePreferencesIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập.")
+    user_id = current_user["user_id"]
+    
+    # Generate weekly plan
+    weekly_plan = await ai_service.generate_weekly_plan(payload.topic, payload.study_focus)
+    if "error" in weekly_plan:
+        raise HTTPException(status_code=500, detail="Không thể khởi tạo lộ trình học qua AI.")
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user_id).first()
+    if not sched:
+        sched = DiscordSchedule(
+            user_id=user_id,
+            study_time=payload.study_time,
+            level="General",
+            topic=payload.topic,
+            study_focus=payload.study_focus,
+            weekly_plan=weekly_plan
+        )
+        db.add(sched)
+    else:
+        sched.study_time = payload.study_time
+        sched.topic = payload.topic
+        sched.study_focus = payload.study_focus
+        sched.weekly_plan = weekly_plan
+        
+    db.commit()
+    db.refresh(sched)
+    
+    return {
+        "status": "success",
+        "message": "Lộ trình học đã được cập nhật thành công!",
+        "weekly_plan": weekly_plan,
+        "preferences": {
+            "topic": sched.topic,
+            "study_focus": sched.study_focus,
+            "study_time": sched.study_time
+        }
+    }
+
+@app.get("/study-plan/get")
+async def get_study_plan(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập.")
+    user_id = current_user["user_id"]
+    
+    # First check discord schedules (weekly plan generated by bot or updated preference)
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user_id).first()
+    if not sched or not sched.weekly_plan:
+        return {"has_plan": False}
+        
+    return {
+        "has_plan": True,
+        "preferences": {
+            "topic": sched.topic,
+            "study_focus": sched.study_focus,
+            "study_time": sched.study_time
+        },
+        "weekly_plan": sched.weekly_plan
+    }
+
+@app.get("/study-plan/calendar.ics")
+async def get_calendar_ics(token: str, db: Session = Depends(get_db)):
+    from auth_routes import JWT_SECRET, JWT_ALGORITHM
+    import jwt
+    from fastapi.responses import Response
+    import datetime as dt
+    
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ hoặc đã hết hạn.")
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user_id).first()
+    if not sched or not sched.weekly_plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lộ trình học.")
+        
+    hour, minute = 20, 0
+    if sched.study_time and ":" in sched.study_time:
+        try:
+            parts = sched.study_time.split(":")
+            hour = int(parts[0])
+            minute = int(parts[1])
+        except Exception:
+            pass
+            
+    days_mapping = {
+        "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
+        "Friday": 4, "Saturday": 5, "Sunday": 6
+    }
+    
+    today = dt.date.today()
+    ical = []
+    ical.append("BEGIN:VCALENDAR")
+    ical.append("VERSION:2.0")
+    ical.append("PRODID:-//IELTS Oasis//Study Plan//EN")
+    ical.append("CALSCALE:GREGORIAN")
+    ical.append("METHOD:PUBLISH")
+    
+    for day_name, offset in days_mapping.items():
+        day_data = sched.weekly_plan.get(day_name)
+        if not day_data:
+            continue
+            
+        days_ahead = offset - today.weekday()
+        if days_ahead < 0:
+            days_ahead += 7
+        target_date = today + dt.timedelta(days=days_ahead)
+        
+        start_dt = dt.datetime.combine(target_date, dt.time(hour, minute))
+        end_dt = start_dt + dt.timedelta(hours=1)
+        
+        start_str = start_dt.strftime("%Y%m%dT%H%M%S")
+        end_str = end_dt.strftime("%Y%m%dT%H%M%S")
+        
+        focus = day_data.get("focus", "Luyện tập")
+        topic_day = day_data.get("topic", sched.topic)
+        tasks = day_data.get("tasks", [])
+        vocab = day_data.get("vocabulary", [])
+        
+        summary = f"🍵 IELTS Oasis: Luyện {focus} ({topic_day})"
+        
+        desc_lines = []
+        desc_lines.append(f"Chủ đề hôm nay: {topic_day}")
+        desc_lines.append(f"Kỹ năng trọng tâm: {focus}")
+        desc_lines.append("")
+        desc_lines.append("Nhiệm vụ cần hoàn thành:")
+        for t in tasks:
+            desc_lines.append(f"- {t}")
+            
+        if vocab:
+            desc_lines.append("")
+            desc_lines.append("3 Từ vựng đề xuất:")
+            for v in vocab:
+                desc_lines.append(f"- {v.get('word')} ({v.get('phonetic')}): {v.get('meaning')}")
+                
+        desc_lines.append("")
+        desc_lines.append("Đường link luyện tập trực tiếp:")
+        
+        domain = "http://localhost:3000"
+        if focus == "Viết":
+            desc_lines.append(f"- Viết bài ngay tại: {domain}/games/write")
+        elif focus == "Nói":
+            desc_lines.append(f"- Luyện nói ngay tại: {domain}/games/speak")
+        elif focus == "Đọc":
+            desc_lines.append(f"- Đọc báo MatchaScroll tại: {domain}/scroll")
+        elif focus == "Nghe":
+            desc_lines.append(f"- Luyện nghe tại: {domain}/games/listen")
+        else:
+            desc_lines.append(f"- Học tập tại IELTS Oasis: {domain}/")
+            
+        desc_str = "\\n".join(desc_lines)
+        desc_str = desc_str.replace("\n", "\\n")
+        
+        ical.append("BEGIN:VEVENT")
+        ical.append(f"UID:{user_id}_{offset}_{target_date.strftime('%Y%m%d')}@ielts-oasis.com")
+        ical.append(f"DTSTART:{start_str}")
+        ical.append(f"DTEND:{end_str}")
+        ical.append(f"SUMMARY:{summary}")
+        ical.append(f"DESCRIPTION:{desc_str}")
+        ical.append("END:VEVENT")
+        
+    ical.append("END:VCALENDAR")
+    ical_content = "\r\n".join(ical)
+    
+    return Response(content=ical_content, media_type="text/calendar")
 
 @app.post("/study-plan/save")
 async def save_study_plan(payload: SavePlanIn, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):

@@ -31,6 +31,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
   // Timer States
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [timerActive, setTimerActive] = useState(false);
+  const [isTimeUp, setIsTimeUp] = useState(false);
 
   useEffect(() => {
     let interval: any;
@@ -40,6 +41,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
       }, 1000);
     } else if (timerActive && timeLeft === 0) {
       setTimerActive(false);
+      setIsTimeUp(true);
       handleAnalyze(); // Auto submit
     }
     return () => clearInterval(interval);
@@ -51,6 +53,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
   const startTimer = (minutes: number) => {
     setTimeLeft(minutes * 60);
     setTimerActive(true);
+    setIsTimeUp(false);
   };
 
   const handleTextSelection = (e: React.MouseEvent<HTMLTextAreaElement> | React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -228,7 +231,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
               onChange={(e) => setText(e.target.value)}
               onMouseUp={handleTextSelection}
               onKeyUp={handleTextSelection}
-              disabled={isAnalyzing || (timerActive && timeLeft === 0)}
+              disabled={isAnalyzing || isTimeUp}
             />
             <div className="absolute bottom-6 right-8 text-xs font-bold opacity-40 uppercase tracking-widest text-accent dark:text-secondary">
               {wordCount} Words / Recommended: 250

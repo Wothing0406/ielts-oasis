@@ -665,6 +665,9 @@ export default function Home() {
                 setActiveListeningContext(text);
                 document.getElementById('matcha-radio')?.scrollIntoView({ behavior: 'smooth' });
               }}
+              onPracticeSpeaking={(prompt: string) => {
+                handleSelectSpeaking(prompt);
+              }}
             />
           </section>
 

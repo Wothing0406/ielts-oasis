@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from database import SessionLocal
-from models import User, Vocabulary, WritingLog, DiscordSchedule, AbsenceLog, DailyPlan, Like, Comment
+from models import User, Vocabulary, WritingLog, DiscordSchedule, AbsenceLog, DailyPlan, Like, Comment, WordleGame
 from datetime import datetime, timedelta
 from services.ai_service import ai_service
 import asyncio
@@ -142,20 +142,35 @@ async def on_message(message):
                     Và tạo một lộ trình học chi tiết cụ thể cho cả tuần (Thứ 2 đến Chủ nhật).
                     Chủ đề của từng ngày phải cụ thể và có task list rõ ràng để học viên biết phải làm gì trên website, kèm gợi ý (tip).
                     
-                    Trả về định dạng JSON chính xác như sau:
+                    Mỗi ngày trong tuần (từ "Monday" đến "Sunday") phải có:
+                    1. "topic": Chủ đề nhỏ chi tiết của ngày đó.
+                    2. "focus": Kỹ năng chính của ngày đó ("Từ vựng", "Nói", "Viết", "Nghe", "Đọc").
+                    3. "tasks": Danh sách 2-3 nhiệm vụ cụ thể cần hoàn thành.
+                    4. "vocabulary": Danh sách 3 từ vựng IELTS tiêu biểu của ngày đó (word, phonetic, meaning, example). Định nghĩa tiếng Việt, câu ví dụ tiếng Anh.
+                    5. Tùy thuộc vào "focus" của ngày đó, hãy cung cấp phần luyện tập tương ứng:
+                       - Nếu focus là "Nghe": Thêm đối tượng "listening" gồm (title, description, audio_script, questions).
+                       - Nếu focus là "Đọc": Thêm đối tượng "reading" gồm (title, text, questions).
+                       - Nếu focus là "Viết": Thêm đối tượng "writing" gồm (prompt, key_points).
+                       - Nếu focus là "Nói": Thêm đối tượng "speaking" gồm (prompt).
+
+                    Trả về định dạng JSON chính xác như sau (không kèm ký hiệu markdown, không kèm giải thích khác):
                     {{
                         "evaluation": "nhận xét chi tiết tiếng Việt",
                         "level": "Beginner/Intermediate/Advanced",
                         "time": "HH:MM",
                         "topic": "chủ đề chung",
                         "weekly_plan": {{
-                            "Monday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Tuesday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Wednesday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Thursday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Friday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Saturday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}},
-                            "Sunday": {{"topic": "chủ đề", "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"], "tip": "gợi ý"}}
+                            "Monday": {{
+                                "topic": "chủ đề",
+                                "focus": "Từ vựng / Nói / Viết / Nghe / Đọc",
+                                "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"],
+                                "tip": "gợi ý",
+                                "vocabulary": [
+                                    {{"word": "word1", "phonetic": "/.../", "meaning": "nghĩa1", "example": "ví dụ 1"}}
+                                ]
+                            }},
+                            "Tuesday": {{ ... }},
+                            ...
                         }}
                     }}
                     """
@@ -179,7 +194,7 @@ async def on_message(message):
                     if user:
                         sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
                         if not sched:
-                            sched = DiscordSchedule(user_id=user.id)
+                            sched = DiscordSchedule(user_id=user.id, study_focus="Toàn diện")
                             db.add(sched)
                         sched.study_time = time_str
                         sched.level = str(data.get("level", "Beginner"))[:50]
@@ -229,11 +244,46 @@ async def on_message(message):
             if not content:
                 content = "Chào bạn"
                 
+            # Query user stats from the web database
+            discord_id = str(message.author.id)
+            db = SessionLocal()
+            user = db.query(User).filter(User.discord_id == discord_id).first()
+            
+            stats_str = ""
+            if user:
+                vocab_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id).count()
+                mastery_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id, Vocabulary.mastery_level == 5).count()
+                recent_writing = db.query(WritingLog).filter(WritingLog.user_id == user.id).order_by(WritingLog.created_at.desc()).first()
+                wordle_game = db.query(WordleGame).filter(WordleGame.user_id == user.id).first()
+                
+                stats_str = f"\nThông tin học viên:\n- Tên trên Web: {user.username}\n- Kho từ vựng: đã lưu {vocab_count} từ (trong đó có {mastery_count} từ đạt Mastery 5)."
+                if recent_writing:
+                    stats_str += f"\n- Bài viết IELTS gần nhất đạt Band {recent_writing.band_score}."
+                if wordle_game:
+                    stats_str += f"\n- Điểm trò chơi Wordle Matcha: {wordle_game.points} điểm (Cấp độ {wordle_game.current_level})."
+            else:
+                stats_str = "\n(Lưu ý: Học viên này chưa liên kết tài khoản Discord với website IELTS Oasis. Hãy khuyên họ đăng nhập website IELTS Oasis bằng tài khoản Discord để đồng bộ lộ trình học tập, thống kê kết quả học tập và tự động hóa kho từ vựng.)"
+            db.close()
+
+            system_instruction = f"""
+            Bạn là một gia sư IELTS tên là Mát Cha AI Eo, cực kỳ nhiệt tình, thân thiện, gọi học viên bằng tên (nếu biết tên) và luôn xưng hô 'Mát Cha' hoặc 'tớ' và gọi học viên là 'cậu' hoặc 'bạn' cực kỳ ấm áp.
+            Bạn am hiểu sâu sắc các tính năng của website IELTS Oasis và hãy hướng dẫn học viên sử dụng chúng khi họ hỏi:
+            - **Vocabulary Lab**: Kho lưu trữ từ vựng cá nhân, tích hợp thuật toán lặp lại ngắt quãng (SRS) với 5 cấp độ Mastery để học từ nhớ lâu.
+            - **Writing Sanctuary**: Nơi luyện viết các bài luận Task 1, Task 2 và nhận đánh giá Band score, sửa lỗi chi tiết thời gian thực từ AI. Có đồng hồ áp lực thi cử tự động khóa ô viết và nộp bài khi hết giờ.
+            - **MatchaSpeak (Speaking Studio)**: Gồm chế độ Shadowing (nhại giọng chuẩn) và Sandbox (luyện nói Cue Card Part 2 trong 2 phút kèm nhận xét phát âm).
+            - **MatchaScroll (Đọc báo)**: Đọc báo học thuật tiếng Anh và tự động bôi đen trích xuất từ mới vào kho từ vựng.
+            - **Listening Section**: Luyện nghe chép chính tả qua video Youtube học thuật.
+            - **Wordle Matcha**: Trò chơi đoán từ vựng giải trí giúp tăng phản xạ từ.
+
+            {stats_str}
+            """
+
             if is_reply_to_bot and ref_msg:
                 # Direct reply to a specific bot message
                 replied_cleaned = ref_msg.content.replace(f'<@{bot.user.id}>', '').strip()
                 prompt = f"""
-                Bạn là một gia sư IELTS tên là Mát Cha AI Eo. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                {system_instruction}
+                
                 Quy tắc quan trọng:
                 1. Hãy trả lời trực tiếp phản hồi của học viên đối với câu nói trước đó của bạn.
                 2. Nếu học viên chào hỏi, hãy chào lại thân thiện.
@@ -261,7 +311,8 @@ async def on_message(message):
                 history_str = "\n".join(history_messages)
                 
                 prompt = f"""
-                Bạn là một gia sư IELTS tên là Mát Cha AI Eo. Hãy trả lời ngắn gọn, thân thiện, tự nhiên và hữu ích bằng tiếng Việt.
+                {system_instruction}
+                
                 Quy tắc quan trọng:
                 1. Nếu học viên chào hỏi (ví dụ: hi, hello, chào thầy...), hãy chào lại một cách thân thiện và hỏi xem bạn có thể giúp gì cho họ, TUYỆT ĐỐI KHÔNG tự tiện đưa ra bài tập hay câu hỏi kiểm tra.
                 2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng.
@@ -438,6 +489,74 @@ async def mylich_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
     db.close()
 
+@bot.tree.command(name='studytime', description="Đổi nhanh giờ nhắc học hàng ngày")
+@app_commands.describe(time="Giờ học dạng HH:MM (ví dụ: 20:00)")
+async def studytime_cmd(interaction: discord.Interaction, time: str):
+    import re
+    if not re.match(r'^\d{1,2}:\d{2}$', time):
+        await interaction.response.send_message("Vui lòng nhập đúng định dạng HH:MM (ví dụ: 20:00). 🍵", ephemeral=True)
+        return
+        
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        await interaction.response.send_message("Bạn chưa đăng nhập trên web Mát Cha AI Eo! Vui lòng đăng nhập trên website trước nhé! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        sched = DiscordSchedule(user_id=user.id, study_time=time, level="General", topic="General", study_focus="Toàn diện")
+        db.add(sched)
+    else:
+        sched.study_time = time
+        
+    db.commit()
+    db.close()
+    await interaction.response.send_message(f"Đã cập nhật giờ nhắc học hàng ngày của bạn thành **{time}**! 🍵", ephemeral=True)
+
+@bot.tree.command(name='studyfocus', description="Thay đổi trọng tâm học tập và sinh lại lộ trình")
+@app_commands.describe(focus="Chọn trọng tâm học tập")
+@app_commands.choices(focus=[
+    app_commands.Choice(name="Toàn diện (L/R/W/S)", value="Toàn diện"),
+    app_commands.Choice(name="Chuyên sâu Từ vựng", value="Từ vựng"),
+    app_commands.Choice(name="Chuyên sâu Nói", value="Nói"),
+    app_commands.Choice(name="Chuyên sâu Viết", value="Viết")
+])
+async def studyfocus_cmd(interaction: discord.Interaction, focus: app_commands.Choice[str]):
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        await interaction.response.send_message("Bạn chưa đăng nhập trên web Mát Cha AI Eo! Vui lòng đăng nhập trên website trước nhé! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        await interaction.response.send_message("Bạn chưa khởi tạo lộ trình học! Hãy gõ `/tuvan` hoặc thiết lập lộ trình trên Web nhé! 🍵", ephemeral=True)
+        db.close()
+        return
+        
+    await interaction.response.defer(ephemeral=True)
+    
+    # Update database
+    sched.study_focus = focus.value
+    db.commit()
+    
+    # Generate new weekly plan using the updated focus and current topic
+    try:
+        new_plan = await ai_service.generate_weekly_plan(sched.topic, focus.value)
+        sched.weekly_plan = new_plan
+        db.commit()
+        await interaction.followup.send(f"Đã cập nhật trọng tâm học tập thành **{focus.name}** và cập nhật lại lộ trình của bạn thành công! 🍵")
+    except Exception as e:
+        logger.error(f"Failed to regenerate schedule in /studyfocus: {e}")
+        await interaction.followup.send("Đã cập nhật cấu hình nhưng gặp lỗi khi tự động tạo lộ trình mới. Vui lòng thử lại sau!")
+    finally:
+        db.close()
+
 @bot.tree.command(name='huylich', description="Hủy lịch nhắc học hàng ngày mà không xóa tài khoản")
 async def huylich_cmd(interaction: discord.Interaction):
     discord_id = str(interaction.user.id)
@@ -561,27 +680,91 @@ async def schedule_checker_job():
                             tasks = day_plan.get("tasks", [])
                             tip = day_plan.get("tip", "")
                             
-                            # Let's generate vocabulary and speaking prompt via Gemini dynamically!
-                            vocab_prompt = f"""
-                            Hãy đề xuất 3 từ vựng IELTS nâng cao thuộc chủ đề '{topic_today}'.
-                            Với mỗi từ, hãy cung cấp phiên âm IPA, định nghĩa tiếng Việt ngắn gọn, và một câu ví dụ tiếng Anh.
+                            # Check if vocab is already in day plan
+                            day_vocab = day_plan.get("vocabulary", [])
                             
-                            Trả về định dạng JSON chính xác như sau:
-                            {{
-                                "words": [
-                                    {{"word": "từ_vựng_1", "phonetic": "phiên_âm_1", "meaning": "nghĩa_1", "example": "ví_dụ_1"}},
-                                    {{"word": "từ_vựng_2", "phonetic": "phiên_âm_2", "meaning": "nghĩa_2", "example": "ví_dụ_2"}},
-                                    {{"word": "từ_vựng_3", "phonetic": "phiên_âm_3", "meaning": "nghĩa_3", "example": "ví_dụ_3"}}
-                                ],
-                                "speaking_prompt": "câu hỏi luyện nói tiếng Anh gợi mở về chủ đề '{topic_today}' để người học luyện nói hoặc viết đoạn văn ngắn."
-                            }}
-                            """
-                            
+                            # Sync vocab to web DB
+                            if day_vocab:
+                                for v in day_vocab:
+                                    word_str = v.get("word", "").strip()
+                                    if word_str:
+                                        from sqlalchemy import func
+                                        dup = db.query(Vocabulary).filter(
+                                            Vocabulary.user_id == user.id,
+                                            func.lower(Vocabulary.word) == func.lower(word_str)
+                                        ).first()
+                                        if not dup:
+                                            new_v = Vocabulary(
+                                                user_id=user.id,
+                                                word=word_str,
+                                                phonetic=v.get("phonetic", ""),
+                                                meaning=v.get("meaning", ""),
+                                                example=v.get("example", ""),
+                                                topic=topic_today,
+                                                audio_url="",
+                                                mastery_level=1,
+                                                is_learned=False,
+                                                source="Discord Reminder"
+                                            )
+                                            db.add(new_v)
+                                db.commit()
+                                
+                            # Convert day_vocab to words_data structure
                             words_data = None
-                            try:
-                                words_data = await ai_service.get_json_advice(vocab_prompt)
-                            except Exception as e:
-                                logger.error(f"Failed to generate study content for reminder DM: {e}")
+                            if day_vocab:
+                                words_data = {
+                                    "words": day_vocab
+                                }
+                                # Add speaking prompt if focus was Nói and has speaking prompt
+                                speak_obj = day_plan.get("speaking")
+                                if speak_obj and isinstance(speak_obj, dict) and "prompt" in speak_obj:
+                                    words_data["speaking_prompt"] = speak_obj["prompt"]
+                                    
+                            # Fallback if no vocab in day plan (legacy or fallback)
+                            if not words_data:
+                                vocab_prompt = f"""
+                                Hãy đề xuất 3 từ vựng IELTS nâng cao thuộc chủ đề '{topic_today}'.
+                                Với mỗi từ, hãy cung cấp phiên âm IPA, định nghĩa tiếng Việt ngắn gọn, và một câu ví dụ tiếng Anh.
+                                
+                                Trả về định dạng JSON chính xác như sau:
+                                {{
+                                    "words": [
+                                        {{"word": "từ_vựng_1", "phonetic": "phiên_âm_1", "meaning": "nghĩa_1", "example": "ví_dụ_1"}},
+                                        {{"word": "từ_vựng_2", "phonetic": "phiên_âm_2", "meaning": "nghĩa_2", "example": "ví_dụ_2"}},
+                                        {{"word": "từ_vựng_3", "phonetic": "phiên_âm_3", "meaning": "nghĩa_3", "example": "ví_dụ_3"}}
+                                    ],
+                                    "speaking_prompt": "câu hỏi luyện nói tiếng Anh gợi mở về chủ đề '{topic_today}' để người học luyện nói hoặc viết đoạn văn ngắn."
+                                }}
+                                """
+                                try:
+                                    words_data = await ai_service.get_json_advice(vocab_prompt)
+                                    # Sync generated vocab too
+                                    if words_data and "words" in words_data:
+                                        for w in words_data["words"]:
+                                            word_str = w.get("word", "").strip()
+                                            if word_str:
+                                                from sqlalchemy import func
+                                                dup = db.query(Vocabulary).filter(
+                                                    Vocabulary.user_id == user.id,
+                                                    func.lower(Vocabulary.word) == func.lower(word_str)
+                                                ).first()
+                                                if not dup:
+                                                    new_v = Vocabulary(
+                                                        user_id=user.id,
+                                                        word=word_str,
+                                                        phonetic=w.get("phonetic", ""),
+                                                        meaning=w.get("meaning", ""),
+                                                        example=w.get("example", ""),
+                                                        topic=topic_today,
+                                                        audio_url="",
+                                                        mastery_level=1,
+                                                        is_learned=False,
+                                                        source="Discord Reminder"
+                                                    )
+                                                    db.add(new_v)
+                                        db.commit()
+                                except Exception as e:
+                                    logger.error(f"Failed to generate study content for reminder DM: {e}")
                                 
                             tasks_str = "\n".join([f"• {t}" for t in tasks]) if tasks else "• Hoàn thành lộ trình hàng ngày trên website."
                             

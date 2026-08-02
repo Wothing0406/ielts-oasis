@@ -1137,6 +1137,66 @@ Return ONLY the JSON array. Example:
                 "intonation": "Xuống giọng ở cuối câu khẳng định để tự nhiên hơn."
             }
 
+    async def generate_weekly_plan(self, topic: str, study_focus: str):
+        prompt = f"""
+        Bạn là trợ lý IELTS học thuật xuất sắc. Hãy thiết kế lộ trình học IELTS 7 ngày (Weekly Study Plan) cho chủ đề "{topic}" và trọng tâm học tập là "{study_focus}".
+        
+        Quy tắc thiết kế lộ trình theo Trọng tâm học tập ("{study_focus}"):
+        - Nếu là "Từ vựng": Tất cả 7 ngày tập trung chuyên sâu vào từ vựng học thuật, đọc báo học thuật MatchaScroll, chơi Quiz từ vựng. Tránh viết bài hay nói ghi âm dài.
+        - Nếu là "Nói": Tập trung 7 ngày vào luyện nói Shadowing và làm cue card Sandbox nói 2 phút trên web.
+        - Nếu là "Viết": Tập trung 7 ngày vào Writing Task 1 và Task 2, lên ý tưởng, viết bài luận hoàn chỉnh trên Writing Sanctuary.
+        - Nếu là "Toàn diện": Phân bổ đều đặn các kỹ năng trong tuần (Thứ 2: Nói & Từ vựng, Thứ 3: Viết, Thứ 4: Nghe, Thứ 5: Đọc, Thứ 6: Ôn tập Quiz, Thứ 7: Nói Sandbox, Chủ nhật: SRS Review).
+
+        Mỗi ngày trong tuần (từ "Monday" đến "Sunday") phải có:
+        1. "topic": Chủ đề nhỏ chi tiết của ngày đó.
+        2. "focus": Kỹ năng chính của ngày đó ("Từ vựng", "Nói", "Viết", "Nghe", "Đọc").
+        3. "tasks": Danh sách 2-3 nhiệm vụ cụ thể cần hoàn thành.
+        4. "vocabulary": Danh sách 3 từ vựng IELTS tiêu biểu của ngày đó (word, phonetic, meaning, example). Định nghĩa tiếng Việt, câu ví dụ tiếng Anh.
+        5. Tùy thuộc vào "focus" của ngày đó, hãy cung cấp phần luyện tập tương ứng:
+           - Nếu focus là "Nghe": Thêm đối tượng "listening" gồm (title, description, audio_script, questions).
+           - Nếu focus là "Đọc": Thêm đối tượng "reading" gồm (title, text, questions).
+           - Nếu focus là "Viết": Thêm đối tượng "writing" gồm (prompt, key_points).
+           - Nếu focus là "Nói": Thêm đối tượng "speaking" gồm (prompt).
+
+        Trả về DUY NHẤT một đối tượng JSON có cấu trúc như sau (không kèm ký hiệu markdown, không kèm giải thích khác):
+        {{
+            "Monday": {{
+                "topic": "Daily Subtopic",
+                "focus": "Kỹ năng của ngày",
+                "tasks": ["Task 1", "Task 2"],
+                "vocabulary": [
+                    {{"word": "word1", "phonetic": "/.../", "meaning": "nghĩa1", "example": "ví dụ 1"}}
+                ],
+                "speaking": {{ "prompt": "Câu hỏi nói..." }}
+            }},
+            "Tuesday": {{
+                ...
+            }}
+        }}
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content.strip())
+        except Exception as e:
+            print(f"generate_weekly_plan failed: {e}")
+            # Fallback mock 7 days plan
+            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            fallback_plan = {}
+            for d in days:
+                fallback_plan[d] = {
+                    "topic": f"Học từ vựng nâng cao chủ đề {topic}",
+                    "focus": "Từ vựng",
+                    "tasks": ["Ôn tập từ vựng IELTS", "Xem ví dụ minh họa"],
+                    "vocabulary": [
+                        {"word": "Advantageous", "phonetic": "/ˌæd.vænˈteɪ.dʒəs/", "meaning": "Có lợi, thuận lợi", "example": "A strong grasp of English is advantageous in the global job market."}
+                    ]
+                }
+            return fallback_plan
+
 ai_service = AIService()
 
 

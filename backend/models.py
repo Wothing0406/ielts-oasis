@@ -90,6 +90,7 @@ class DiscordSchedule(Base):
     study_time = Column(String(10)) # e.g. "20:00"
     level = Column(String(50))
     topic = Column(String(100), default="General")
+    study_focus = Column(String(50), default="Toàn diện") # "Toàn diện", "Từ vựng", "Nói", "Viết"
     weekly_plan = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
