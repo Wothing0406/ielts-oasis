@@ -26,3 +26,4 @@ data/
 yolov8n.pt
 tokenbot.txt
 backend/services/dictionary.db
+thuyet_minh.txt
