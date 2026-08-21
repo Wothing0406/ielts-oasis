@@ -468,14 +468,14 @@
           // Parse structured response — server returns full meaning block
           const raw = result.meaning || '';
           // Try to extract phonetic /.../ pattern
-          const phoneticMatch = raw.match(/\/[^/]+\/);
+          const phoneticMatch = raw.match(new RegExp('\/[^\/]+\/'));
           if (phoneticMatch && !phoneticInput.value) {
             phoneticInput.value = phoneticMatch[0];
           }
           // Set full meaning (strip phonetic if extracted)
-          meaningInput.value = raw.replace(/\/[^/]+\//, '').replace(/^[,\s]+/, '').trim() || raw;
+          meaningInput.value = raw.replace(new RegExp('\/[^\/]+\/'), '').replace(/^[,\s]+/, '').trim() || raw;
           // Extract example — look for sentence after 'VD:' or 'Example:'
-          const exampleMatch = raw.match(/(?:VD|Ví dụ|Example)[:\s]+(.+?)(?:\n|$)/i);
+          const exampleMatch = raw.match(new RegExp('(?:VD|V\u00ed d\u1ee5|Example)[:\\s]+(.+?)(?:\\n|$)', 'i'));
           const exampleInput = shadow.getElementById('add-example');
           if (exampleMatch && exampleInput && !exampleInput.value) {
             exampleInput.value = exampleMatch[1].trim();
@@ -918,8 +918,9 @@
           }, 3500);
         }
       });
-    });
-  }
+    } // end else (fill-in-blank)
+  } // end showVocabReminder
+
 
   // Strict Lockout Blocker when user fails 3 consecutive times
   function triggerTantrumLockout() {
