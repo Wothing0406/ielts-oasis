@@ -313,8 +313,20 @@
       const travel = Math.sqrt((e.clientX - startX) ** 2 + (e.clientY - startY) ** 2);
       if (travel > 5) {
         dragStarted = true;
-        wrapper.style.left = `${e.clientX - offsetX}px`;
-        wrapper.style.top = `${e.clientY - offsetY}px`;
+        let newLeft = e.clientX - offsetX;
+        let newTop = e.clientY - offsetY;
+        
+        // Prevent going off-screen (bubble width is 280px, mascot is 80px)
+        const minLeft = 10;
+        const maxLeft = window.innerWidth - 300;
+        const minTop = 10;
+        const maxTop = window.innerHeight - 100;
+        
+        newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+        newTop = Math.max(minTop, Math.min(newTop, maxTop));
+
+        wrapper.style.left = `${newLeft}px`;
+        wrapper.style.top = `${newTop}px`;
       }
     }
   });
@@ -385,27 +397,67 @@
   function showQuickAddForm() {
     bubble.innerHTML = `
       <div class="bubble-header">
-        <span>Thêm nhanh từ vựng ➕</span>
+        <span>Thêm nhanh từ mới ➕</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+      <div style="display:flex; flex-direction:column; gap:6px; width:100%; max-height: 250px; overflow-y: auto;">
         <input type="text" id="add-word" class="quiz-input" placeholder="Từ tiếng Anh (e.g. dynamic)" required />
-        <input type="text" id="add-phonetic" class="quiz-input" placeholder="Phát âm (e.g. /daɪˈnæm.ɪk/)" />
-        <input type="text" id="add-meaning" class="quiz-input" placeholder="Nghĩa tiếng Việt" required />
-        <input type="text" id="add-example" class="quiz-input" placeholder="Ví dụ minh họa" />
+        <button class="btn btn-yes" id="btn-ai-autofill" style="padding:6px; background:#E8F5E9; border:1px solid #81C784; font-size:0.75rem;">🤖 Tự động dịch (AI)</button>
+        <input type="text" id="add-phonetic" class="quiz-input" placeholder="Phát âm /.../ (Không bắt buộc)" />
+        <input type="text" id="add-meaning" class="quiz-input" placeholder="Nghĩa tiếng Việt (Không bắt buộc nếu dùng AI)" />
+        <input type="text" id="add-example" class="quiz-input" placeholder="Ví dụ minh họa (Không bắt buộc)" />
+        
+        <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:bold; color:#5D4037; padding:4px 0;">
+          <input type="checkbox" id="add-global" checked />
+          <span>Chia sẻ lên cộng đồng 🌍</span>
+        </label>
+        
         <button class="btn btn-yes" id="btn-submit-quick-add" style="margin-top:4px; padding:8px;">Lưu Từ Vựng 🍵</button>
       </div>
     `;
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-submit-quick-add').addEventListener('click', async () => {
-      const word = shadow.getElementById('add-word').value.trim();
-      const phonetic = shadow.getElementById('add-phonetic').value.trim();
-      const meaning = shadow.getElementById('add-meaning').value.trim();
-      const example = shadow.getElementById('add-example').value.trim();
 
-      if (!word || !meaning) {
-        alert("Vui lòng điền Từ tiếng Anh và Nghĩa tiếng Việt!");
+    const wordInput = shadow.getElementById('add-word');
+    const meaningInput = shadow.getElementById('add-meaning');
+    const phoneticInput = shadow.getElementById('add-phonetic');
+    const autofillBtn = shadow.getElementById('btn-ai-autofill');
+
+    autofillBtn.addEventListener('click', async () => {
+      const word = wordInput.value.trim();
+      if (!word) {
+        alert("Vui lòng nhập từ tiếng Anh trước!");
+        return;
+      }
+      autofillBtn.textContent = "Đang dịch...";
+      autofillBtn.setAttribute('disabled', 'true');
+      try {
+        const response = await fetch('https://ieltsoasis.site/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: word })
+        });
+        if (response.ok) {
+          const result = await response.json();
+          meaningInput.value = result.meaning || '';
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        autofillBtn.textContent = "🤖 Tự động dịch (AI)";
+        autofillBtn.removeAttribute('disabled');
+      }
+    });
+
+    shadow.getElementById('btn-submit-quick-add').addEventListener('click', async () => {
+      const word = wordInput.value.trim();
+      const phonetic = phoneticInput.value.trim();
+      const meaning = meaningInput.value.trim();
+      const example = shadow.getElementById('add-example').value.trim();
+      const isGlobal = shadow.getElementById('add-global').checked;
+
+      if (!word) {
+        alert("Vui lòng điền Từ tiếng Anh!");
         return;
       }
 
@@ -424,9 +476,10 @@
           },
           body: JSON.stringify({
             word,
-            meaning,
-            phonetic,
+            meaning: meaning || "Đang dịch tự động...",
+            phonetic: phonetic || "/.../",
             example,
+            is_global: isGlobal,
             topic: 'General',
             source: 'Mascot Quick Add'
           })
