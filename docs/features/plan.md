@@ -63,18 +63,30 @@ matcha-oasis-extension/
 ### Phase 4: Side Panel AI Assistant & Highlights
 *   **Task 4.1:** Build `sidepanel/assistant.html` referencing the official Gemini API for academic explanations and essay suggestions.
 *   **Task 4.2:** Implement text selection event handler in `text_highlighter.js` with custom slash commands (`/define`, `/rephrase`).
+*   **Task 4.3:** Integrate Vocabulary Lab Syncing within the Side Panel:
+    *   Add a tab or panel section displaying the user's current vocabulary list fetched from `GET /vocabulary`.
+    *   Add a quick-add input form allowing users to save new words directly to their database (`POST /vocabulary`).
+*   **Task 4.4:** Integrate Study Schedule & Checklist in Side Panel:
+    *   Retrieve the user's active study schedule from `GET /study-plan/get`.
+    *   Render daily study checklists ("Ticking notes") with interactive checkboxes saved to `localStorage` or synced back to the backend.
 
 ### Phase 5: Web Installer Dashboard integration
 *   **Task 5.1:** Add "Download Mascot Extension" button inside Next.js dashboard Settings with a modal showing visual developer-mode loading instructions.
 
 ---
 
-## 4. Comprehensive Test Cases
+## 4. Comprehensive Test Cases & Verification Plan
 
-| Test Case ID | Test Target | Action | Expected Result |
-|---|---|---|---|
-| **TC-001** | Auth Sync | Log in on `ieltsoasis.site` and open extension popup | Extension displays user's name and synchronizes the active JWT token. |
-| **TC-002** | 30m Alarm | Set Alarm interval to 1 minute for testing | Mascot pops up a card containing 1 vocab word from user's DB. |
-| **TC-003** | Silence Mode | Navigate to `https://ieltsoasis.site` | Regular notifications stop. Mascot switches state to "Supportive mascot". |
-| **TC-004** | OCR Capture | Drag-select text on an image or PDF | Image is successfully scanned and word + definition are extracted. |
-| **TC-005** | AI Assistant | Select text, right-click and choose "Explain with Matcha AI" | Chrome Side Panel opens, rendering detailed definitions from Gemini. |
+| Test Case ID | Test Target | Action | Expected Result | Status |
+|---|---|---|---|---|
+| **TC-001** | Auth Sync | Log in on `ieltsoasis.site` and open extension popup | Extension displays user's name and synchronizes the active JWT token. | `[x] Verfied` |
+| **TC-002** | 30m Alarm | Set Alarm interval to 1 minute for testing | Mascot pops up a card containing 1 vocab word from user's DB. | `[x] Verified` |
+| **TC-003** | Silence Mode | Navigate to `https://ieltsoasis.site` | Regular notifications stop. Mascot switches state to "Supportive mascot". | `[x] Verified` |
+| **TC-004** | OCR Capture | Drag-select text on an image or PDF | Image is successfully scanned and word + definition are extracted. | `[ ] Pending` |
+| **TC-005** | AI Assistant | Select text, right-click and choose "Explain with Matcha AI" | Chrome Side Panel opens, rendering detailed definitions from Gemini. | `[x] Verified` |
+| **TC-006** | Chatbot Commands | Send `/define resilient` and `/rephrase I want to speak English well` in Side Panel | Chatbot returns precise definition and rephrased IELTS-standard alternative. | `[x] Verified` |
+| **TC-007** | Add Vocabulary | Input new word, meaning, and phonetic in Side Panel, click "Thêm từ" | Sends request to `POST /vocabulary`, word is synced, and list is updated. | `[x] Verified` |
+| **TC-008** | View Vocab List | Open Vocabulary Lab tab in Side Panel | Renders list of all stored vocabularies with audio pronunciation trigger. | `[x] Verified` |
+| **TC-009** | View Schedule | Open Study Plan tab in Side Panel | Displays current IELTS level, target topic, and daily active study days. | `[x] Verified` |
+| **TC-010** | Tick Notes | Check/uncheck target items in Daily Study Checklist | State is persisted; ticked tasks display strike-through formatting. | `[x] Verified` |
+| **TC-011** | Mascot Tantrum | Leave extension neglected for > 2 hours | Screen overlay triggers, blockading non-project sites until visiting ieltsoasis.site. | `[x] Verified` |
