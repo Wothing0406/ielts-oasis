@@ -146,10 +146,11 @@
       border-radius: 12px;
       text-align: left;
       font-size: 0.8rem;
-      cursor: pointer;
+      cursor: pointer !important;
       color: #5D4037;
       font-weight: bold;
       transition: all 0.2s;
+      pointer-events: all !important;
     }
 
     .btn-choice:hover {
@@ -167,7 +168,14 @@
       background: #FFFDF5;
       color: #5D4037;
       box-sizing: border-box;
+      pointer-events: all !important;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      position: relative;
+      z-index: 1;
     }
+
+
 
     .quiz-feedback {
       font-weight: bold;
@@ -359,6 +367,22 @@
       bubble.style.left = 'auto';
       bubble.style.right = '0';
     }
+
+    // Stop the page from intercepting clicks/keyboard inside the bubble
+    bubble.addEventListener('click', (e) => e.stopPropagation(), { capture: true });
+    bubble.addEventListener('keydown', (e) => e.stopPropagation(), { capture: true });
+    bubble.addEventListener('keyup', (e) => e.stopPropagation(), { capture: true });
+    bubble.addEventListener('mousedown', (e) => e.stopPropagation(), { capture: true });
+    bubble.addEventListener('pointerdown', (e) => e.stopPropagation(), { capture: true });
+
+    // Auto-focus first input or textarea inside the bubble
+    setTimeout(() => {
+      const input = shadow.querySelector('.quiz-input') || shadow.querySelector('input') || shadow.querySelector('textarea');
+      if (input) {
+        input.focus();
+        input.click();
+      }
+    }, 80);
   }
 
   function toggleMascotMenu() {

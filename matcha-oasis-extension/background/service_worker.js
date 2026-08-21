@@ -28,7 +28,7 @@ function setupAlarms() {
   chrome.alarms.clearAll(() => {
     chrome.storage.local.get(['reminders_enabled'], (data) => {
       if (data.reminders_enabled !== false) {
-        chrome.alarms.create("study-reminder", {
+        chrome.alarms.create("matcha-vocab-alarm", {
           periodInMinutes: 30
         });
         console.log("Alarms set: 30 minutes interval.");
@@ -43,12 +43,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     const data = await chrome.storage.local.get(['reminders_enabled']);
     if (data.reminders_enabled === false) return;
 
-    // Send to active tab
+    // Send ONLY to active tab (not all tabs)
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab && activeTab.url && !activeTab.url.includes("ieltsoasis.site")) {
+    if (activeTab && activeTab.id && activeTab.url && !activeTab.url.includes("ieltsoasis.site") && !activeTab.url.startsWith("chrome://")) {
       chrome.tabs.sendMessage(activeTab.id, {
         action: "show_reminder"
-      });
+      }).catch(() => {}); // ignore if tab has no content script
     }
   }
 });
