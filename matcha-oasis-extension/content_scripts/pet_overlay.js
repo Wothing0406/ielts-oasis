@@ -707,7 +707,7 @@
           }, 3500);
         }
       });
-    }
+    });
   }
 
   // Strict Lockout Blocker when user fails 3 consecutive times
@@ -806,6 +806,7 @@
             generateLockoutQuiz(overlay);
           }, 2500);
         }
+      });
     });
   }
 
