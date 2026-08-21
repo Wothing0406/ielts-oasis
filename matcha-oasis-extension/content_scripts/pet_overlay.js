@@ -1,6 +1,6 @@
 // content_scripts/pet_overlay.js
 
-(function() {
+(function () {
   if (window.hasMatchaMascotRun) return;
   window.hasMatchaMascotRun = true;
 
@@ -271,7 +271,7 @@
     if (animationInterval) clearInterval(animationInterval);
     currentAction = action;
     frameIndex = 0;
-    
+
     animationInterval = setInterval(() => {
       const frames = animationFrames[currentAction];
       if (frames && frames.length > 0) {
@@ -284,10 +284,10 @@
   // Mascot DOM Element Structure
   const wrapper = document.createElement('div');
   wrapper.id = 'matcha-pet-wrapper';
-  
+
   const bubble = document.createElement('div');
   bubble.className = 'speech-bubble';
-  
+
   const img = document.createElement('img');
   img.className = 'pet-sprite';
   img.alt = "Mát Cha Pet";
@@ -315,7 +315,7 @@
     const rect = wrapper.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
-    
+
     wrapper.style.right = 'auto';
     wrapper.style.bottom = 'auto';
     wrapper.style.left = `${rect.left}px`;
@@ -329,13 +329,13 @@
         dragStarted = true;
         let newLeft = e.clientX - offsetX;
         let newTop = e.clientY - offsetY;
-        
+
         // Prevent going off-screen (mascot is 80px)
         const minLeft = 10;
         const maxLeft = window.innerWidth - 90;
         const minTop = 10;
         const maxTop = window.innerHeight - 90;
-        
+
         newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
         newTop = Math.max(minTop, Math.min(newTop, maxTop));
 
@@ -412,7 +412,7 @@
 
     // Hook Menu Events
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    
+
     shadow.getElementById('btn-sidepanel').addEventListener('click', () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'open_sidepanel' });
@@ -489,21 +489,23 @@
         });
         if (response.ok) {
           const result = await response.json();
-          // Parse structured response — server returns full meaning block
-          const raw = result.meaning || '';
-          // Try to extract phonetic /.../ pattern
-          const phoneticMatch = raw.match(new RegExp('\/[^\/]+\/'));
-          if (phoneticMatch && !phoneticInput.value) {
-            phoneticInput.value = phoneticMatch[0];
+          // Now the server returns structured JSON
+          if (result.word) {
+            wordInput.value = result.word;
           }
-          // Set full meaning (strip phonetic if extracted)
-          meaningInput.value = raw.replace(new RegExp('\/[^\/]+\/'), '').replace(/^[,\s]+/, '').trim() || raw;
-          // Extract example — look for sentence after 'VD:' or 'Example:'
-          const exampleMatch = raw.match(new RegExp('(?:VD|V\u00ed d\u1ee5|Example)[:\\s]+(.+?)(?:\\n|$)', 'i'));
-          const exampleInput = shadow.getElementById('add-example');
-          if (exampleMatch && exampleInput && !exampleInput.value) {
-            exampleInput.value = exampleMatch[1].trim();
+          if (result.phonetic && !phoneticInput.value) {
+            phoneticInput.value = result.phonetic;
           }
+          if (result.meaning) {
+            meaningInput.value = result.meaning;
+          }
+          if (result.example) {
+            const exampleInput = shadow.getElementById('add-example');
+            if (exampleInput && !exampleInput.value) {
+              exampleInput.value = result.example;
+            }
+          }
+          // Note: we can also optionally use result.memory_hook if we add an input for it later.
         }
       } catch (err) {
         console.error(err);
@@ -624,13 +626,16 @@
         const resp = await fetch(`${serverUrl}/api/translate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: `Mẹo nhớ nhanh từ vựng: ${v.word}` })
+          body: JSON.stringify({ text: v.word, full: true })
         });
         if (resp.ok) {
           const r = await resp.json();
-          memoryHook = r.meaning || '';
+          memoryHook = r.memory_hook || '';
+          // We can also opportunistically update other missing fields
+          if (!v.phonetic && r.phonetic) v.phonetic = r.phonetic;
+          if (!v.example && r.example) v.example = r.example;
         }
-      } catch(e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
     }
 
     const masteryStars = '⭐'.repeat(Math.min(v.mastery_level || 1, 5));
@@ -732,7 +737,7 @@
           <div style="display:flex; flex-direction:column; gap:4px;">
             ${choices.map((c, i) => `
               <button class="btn-choice" data-ans="${c}" data-correct="${c === q.answer}">
-                ${String.fromCharCode(65+i)}. ${c}
+                ${String.fromCharCode(65 + i)}. ${c}
               </button>
             `).join('')}
           </div>
@@ -1013,7 +1018,7 @@
           <div style="margin-top:8px; background:#F1F8E9; border-radius:10px; padding:8px;">
             <div style="font-size:0.75rem; color:#5D4037; margin-bottom:4px;">Điểm số</div>
             <div style="background:#E8F5E9; border-radius:6px; height:10px; overflow:hidden;">
-              <div style="width:${pct}%; background:${pct>=80?'#66BB6A':pct>=60?'#FFA726':'#EF5350'}; height:100%; border-radius:6px;"></div>
+              <div style="width:${pct}%; background:${pct >= 80 ? '#66BB6A' : pct >= 60 ? '#FFA726' : '#EF5350'}; height:100%; border-radius:6px;"></div>
             </div>
             <div style="font-size:0.8rem; font-weight:bold; color:#3b7a13; margin-top:4px;">${pct}%</div>
           </div>
@@ -1153,7 +1158,7 @@
     startAnimation('tantrum');
     img.style.width = '120px';
     img.style.height = '120px';
-    
+
     // Lockout Overlay
     const overlay = document.createElement('div');
     overlay.className = 'lockout-overlay';

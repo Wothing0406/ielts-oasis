@@ -48,6 +48,7 @@ except Exception as e:
 
 class TranslateInput(BaseModel):
     text: str
+    full: bool = False
 
 def seed_db():
     from database import get_db_context
@@ -541,6 +542,34 @@ async def translate_text(data: TranslateInput):
         # Check if text is mostly English single word lookup (less than or equal to 3 words, no non-ascii chars)
         is_word_lookup = word_count <= 3 and all(c.isalnum() or c.isspace() or c in "'-" for c in text) and not any(ord(c) > 127 for c in text)
         
+        if data.full:
+            # Generate structured vocabulary info
+            prompt = (
+                f"Hãy phân tích từ/cụm từ '{text}' và trả về kết quả định dạng JSON với các trường sau:\n"
+                f"- 'word': từ/cụm từ (tiếng Anh)\n"
+                f"- 'phonetic': phiên âm quốc tế IPA (nếu có, đặt trong /.../)\n"
+                f"- 'meaning': giải thích nghĩa tiếng Việt (ngắn gọn, chính xác)\n"
+                f"- 'example': 1 câu ví dụ tiếng Anh ngắn gọn\n"
+                f"- 'memory_hook': mẹo nhớ từ (có thể dùng chiết tự, âm thanh tương tự, hoặc câu chuyện ngắn thú vị)\n"
+                f"Chỉ trả về JSON hợp lệ, không kèm theo văn bản giải thích nào khác."
+            )
+            response = await ai_service.get_advice(prompt)
+            import json
+            try:
+                # Remove markdown code blocks if any
+                clean_json = response.strip()
+                if clean_json.startswith("```json"):
+                    clean_json = clean_json[7:]
+                elif clean_json.startswith("```"):
+                    clean_json = clean_json[3:]
+                if clean_json.endswith("```"):
+                    clean_json = clean_json[:-3]
+                parsed = json.loads(clean_json.strip())
+                return parsed
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse structured vocab: {response}")
+                return {"meaning": response}
+                
         if is_word_lookup:
             prompt = f"Dịch và giải thích ngắn gọn ý nghĩa của từ/cụm từ sau sang tiếng Việt (nếu là từ đơn hãy kèm phiên âm và loại từ, nếu là cụm từ thì dịch sát nghĩa ngữ cảnh): '{text}'"
             response = await ai_service.get_advice(prompt)
@@ -739,6 +768,7 @@ class ObjectDetectionInput(BaseModel):
 
 class TranslateInput(BaseModel):
     text: str
+    full: bool = False
 
 @app.post("/listening/youtube")
 async def listening_youtube(payload: YoutubeIn):
