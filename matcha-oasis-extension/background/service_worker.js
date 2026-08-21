@@ -112,6 +112,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       triggerVocabReminderImmediate(sender.tab.id);
     }
   }
+
+  if (message.action === 'capture_screen') {
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+      sendResponse(dataUrl);
+    });
+    return true; // async response
+  }
 });
 
 async function triggerVocabReminderImmediate(tabId) {

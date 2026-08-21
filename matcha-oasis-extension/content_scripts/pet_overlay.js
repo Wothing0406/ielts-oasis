@@ -222,10 +222,14 @@
   let dragStarted = false;
   let offsetX = 0;
   let offsetY = 0;
+  let startX = 0;
+  let startY = 0;
 
   img.addEventListener('mousedown', (e) => {
     isDragging = true;
     dragStarted = false;
+    startX = e.clientX;
+    startY = e.clientY;
     const rect = wrapper.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
@@ -238,9 +242,12 @@
 
   document.addEventListener('mousemove', (e) => {
     if (isDragging) {
-      dragStarted = true;
-      wrapper.style.left = `${e.clientX - offsetX}px`;
-      wrapper.style.top = `${e.clientY - offsetY}px`;
+      const travel = Math.sqrt((e.clientX - startX) ** 2 + (e.clientY - startY) ** 2);
+      if (travel > 5) {
+        dragStarted = true;
+        wrapper.style.left = `${e.clientX - offsetX}px`;
+        wrapper.style.top = `${e.clientY - offsetY}px`;
+      }
     }
   });
 
@@ -270,6 +277,7 @@
       <div class="actions" style="flex-direction: column; gap: 4px; align-items: stretch; width: 100%;">
         <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 6px;">💬 Trò chuyện AI</button>
         <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng ngay</button>
+        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 6px; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét chữ màn hình (OCR)</button>
       </div>
     `;
     bubble.style.display = 'flex';
@@ -280,6 +288,12 @@
     shadow.getElementById('btn-sidepanel').addEventListener('click', () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'open_sidepanel' });
+    });
+    shadow.getElementById('btn-ocr').addEventListener('click', () => {
+      closeBubble();
+      if (window.startMatchaOCR) {
+        window.startMatchaOCR(handleOCRWordDetected);
+      }
     });
     shadow.getElementById('btn-test-reminder').addEventListener('click', async () => {
       closeBubble();
@@ -363,5 +377,59 @@
       <a href="https://ieltsoasis.site" style="margin-top:20px; padding:12px 24px; background:#5D4037; color:#FFFDF5; text-decoration:none; border-radius:30px; font-weight:bold; font-size:1.1rem;">Đi Học Ngay Thôi!</a>
     `;
     shadow.appendChild(overlay);
+  }
+
+  async function handleOCRWordDetected(wordData) {
+    bubble.innerHTML = `
+      <div class="bubble-header">
+        <span>Đã Quét Từ Vựng 📸</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div>
+        <span class="word">${wordData.word}</span>
+        <span class="phonetic">${wordData.phonetic || ''}</span>
+      </div>
+      <div class="meaning">${wordData.meaning}</div>
+      <div class="actions">
+        <button class="btn btn-yes" id="btn-save-vocab">Lưu vào Tủ Từ 🍵</button>
+      </div>
+    `;
+    bubble.style.display = 'flex';
+    startAnimation('celebrating');
+
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-save-vocab').addEventListener('click', async () => {
+      const data = await chrome.storage.local.get(['jwt_token']);
+      if (!data.jwt_token) {
+        alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
+        return;
+      }
+      try {
+        const res = await fetch('https://ieltsoasis.site/api/vocabulary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.jwt_token}`
+          },
+          body: JSON.stringify({
+            word: wordData.word,
+            meaning: wordData.meaning,
+            phonetic: wordData.phonetic,
+            example: wordData.example || '',
+            topic: wordData.topic || 'General',
+            source: 'Matcha OCR'
+          })
+        });
+        if (res.ok) {
+          alert(`Đã lưu thành công từ "${wordData.word}" vào Tủ Từ! 🍵`);
+          closeBubble();
+        } else {
+          const errData = await res.json();
+          alert(errData.detail || "Lỗi lưu từ vựng.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
   }
 })();

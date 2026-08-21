@@ -37,8 +37,8 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "content_scripts/pet_overlay.js",
         "content_scripts/ocr_selector.js",
+        "content_scripts/pet_overlay.js",
         "content_scripts/text_highlighter.js"
       ],
       "css": ["content_scripts/pet_overlay.css"]
