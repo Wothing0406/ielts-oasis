@@ -152,6 +152,13 @@ graph TD
 * **Đồng bộ Google Calendar (`.ics`)**: Xuất nguồn cấp dữ liệu iCal động. Bạn chỉ cần copy link và subscribe trực tiếp trên ứng dụng Google Calendar, Apple Calendar hoặc Outlook.
 * **Tối ưu hóa AI**: Tự động sinh lịch học, bài tập cụ thể, từ vựng tiêu biểu cho cả tuần **chỉ trong 1 lần gọi Gemini API duy nhất** để tối ưu hóa chi phí token và tốc độ.
 
+### 7. 🧩 Matcha Chrome Extension (Tiện Ích Trình Duyệt)
+* **Pet Mascot (Gấu Matcha)**: Một trợ lý ảo luôn hiển thị ở góc màn hình khi bạn lướt web (Hỗ trợ kéo thả).
+* **Quản Lý Từ Vựng Nhanh**: Click vào Gấu Matcha để mở menu "Tủ từ vựng", "Học Ngữ pháp", "Thêm nhanh từ mới".
+* **Auto-fill AI**: Khi thêm từ mới từ extension, chỉ cần nhập từ tiếng Anh, AI sẽ tự động điền phiên âm (IPA), nghĩa, ví dụ tiếng Anh và **mẹo nhớ từ** theo đúng format của thẻ flashcard trên web.
+* **Vocabulary Session Quiz**: Làm bài Quiz từ vựng ngẫu nhiên ngay trên extension, không cần mở web. Progress bar, tính điểm trực quan, chặn truy cập khi học sai quá nhiều lần.
+* **OCR Snapshot**: Chọn công cụ OCR để chụp một vùng bất kỳ trên màn hình, AI sẽ trích xuất chữ và tự động thêm vào Tủ Từ.
+
 ---
 
 ## 🤖 Các Tính Năng Bot Discord Chủ Động

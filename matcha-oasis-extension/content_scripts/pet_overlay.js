@@ -411,32 +411,32 @@
     startAnimation('alert');
 
     // Hook Menu Events
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
-    shadow.getElementById('btn-sidepanel').addEventListener('click', () => {
+    shadow.querySelector('#btn-sidepanel').addEventListener('click', () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'open_sidepanel' });
     });
 
-    shadow.getElementById('btn-ocr').addEventListener('click', () => {
+    shadow.querySelector('#btn-ocr').addEventListener('click', () => {
       closeBubble();
       if (window.startMatchaOCR) {
         window.startMatchaOCR(handleOCRWordDetected);
       }
     });
 
-    shadow.getElementById('btn-add-vocab-ui').addEventListener('click', showQuickAddForm);
+    shadow.querySelector('#btn-add-vocab-ui').addEventListener('click', showQuickAddForm);
 
-    shadow.getElementById('btn-view-vocab').addEventListener('click', showVocabListUI);
+    shadow.querySelector('#btn-view-vocab').addEventListener('click', showVocabListUI);
 
-    shadow.getElementById('btn-grammar-quiz').addEventListener('click', showGrammarQuizUI);
+    shadow.querySelector('#btn-grammar-quiz').addEventListener('click', showGrammarQuizUI);
 
-    shadow.getElementById('btn-vocab-quiz').addEventListener('click', async () => {
+    shadow.querySelector('#btn-vocab-quiz').addEventListener('click', async () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
     });
 
-    shadow.getElementById('btn-view-schedule').addEventListener('click', showStudyScheduleUI);
+    shadow.querySelector('#btn-view-schedule').addEventListener('click', showStudyScheduleUI);
   }
 
 
@@ -464,12 +464,12 @@
     `;
     openBubble(formHtml);
 
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
-    const wordInput = shadow.getElementById('add-word');
-    const meaningInput = shadow.getElementById('add-meaning');
-    const phoneticInput = shadow.getElementById('add-phonetic');
-    const autofillBtn = shadow.getElementById('btn-ai-autofill');
+    const wordInput = shadow.querySelector('#add-word');
+    const meaningInput = shadow.querySelector('#add-meaning');
+    const phoneticInput = shadow.querySelector('#add-phonetic');
+    const autofillBtn = shadow.querySelector('#btn-ai-autofill');
 
     autofillBtn.addEventListener('click', async () => {
       const word = wordInput.value.trim();
@@ -500,7 +500,7 @@
             meaningInput.value = result.meaning;
           }
           if (result.example) {
-            const exampleInput = shadow.getElementById('add-example');
+            const exampleInput = shadow.querySelector('#add-example');
             if (exampleInput && !exampleInput.value) {
               exampleInput.value = result.example;
             }
@@ -516,12 +516,12 @@
       }
     });
 
-    shadow.getElementById('btn-submit-quick-add').addEventListener('click', async () => {
+    shadow.querySelector('#btn-submit-quick-add').addEventListener('click', async () => {
       const word = wordInput.value.trim();
       const phonetic = phoneticInput.value.trim();
       const meaning = meaningInput.value.trim();
-      const example = shadow.getElementById('add-example').value.trim();
-      const isGlobal = shadow.getElementById('add-global').checked;
+      const example = shadow.querySelector('#add-example').value.trim();
+      const isGlobal = shadow.querySelector('#add-global').checked;
 
       if (!word) {
         alert("Vui lòng điền Từ tiếng Anh!");
@@ -602,8 +602,8 @@
     `;
     openBubble(listHtmlContent);
 
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#btn-back-menu').addEventListener('click', toggleMascotMenu);
 
     // Attach click handlers to each word item
     shadow.querySelectorAll('.vocab-clickable').forEach(el => {
@@ -669,8 +669,8 @@
     `;
     openBubble(detailHtml);
 
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-back-list').addEventListener('click', showVocabListUI);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#btn-back-list').addEventListener('click', showVocabListUI);
   }
 
   // Grammar Quiz UI — fetches from backend or uses local vocab
@@ -684,7 +684,7 @@
         ⏳ Đang tải câu hỏi từ server...
       </div>
     `);
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
     try {
       const serverUrl = await getServerUrl();
@@ -695,7 +695,7 @@
 
       if (!questions.length) {
         openBubble(`<div class="bubble-header"><span>Quiz 📝</span><span class="close-btn" id="close-bubble">×</span></div><div style="text-align:center;padding:10px;font-size:0.82rem;">Không lấy được câu hỏi. Thử lại sau! 🍵</div>`);
-        shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
         return;
       }
 
@@ -798,8 +798,8 @@
     `;
     openBubble(schedHtml);
 
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#btn-back-menu').addEventListener('click', toggleMascotMenu);
   }
 
   // Reminders and Quiz triggers
