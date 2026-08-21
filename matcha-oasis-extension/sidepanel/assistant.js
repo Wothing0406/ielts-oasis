@@ -1,4 +1,12 @@
-const BASE_URL = 'https://ieltsoasis.site/api';
+let BASE_URL = 'https://ieltsoasis.site/api';
+
+async function getBaseUrl() {
+  const data = await chrome.storage.local.get(['server_url']);
+  if (data.server_url) {
+    BASE_URL = data.server_url + '/api';
+  }
+  return BASE_URL;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const chatArea = document.getElementById('chat-area');
@@ -58,7 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function explainWord(word, token) {
     appendMessage('ai', 'Mát Cha AI đang suy nghĩ... 🍵');
     try {
-      const response = await fetch(`${BASE_URL}/translate`, {
+      const baseUrl = await getBaseUrl();
+      const response = await fetch(`${baseUrl}/translate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function rephraseText(phrase, token) {
     appendMessage('ai', 'Mát Cha AI đang viết lại câu... 📝');
     try {
-      const response = await fetch(`${BASE_URL}/translate`, {
+      const baseUrl = await getBaseUrl();
+      const response = await fetch(`${baseUrl}/translate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

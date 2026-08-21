@@ -120,12 +120,18 @@
     });
   };
 
+  async function getServerUrl() {
+    const data = await chrome.storage.local.get(['server_url']);
+    return data.server_url || 'https://ieltsoasis.site';
+  }
+
   async function performOCRDetect(blob, callback) {
     const formData = new FormData();
     formData.append('file', blob, 'ocr_screenshot.jpg');
 
     try {
-      const response = await fetch('https://ieltsoasis.site/api/vocabulary/detect', {
+      const serverUrl = await getServerUrl();
+      const response = await fetch(`${serverUrl}/api/vocabulary/detect`, {
         method: 'POST',
         body: formData
       });

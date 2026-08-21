@@ -1,4 +1,12 @@
-const BASE_URL = 'https://ieltsoasis.site/api';
+let BASE_URL = 'https://ieltsoasis.site/api';
+
+async function getBaseUrl() {
+  const data = await chrome.storage.local.get(['server_url']);
+  if (data.server_url) {
+    BASE_URL = data.server_url + '/api';
+  }
+  return BASE_URL;
+}
 
 // Install event
 chrome.runtime.onInstalled.addListener(() => {
@@ -48,7 +56,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // Helper to fetch vocab reminder
 async function fetchVocabReminder(token) {
   try {
-    const response = await fetch(`${BASE_URL}/vocabulary`, {
+    const baseUrl = await getBaseUrl();
+    const response = await fetch(`${baseUrl}/vocabulary`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
@@ -129,7 +138,8 @@ async function triggerVocabReminderImmediate(tabId) {
 // Synchronize User Profile and Schedule preferences from Web backend
 async function syncUserProfile(token) {
   try {
-    const userRes = await fetch(`${BASE_URL}/study-plan/get`, {
+    const baseUrl = await getBaseUrl();
+    const userRes = await fetch(`${baseUrl}/study-plan/get`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -148,7 +158,7 @@ async function syncUserProfile(token) {
     }
 
     // Fetch and sync user vocabulary lab
-    const vocabRes = await fetch(`${BASE_URL}/vocabulary`, {
+    const vocabRes = await fetch(`${baseUrl}/vocabulary`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (vocabRes.ok) {

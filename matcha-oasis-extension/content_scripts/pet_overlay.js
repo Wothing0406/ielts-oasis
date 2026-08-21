@@ -9,6 +9,11 @@
   const isMainSite = window.location.hostname.includes("ieltsoasis.site");
   let consecutiveWrong = 0;
 
+  async function getServerUrl() {
+    const data = await chrome.storage.local.get(['server_url']);
+    return data.server_url || 'https://ieltsoasis.site';
+  }
+
   // Zero-touch token sync if on main website
   if (isMainSite) {
     const token = localStorage.getItem("oasis_token");
@@ -432,7 +437,8 @@
       autofillBtn.textContent = "Đang dịch...";
       autofillBtn.setAttribute('disabled', 'true');
       try {
-        const response = await fetch('https://ieltsoasis.site/api/translate', {
+        const serverUrl = await getServerUrl();
+        const response = await fetch(`${serverUrl}/api/translate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: word })
@@ -468,7 +474,8 @@
       }
 
       try {
-        const res = await fetch('https://ieltsoasis.site/api/vocabulary', {
+        const serverUrl = await getServerUrl();
+        const res = await fetch(`${serverUrl}/api/vocabulary`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -857,7 +864,8 @@
         return;
       }
       try {
-        const res = await fetch('https://ieltsoasis.site/api/vocabulary', {
+        const serverUrl = await getServerUrl();
+        const res = await fetch(`${serverUrl}/api/vocabulary`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
