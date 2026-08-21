@@ -299,6 +299,57 @@
   // Start default animation loop
   startAnimation(currentAction);
 
+  // Angry Run Animation State
+  let isAngryRunning = false;
+  let angryAnimFrameId = null;
+  let angrySpeedX = 6;
+  let angrySpeedY = 6;
+  let currentAngryX = window.innerWidth - 100;
+  let currentAngryY = window.innerHeight - 100;
+
+  function startAngryRun() {
+    if (isAngryRunning) return;
+    isAngryRunning = true;
+    startAnimation('tantrum');
+    
+    // Close any bubbles
+    closeBubble();
+    
+    function animate() {
+      if (!isAngryRunning) return;
+      currentAngryX += angrySpeedX;
+      currentAngryY += angrySpeedY;
+
+      if (currentAngryX <= 0 || currentAngryX + 80 >= window.innerWidth) angrySpeedX *= -1;
+      if (currentAngryY <= 0 || currentAngryY + 80 >= window.innerHeight) angrySpeedY *= -1;
+
+      wrapper.style.left = `${currentAngryX}px`;
+      wrapper.style.top = `${currentAngryY}px`;
+      wrapper.style.right = 'auto';
+      wrapper.style.bottom = 'auto';
+
+      angryAnimFrameId = requestAnimationFrame(animate);
+    }
+    animate();
+  }
+
+  function stopAngryRun() {
+    isAngryRunning = false;
+    if (angryAnimFrameId) cancelAnimationFrame(angryAnimFrameId);
+    startAnimation('idle');
+    wrapper.style.left = 'auto';
+    wrapper.style.top = 'auto';
+    wrapper.style.right = '20px';
+    wrapper.style.bottom = '20px';
+    chrome.storage.local.set({ is_punishment_mode: false });
+  }
+
+  chrome.storage.local.get(['is_punishment_mode'], (data) => {
+    if (data.is_punishment_mode) {
+      startAngryRun();
+    }
+  });
+
   // Dragging & Clicking Implementation
   let isDragging = false;
   let dragStarted = false;
@@ -352,7 +403,12 @@
   // Toggle Mascot menu on Click
   img.addEventListener('click', () => {
     if (!dragStarted) {
-      toggleMascotMenu();
+      if (isAngryRunning) {
+        // Force the user to take the quiz to escape punishment
+        showVocabReminder();
+      } else {
+        toggleMascotMenu();
+      }
     }
   });
 
@@ -922,6 +978,23 @@
             shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
             shadow.getElementById('btn-skip-word').setAttribute('disabled', 'true');
 
+            function showNextBtn() {
+              shadow.querySelector('#btn-skip-word').style.display = 'none';
+              const nextBtn = document.createElement('button');
+              nextBtn.className = 'btn btn-yes';
+              nextBtn.style.cssText = 'width:100%; margin-top:8px; padding:10px; font-size:0.85rem; font-weight:bold;';
+              nextBtn.textContent = 'Câu tiếp theo ➔';
+              nextBtn.addEventListener('click', () => {
+                if (consecutiveWrong >= 3) {
+                  triggerTantrumLockout();
+                } else {
+                  currentIdx++;
+                  renderQuestion();
+                }
+              });
+              shadow.querySelector('#btn-skip-word').parentElement.appendChild(nextBtn);
+            }
+
             if (isCorrect) {
               score++;
               sessionConsecutiveWrong = 0;
@@ -945,14 +1018,7 @@
               feedback.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: "${targetWord.meaning}"</span>`;
               startAnimation('crying');
             }
-            setTimeout(() => {
-              if (consecutiveWrong >= 3) {
-                triggerTantrumLockout();
-              } else {
-                currentIdx++;
-                renderQuestion();
-              }
-            }, 2200);
+            showNextBtn();
           });
         });
 
@@ -972,6 +1038,23 @@
           // Accept partial match if >80% similar (allow minor typos)
           const isCorrect = userAnswer === correctAnswer || userAnswer === correctAnswer.split(' ')[0].toLowerCase();
 
+          function showNextBtn() {
+            shadow.querySelector('#btn-skip-word').style.display = 'none';
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'btn btn-yes';
+            nextBtn.style.cssText = 'width:100%; margin-top:8px; padding:10px; font-size:0.85rem; font-weight:bold;';
+            nextBtn.textContent = 'Câu tiếp theo ➔';
+            nextBtn.addEventListener('click', () => {
+              if (consecutiveWrong >= 3) {
+                triggerTantrumLockout();
+              } else {
+                currentIdx++;
+                renderQuestion();
+              }
+            });
+            shadow.querySelector('#btn-skip-word').parentElement.appendChild(nextBtn);
+          }
+
           if (isCorrect) {
             score++;
             sessionConsecutiveWrong = 0;
@@ -984,14 +1067,7 @@
             feedback.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${targetWord.word}</b></span>`;
             startAnimation('crying');
           }
-          setTimeout(() => {
-            if (consecutiveWrong >= 3) {
-              triggerTantrumLockout();
-            } else {
-              currentIdx++;
-              renderQuestion();
-            }
-          }, 2200);
+          showNextBtn();
         };
 
         submitBtn.addEventListener('click', checkAnswer);
@@ -1027,13 +1103,20 @@
         <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
       `);
 
-      shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-      shadow.getElementById('btn-retry-vocab').addEventListener('click', () => { showVocabReminder(); });
-      shadow.getElementById('btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+      shadow.querySelector('#btn-retry-vocab').addEventListener('click', () => { showVocabReminder(); });
+      shadow.querySelector('#btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
 
-      if (pct >= 80) startAnimation('celebrating');
-      else if (pct < 50) startAnimation('crying');
-      else startAnimation('idle');
+      if (pct >= 80) {
+        startAnimation('celebrating');
+        stopAngryRun(); // Ensure it stops if it was previously set
+      } else if (pct < 50) {
+        chrome.storage.local.set({ is_punishment_mode: true });
+        startAngryRun();
+      } else {
+        startAnimation('idle');
+        stopAngryRun();
+      }
     }
 
     // Start the session
