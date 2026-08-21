@@ -3,22 +3,53 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="assistant.css">
+  <style>
+    /* Typing indicator dots */
+    .typing-indicator { gap: 4px; align-items: center; }
+    .typing-indicator span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #A7D08C; display: inline-block;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+    /* Quick prompt chips */
+    .quick-prompts { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 10px; border-top: 1px solid #e8f5e9; }
+    .quick-prompt {
+      font-size: 0.72rem; padding: 3px 8px; border: 1px solid #A7D08C;
+      border-radius: 12px; background: #F1F8E9; color: #5D4037;
+      cursor: pointer; white-space: nowrap;
+    }
+    .quick-prompt:hover { background: #A7D08C; color: #fff; }
+    #user-name { font-size: 0.78rem; color: #8D6E63; font-style: italic; }
+  </style>
 </head>
 <body>
   <div class="panel-container">
     <div class="panel-header">
       <h3>Mát Cha AI Trợ Lý 💬</h3>
-      <span class="sub-text">Đặt câu hỏi học thuật IELTS tại đây</span>
+      <span id="user-name" class="sub-text">Đang tải...</span>
     </div>
-    
+
     <div class="chat-area" id="chat-area">
       <div class="message system">
-        Chào mừng cậu đến với không gian học tập IELTS Oasis! 🍵 Hãy nhập từ vựng cần giải thích hoặc bôi đen từ trên trang web để tớ phân tích nhé.
+        Chào mừng đến với IELTS Oasis! 🍵 Hỏi tớ bất cứ điều gì về từ vựng, ngữ pháp, hay kỹ năng IELTS nhé!
       </div>
     </div>
-    
+
+    <div class="quick-prompts">
+      <button class="quick-prompt" data-prompt="Giải thích cách dùng Present Perfect">⏰ Present Perfect</button>
+      <button class="quick-prompt" data-prompt="Cho tớ 5 từ vựng IELTS band 7+ về chủ đề Environment">🌿 Từ vựng Environment</button>
+      <button class="quick-prompt" data-prompt="Mẹo viết Introduction cho IELTS Task 2">✍️ Task 2 Intro</button>
+      <button class="quick-prompt" data-prompt="Phân biệt affect vs effect">🔤 affect vs effect</button>
+    </div>
+
     <div class="input-area">
-      <textarea id="chat-input" placeholder="Hỏi gì tớ đi... (Dùng /define, /rephrase)"></textarea>
+      <textarea id="chat-input" placeholder="Hỏi Mát Cha... (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
       <button id="btn-send">Gửi</button>
     </div>
   </div>

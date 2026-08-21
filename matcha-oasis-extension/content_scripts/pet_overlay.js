@@ -378,8 +378,9 @@
         <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 6px; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét từ vựng (OCR)</button>
         <button class="btn btn-yes" id="btn-add-vocab-ui" style="width: 100%; padding: 6px; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm nhanh từ mới</button>
         <button class="btn btn-yes" id="btn-view-vocab" style="width: 100%; padding: 6px; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng của tớ</button>
+        <button class="btn btn-yes" id="btn-grammar-quiz" style="width: 100%; padding: 6px; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ Pháp AI</button>
+        <button class="btn btn-yes" id="btn-vocab-quiz" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng (Quiz)</button>
         <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 6px; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
-        <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ (Quiz)</button>
       </div>
     `;
     openBubble(menuHtml);
@@ -404,17 +405,20 @@
 
     shadow.getElementById('btn-view-vocab').addEventListener('click', showVocabListUI);
 
-    shadow.getElementById('btn-view-schedule').addEventListener('click', showStudyScheduleUI);
+    shadow.getElementById('btn-grammar-quiz').addEventListener('click', showGrammarQuizUI);
 
-    shadow.getElementById('btn-test-reminder').addEventListener('click', async () => {
+    shadow.getElementById('btn-vocab-quiz').addEventListener('click', async () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
     });
+
+    shadow.getElementById('btn-view-schedule').addEventListener('click', showStudyScheduleUI);
   }
+
 
   // Quick Manual Add Word UI
   function showQuickAddForm() {
-    bubble.innerHTML = `
+    const formHtml = `
       <div class="bubble-header">
         <span>Thêm nhanh từ mới ➕</span>
         <span class="close-btn" id="close-bubble">×</span>
@@ -434,6 +438,7 @@
         <button class="btn btn-yes" id="btn-submit-quick-add" style="margin-top:4px; padding:8px;">Lưu Từ Vựng 🍵</button>
       </div>
     `;
+    openBubble(formHtml);
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
 
@@ -448,21 +453,37 @@
         alert("Vui lòng nhập từ tiếng Anh trước!");
         return;
       }
-      autofillBtn.textContent = "Đang dịch...";
+      autofillBtn.textContent = "Đang tra cứu AI...";
       autofillBtn.setAttribute('disabled', 'true');
       try {
         const serverUrl = await getServerUrl();
+        // Use full=1 flag to request complete vocab card data
         const response = await fetch(`${serverUrl}/api/translate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: word })
+          body: JSON.stringify({ text: word, full: true })
         });
         if (response.ok) {
           const result = await response.json();
-          meaningInput.value = result.meaning || '';
+          // Parse structured response — server returns full meaning block
+          const raw = result.meaning || '';
+          // Try to extract phonetic /.../ pattern
+          const phoneticMatch = raw.match(/\/[^/]+\/);
+          if (phoneticMatch && !phoneticInput.value) {
+            phoneticInput.value = phoneticMatch[0];
+          }
+          // Set full meaning (strip phonetic if extracted)
+          meaningInput.value = raw.replace(/\/[^/]+\//, '').replace(/^[,\s]+/, '').trim() || raw;
+          // Extract example — look for sentence after 'VD:' or 'Example:'
+          const exampleMatch = raw.match(/(?:VD|Ví dụ|Example)[:\s]+(.+?)(?:\n|$)/i);
+          const exampleInput = shadow.getElementById('add-example');
+          if (exampleMatch && exampleInput && !exampleInput.value) {
+            exampleInput.value = exampleMatch[1].trim();
+          }
         }
       } catch (err) {
         console.error(err);
+        alert('Lỗi kết nối. Vui lòng nhập thủ công!');
       } finally {
         autofillBtn.textContent = "🤖 Tự động dịch (AI)";
         autofillBtn.removeAttribute('disabled');
@@ -529,12 +550,15 @@
     if (list.length === 0) {
       listHtml = '<div style="font-size:0.8rem; text-align:center; padding:10px;">Kho từ trống. Hãy thêm từ vựng mới nhé! 🍵</div>';
     } else {
-      listHtml = `<div class="matcha-scroll-list">`;
-      list.forEach(v => {
+      listHtml = `<div class="matcha-scroll-list" id="vocab-scroll-list">`;
+      list.forEach((v, idx) => {
         listHtml += `
-          <div class="list-item">
-            <div style="font-weight:bold; color:#3b7a13; font-size:0.8rem;">${v.word} <span style="font-weight:normal; color:#8D6E63;">${v.phonetic || ''}</span></div>
-            <div style="color:#5D4037; font-size:0.75rem;">${v.meaning}</div>
+          <div class="list-item vocab-clickable" data-idx="${idx}" style="cursor:pointer; transition:background 0.15s;">
+            <div style="font-weight:bold; color:#3b7a13; font-size:0.8rem; display:flex; justify-content:space-between;">
+              <span>${v.word}</span>
+              <span style="font-weight:normal; color:#8D6E63; font-size:0.7rem;">${v.phonetic || ''}</span>
+            </div>
+            <div style="color:#5D4037; font-size:0.75rem;">${v.meaning ? v.meaning.slice(0, 60) + (v.meaning.length > 60 ? '...' : '') : ''}</div>
           </div>
         `;
       });
@@ -546,6 +570,7 @@
         <span>Tủ từ của tớ (${list.length}) 📚</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
+      <div style="font-size:0.7rem; color:#8D6E63; text-align:center; margin-bottom:4px;">Bấm vào từng từ để xem chi tiết & mẹo nhớ 👇</div>
       ${listHtml}
       <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:4px;">Quay lại</button>
     `;
@@ -553,6 +578,174 @@
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
     shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
+
+    // Attach click handlers to each word item
+    shadow.querySelectorAll('.vocab-clickable').forEach(el => {
+      el.addEventListener('mouseenter', () => { el.style.background = '#E8F5E9'; });
+      el.addEventListener('mouseleave', () => { el.style.background = ''; });
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.getAttribute('data-idx'));
+        showVocabDetailPopup(list[idx]);
+      });
+    });
+  }
+
+  // Show detail card for a single vocabulary word
+  async function showVocabDetailPopup(v) {
+    // Fetch extra AI tips if memory_hook is missing
+    let memoryHook = v.memory_hook || '';
+    if (!memoryHook && v.word) {
+      try {
+        const serverUrl = await getServerUrl();
+        const resp = await fetch(`${serverUrl}/api/translate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: `Mẹo nhớ nhanh từ vựng: ${v.word}` })
+        });
+        if (resp.ok) {
+          const r = await resp.json();
+          memoryHook = r.meaning || '';
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    const masteryStars = '⭐'.repeat(Math.min(v.mastery_level || 1, 5));
+    const detailHtml = `
+      <div class="bubble-header">
+        <span>Chi tiết từ vựng 📖</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:0.82rem;">
+        <div style="text-align:center;">
+          <div style="font-size:1.3rem; font-weight:bold; color:#3b7a13;">${v.word}</div>
+          <div style="color:#8D6E63; font-size:0.85rem;">${v.phonetic || ''}</div>
+          <div style="color:#A7D08C; font-size:0.75rem; margin-top:2px;">Độ thuần thục: ${masteryStars}</div>
+        </div>
+        <div style="background:#F1F8E9; border-left:3px solid #A7D08C; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">📝 Nghĩa:</div>
+          <div style="color:#5D4037;">${v.meaning || 'Chưa có nghĩa'}</div>
+        </div>
+        ${v.example ? `
+        <div style="background:#FFF9E6; border-left:3px solid #FFD54F; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">💬 Ví dụ:</div>
+          <div style="color:#795548; font-style:italic;">"${v.example}"</div>
+        </div>` : ''}
+        ${memoryHook ? `
+        <div style="background:#F3E5F5; border-left:3px solid #CE93D8; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">🧠 Mẹo nhớ:</div>
+          <div style="color:#6A1B9A; font-size:0.78rem;">${memoryHook}</div>
+        </div>` : '<div style="color:#8D6E63; font-size:0.72rem; text-align:center;">Đang tải mẹo nhớ...</div>'}
+      </div>
+      <button class="btn btn-yes" id="btn-back-list" style="width:100%; margin-top:6px;">← Quay lại danh sách</button>
+    `;
+    openBubble(detailHtml);
+
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-back-list').addEventListener('click', showVocabListUI);
+  }
+
+  // Grammar Quiz UI — fetches from backend or uses local vocab
+  async function showGrammarQuizUI() {
+    openBubble(`
+      <div class="bubble-header">
+        <span>Quiz Ngữ Pháp 📝</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="text-align:center; padding:16px; font-size:0.85rem; color:#5D4037;">
+        ⏳ Đang tải câu hỏi từ server...
+      </div>
+    `);
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+
+    try {
+      const serverUrl = await getServerUrl();
+      const resp = await fetch(`${serverUrl}/api/quiz/grammar`);
+      if (!resp.ok) throw new Error('Server error');
+      const result = await resp.json();
+      const questions = result.questions || [];
+
+      if (!questions.length) {
+        openBubble(`<div class="bubble-header"><span>Quiz 📝</span><span class="close-btn" id="close-bubble">×</span></div><div style="text-align:center;padding:10px;font-size:0.82rem;">Không lấy được câu hỏi. Thử lại sau! 🍵</div>`);
+        shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+        return;
+      }
+
+      let currentQ = 0;
+      let score = 0;
+
+      function renderQuestion() {
+        if (currentQ >= questions.length) {
+          // Show result
+          openBubble(`
+            <div class="bubble-header">
+              <span>Kết quả Quiz 🎉</span>
+              <span class="close-btn" id="close-bubble">×</span>
+            </div>
+            <div style="text-align:center; padding:12px; font-size:0.9rem;">
+              <div style="font-size:2rem; margin-bottom:8px;">${score >= questions.length * 0.7 ? '🎉' : score >= questions.length * 0.5 ? '😊' : '😢'}</div>
+              <div style="font-weight:bold; color:#3b7a13; font-size:1.1rem;">${score}/${questions.length} câu đúng!</div>
+              <div style="color:#8D6E63; margin-top:4px; font-size:0.78rem;">${score >= questions.length * 0.7 ? 'Xuất sắc! Cậu học giỏi lắm! 🍵' : score >= questions.length * 0.5 ? 'Khá tốt, tiếp tục cố gắng nhé!' : 'Ôn luyện thêm một chút nữa nhé!'}</div>
+            </div>
+            <button class="btn btn-yes" id="btn-retry-quiz" style="width:100%; margin-top:6px;">Chơi lại 🔄</button>
+            <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
+          `);
+          shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+          shadow.getElementById('btn-retry-quiz').addEventListener('click', () => { currentQ = 0; score = 0; renderQuestion(); });
+          shadow.getElementById('btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
+          if (score >= questions.length * 0.7) startAnimation('celebrating');
+          else startAnimation('crying');
+          return;
+        }
+
+        const q = questions[currentQ];
+        const choices = q.choices || [];
+        const quizHtml = `
+          <div class="bubble-header">
+            <span>Quiz ${currentQ + 1}/${questions.length} 📝</span>
+            <span class="close-btn" id="close-bubble">×</span>
+          </div>
+          <div style="font-size:0.82rem; color:#5D4037; margin-bottom:6px; line-height:1.4;">${q.question}</div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            ${choices.map((c, i) => `
+              <button class="btn-choice" data-ans="${c}" data-correct="${c === q.answer}">
+                ${String.fromCharCode(65+i)}. ${c}
+              </button>
+            `).join('')}
+          </div>
+          <div id="qfeedback" class="quiz-feedback"></div>
+        `;
+        openBubble(quizHtml);
+        shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+
+        shadow.querySelectorAll('.btn-choice').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const isCorrect = btn.getAttribute('data-correct') === 'true';
+            const fb = shadow.getElementById('qfeedback');
+            shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
+            if (isCorrect) {
+              score++;
+              btn.style.background = '#E8F5E9';
+              btn.style.borderColor = '#81C784';
+              fb.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
+              startAnimation('celebrating');
+            } else {
+              btn.style.background = '#FFEBEE';
+              btn.style.borderColor = '#E57373';
+              fb.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${q.answer}</b></span>`;
+              startAnimation('crying');
+            }
+            setTimeout(() => { currentQ++; renderQuestion(); }, 2000);
+          });
+        });
+      }
+
+      renderQuestion();
+
+    } catch (err) {
+      console.error(err);
+      // Fallback: vocab quiz using local words
+      showVocabReminder();
+    }
   }
 
   // Show Synced Study Plan details
