@@ -13,27 +13,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check current config
   let data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
   
-  // Dynamic zero-touch token recovery from active ieltsoasis.site tab
+  // Dynamic zero-touch token recovery from open ieltsoasis.site tabs
   if (!data.jwt_token) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.url && tab.url.includes("ieltsoasis.site")) {
-      try {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => localStorage.getItem("oasis_token")
-        });
-        if (results && results[0] && results[0].result) {
-          const fetchedToken = results[0].result;
-          await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ action: 'save_jwt_token', token: fetchedToken }, () => {
-              resolve();
-            });
+    const tabs = await chrome.tabs.query({ url: "*://*.ieltsoasis.site/*" });
+    if (tabs && tabs.length > 0) {
+      for (const tab of tabs) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+              return {
+                token: localStorage.getItem("oasis_token"),
+                user: localStorage.getItem("oasis_user")
+              };
+            }
           });
-          // Refresh configuration data
-          data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
+          if (results && results[0] && results[0].result) {
+            const fetched = results[0].result;
+            if (fetched.token) {
+              await new Promise((resolve) => {
+                chrome.runtime.sendMessage({ 
+                  action: 'save_jwt_token', 
+                  token: fetched.token,
+                  user: fetched.user
+                }, () => {
+                  resolve();
+                });
+              });
+              // Refresh configuration data
+              data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
+              break; // Found token, break loop
+            }
+          }
+        } catch (err) {
+          console.error("Failed to recover token from tab ID " + tab.id + ": ", err);
         }
-      } catch (err) {
-        console.error("Failed to recover token from tab: ", err);
       }
     }
   }

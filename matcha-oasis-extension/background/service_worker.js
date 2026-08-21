@@ -31,25 +31,16 @@ function setupAlarms() {
 
 // Listen to Alarms
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === "study-reminder") {
-    const data = await chrome.storage.local.get(['jwt_token', 'reminders_enabled']);
-    if (!data.jwt_token || data.reminders_enabled === false) return;
+  if (alarm.name === 'matcha-vocab-alarm') {
+    const data = await chrome.storage.local.get(['reminders_enabled']);
+    if (data.reminders_enabled === false) return;
 
-    // Fetch vocabulary word for reminder
-    try {
-      const vocabWord = await fetchVocabReminder(data.jwt_token);
-      if (vocabWord) {
-        // Send to active tab
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (activeTab && activeTab.url && !activeTab.url.includes("ieltsoasis.site")) {
-          chrome.tabs.sendMessage(activeTab.id, {
-            action: "show_reminder",
-            vocab: vocabWord
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Failed to fetch vocabulary for alarm: ", e);
+    // Send to active tab
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab && activeTab.url && !activeTab.url.includes("ieltsoasis.site")) {
+      chrome.tabs.sendMessage(activeTab.id, {
+        action: "show_reminder"
+      });
     }
   }
 });
@@ -87,7 +78,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'save_jwt_token') {
-    chrome.storage.local.set({ jwt_token: message.token }, async () => {
+    let userInfo = null;
+    if (message.user) {
+      try {
+        userInfo = typeof message.user === 'string' ? JSON.parse(message.user) : message.user;
+      } catch (e) {}
+    }
+    chrome.storage.local.set({ jwt_token: message.token, user_info: userInfo }, async () => {
       console.log("JWT Token synchronized successfully.");
       await syncUserProfile(message.token);
       setupAlarms();
@@ -122,18 +119,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function triggerVocabReminderImmediate(tabId) {
-  const data = await chrome.storage.local.get(['jwt_token']);
-  if (!data.jwt_token) return;
-  try {
-    const vocabWord = await fetchVocabReminder(data.jwt_token);
-    if (vocabWord) {
-      chrome.tabs.sendMessage(tabId, {
-        action: "show_reminder",
-        vocab: vocabWord
-      });
-    }
-  } catch (e) {
-    console.error("Failed to run immediate alarm: ", e);
+  if (tabId) {
+    chrome.tabs.sendMessage(tabId, {
+      action: "show_reminder"
+    });
   }
 }
 
@@ -146,16 +135,26 @@ async function syncUserProfile(token) {
     
     if (userRes.ok) {
       const data = await userRes.json();
-      if (data) {
+      if (data && data.has_plan) {
         await chrome.storage.local.set({
           study_schedule: {
-            level: data.level,
-            topic: data.topic,
-            study_focus: data.study_focus
+            level: data.preferences.level || 'General',
+            topic: data.preferences.topic || 'N/A',
+            study_focus: data.preferences.study_focus || 'Toàn diện'
           }
         });
-        console.log("User schedule synced: ", data.topic);
+        console.log("User schedule synced: ", data.preferences.topic);
       }
+    }
+
+    // Fetch and sync user vocabulary lab
+    const vocabRes = await fetch(`${BASE_URL}/vocabulary`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (vocabRes.ok) {
+      const vocabList = await vocabRes.json();
+      await chrome.storage.local.set({ user_vocab: vocabList });
+      console.log("Synced user vocabulary cards count: ", vocabList.length);
     }
   } catch (err) {
     console.error("Failed to sync user data: ", err);

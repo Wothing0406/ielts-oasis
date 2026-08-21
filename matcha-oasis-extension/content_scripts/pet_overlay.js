@@ -56,7 +56,8 @@
       border: 2px solid #A7D08C;
       border-radius: 1.5rem;
       padding: 12px 16px;
-      max-width: 250px;
+      width: 280px;
+      box-sizing: border-box;
       color: #5D4037;
       box-shadow: 0 10px 30px rgba(167, 208, 140, 0.3);
       display: none;
@@ -127,6 +128,72 @@
       cursor: pointer;
       font-weight: bold;
       color: #8D6E63;
+    }
+
+    /* Interactive Quiz elements */
+    .btn-choice {
+      width: 100%;
+      padding: 8px 12px;
+      background: #FFFDF5;
+      border: 1.5px solid #A7D08C;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #5D4037;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn-choice:hover {
+      background: #E8F5E9;
+      transform: scale(1.02);
+    }
+
+    .quiz-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 2px solid #A7D08C;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      outline: none;
+      background: #FFFDF5;
+      color: #5D4037;
+      box-sizing: border-box;
+    }
+
+    .quiz-feedback {
+      font-weight: bold;
+      font-size: 0.85rem;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    /* Scrollable items */
+    .matcha-scroll-list {
+      max-height: 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .matcha-scroll-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .matcha-scroll-list::-webkit-scrollbar-thumb {
+      background: #A7D08C;
+      border-radius: 4px;
+    }
+
+    .list-item {
+      padding: 6px 8px;
+      background: #FAF8F5;
+      border-left: 3px solid #A7D08C;
+      font-size: 0.75rem;
+      border-radius: 4px;
     }
 
     /* Lockout Overlay style */
@@ -273,11 +340,14 @@
         <span>Mát Cha AI Eo 🍵</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="font-weight: bold; margin: 4px 0; font-size: 0.9rem;">Tớ có thể giúp gì cho cậu?</div>
-      <div class="actions" style="flex-direction: column; gap: 4px; align-items: stretch; width: 100%;">
+      <div style="font-weight: bold; margin: 4px 0; font-size: 0.85rem; text-align: center;">Tớ có thể giúp gì cho cậu?</div>
+      <div class="actions" style="flex-direction: column; gap: 4px; align-items: stretch; width: 100%; margin: 0;">
         <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 6px;">💬 Trò chuyện AI</button>
-        <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng ngay</button>
-        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 6px; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét chữ màn hình (OCR)</button>
+        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 6px; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét từ vựng (OCR)</button>
+        <button class="btn btn-yes" id="btn-add-vocab-ui" style="width: 100%; padding: 6px; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm nhanh từ mới</button>
+        <button class="btn btn-yes" id="btn-view-vocab" style="width: 100%; padding: 6px; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng của tớ</button>
+        <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 6px; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
+        <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ (Quiz)</button>
       </div>
     `;
     bubble.style.display = 'flex';
@@ -285,69 +355,283 @@
 
     // Hook Menu Events
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    
     shadow.getElementById('btn-sidepanel').addEventListener('click', () => {
       closeBubble();
       chrome.runtime.sendMessage({ action: 'open_sidepanel' });
     });
+
     shadow.getElementById('btn-ocr').addEventListener('click', () => {
       closeBubble();
       if (window.startMatchaOCR) {
         window.startMatchaOCR(handleOCRWordDetected);
       }
     });
+
+    shadow.getElementById('btn-add-vocab-ui').addEventListener('click', showQuickAddForm);
+
+    shadow.getElementById('btn-view-vocab').addEventListener('click', showVocabListUI);
+
+    shadow.getElementById('btn-view-schedule').addEventListener('click', showStudyScheduleUI);
+
     shadow.getElementById('btn-test-reminder').addEventListener('click', async () => {
       closeBubble();
-      // Fetch a word to simulate quiz reminder
+      chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
+    });
+  }
+
+  // Quick Manual Add Word UI
+  function showQuickAddForm() {
+    bubble.innerHTML = `
+      <div class="bubble-header">
+        <span>Thêm nhanh từ vựng ➕</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+        <input type="text" id="add-word" class="quiz-input" placeholder="Từ tiếng Anh (e.g. dynamic)" required />
+        <input type="text" id="add-phonetic" class="quiz-input" placeholder="Phát âm (e.g. /daɪˈnæm.ɪk/)" />
+        <input type="text" id="add-meaning" class="quiz-input" placeholder="Nghĩa tiếng Việt" required />
+        <input type="text" id="add-example" class="quiz-input" placeholder="Ví dụ minh họa" />
+        <button class="btn btn-yes" id="btn-submit-quick-add" style="margin-top:4px; padding:8px;">Lưu Từ Vựng 🍵</button>
+      </div>
+    `;
+
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-submit-quick-add').addEventListener('click', async () => {
+      const word = shadow.getElementById('add-word').value.trim();
+      const phonetic = shadow.getElementById('add-phonetic').value.trim();
+      const meaning = shadow.getElementById('add-meaning').value.trim();
+      const example = shadow.getElementById('add-example').value.trim();
+
+      if (!word || !meaning) {
+        alert("Vui lòng điền Từ tiếng Anh và Nghĩa tiếng Việt!");
+        return;
+      }
+
       const data = await chrome.storage.local.get(['jwt_token']);
-      if (data.jwt_token) {
-        chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
-      } else {
+      if (!data.jwt_token) {
         alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
+        return;
+      }
+
+      try {
+        const res = await fetch('https://ieltsoasis.site/api/vocabulary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.jwt_token}`
+          },
+          body: JSON.stringify({
+            word,
+            meaning,
+            phonetic,
+            example,
+            topic: 'General',
+            source: 'Mascot Quick Add'
+          })
+        });
+        if (res.ok) {
+          alert(`Đã lưu thành công từ "${word}" vào Tủ Từ! 🍵`);
+          closeBubble();
+          // Trigger a sync refresh
+          chrome.runtime.sendMessage({ action: 'save_jwt_token', token: data.jwt_token });
+        } else {
+          const errData = await res.json();
+          alert(errData.detail || "Lỗi lưu từ vựng.");
+        }
+      } catch (err) {
+        console.error(err);
       }
     });
+  }
+
+  // Show Synced Vocabulary List directly inside Pet bubble
+  async function showVocabListUI() {
+    const data = await chrome.storage.local.get(['user_vocab']);
+    const list = data.user_vocab || [];
+
+    let listHtml = '';
+    if (list.length === 0) {
+      listHtml = '<div style="font-size:0.8rem; text-align:center; padding:10px;">Kho từ trống. Hãy thêm từ vựng mới nhé! 🍵</div>';
+    } else {
+      listHtml = `<div class="matcha-scroll-list">`;
+      list.forEach(v => {
+        listHtml += `
+          <div class="list-item">
+            <div style="font-weight:bold; color:#3b7a13; font-size:0.8rem;">${v.word} <span style="font-weight:normal; color:#8D6E63;">${v.phonetic || ''}</span></div>
+            <div style="color:#5D4037; font-size:0.75rem;">${v.meaning}</div>
+          </div>
+        `;
+      });
+      listHtml += `</div>`;
+    }
+
+    bubble.innerHTML = `
+      <div class="bubble-header">
+        <span>Tủ từ của tớ (${list.length}) 📚</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      ${listHtml}
+      <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:4px;">Quay lại</button>
+    `;
+
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
+  }
+
+  // Show Synced Study Plan details
+  async function showStudyScheduleUI() {
+    const data = await chrome.storage.local.get(['study_schedule', 'user_info']);
+    const sched = data.study_schedule || { level: 'General', topic: 'N/A', study_focus: 'Toàn diện' };
+    const user = data.user_info || { username: 'Học viên' };
+
+    bubble.innerHTML = `
+      <div class="bubble-header">
+        <span>Lịch học của tớ 📅</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="font-size:0.8rem; display:flex; flex-direction:column; gap:6px;">
+        <div><b>Học viên:</b> ${user.username}</div>
+        <div><b>Trình độ hiện tại:</b> ${sched.level || 'General'}</div>
+        <div><b>Chủ đề học mục tiêu:</b> ${sched.topic || 'Chưa thiết lập'}</div>
+        <div><b>Kỹ năng tập trung:</b> ${sched.study_focus || 'Toàn diện'}</div>
+      </div>
+      <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:6px;">Quay lại</button>
+    `;
+
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
   }
 
   // Reminders and Quiz triggers
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'show_reminder' && !isMainSite) {
-      showVocabReminder(message.vocab);
+      showVocabReminder();
     }
   });
 
-  function showVocabReminder(vocab) {
-    bubble.innerHTML = `
-      <div class="bubble-header">
-        <span>Gợi ý từ vựng 🍵</span>
-        <span class="close-btn" id="close-bubble">×</span>
-      </div>
-      <div>
-        <span class="word">${vocab.word}</span>
-        <span class="phonetic">${vocab.phonetic || ''}</span>
-      </div>
-      <div class="meaning">${vocab.meaning}</div>
-      <div class="example">" ${vocab.example || ''} "</div>
-      <div class="actions">
-        <button class="btn btn-yes" id="btn-know">Đã nhớ</button>
-        <button class="btn btn-no" id="btn-forgot">Quên</button>
-      </div>
-    `;
-    bubble.style.display = 'flex';
-    
-    // Switch to alert animation
-    startAnimation('alert');
+  // Dynamic Quiz Generator matching web styles
+  async function showVocabReminder() {
+    const data = await chrome.storage.local.get(['user_vocab']);
+    const list = data.user_vocab || [];
 
-    // Hook events
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-know').addEventListener('click', () => {
-      closeBubble();
-      startAnimation('celebrating');
-      setTimeout(() => startAnimation('idle'), 3000);
-    });
-    shadow.getElementById('btn-forgot').addEventListener('click', () => {
-      closeBubble();
-      startAnimation('crying');
-      setTimeout(() => startAnimation('idle'), 3000);
-    });
+    // Fallback vocabulary words if empty
+    const defaultList = [
+      { word: 'academic', meaning: 'tính học thuật', phonetic: '/ˌæk.əˈdem.ɪk/', example: 'She has high academic standards.' },
+      { word: 'dynamic', meaning: 'năng động, biến đổi không ngừng', phonetic: '/daɪˈnæm.ɪk/', example: 'A dynamic study environment.' },
+      { word: 'acquire', meaning: 'gặt hái, thu nhận được', phonetic: '/əˈkwaɪər/', example: 'To acquire language skills.' },
+      { word: 'diligent', meaning: 'chăm chỉ, siêng năng', phonetic: '/ˈdɪl.ɪ.dʒənt/', example: 'A diligent student passes tests.' },
+      { word: 'havoc', meaning: 'tàn phá, hỗn loạn', phonetic: '/ˈhæv.ək/', example: 'The storm wreaked havoc.' }
+    ];
+
+    const activeList = list.length >= 4 ? list : defaultList;
+    const targetIdx = Math.floor(Math.random() * activeList.length);
+    const targetWord = activeList[targetIdx];
+
+    // Pick quiz mode (0: ABCD, 1: Fill in the blank)
+    const quizMode = Math.random() > 0.5 ? 0 : 1;
+
+    if (quizMode === 0) {
+      // ABCD Multiple Choice Quiz
+      // Generate distractors
+      const incorrectPool = activeList.filter(item => item.word !== targetWord.word);
+      const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
+      const choices = [targetWord, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
+
+      bubble.innerHTML = `
+        <div class="bubble-header">
+          <span>Trắc nghiệm từ vựng (ABCD) 📝</span>
+          <span class="close-btn" id="close-bubble">×</span>
+        </div>
+        <div style="font-size: 0.85rem; text-align: center; margin-bottom: 4px;">
+          Nghĩa tiếng Việt của từ: <br/>
+          <strong style="font-size:1.1rem; color:#3b7a13;">${targetWord.word}</strong>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+          ${choices.map((c, i) => `
+            <button class="btn-choice" data-correct="${c.word === targetWord.word}">
+              ${String.fromCharCode(65 + i)}. ${c.meaning}
+            </button>
+          `).join('')}
+        </div>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+      `;
+
+      shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+      
+      const choiceButtons = shadow.querySelectorAll('.btn-choice');
+      choiceButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const isCorrect = btn.getAttribute('data-correct') === 'true';
+          const feedback = shadow.getElementById('quiz-feedback');
+          
+          // Disable further choice clicks
+          choiceButtons.forEach(b => b.setAttribute('disabled', 'true'));
+
+          if (isCorrect) {
+            btn.style.borderColor = '#81C784';
+            btn.style.background = '#E8F5E9';
+            feedback.innerHTML = '<span style="color:#2E7D32;">Chính xác! Cậu giỏi lắm! 🍵</span>';
+            startAnimation('celebrating');
+          } else {
+            btn.style.borderColor = '#E57373';
+            btn.style.background = '#FFEBEE';
+            feedback.innerHTML = `<span style="color:#C62828;">Chưa đúng rồi! Nghĩa đúng: "${targetWord.meaning}" 😭</span>`;
+            startAnimation('crying');
+          }
+          
+          setTimeout(() => {
+            closeBubble();
+            startAnimation('idle');
+          }, 3500);
+        });
+      });
+
+    } else {
+      // Fill in the blank Quiz
+      bubble.innerHTML = `
+        <div class="bubble-header">
+          <span>Điền từ tiếng Anh còn thiếu ✏️</span>
+          <span class="close-btn" id="close-bubble">×</span>
+        </div>
+        <div style="font-size: 0.85rem; text-align: center; margin-bottom: 6px;">
+          Từ tiếng Anh nào có nghĩa là: <br/>
+          <strong style="font-size:1rem; color:#3b7a13;">"${targetWord.meaning}"</strong>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+          <input type="text" id="blank-input" class="quiz-input" placeholder="Gõ từ tiếng Anh..." autofocus />
+          <button class="btn btn-yes" id="btn-submit-blank" style="padding:8px;">Kiểm tra</button>
+        </div>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+      `;
+
+      shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+
+      const submitBtn = shadow.getElementById('btn-submit-blank');
+      const inputEl = shadow.getElementById('blank-input');
+
+      submitBtn.addEventListener('click', () => {
+        const userAnswer = inputEl.value.trim().toLowerCase();
+        const correctAnswer = targetWord.word.trim().toLowerCase();
+        const feedback = shadow.getElementById('quiz-feedback');
+
+        inputEl.setAttribute('disabled', 'true');
+        submitBtn.setAttribute('disabled', 'true');
+
+        if (userAnswer === correctAnswer) {
+          feedback.innerHTML = '<span style="color:#2E7D32;">Xuất sắc! Cậu viết đúng rồi! 🍵</span>';
+          startAnimation('celebrating');
+        } else {
+          feedback.innerHTML = `<span style="color:#C62828;">Chưa đúng rồi! Từ đúng là: "${targetWord.word}" 😭</span>`;
+          startAnimation('crying');
+        }
+
+        setTimeout(() => {
+          closeBubble();
+          startAnimation('idle');
+        }, 3500);
+      });
+    }
   }
 
   function closeBubble() {
