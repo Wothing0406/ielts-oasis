@@ -150,6 +150,55 @@
   `;
   shadow.appendChild(style);
 
+  // Animation states definition
+  const animationFrames = {
+    idle: [
+      chrome.runtime.getURL('assets/mascot/idle_1.png'),
+      chrome.runtime.getURL('assets/mascot/idle_2.png'),
+      chrome.runtime.getURL('assets/mascot/idle_3.png'),
+      chrome.runtime.getURL('assets/mascot/idle_4.png')
+    ],
+    alert: [
+      chrome.runtime.getURL('assets/mascot/alert_1.png'),
+      chrome.runtime.getURL('assets/mascot/alert_2.png'),
+      chrome.runtime.getURL('assets/mascot/alert_3.png')
+    ],
+    celebrating: [
+      chrome.runtime.getURL('assets/mascot/celebrating_1.png'),
+      chrome.runtime.getURL('assets/mascot/celebrating_2.png'),
+      chrome.runtime.getURL('assets/mascot/celebrating_3.png'),
+      chrome.runtime.getURL('assets/mascot/celebrating_4.png')
+    ],
+    crying: [
+      chrome.runtime.getURL('assets/mascot/crying_1.png'),
+      chrome.runtime.getURL('assets/mascot/crying_2.png'),
+      chrome.runtime.getURL('assets/mascot/crying_3.png')
+    ],
+    tantrum: [
+      chrome.runtime.getURL('assets/mascot/tantrum_1.png'),
+      chrome.runtime.getURL('assets/mascot/tantrum_2.png'),
+      chrome.runtime.getURL('assets/mascot/tantrum_3.png')
+    ]
+  };
+
+  let currentAction = isMainSite ? 'celebrating' : 'idle';
+  let frameIndex = 0;
+  let animationInterval = null;
+
+  function startAnimation(action) {
+    if (animationInterval) clearInterval(animationInterval);
+    currentAction = action;
+    frameIndex = 0;
+    
+    animationInterval = setInterval(() => {
+      const frames = animationFrames[currentAction];
+      if (frames && frames.length > 0) {
+        img.src = frames[frameIndex];
+        frameIndex = (frameIndex + 1) % frames.length;
+      }
+    }, 300); // 300ms frame rate
+  }
+
   // Mascot DOM Element Structure
   const wrapper = document.createElement('div');
   wrapper.id = 'matcha-pet-wrapper';
@@ -159,15 +208,14 @@
   
   const img = document.createElement('img');
   img.className = 'pet-sprite';
-  // Use dummy standard mascot placeholder URL or fallback SVG
-  img.src = isMainSite 
-    ? 'https://ieltsoasis.site/mascot_cheer.png' // Cheer state on web
-    : 'https://ieltsoasis.site/mascot_idle.png';  // Standard idle
-  img.alt = "Matcha Pet";
+  img.alt = "Mát Cha Pet";
 
   wrapper.appendChild(bubble);
   wrapper.appendChild(img);
   shadow.appendChild(wrapper);
+
+  // Start default animation loop
+  startAnimation(currentAction);
 
   // Dragging Implementation
   let isDragging = false;
@@ -219,24 +267,26 @@
     `;
     bubble.style.display = 'flex';
     
-    // Animate mascot to alert state
-    img.src = 'https://ieltsoasis.site/mascot_alert.png';
+    // Switch to alert animation
+    startAnimation('alert');
 
     // Hook events
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
     shadow.getElementById('btn-know').addEventListener('click', () => {
       closeBubble();
-      // Handle SRS rating positive review in database
+      startAnimation('celebrating');
+      setTimeout(() => startAnimation('idle'), 3000);
     });
     shadow.getElementById('btn-forgot').addEventListener('click', () => {
       closeBubble();
-      // Handle SRS rating negative review
+      startAnimation('crying');
+      setTimeout(() => startAnimation('idle'), 3000);
     });
   }
 
   function closeBubble() {
     bubble.style.display = 'none';
-    img.src = 'https://ieltsoasis.site/mascot_idle.png';
+    startAnimation('idle');
   }
 
   // Crying/Lockout simulation if user neglects mascot for too long
@@ -247,8 +297,8 @@
   }, 7200000); // 2 hours neglect
 
   function triggerTantrum() {
-    // Show Crying Sprite
-    img.src = 'https://ieltsoasis.site/mascot_cry.png';
+    // Switch animation to tantrum state
+    startAnimation('tantrum');
     img.style.width = '120px';
     img.style.height = '120px';
     
@@ -256,7 +306,6 @@
     const overlay = document.createElement('div');
     overlay.className = 'lockout-overlay';
     overlay.innerHTML = `
-      <img src="https://ieltsoasis.site/mascot_cry.png" style="width:150px; margin-bottom: 20px;" />
       <h1 style="margin: 10px 0;">CẬU BỎ RƠI TỚ LÂU QUÁ! 😭</h1>
       <p style="font-size:1.2rem; max-width: 500px;">Tớ đang khóc nhè đây này. Hãy quay lại học trên ieltsoasis.site ngay để dỗ tớ đi nhé! 🍵</p>
       <a href="https://ieltsoasis.site" style="margin-top:20px; padding:12px 24px; background:#5D4037; color:#FFFDF5; text-decoration:none; border-radius:30px; font-weight:bold; font-size:1.1rem;">Đi Học Ngay Thôi!</a>
