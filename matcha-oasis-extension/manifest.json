@@ -8,11 +8,17 @@
     "storage",
     "alarms",
     "sidePanel",
-    "contextMenus"
+    "contextMenus",
+    "scripting"
   ],
   "host_permissions": [
     "https://ieltsoasis.site/*"
   ],
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
   "background": {
     "service_worker": "background/service_worker.js"
   },

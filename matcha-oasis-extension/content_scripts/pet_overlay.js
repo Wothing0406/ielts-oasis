@@ -10,7 +10,7 @@
 
   // Zero-touch token sync if on main website
   if (isMainSite) {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("oasis_token");
     if (token) {
       chrome.runtime.sendMessage({ action: 'save_jwt_token', token: token });
     }

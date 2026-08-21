@@ -11,8 +11,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnOpenPanel = document.getElementById('btn-open-panel');
 
   // Check current config
-  const data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
+  let data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
   
+  // Dynamic zero-touch token recovery from active ieltsoasis.site tab
+  if (!data.jwt_token) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.url && tab.url.includes("ieltsoasis.site")) {
+      try {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => localStorage.getItem("oasis_token")
+        });
+        if (results && results[0] && results[0].result) {
+          const fetchedToken = results[0].result;
+          await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ action: 'save_jwt_token', token: fetchedToken }, () => {
+              resolve();
+            });
+          });
+          // Refresh configuration data
+          data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled']);
+        }
+      } catch (err) {
+        console.error("Failed to recover token from tab: ", err);
+      }
+    }
+  }
+
   if (data.jwt_token) {
     authSection.style.display = 'none';
     mainSection.style.display = 'flex';
@@ -20,6 +45,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Display user profile info
     if (data.user_info) {
       userNameEl.textContent = data.user_info.username || 'Học viên';
+    } else {
+      // Decode JWT token basic username fallback
+      try {
+        const payload = JSON.parse(atob(data.jwt_token.split('.')[1]));
+        if (payload) {
+          userNameEl.textContent = payload.sub || 'Học viên';
+        }
+      } catch (e) {}
     }
     
     if (data.study_schedule) {

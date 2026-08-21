@@ -586,6 +586,14 @@ export default function Home() {
                 Log Out
               </button>
             </div>
+            <a
+              href="/matcha-oasis-extension.zip"
+              download
+              className="bg-[#5D4037] hover:bg-[#4e342e] text-[#FFFDF5] px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
+            >
+              <span className="material-symbols-rounded text-base sm:text-lg">download</span>
+              Tải Extension 🍵
+            </a>
             <Link
               href="/games"
               className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
