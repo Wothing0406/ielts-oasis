@@ -1,0 +1,128 @@
+const BASE_URL = 'https://ieltsoasis.site/api';
+
+// Install event
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("Mát Cha AI Eo extension installed.");
+  // Create context menus for selected text
+  chrome.contextMenus.create({
+    id: "explain-with-matcha",
+    title: "Giải thích bằng Mát Cha AI 🍵",
+    contexts: ["selection"]
+  });
+  
+  // Set default settings
+  chrome.storage.local.set({ reminders_enabled: true });
+  setupAlarms();
+});
+
+// Setup study reminder alarms (30-minute interval)
+function setupAlarms() {
+  chrome.alarms.clearAll(() => {
+    chrome.storage.local.get(['reminders_enabled'], (data) => {
+      if (data.reminders_enabled !== false) {
+        chrome.alarms.create("study-reminder", {
+          periodInMinutes: 30
+        });
+        console.log("Alarms set: 30 minutes interval.");
+      }
+    });
+  });
+}
+
+// Listen to Alarms
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === "study-reminder") {
+    const data = await chrome.storage.local.get(['jwt_token', 'reminders_enabled']);
+    if (!data.jwt_token || data.reminders_enabled === false) return;
+
+    // Fetch vocabulary word for reminder
+    try {
+      const vocabWord = await fetchVocabReminder(data.jwt_token);
+      if (vocabWord) {
+        // Send to active tab
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (activeTab && activeTab.url && !activeTab.url.includes("ieltsoasis.site")) {
+          chrome.tabs.sendMessage(activeTab.id, {
+            action: "show_reminder",
+            vocab: vocabWord
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch vocabulary for alarm: ", e);
+    }
+  }
+});
+
+// Helper to fetch vocab reminder
+async function fetchVocabReminder(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/vocabulary`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const list = await response.json();
+      if (list && list.length > 0) {
+        // Return a random word from the list
+        const idx = Math.floor(Math.random() * list.length);
+        return list[idx];
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  return null;
+}
+
+// Context Menu Action
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "explain-with-matcha" && info.selectionText) {
+    // Save selected text to storage and open side panel
+    chrome.storage.local.set({ selected_word: info.selectionText }, () => {
+      chrome.sidePanel.open({ tabId: tab.id });
+    });
+  }
+});
+
+// Message listener
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'save_jwt_token') {
+    chrome.storage.local.set({ jwt_token: message.token }, async () => {
+      console.log("JWT Token synchronized successfully.");
+      await syncUserProfile(message.token);
+      setupAlarms();
+      sendResponse({ status: 'success' });
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.action === 'toggle_reminders') {
+    setupAlarms();
+    sendResponse({ status: 'updated' });
+  }
+});
+
+// Synchronize User Profile and Schedule preferences from Web backend
+async function syncUserProfile(token) {
+  try {
+    const userRes = await fetch(`${BASE_URL}/study-plan/get`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (userRes.ok) {
+      const data = await userRes.json();
+      if (data) {
+        await chrome.storage.local.set({
+          study_schedule: {
+            level: data.level,
+            topic: data.topic,
+            study_focus: data.study_focus
+          }
+        });
+        console.log("User schedule synced: ", data.topic);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to sync user data: ", err);
+  }
+}

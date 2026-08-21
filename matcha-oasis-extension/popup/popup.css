@@ -1,0 +1,133 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #FFFDF5;
+  color: #5D4037;
+  width: 320px;
+}
+
+.popup-container {
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid rgba(167, 208, 140, 0.3);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #5D4037;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-text {
+  font-size: 0.9rem;
+  color: #795548;
+  margin: 0;
+}
+
+.user-profile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.badge {
+  background-color: #A7D08C;
+  color: #5D4037;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.stats-card {
+  background-color: #FFF9E6;
+  border: 1px solid rgba(167, 208, 140, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.stat-label {
+  color: #8D6E63;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.switch-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #A7D08C;
+  color: #5D4037;
+  box-shadow: 0 4px 10px rgba(167, 208, 140, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: #92be76;
+}
+
+.btn-secondary {
+  background-color: #5D4037;
+  color: #FFFDF5;
+}
+
+.btn-secondary:hover {
+  background-color: #4e342e;
+}
