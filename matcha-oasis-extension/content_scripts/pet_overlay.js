@@ -26,7 +26,7 @@
   const mascotRoot = document.createElement('div');
   mascotRoot.id = 'matcha-mascot-container';
   const shadow = mascotRoot.attachShadow({ mode: 'closed' });
-  document.body.appendChild(mascotRoot);
+  document.documentElement.appendChild(mascotRoot);
 
   // Injected CSS Styles
   const style = document.createElement('style');
@@ -35,11 +35,9 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
+      width: 80px;
+      height: 80px;
       z-index: 2147483647;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
       font-family: 'Segoe UI', system-ui, sans-serif;
       pointer-events: none;
     }
@@ -58,6 +56,9 @@
     }
     
     .speech-bubble {
+      position: absolute;
+      bottom: 90px;
+      right: 0;
       background-color: #FFFDF5;
       border: 2px solid #A7D08C;
       border-radius: 1.5rem;
@@ -321,11 +322,11 @@
         let newLeft = e.clientX - offsetX;
         let newTop = e.clientY - offsetY;
         
-        // Prevent going off-screen (bubble width is 280px, mascot is 80px)
+        // Prevent going off-screen (mascot is 80px)
         const minLeft = 10;
-        const maxLeft = window.innerWidth - 300;
+        const maxLeft = window.innerWidth - 90;
         const minTop = 10;
-        const maxTop = window.innerHeight - 100;
+        const maxTop = window.innerHeight - 90;
         
         newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
         newTop = Math.max(minTop, Math.min(newTop, maxTop));
@@ -347,13 +348,26 @@
     }
   });
 
+  function openBubble(html) {
+    bubble.innerHTML = html;
+    bubble.style.display = 'flex';
+    const rect = wrapper.getBoundingClientRect();
+    if (rect.left < 210) {
+      bubble.style.right = 'auto';
+      bubble.style.left = '0';
+    } else {
+      bubble.style.left = 'auto';
+      bubble.style.right = '0';
+    }
+  }
+
   function toggleMascotMenu() {
     if (bubble.style.display === 'flex') {
       closeBubble();
       return;
     }
 
-    bubble.innerHTML = `
+    const menuHtml = `
       <div class="bubble-header">
         <span>Mát Cha AI Eo 🍵</span>
         <span class="close-btn" id="close-bubble">×</span>
@@ -368,7 +382,7 @@
         <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ (Quiz)</button>
       </div>
     `;
-    bubble.style.display = 'flex';
+    openBubble(menuHtml);
     startAnimation('alert');
 
     // Hook Menu Events
@@ -527,7 +541,7 @@
       listHtml += `</div>`;
     }
 
-    bubble.innerHTML = `
+    const listHtmlContent = `
       <div class="bubble-header">
         <span>Tủ từ của tớ (${list.length}) 📚</span>
         <span class="close-btn" id="close-bubble">×</span>
@@ -535,6 +549,7 @@
       ${listHtml}
       <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:4px;">Quay lại</button>
     `;
+    openBubble(listHtmlContent);
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
     shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
@@ -546,7 +561,7 @@
     const sched = data.study_schedule || { level: 'General', topic: 'N/A', study_focus: 'Toàn diện' };
     const user = data.user_info || { username: 'Học viên' };
 
-    bubble.innerHTML = `
+    const schedHtml = `
       <div class="bubble-header">
         <span>Lịch học của tớ 📅</span>
         <span class="close-btn" id="close-bubble">×</span>
@@ -559,6 +574,7 @@
       </div>
       <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:6px;">Quay lại</button>
     `;
+    openBubble(schedHtml);
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
     shadow.getElementById('btn-back-menu').addEventListener('click', toggleMascotMenu);
@@ -599,7 +615,7 @@
       const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
       const choices = [targetWord, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
 
-      bubble.innerHTML = `
+      const abcdHtml = `
         <div class="bubble-header">
           <span>Trắc nghiệm từ vựng (ABCD) 📝</span>
           <span class="close-btn" id="close-bubble">×</span>
@@ -617,6 +633,7 @@
         </div>
         <div id="quiz-feedback" class="quiz-feedback"></div>
       `;
+      openBubble(abcdHtml);
 
       shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
       
@@ -657,7 +674,7 @@
 
     } else {
       // Fill in the blank Quiz
-      bubble.innerHTML = `
+      const blankHtml = `
         <div class="bubble-header">
           <span>Điền từ tiếng Anh còn thiếu ✏️</span>
           <span class="close-btn" id="close-bubble">×</span>
@@ -672,6 +689,7 @@
         </div>
         <div id="quiz-feedback" class="quiz-feedback"></div>
       `;
+      openBubble(blankHtml);
 
       shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
 
@@ -840,7 +858,7 @@
   }
 
   async function handleOCRWordDetected(wordData) {
-    bubble.innerHTML = `
+    const ocrHtml = `
       <div class="bubble-header">
         <span>Đã Quét Từ Vựng 📸</span>
         <span class="close-btn" id="close-bubble">×</span>
@@ -854,7 +872,7 @@
         <button class="btn btn-yes" id="btn-save-vocab">Lưu vào Tủ Từ 🍵</button>
       </div>
     `;
-    bubble.style.display = 'flex';
+    openBubble(ocrHtml);
     startAnimation('celebrating');
 
     shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
