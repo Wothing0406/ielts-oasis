@@ -533,14 +533,31 @@ async def extract_scroll(file: UploadFile = File(...)):
 
 @app.post("/translate")
 async def translate_text(data: TranslateInput):
-    """Dịch nhanh một từ/cụm từ cho tính năng Click to Translate"""
+    """Dịch nhanh một từ/cụm từ cho tính năng Click to Translate hoặc Chatbot Mát Cha AI Eo"""
     try:
-        prompt = f"Dịch và giải thích ngắn gọn ý nghĩa của từ/cụm từ sau sang tiếng Việt (nếu là từ đơn hãy kèm phiên âm và loại từ, nếu là cụm từ thì dịch sát nghĩa ngữ cảnh): '{data.text}'"
-        response = await ai_service.get_advice(prompt)
-        return {"meaning": response or "Không thể dịch."}
+        text = data.text.strip()
+        word_count = len(text.split())
+        
+        # Check if text is mostly English single word lookup (less than or equal to 3 words, no non-ascii chars)
+        is_word_lookup = word_count <= 3 and all(c.isalnum() or c.isspace() or c in "'-" for c in text) and not any(ord(c) > 127 for c in text)
+        
+        if is_word_lookup:
+            prompt = f"Dịch và giải thích ngắn gọn ý nghĩa của từ/cụm từ sau sang tiếng Việt (nếu là từ đơn hãy kèm phiên âm và loại từ, nếu là cụm từ thì dịch sát nghĩa ngữ cảnh): '{text}'"
+            response = await ai_service.get_advice(prompt)
+            return {"meaning": response or "Không thể dịch."}
+        else:
+            prompt = (
+                f"Cậu là Mát Cha AI Eo, người bạn đồng hành, người gia sư tiếng Anh IELTS ấm áp, tận tâm và thân thiện "
+                f"tại ngôi nhà IELTS Oasis. Hãy trả lời câu hỏi/nhắn tin sau của học viên một cách chu đáo, "
+                f"chuyên sâu, đầy tính học thuật nhưng vẫn gần gũi, sử dụng icon 🍵 hoặc các icon dễ thương, "
+                f"tư vấn cho học viên cách học tập trên website IELTS Oasis (Vocabulary Lab, Writing Sanctuary, games, MatchaScroll) "
+                f"khi phù hợp. Hãy trả lời trôi chảy bằng tiếng Việt. Câu nhắn của học viên: '{text}'"
+            )
+            response = await ai_service.get_advice(prompt)
+            return {"meaning": response or "Mát Cha chưa hiểu ý cậu lắm."}
     except Exception as e:
         logger.error(f"Translate error: {e}")
-        return {"error": str(e), "meaning": "Lỗi dịch."}
+        return {"error": str(e), "meaning": "Lỗi kết nối máy chủ Matcha."}
 
 @app.post("/tts")
 async def text_to_speech(data: dict):

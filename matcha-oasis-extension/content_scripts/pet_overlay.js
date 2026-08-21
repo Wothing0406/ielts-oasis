@@ -7,6 +7,7 @@
   console.log("Matcha Study Buddy injected.");
 
   const isMainSite = window.location.hostname.includes("ieltsoasis.site");
+  let consecutiveWrong = 0;
 
   // Zero-touch token sync if on main website
   if (isMainSite) {
@@ -565,25 +566,32 @@
           const isCorrect = btn.getAttribute('data-correct') === 'true';
           const feedback = shadow.getElementById('quiz-feedback');
           
-          // Disable further choice clicks
           choiceButtons.forEach(b => b.setAttribute('disabled', 'true'));
 
           if (isCorrect) {
+            consecutiveWrong = 0;
             btn.style.borderColor = '#81C784';
             btn.style.background = '#E8F5E9';
             feedback.innerHTML = '<span style="color:#2E7D32;">Chính xác! Cậu giỏi lắm! 🍵</span>';
             startAnimation('celebrating');
+            setTimeout(() => {
+              closeBubble();
+              startAnimation('idle');
+            }, 3500);
           } else {
+            consecutiveWrong++;
             btn.style.borderColor = '#E57373';
             btn.style.background = '#FFEBEE';
             feedback.innerHTML = `<span style="color:#C62828;">Chưa đúng rồi! Nghĩa đúng: "${targetWord.meaning}" 😭</span>`;
             startAnimation('crying');
+            setTimeout(() => {
+              if (consecutiveWrong >= 3) {
+                triggerTantrumLockout();
+              } else {
+                showVocabReminder(); // Load new question immediately
+              }
+            }, 3500);
           }
-          
-          setTimeout(() => {
-            closeBubble();
-            startAnimation('idle');
-          }, 3500);
         });
       });
 
@@ -619,19 +627,126 @@
         submitBtn.setAttribute('disabled', 'true');
 
         if (userAnswer === correctAnswer) {
+          consecutiveWrong = 0;
           feedback.innerHTML = '<span style="color:#2E7D32;">Xuất sắc! Cậu viết đúng rồi! 🍵</span>';
           startAnimation('celebrating');
+          setTimeout(() => {
+            closeBubble();
+            startAnimation('idle');
+          }, 3500);
         } else {
+          consecutiveWrong++;
           feedback.innerHTML = `<span style="color:#C62828;">Chưa đúng rồi! Từ đúng là: "${targetWord.word}" 😭</span>`;
           startAnimation('crying');
+          setTimeout(() => {
+            if (consecutiveWrong >= 3) {
+              triggerTantrumLockout();
+            } else {
+              showVocabReminder(); // Load new question immediately
+            }
+          }, 3500);
         }
-
-        setTimeout(() => {
-          closeBubble();
-          startAnimation('idle');
-        }, 3500);
       });
     }
+  }
+
+  // Strict Lockout Blocker when user fails 3 consecutive times
+  function triggerTantrumLockout() {
+    closeBubble();
+    startAnimation('tantrum');
+    img.style.width = '120px';
+    img.style.height = '120px';
+
+    const existing = shadow.querySelector('.lockout-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lockout-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(167, 208, 140, 0.95);
+      z-index: 2147483646;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      backdrop-filter: blur(5px);
+    `;
+    overlay.innerHTML = `
+      <div style="background:#FFFDF5; border:3px solid #E57373; padding:28px; border-radius:24px; width:360px; box-sizing:border-box; text-align:center; box-shadow:0 15px 50px rgba(93,64,55,0.35); font-family: 'Segoe UI', system-ui, sans-serif;">
+        <h2 style="color:#C62828; margin:0 0 10px 0; font-size:1.3rem;">MÁT CHA ĐANG DỖI! 😭</h2>
+        <p style="font-size:0.85rem; color:#5D4037; line-height:1.4; margin:0 0 16px 0; font-weight:bold;">
+          Cậu trả lời sai liên tiếp 3 từ rồi đó! Tớ khóa màn hình không cho cậu lướt web nữa. Hãy trả lời đúng câu dưới đây để dỗ tớ đi!
+        </p>
+        <div id="lockout-quiz-box" style="text-align:left; display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="lockout-feedback" style="margin-top:12px; font-weight:bold; font-size:0.85rem; text-align:center; min-height:20px;"></div>
+      </div>
+    `;
+    shadow.appendChild(overlay);
+    generateLockoutQuiz(overlay);
+  }
+
+  async function generateLockoutQuiz(overlay) {
+    const data = await chrome.storage.local.get(['user_vocab']);
+    const list = data.user_vocab || [];
+    const defaultList = [
+      { word: 'academic', meaning: 'tính học thuật', phonetic: '/ˌæk.əˈdem.ɪk/', example: 'She has high academic standards.' },
+      { word: 'dynamic', meaning: 'năng động, biến đổi không ngừng', phonetic: '/daɪˈnæm.ɪk/', example: 'A dynamic study environment.' },
+      { word: 'acquire', meaning: 'gặt hái, thu nhận được', phonetic: '/əˈkwaɪər/', example: 'To acquire language skills.' }
+    ];
+    const activeList = list.length >= 4 ? list : defaultList;
+    const target = activeList[Math.floor(Math.random() * activeList.length)];
+
+    const incorrectPool = activeList.filter(item => item.word !== target.word);
+    const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
+    const choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
+
+    const quizBox = shadow.getElementById('lockout-quiz-box');
+    quizBox.innerHTML = `
+      <div style="font-size:0.85rem; color:#5D4037; font-weight:bold; text-align:center; margin-bottom:6px;">
+        Nghĩa của từ: <strong style="font-size:1.05rem; color:#3b7a13;">${target.word}</strong>
+      </div>
+      ${choices.map((c, i) => `
+        <button class="btn-choice lockout-choice" data-correct="${c.word === target.word}" style="padding:10px;">
+          ${String.fromCharCode(65 + i)}. ${c.meaning}
+        </button>
+      `).join('')}
+    `;
+
+    const choiceBtns = shadow.querySelectorAll('.lockout-choice');
+    choiceBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isCorrect = btn.getAttribute('data-correct') === 'true';
+        const feedback = shadow.getElementById('lockout-feedback');
+
+        choiceBtns.forEach(b => b.setAttribute('disabled', 'true'));
+
+        if (isCorrect) {
+          btn.style.borderColor = '#81C784';
+          btn.style.background = '#E8F5E9';
+          feedback.innerHTML = '<span style="color:#2E7D32;">Chính xác! Ngoan lắm, tớ cho qua nha! 🍵</span>';
+          startAnimation('celebrating');
+          consecutiveWrong = 0;
+          setTimeout(() => {
+            overlay.remove();
+            img.style.width = '80px';
+            img.style.height = '80px';
+            startAnimation('idle');
+          }, 2500);
+        } else {
+          btn.style.borderColor = '#E57373';
+          btn.style.background = '#FFEBEE';
+          feedback.innerHTML = `<span style="color:#C62828;">Sai rồi! Thử lại câu khác nhé! 😭</span>`;
+          startAnimation('crying');
+          setTimeout(() => {
+            generateLockoutQuiz(overlay);
+          }, 2500);
+        }
+    });
   }
 
   function closeBubble() {
