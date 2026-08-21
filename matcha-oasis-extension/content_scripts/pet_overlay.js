@@ -217,21 +217,28 @@
   // Start default animation loop
   startAnimation(currentAction);
 
-  // Dragging Implementation
+  // Dragging & Clicking Implementation
   let isDragging = false;
+  let dragStarted = false;
   let offsetX = 0;
   let offsetY = 0;
 
   img.addEventListener('mousedown', (e) => {
     isDragging = true;
-    offsetX = e.clientX - wrapper.offsetLeft;
-    offsetY = e.clientY - wrapper.offsetTop;
-    wrapper.style.right = 'auto'; // Disable default right pinning
-    wrapper.style.bottom = 'auto'; // Disable default bottom pinning
+    dragStarted = false;
+    const rect = wrapper.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    
+    wrapper.style.right = 'auto';
+    wrapper.style.bottom = 'auto';
+    wrapper.style.left = `${rect.left}px`;
+    wrapper.style.top = `${rect.top}px`;
   });
 
   document.addEventListener('mousemove', (e) => {
     if (isDragging) {
+      dragStarted = true;
       wrapper.style.left = `${e.clientX - offsetX}px`;
       wrapper.style.top = `${e.clientY - offsetY}px`;
     }
@@ -240,6 +247,51 @@
   document.addEventListener('mouseup', () => {
     isDragging = false;
   });
+
+  // Toggle Mascot menu on Click
+  img.addEventListener('click', () => {
+    if (!dragStarted) {
+      toggleMascotMenu();
+    }
+  });
+
+  function toggleMascotMenu() {
+    if (bubble.style.display === 'flex') {
+      closeBubble();
+      return;
+    }
+
+    bubble.innerHTML = `
+      <div class="bubble-header">
+        <span>Mát Cha AI Eo 🍵</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="font-weight: bold; margin: 4px 0; font-size: 0.9rem;">Tớ có thể giúp gì cho cậu?</div>
+      <div class="actions" style="flex-direction: column; gap: 4px; align-items: stretch; width: 100%;">
+        <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 6px;">💬 Trò chuyện AI</button>
+        <button class="btn btn-yes" id="btn-test-reminder" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng ngay</button>
+      </div>
+    `;
+    bubble.style.display = 'flex';
+    startAnimation('alert');
+
+    // Hook Menu Events
+    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+    shadow.getElementById('btn-sidepanel').addEventListener('click', () => {
+      closeBubble();
+      chrome.runtime.sendMessage({ action: 'open_sidepanel' });
+    });
+    shadow.getElementById('btn-test-reminder').addEventListener('click', async () => {
+      closeBubble();
+      // Fetch a word to simulate quiz reminder
+      const data = await chrome.storage.local.get(['jwt_token']);
+      if (data.jwt_token) {
+        chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
+      } else {
+        alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
+      }
+    });
+  }
 
   // Reminders and Quiz triggers
   chrome.runtime.onMessage.addListener((message) => {

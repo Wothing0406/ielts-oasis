@@ -100,7 +100,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     setupAlarms();
     sendResponse({ status: 'updated' });
   }
+
+  if (message.action === 'open_sidepanel') {
+    if (sender.tab) {
+      chrome.sidePanel.open({ tabId: sender.tab.id });
+    }
+  }
+
+  if (message.action === 'trigger_immediate_alarm') {
+    if (sender.tab) {
+      triggerVocabReminderImmediate(sender.tab.id);
+    }
+  }
 });
+
+async function triggerVocabReminderImmediate(tabId) {
+  const data = await chrome.storage.local.get(['jwt_token']);
+  if (!data.jwt_token) return;
+  try {
+    const vocabWord = await fetchVocabReminder(data.jwt_token);
+    if (vocabWord) {
+      chrome.tabs.sendMessage(tabId, {
+        action: "show_reminder",
+        vocab: vocabWord
+      });
+    }
+  } catch (e) {
+    console.error("Failed to run immediate alarm: ", e);
+  }
+}
 
 // Synchronize User Profile and Schedule preferences from Web backend
 async function syncUserProfile(token) {
