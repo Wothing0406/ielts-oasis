@@ -6,7 +6,6 @@
 
 <div align="center">
 
-[![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg?style=for-the-badge&logo=google)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
 [![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%203.1%20Flash%20Lite-orange.svg?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
 [![Next.js](https://img.shields.io/badge/Next.js%2014-black.svg?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -18,7 +17,6 @@
 
 ## 🔗 Demo Trực Tuyến & Liên Kết Dự Án
 * **Địa chỉ Web ứng dụng:** [https://ieltsoasis.site](https://ieltsoasis.site)
-* **Kênh nộp bài Kaggle:** [Tổng quan cuộc thi Kaggle](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google/overview)
 
 ---
 

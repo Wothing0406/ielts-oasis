@@ -1,4 +1,4 @@
-"""# MatchAI Oasis Extension: Kế Hoạch Kỹ Thuật (Technical Plan) & Kịch Bản Thuyết Trình (Pitch Speech)
+# IELTS Oasis Extension: Technical Plan & Feature Specification
 
 > **Hệ sinh thái:** IELTS Oasis (`ieltsoasis.site`)  
 > **Sản phẩm:** Tiện ích mở rộng trình duyệt (Chrome/Edge Extension - Manifest V3)  
@@ -21,6 +21,8 @@
 5. Tích hợp database của người dùng sau khi có lịch học nhắc nhở ngay trong khi ở trình duyệt
 6. khi người dùng đang sử dụng tại trang web https://ieltsoasis.site/ thì ngưng nhắc tự động thay vào đó sẽ là một pet động viên có các hiệu ứng rõ ràng.
 7. ở giao diện web hiện nút tải pet matcha về trình duyệt hiện ra thông báo và hướng dẫn người dùng
+8. từ kho flash card hiện có tích hợp thêm tạo quizz như web bằng cách sau tạo quizz thì sẽ lấy từ kho flashcard ở web và tạo quizz cấu trúc quiz giống với web hiện tại ở file C:\Users\QuangNe\Downloads\Projects\web\ielts-oasis\frontend\components\VocabularyQuiz.tsx. hoặc sau tầm một 2-3 tiếng pet matcha sẽ hỏi bạn {user} bạn có muốn làm thử bài kiếm tra từ vựng hôm nay không? . Và quizz sẽ ở dạng poup từ con pet  hiện ra câu hỏi và trả lời poup ở ngay con pet đó. Nếu làm đúng thì pet sẽ reo vui còn làm sai thì pet sẽ có vẻ buồn và cho phép xem đáp án .
+9. vibe con pet phải đúng với hiện tài một chú mèo nhỏ 2d cute vibe matcha nếu như bỏ rơi nó nó sẽ khóc và làm phiền bạn không cho bạn hoạt động các website khác ngoài web của nó ra. và 1 số hiệu ứng đặc biệt CÓ hiệu ứng và chuyển động rõ ràng
 ---
 
 ## PHẦN 2: KIẾN TRÚC KỸ THUẬT (TECHNICAL ARCHITECTURE)

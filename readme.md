@@ -6,7 +6,6 @@
 
 <div align="center">
 
-[![Google Kaggle Competition](https://img.shields.io/badge/Google%20Kaggle-Vibe%20Coding%20Course-blue.svg?style=for-the-badge&logo=google)](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google)
 [![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Gemini%203.1%20Flash%20Lite-orange.svg?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
 [![Next.js](https://img.shields.io/badge/Next.js%2014-black.svg?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -18,7 +17,6 @@
 
 ## 🔗 Live Demo & Project Links
 * **Web Application URL:** [https://ieltsoasis.site](https://ieltsoasis.site)
-* **Kaggle Submission:** [Kaggle Competition Overview](https://www.kaggle.com/competitions/5-day-ai-agents-intensive-vibecoding-course-with-google/overview)
 
 ---
 
@@ -251,7 +249,7 @@ docker compose up -d --build
 
 ---
 
-## 🏆 Hackathon & Production Performance Focus
+## 🏆 Architecture & Production Performance Focus
 * **API Cost Optimization**: Generating a weekly study schedule, specific daily exercises, vocabulary definitions, and pronunciation guide bullet points is consolidated into **one single Gemini model call** inside the weekly planner. This cuts token consumption by over 70% compared to traditional daily polling setups.
 * **Self-Healing Databases**: Schema upgrades (e.g. adding new focus columns) are implemented inside the FastAPI `startup_event` using SQLAlchemy inspection. The database self-heals dynamically on startup without requiring manual migration scripts.
 * **Resource Leak Protections**: Added React `useEffect` cleanups to close all running timers, volume thresholds, and browser `AudioContext` structures, preventing browser-level microphone memory leaks.
