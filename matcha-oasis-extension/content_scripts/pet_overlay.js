@@ -425,11 +425,11 @@
     }
 
     // Stop the page from intercepting clicks/keyboard inside the bubble
-    bubble.addEventListener('click', (e) => e.stopPropagation(), { capture: true });
-    bubble.addEventListener('keydown', (e) => e.stopPropagation(), { capture: true });
-    bubble.addEventListener('keyup', (e) => e.stopPropagation(), { capture: true });
-    bubble.addEventListener('mousedown', (e) => e.stopPropagation(), { capture: true });
-    bubble.addEventListener('pointerdown', (e) => e.stopPropagation(), { capture: true });
+    bubble.addEventListener('click', (e) => e.stopPropagation());
+    bubble.addEventListener('keydown', (e) => e.stopPropagation());
+    bubble.addEventListener('keyup', (e) => e.stopPropagation());
+    bubble.addEventListener('mousedown', (e) => e.stopPropagation());
+    bubble.addEventListener('pointerdown', (e) => e.stopPropagation());
 
     // Auto-focus first input or textarea inside the bubble
     setTimeout(() => {
