@@ -849,9 +849,9 @@
             <button class="btn btn-yes" id="btn-retry-quiz" style="width:100%; margin-top:6px;">Chơi lại 🔄</button>
             <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
           `);
-          shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-          shadow.getElementById('btn-retry-quiz').addEventListener('click', () => { currentQ = 0; score = 0; renderQuestion(); });
-          shadow.getElementById('btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
+          shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+          shadow.querySelector('#btn-retry-quiz').addEventListener('click', () => { currentQ = 0; score = 0; renderQuestion(); });
+          shadow.querySelector('#btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
           if (score >= questions.length * 0.7) startAnimation('celebrating');
           else startAnimation('crying');
           return;
@@ -875,12 +875,12 @@
           <div id="qfeedback" class="quiz-feedback"></div>
         `;
         openBubble(quizHtml);
-        shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
         shadow.querySelectorAll('.btn-choice').forEach(btn => {
           btn.addEventListener('click', () => {
             const isCorrect = btn.getAttribute('data-correct') === 'true';
-            const fb = shadow.getElementById('qfeedback');
+            const fb = shadow.querySelector('#qfeedback');
             shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
             if (isCorrect) {
               score++;
@@ -1037,10 +1037,10 @@
       `;
 
       openBubble(fullHtml);
-      shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
       // Skip button — go to next without penalty
-      shadow.getElementById('btn-skip-word').addEventListener('click', () => {
+      shadow.querySelector('#btn-skip-word').addEventListener('click', () => {
         currentIdx++;
         renderQuestion();
       });
@@ -1049,9 +1049,9 @@
         shadow.querySelectorAll('.btn-choice').forEach(btn => {
           btn.addEventListener('click', () => {
             const isCorrect = btn.getAttribute('data-correct') === 'true';
-            const feedback = shadow.getElementById('quiz-feedback');
+            const feedback = shadow.querySelector('#quiz-feedback');
             shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
-            shadow.getElementById('btn-skip-word').setAttribute('disabled', 'true');
+            shadow.querySelector('#btn-skip-word').setAttribute('disabled', 'true');
 
             function showNextBtn() {
               shadow.querySelector('#btn-skip-word').style.display = 'none';
@@ -1099,16 +1099,16 @@
 
       } else {
         // Fill-in-blank mode
-        const submitBtn = shadow.getElementById('btn-submit-blank');
-        const inputEl = shadow.getElementById('blank-input');
+        const submitBtn = shadow.querySelector('#btn-submit-blank');
+        const inputEl = shadow.querySelector('#blank-input');
 
         const checkAnswer = () => {
           const userAnswer = inputEl.value.trim().toLowerCase();
           const correctAnswer = targetWord.word.trim().toLowerCase();
-          const feedback = shadow.getElementById('quiz-feedback');
+          const feedback = shadow.querySelector('#quiz-feedback');
           inputEl.setAttribute('disabled', 'true');
           submitBtn.setAttribute('disabled', 'true');
-          shadow.getElementById('btn-skip-word').setAttribute('disabled', 'true');
+          shadow.querySelector('#btn-skip-word').setAttribute('disabled', 'true');
 
           // Accept partial match if >80% similar (allow minor typos)
           const isCorrect = userAnswer === correctAnswer || userAnswer === correctAnswer.split(' ')[0].toLowerCase();
@@ -1254,7 +1254,7 @@
     const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
     const choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
 
-    const quizBox = shadow.getElementById('lockout-quiz-box');
+    const quizBox = shadow.querySelector('#lockout-quiz-box');
     quizBox.innerHTML = `
       <div style="font-size:0.85rem; color:#5D4037; font-weight:bold; text-align:center; margin-bottom:6px;">
         Nghĩa của từ: <strong style="font-size:1.05rem; color:#3b7a13;">${target.word}</strong>
@@ -1270,7 +1270,7 @@
     choiceBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const isCorrect = btn.getAttribute('data-correct') === 'true';
-        const feedback = shadow.getElementById('lockout-feedback');
+        const feedback = shadow.querySelector('#lockout-feedback');
 
         choiceBtns.forEach(b => b.setAttribute('disabled', 'true'));
 
@@ -1346,8 +1346,8 @@
     openBubble(ocrHtml);
     startAnimation('celebrating');
 
-    shadow.getElementById('close-bubble').addEventListener('click', closeBubble);
-    shadow.getElementById('btn-save-vocab').addEventListener('click', async () => {
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+    shadow.querySelector('#btn-save-vocab').addEventListener('click', async () => {
       const data = await chrome.storage.local.get(['jwt_token']);
       if (!data.jwt_token) {
         alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");

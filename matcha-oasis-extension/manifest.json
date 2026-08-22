@@ -12,7 +12,10 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://ieltsoasis.site/*"
+    "https://ieltsoasis.site/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://100.127.204.9/*"
   ],
   "icons": {
     "16": "assets/icons/icon16.png",

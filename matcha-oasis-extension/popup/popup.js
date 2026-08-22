@@ -107,6 +107,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.sendMessage({ action: 'toggle_reminders', enabled: isEnabled });
   });
 
+  // Display current server URL
+  const serverUrlEl = document.getElementById('current-server-url');
+  if (serverUrlEl) {
+    serverUrlEl.textContent = data.server_url;
+  }
+
+  // Reset server URL button handler
+  const btnResetServer = document.getElementById('btn-reset-server');
+  if (btnResetServer) {
+    btnResetServer.addEventListener('click', async () => {
+      const prodUrl = 'https://ieltsoasis.site';
+      await chrome.storage.local.set({ 
+        server_url: prodUrl,
+        jwt_token: null, // Clear token so they can re-login to production
+        user_info: null
+      });
+      alert('Đã khôi phục kết nối về ieltsoasis.site! Tiện ích sẽ tải lại.');
+      window.location.reload();
+      // Notify service worker to update its cached URL
+      chrome.runtime.sendMessage({ action: 'save_jwt_token', token: null });
+    });
+  }
+
   // Open side panel
   btnOpenPanel.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
