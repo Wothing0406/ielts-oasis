@@ -52,6 +52,10 @@ class LoginPayload(BaseModel):
     password: str
     captcha_token: str
 
+class ExtensionLoginPayload(BaseModel):
+    username: str
+    password: str
+
 import hashlib
 import collections
 import time
@@ -256,6 +260,49 @@ async def login_user(payload: LoginPayload, request: Request, db: Session = Depe
         raise HTTPException(
             status_code=400,
             detail="Xác thực Captcha Turnstile không thành công. Hãy thử lại."
+        )
+
+    raw_username = payload.username.strip()
+    raw_password = payload.password.strip()
+    
+    if not raw_username or not raw_password:
+        raise HTTPException(status_code=400, detail="Tên đăng nhập và mật khẩu không được để trống")
+        
+    username = raw_username.lower()
+    user = db.query(User).filter(User.username == username).first()
+    
+    if not user or not user.password_hash or not verify_password(raw_password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    user.last_login = datetime.utcnow()
+    user.last_ip = ip
+    db.commit()
+    
+    # Generate JWT
+    jwt_payload = {
+        "user_id": user.id,
+        "discord_id": user.discord_id,
+        "username": user.username,
+        "avatar_url": user.avatar_url,
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }
+    token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    
+    return {
+        "token": token,
+        "user": jwt_payload,
+        "guest_id": user.discord_id
+    }
+
+@router.post("/extension-login")
+async def login_user_extension(payload: ExtensionLoginPayload, request: Request, db: Session = Depends(get_db)):
+    ip = get_client_ip(request)
+    
+    # Strict rate limit for extension login (max 5 logins per 5 minutes to prevent brute force)
+    if not check_rate_limit(db, ip, "extension_login", limit=5, window_seconds=300):
+        raise HTTPException(
+            status_code=429,
+            detail="Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 5 phút!"
         )
 
     raw_username = payload.username.strip()

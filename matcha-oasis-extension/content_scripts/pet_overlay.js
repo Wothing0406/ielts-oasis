@@ -441,9 +441,15 @@
     }, 80);
   }
 
-  function toggleMascotMenu() {
+  async function toggleMascotMenu() {
     if (bubble.style.display === 'flex') {
       closeBubble();
+      return;
+    }
+
+    const data = await chrome.storage.local.get(['jwt_token']);
+    if (!data.jwt_token) {
+      showExtensionLoginForm();
       return;
     }
 
@@ -495,6 +501,75 @@
     shadow.querySelector('#btn-view-schedule').addEventListener('click', showStudyScheduleUI);
   }
 
+  function showExtensionLoginForm(errorMessage = '') {
+    const loginHtml = `
+      <div class="bubble-header">
+        <span>Kết nối tài khoản 🔑</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="font-weight: bold; margin: 4px 0; font-size: 0.8rem; text-align: center; color: #D84315;">
+        Cậu cần kết nối tài khoản để sử dụng tiện ích Mát Cha AI Eo!
+      </div>
+      ${errorMessage ? `<div style="color:#C62828; font-size:0.75rem; text-align:center; margin-bottom:6px; font-weight:bold;">${errorMessage}</div>` : ''}
+      <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+        <input type="text" id="login-username" class="quiz-input" placeholder="Tên đăng nhập" style="padding: 8px; font-size: 0.8rem;" required />
+        <input type="password" id="login-password" class="quiz-input" placeholder="Mật khẩu" style="padding: 8px; font-size: 0.8rem;" required />
+        <button class="btn btn-yes" id="btn-submit-login" style="margin-top:6px; padding:10px; font-size:0.85rem; font-weight:bold; cursor: pointer;">Đăng nhập ➔</button>
+        <div style="font-size:0.72rem; text-align:center; color:#795548; margin-top:4px;">
+          Chưa có tài khoản? Hãy đăng ký tại <a href="https://ieltsoasis.site" target="_blank" style="color:#3b7a13; font-weight:bold; text-decoration:none;">ieltsoasis.site</a>
+        </div>
+      </div>
+    `;
+    openBubble(loginHtml);
+    startAnimation('alert');
+
+    shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+
+    const submitBtn = shadow.querySelector('#btn-submit-login');
+    submitBtn.addEventListener('click', async () => {
+      const usernameInput = shadow.querySelector('#login-username').value.trim();
+      const passwordInput = shadow.querySelector('#login-password').value.trim();
+
+      if (!usernameInput || !passwordInput) {
+        showExtensionLoginForm('Vui lòng điền đầy đủ thông tin!');
+        return;
+      }
+
+      submitBtn.textContent = 'Đang kết nối...';
+      submitBtn.disabled = true;
+
+      try {
+        const serverUrl = await getServerUrl();
+        const response = await fetch(`${serverUrl}/api/auth/extension-login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: usernameInput,
+            password: passwordInput
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.token) {
+            await chrome.storage.local.set({ jwt_token: result.token });
+            chrome.runtime.sendMessage({ action: 'save_jwt_token', token: result.token });
+            toggleMascotMenu();
+          } else {
+            showExtensionLoginForm('Đăng nhập thất bại. Không nhận được token.');
+          }
+        } else {
+          const errData = await response.json();
+          showExtensionLoginForm(errData.detail || 'Tên đăng nhập hoặc mật khẩu không đúng!');
+        }
+      } catch (err) {
+        console.error(err);
+        showExtensionLoginForm('Lỗi kết nối máy chủ. Vui lòng thử lại!');
+      }
+    });
+  }
 
   // Quick Manual Add Word UI
   function showQuickAddForm() {
