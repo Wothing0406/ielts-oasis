@@ -548,9 +548,9 @@ async def translate_text(data: TranslateInput):
                 f"Hãy phân tích từ/cụm từ '{text}' và trả về kết quả định dạng JSON với các trường sau:\n"
                 f"- 'word': từ/cụm từ (tiếng Anh)\n"
                 f"- 'phonetic': phiên âm quốc tế IPA (nếu có, đặt trong /.../)\n"
-                f"- 'meaning': giải thích nghĩa tiếng Việt (ngắn gọn, chính xác)\n"
+                f"- 'meaning': nghĩa tiếng Việt cực kỳ ngắn gọn, súc tích (chỉ 1-7 từ, giống như mặt sau của thẻ flashcard, TUYỆT ĐỐI KHÔNG giải thích dài dòng hay viết thành câu hoàn chỉnh)\n"
                 f"- 'example': 1 câu ví dụ tiếng Anh ngắn gọn\n"
-                f"- 'memory_hook': mẹo nhớ từ (có thể dùng chiết tự, âm thanh tương tự, hoặc câu chuyện ngắn thú vị)\n"
+                f"- 'memory_hook': mẹo nhớ từ (ngắn gọn, có thể dùng chiết tự, âm thanh tương tự, hoặc câu chuyện ngắn thú vị)\n"
                 f"Chỉ trả về JSON hợp lệ, không kèm theo văn bản giải thích nào khác."
             )
             response = await ai_service.get_advice(prompt)
