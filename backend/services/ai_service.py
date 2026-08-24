@@ -93,16 +93,22 @@ Return ONLY the JSON array. Example:
 
     async def ocr_extract_vocabulary(self, image: Image.Image):
         prompt = """
-You are an IELTS vocabulary tutor. Carefully analyze the text and conversations in this image:
+You are an IELTS vocabulary tutor. Carefully analyze the text and conversations in this image (which can be in English, Vietnamese, or mixed English-Vietnamese):
 1. Perform OCR to read all the visible text/conversation.
-2. Identify 3 to 6 advanced, interesting, or academic English words/phrases that actually appear in the image text (DO NOT return words that are not in the text!).
-3. For each identified word, generate:
-   - word: The exact word or phrase from the text (in English)
-   - meaning: Very short and concise Vietnamese translation (1-5 words)
-   - phonetic: IPA pronunciation (e.g. "/tʃeər/")
-   - example: The exact sentence or context from the image text where the word was used
-   - topic: The main theme/category of the text (e.g. "Work", "Education", "Travel")
-   - memory_hook: A short Vietnamese mnemonic tip to remember this word
+2. Identify 3 to 6 key, interesting, or useful concepts, words, or phrases in the text (either English words/phrases, or Vietnamese words/phrases).
+3. For each identified item:
+   - If the item is in English:
+     - word: The English word/phrase (e.g. "occupied")
+     - meaning: The Vietnamese translation (concise, 1-5 words, e.g. "bận rộn")
+     - phonetic: IPA pronunciation (e.g. "/ˈɒk.jə.paɪd/")
+     - example: The exact sentence or context from the image text where it was used
+   - If the item is in Vietnamese (e.g. "giờ ngủ", "bận rộn", "đi chơi"):
+     - word: The corresponding natural English translation/equivalent word or phrase (e.g. "bedtime", "occupied", "hang out") so the user can learn how to say it in English!
+     - meaning: The original Vietnamese concept/phrase from the text (e.g. "giờ ngủ")
+     - phonetic: IPA pronunciation of the English word (e.g. "/ˈbed.taɪm/")
+     - example: An English example sentence using the English word, mentioning the original context (e.g. "It's bedtime now. (Tương ứng ngữ cảnh: giờ ngủ)")
+   - topic: The main theme/category of the text (e.g. "Daily Life", "Work", "Social")
+   - memory_hook: A short Vietnamese mnemonic tip to remember this English word
 
 Return ONLY a valid JSON array of objects with these exact fields:
 [{"word": "...", "meaning": "...", "phonetic": "...", "example": "...", "topic": "...", "memory_hook": "..."}]
