@@ -156,8 +156,17 @@ graph TD
 * **Pet Mascot (Gấu Matcha)**: Một trợ lý ảo luôn hiển thị ở góc màn hình khi bạn lướt web (Hỗ trợ kéo thả).
 * **Quản Lý Từ Vựng Nhanh**: Click vào Gấu Matcha để mở menu "Tủ từ vựng", "Học Ngữ pháp", "Thêm nhanh từ mới".
 * **Auto-fill AI**: Khi thêm từ mới từ extension, chỉ cần nhập từ tiếng Anh, AI sẽ tự động điền phiên âm (IPA), nghĩa, ví dụ tiếng Anh và **mẹo nhớ từ** theo đúng format của thẻ flashcard trên web.
-* **Vocabulary Session Quiz**: Làm bài Quiz từ vựng ngẫu nhiên ngay trên extension, không cần mở web. Progress bar, tính điểm trực quan, chặn truy cập khi học sai quá nhiều lần.
+* **Vocabulary Session Quiz**: Làm bài Quiz từ vựng ngẫu nhiên ngay trên extension, không cần mở web. Progress bar, tính điểm trực quan.
+* **Lưu & Tiếp Tục Làm Bài (Save & Resume)**: Tự động lưu trữ tiến trình làm bài Quiz (cả từ vựng lẫn ngữ pháp). Khi cậu tắt tab/đổi trang, Gấu sẽ nhắc cậu làm tiếp từ câu trước đó.
+* **Tạm Ẩn 30 Phút (Snooze & Tuck)**: Cho phép ẩn mascot sát rìa màn hình phải và giảm độ mờ đi để cậu làm việc khác. Tự động đánh thức lại sau 30 phút hoặc click để gọi dậy sớm hơn.
+* **Nhắc Học Đếm Ngược 25s**: Bong bóng gợi ý học từ hiển thị với hiệu ứng lơ lửng, hỗ trợ phát âm giọng nói 🔊, đếm ngược tự đóng sau 25 giây.
+* **Hình Phạt Khóa Màn Hình (Lockout Screen)**: Khi cậu làm Quiz dưới điểm trung bình (< 50%) hoặc ngó lơ nhắc học tự đóng 3 lần liên tiếp, Mascot dỗi sẽ gọi **5 con Gấu con nảy tưng bừng khắp toàn bộ viền màn hình** để khóa tương tác của cậu cho tới khi trả lời đúng 1 câu hỏi dỗ dành.
 * **OCR Snapshot**: Chọn công cụ OCR để chụp một vùng bất kỳ trên màn hình, AI sẽ trích xuất chữ và tự động thêm vào Tủ Từ.
+
+### 8. 🛡️ Lá Chắn Bảo Mật Toàn Cục (Cloudflare Turnstile Shield)
+* **Xác Minh Turnstile Toàn Cục**: Lớp bảo vệ bao bọc lấy toàn bộ các route Next.js của trang web (trước và sau đăng nhập).
+* **Chống Bot & DDoS**: Khi tải lại trang web hoặc truy cập lần đầu, màn hình xác minh bảo mật đen tuyền giống hệ thống Cloudflare thực tế sẽ hiển thị và tự động xác thực danh tính người dùng trước khi loading vào giao diện thật.
+* **Lưu Phiên Session**: Lưu trữ trạng thái xác thực trong `sessionStorage` để không ảnh hưởng đến trải nghiệm khi dùng website nội bộ.
 
 ---
 
@@ -201,6 +210,7 @@ ielts-oasis/
 ├── frontend/                 # Next.js Web Dashboard
 │   ├── app/                  # Các trang giao diện & màn hình game
 │   └── components/           # Các thành phần giao diện tương tác
+│       ├── SecurityShield.tsx # Lá chắn Turnstile bảo mật toàn cục (đăng nhập/dashboard)
 │       ├── MatchaSpeak.tsx   # Luyện phát âm nói, mô phỏng Part 2
 │       ├── DailyPlanner.tsx  # Lịch học tuần cá nhân hóa
 │       ├── VocabularyLab.tsx # Flashcard từ vựng ghi nhớ ngắt quãng
@@ -209,6 +219,14 @@ ielts-oasis/
 │       ├── MatchaBook.tsx    # Trình đọc bài viết dịch từ vựng thông minh
 │       ├── WritingSanctuary.tsx # Canvas viết luận tính giờ & sửa lỗi ngữ pháp
 │       └── CommunityFeed.tsx # Bảng tin cộng đồng chia sẻ học tập
+├── matcha-oasis-extension/   # Tiện ích mở rộng Chrome (Mascot nhắc học & Quét từ)
+│   ├── background/
+│   │   └── service_worker.js # Xử lý nhắc học 30p (Active tabs) & OAuth token sync
+│   ├── content_scripts/
+│   │   ├── pet_overlay.js    # Tạo Gấu Mascot, đếm ngược 25s, ngủ 30p, nảy 5 mèo con phạt
+│   │   └── pet_overlay.css   # Style cơ bản cho Mascot Shadow DOM
+│   ├── popup/                # Popup điều khiển khi click icon Extension
+│   └── sidepanel/            # Thanh công cụ bên (Matcha Assistant chat & quét ảnh OCR)
 └── docker-compose.yml        # Tệp cấu hình chạy container Docker
 ```
 

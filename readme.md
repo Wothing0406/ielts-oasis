@@ -160,6 +160,22 @@ graph TD
 * **Google Calendar Subscription (`.ics`)**: Exports a dynamic subscription feed. Copy the calendar sync link and subscribe to it directly in Google Calendar, Apple Calendar, or Outlook.
 * **Dynamic Generation**: Generating your weekly study schedule, vocabulary targets, and practice prompts is completed in a **single, optimized Gemini API call** to minimize cost and latency.
 
+### 8. 🧩 Matcha Chrome Extension
+* **Pet Mascot (Matcha Bear)**: A virtual assistant always visible in the corner of your screen while browsing (supports drag-and-drop).
+* **Quick Vocabulary Manager**: Click the Matcha Bear to open the quick menu for "Vocabulary Library", "Grammar Quiz", and "Quick Add Word".
+* **AI Auto-fill**: When adding new words via the extension, simply enter the English word. AI will automatically fill in the phonetic transcription (IPA), meaning, English example, and **memory hook**, perfectly matching the flashcard format on the web.
+* **Vocabulary Session Quiz**: Take random vocabulary quizzes directly on the extension without opening the web app. Features a progress bar and visual scoring.
+* **Save & Resume Quiz**: Automatically saves quiz progress (vocabulary & grammar). If you close the tab or change the page, the mascot will prompt you to continue your session.
+* **30-Minute Snooze & Tuck**: Temporarily hide the mascot to the right edge of the screen with a lowered opacity (`0.35`). Automatically wakes up after 30 minutes, or can be woken up manually.
+* **25s Floating Flashcard Reminder**: Display dynamic learning cards with a floating animation, built-in TTS pronunciation 🔊, and a 25-second auto-close countdown.
+* **5-Cat Bouncing Lockout Blocker**: If a quiz ends with an under-average score (< 50%) or if vocabulary reminders are ignored 3 times in a row, the mascot triggers a strict full-screen lockout with **5 bouncing cats** running all over the screen. You must solve a recovery question to unlock.
+* **OCR Snapshot**: Select the OCR tool to capture any area on the screen; AI will extract the text and automatically add it to your Vocabulary Library.
+
+### 9. 🛡️ Global Cloudflare Turnstile Verification Shield
+* **Global Turnstile Protection**: Enforces a Cloudflare Turnstile verification challenge wrapping the Next.js root layout.
+* **Anti-Bot & DDoS**: Prompts Turnstile security checks on initial visits or F5 page refreshes, verifying users before showing the login screen or loading the main dashboard.
+* **Session Verification Storage**: Persists verification state inside `sessionStorage` to ensure seamless intra-SPA page transitions.
+
 ---
 
 ## 🤖 Proactive Discord Bot Features
@@ -202,6 +218,7 @@ ielts-oasis/
 ├── frontend/                 # Next.js Web Dashboard
 │   ├── app/                  # Pages & speaking/reflex game routes
 │   └── components/           # Interactive UI elements
+│       ├── SecurityShield.tsx # Global Cloudflare Turnstile Verification Shield
 │       ├── MatchaSpeak.tsx   # Shadowing, Speaking Sandbox & AI Cuecard Generator
 │       ├── DailyPlanner.tsx  # Matcha Daily Plan view
 │       ├── VocabularyLab.tsx # Smart interactive flashcards
@@ -210,6 +227,14 @@ ielts-oasis/
 │       ├── MatchaBook.tsx    # Passage reader with Click-to-Translate
 │       ├── WritingSanctuary.tsx # Timed essay canvas & AI rephraser
 │       └── CommunityFeed.tsx # Community feed with 3-way study redirection
+├── matcha-oasis-extension/   # Chrome Extension (Active reminders & OCR helper)
+│   ├── background/
+│   │   └── service_worker.js # 30m Active tab reminders & OAuth token sync
+│   ├── content_scripts/
+│   │   ├── pet_overlay.js    # Mascot rendering, 25s flashcard, 30m snooze, 5 cat bounce lockout
+│   │   └── pet_overlay.css   # Injected Mascot Shadow DOM styles
+│   ├── popup/                # Extension action popup layout
+│   └── sidepanel/            # Sidebar OCR / Conversational Matcha Assistant
 └── docker-compose.yml        # Orchestrator configurations
 ```
 
