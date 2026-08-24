@@ -89,6 +89,36 @@
       flex-direction: column;
       gap: 8px;
       pointer-events: auto;
+      animation: floatBubble 3s ease-in-out infinite;
+    }
+
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      right: 30px;
+      border-width: 12px 10px 0;
+      border-style: solid;
+      border-color: #A7D08C transparent;
+      display: block;
+      width: 0;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      right: 31px;
+      border-width: 10px 9px 0;
+      border-style: solid;
+      border-color: #FFFDF5 transparent;
+      display: block;
+      width: 0;
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
     }
 
     .bubble-header {
