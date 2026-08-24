@@ -43,12 +43,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     const data = await chrome.storage.local.get(['reminders_enabled']);
     if (data.reminders_enabled === false) return;
 
-    // Send ONLY to active tab (not all tabs)
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab && activeTab.id && activeTab.url && !activeTab.url.includes("ieltsoasis.site") && !activeTab.url.startsWith("chrome://")) {
-      chrome.tabs.sendMessage(activeTab.id, {
-        action: "show_reminder"
-      }).catch(() => {}); // ignore if tab has no content script
+    // Send to active tabs in all windows (helps trigger even if Chrome is backgrounded or has multiple windows)
+    const activeTabs = await chrome.tabs.query({ active: true });
+    for (const tab of activeTabs) {
+      if (tab.id && tab.url && !tab.url.includes("ieltsoasis.site") && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://")) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "show_reminder"
+        }).catch(() => {}); // ignore if tab has no content script
+      }
     }
   }
 });

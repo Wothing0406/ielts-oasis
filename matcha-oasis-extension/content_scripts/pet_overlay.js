@@ -14,6 +14,24 @@
     return data.server_url || 'https://ieltsoasis.site';
   }
 
+  // Helper to save active quiz state
+  async function saveActiveQuizState(shuffledList, currentIdx, score, mode) {
+    await chrome.storage.local.set({
+      active_quiz_state: {
+        shuffledList,
+        currentIdx,
+        score,
+        mode,
+        timestamp: Date.now()
+      }
+    });
+  }
+
+  // Helper to clear active quiz state
+  async function clearActiveQuizState() {
+    await chrome.storage.local.set({ active_quiz_state: null });
+  }
+
   // Zero-touch token sync if on main website
   if (isMainSite) {
     const token = localStorage.getItem("oasis_token");
@@ -302,41 +320,179 @@
   // Angry Run Animation State
   let isAngryRunning = false;
   let angryAnimFrameId = null;
-  let angrySpeedX = 6;
-  let angrySpeedY = 6;
-  let currentAngryX = window.innerWidth - 100;
-  let currentAngryY = window.innerHeight - 100;
+  let runningCats = [];
+  let consecutiveIgnored = 0;
+  let snoozeTimeout = null;
 
-  function startAngryRun() {
+  function applySnoozeState(snoozedUntil) {
+    closeBubble();
+    wrapper.style.transition = 'all 0.5s ease';
+    wrapper.style.left = 'auto';
+    wrapper.style.top = 'auto';
+    wrapper.style.bottom = '20px';
+    wrapper.style.right = '-60px';
+    wrapper.style.opacity = '0.35';
+    wrapper.style.pointerEvents = 'auto'; // allow hover/click
+    img.style.cursor = 'pointer';
+
+    wrapper.onmouseenter = () => {
+      wrapper.style.right = '-40px';
+      wrapper.style.opacity = '0.7';
+    };
+    wrapper.onmouseleave = () => {
+      wrapper.style.right = '-60px';
+      wrapper.style.opacity = '0.35';
+    };
+
+    if (snoozeTimeout) clearTimeout(snoozeTimeout);
+    const timeLeft = snoozedUntil - Date.now();
+    if (timeLeft > 0) {
+      snoozeTimeout = setTimeout(() => {
+        restoreMascotFromSnooze();
+      }, timeLeft);
+    }
+  }
+
+  async function restoreMascotFromSnooze() {
+    if (snoozeTimeout) clearTimeout(snoozeTimeout);
+    wrapper.onmouseenter = null;
+    wrapper.onmouseleave = null;
+    wrapper.style.transition = 'all 0.5s ease';
+    wrapper.style.opacity = '1';
+    wrapper.style.right = '20px';
+    wrapper.style.bottom = '20px';
+    wrapper.style.left = 'auto';
+    wrapper.style.top = 'auto';
+    img.style.cursor = 'grab';
+    await chrome.storage.local.set({ snoozed_until: null });
+  }
+
+  function createCatClone() {
+    const clone = document.createElement('div');
+    clone.className = 'matcha-cat-clone';
+    clone.style.cssText = `
+      position: fixed;
+      width: 80px;
+      height: 80px;
+      z-index: 2147483647;
+      pointer-events: auto;
+    `;
+    const cloneImg = document.createElement('img');
+    cloneImg.className = 'pet-sprite';
+    cloneImg.alt = "Mát Cha Pet Clone";
+    cloneImg.src = img.src;
+
+    cloneImg.addEventListener('click', () => {
+      if (isAngryRunning) {
+        flashLockoutBox();
+      }
+    });
+
+    clone.appendChild(cloneImg);
+    shadow.appendChild(clone);
+    return { element: clone, img: cloneImg };
+  }
+
+  function startAngryRun(count = 4) {
     if (isAngryRunning) return;
     isAngryRunning = true;
     startAnimation('tantrum');
-    
-    // Close any bubbles
     closeBubble();
-    
+
+    shadow.querySelectorAll('.matcha-cat-clone').forEach(c => c.remove());
+    runningCats = [];
+
+    // Original wrapper
+    runningCats.push({
+      element: wrapper,
+      img: img,
+      x: window.innerWidth - 100,
+      y: window.innerHeight - 100,
+      vx: (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 4),
+      vy: (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 4),
+      isOriginal: true
+    });
+
+    // Clones
+    for (let i = 0; i < count - 1; i++) {
+      const { element, img: cloneImg } = createCatClone();
+      runningCats.push({
+        element: element,
+        img: cloneImg,
+        x: Math.random() * (window.innerWidth - 100),
+        y: Math.random() * (window.innerHeight - 100),
+        vx: (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 4),
+        vy: (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random() * 4),
+        isOriginal: false
+      });
+    }
+
+    let cloneFrameIdx = 0;
+    const animateClonesInterval = setInterval(() => {
+      if (!isAngryRunning) {
+        clearInterval(animateClonesInterval);
+        return;
+      }
+      const frames = animationFrames['tantrum'];
+      if (frames && frames.length > 0) {
+        runningCats.forEach(cat => {
+          if (!cat.isOriginal) {
+            cat.img.src = frames[cloneFrameIdx];
+          }
+        });
+        cloneFrameIdx = (cloneFrameIdx + 1) % frames.length;
+      }
+    }, 300);
+
     function animate() {
       if (!isAngryRunning) return;
-      currentAngryX += angrySpeedX;
-      currentAngryY += angrySpeedY;
 
-      if (currentAngryX <= 0 || currentAngryX + 80 >= window.innerWidth) angrySpeedX *= -1;
-      if (currentAngryY <= 0 || currentAngryY + 80 >= window.innerHeight) angrySpeedY *= -1;
+      runningCats.forEach(cat => {
+        cat.x += cat.vx;
+        cat.y += cat.vy;
 
-      wrapper.style.left = `${currentAngryX}px`;
-      wrapper.style.top = `${currentAngryY}px`;
-      wrapper.style.right = 'auto';
-      wrapper.style.bottom = 'auto';
+        const maxX = window.innerWidth - 80;
+        const maxY = window.innerHeight - 80;
+
+        if (cat.x <= 0) {
+          cat.x = 0;
+          cat.vx *= -1;
+        } else if (cat.x >= maxX) {
+          cat.x = maxX;
+          cat.vx *= -1;
+        }
+
+        if (cat.y <= 0) {
+          cat.y = 0;
+          cat.vy *= -1;
+        } else if (cat.y >= maxY) {
+          cat.y = maxY;
+          cat.vy *= -1;
+        }
+
+        cat.element.style.left = `${cat.x}px`;
+        cat.element.style.top = `${cat.y}px`;
+        cat.element.style.right = 'auto';
+        cat.element.style.bottom = 'auto';
+      });
 
       angryAnimFrameId = requestAnimationFrame(animate);
     }
     animate();
+    chrome.storage.local.set({ is_punishment_mode: true });
   }
 
   function stopAngryRun() {
     isAngryRunning = false;
     if (angryAnimFrameId) cancelAnimationFrame(angryAnimFrameId);
+
+    shadow.querySelectorAll('.matcha-cat-clone').forEach(c => c.remove());
+    runningCats = [];
+
     startAnimation('idle');
+    img.style.width = '80px';
+    img.style.height = '80px';
+
     wrapper.style.left = 'auto';
     wrapper.style.top = 'auto';
     wrapper.style.right = '20px';
@@ -344,9 +500,23 @@
     chrome.storage.local.set({ is_punishment_mode: false });
   }
 
-  chrome.storage.local.get(['is_punishment_mode'], (data) => {
+  function flashLockoutBox() {
+    const box = shadow.querySelector('.lockout-overlay > div');
+    if (box) {
+      box.style.transform = 'scale(1.05)';
+      box.style.transition = 'transform 0.1s ease';
+      setTimeout(() => {
+        box.style.transform = 'scale(1)';
+      }, 100);
+    }
+  }
+
+  // Check snooze & punishment states on load
+  chrome.storage.local.get(['is_punishment_mode', 'snoozed_until'], (data) => {
     if (data.is_punishment_mode) {
-      startAngryRun();
+      triggerTantrumLockout();
+    } else if (data.snoozed_until && Date.now() < data.snoozed_until) {
+      applySnoozeState(data.snoozed_until);
     }
   });
 
@@ -401,11 +571,32 @@
   });
 
   // Toggle Mascot menu on Click
-  img.addEventListener('click', () => {
+  img.addEventListener('click', async () => {
     if (!dragStarted) {
+      const data = await chrome.storage.local.get(['snoozed_until']);
+      if (data.snoozed_until && Date.now() < data.snoozed_until) {
+        // Show wake up confirmation
+        const minsLeft = Math.ceil((data.snoozed_until - Date.now()) / 60000);
+        openBubble(`
+          <div class="bubble-header">
+            <span>Đánh thức Mát Cha? 🍵</span>
+            <span class="close-btn" id="close-bubble">×</span>
+          </div>
+          <div style="font-size:0.8rem; text-align:center; padding:10px;">
+            Tớ đang ngủ tạm (còn ${minsLeft} phút nữa). Cậu muốn đánh thức tớ dậy học cùng ngay không?
+          </div>
+          <button class="btn btn-yes" id="btn-wake-up" style="width:100%; margin-top:6px;">Đánh thức dậy ☀️</button>
+        `);
+        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+        shadow.querySelector('#btn-wake-up').addEventListener('click', () => {
+          restoreMascotFromSnooze();
+          closeBubble();
+        });
+        return;
+      }
+
       if (isAngryRunning) {
-        // Force the user to take the quiz to escape punishment
-        showVocabReminder();
+        flashLockoutBox();
       } else {
         toggleMascotMenu();
       }
@@ -467,6 +658,7 @@
         <button class="btn btn-yes" id="btn-grammar-quiz" style="width: 100%; padding: 6px; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ Pháp AI</button>
         <button class="btn btn-yes" id="btn-vocab-quiz" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng (Quiz)</button>
         <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 6px; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
+        <button class="btn btn-no" id="btn-snooze-pet" style="width: 100%; padding: 6px; background: #efebe9; border: 1.5px solid #d7ccc8; margin-top: 4px;">💤 Tạm ẩn Mascot 30 phút</button>
       </div>
     `;
     openBubble(menuHtml);
@@ -499,6 +691,12 @@
     });
 
     shadow.querySelector('#btn-view-schedule').addEventListener('click', showStudyScheduleUI);
+
+    shadow.querySelector('#btn-snooze-pet').addEventListener('click', async () => {
+      const snoozedUntil = Date.now() + 30 * 60 * 1000;
+      await chrome.storage.local.set({ snoozed_until: snoozedUntil });
+      applySnoozeState(snoozedUntil);
+    });
   }
 
   function showExtensionLoginForm(errorMessage = '') {
@@ -817,6 +1015,31 @@
     `);
     shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
 
+    const data = await chrome.storage.local.get(['active_quiz_state']);
+    let savedState = data.active_quiz_state;
+    if (savedState && savedState.mode === 'grammar' && (Date.now() - savedState.timestamp < 2 * 60 * 60 * 1000)) {
+      openBubble(`
+        <div class="bubble-header">
+          <span>Tiếp tục học? 🍵</span>
+          <span class="close-btn" id="close-bubble">×</span>
+        </div>
+        <div style="font-size:0.82rem; text-align:center; padding:10px;">
+          Tớ thấy cậu đang làm dở bài Quiz Ngữ Pháp trước đó (đến câu ${savedState.currentIdx + 1}). Cậu muốn làm tiếp hay chơi lại từ đầu?
+        </div>
+        <button class="btn btn-yes" id="btn-resume-quiz" style="width:100%; margin-top:6px;">Tiếp tục làm ➔</button>
+        <button class="btn btn-no" id="btn-restart-quiz" style="width:100%; margin-top:4px;">Chơi lại từ đầu 🔄</button>
+      `);
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+      shadow.querySelector('#btn-resume-quiz').addEventListener('click', () => {
+        startGrammarQuizSession(savedState.shuffledList, savedState.currentIdx, savedState.score);
+      });
+      shadow.querySelector('#btn-restart-quiz').addEventListener('click', () => {
+        clearActiveQuizState();
+        showGrammarQuizUI();
+      });
+      return;
+    }
+
     try {
       const serverUrl = await getServerUrl();
       const resp = await fetch(`${serverUrl}/api/quiz/grammar`);
@@ -830,82 +1053,115 @@
         return;
       }
 
-      let currentQ = 0;
-      let score = 0;
-
-      function renderQuestion() {
-        if (currentQ >= questions.length) {
-          // Show result
-          openBubble(`
-            <div class="bubble-header">
-              <span>Kết quả Quiz 🎉</span>
-              <span class="close-btn" id="close-bubble">×</span>
-            </div>
-            <div style="text-align:center; padding:12px; font-size:0.9rem;">
-              <div style="font-size:2rem; margin-bottom:8px;">${score >= questions.length * 0.7 ? '🎉' : score >= questions.length * 0.5 ? '😊' : '😢'}</div>
-              <div style="font-weight:bold; color:#3b7a13; font-size:1.1rem;">${score}/${questions.length} câu đúng!</div>
-              <div style="color:#8D6E63; margin-top:4px; font-size:0.78rem;">${score >= questions.length * 0.7 ? 'Xuất sắc! Cậu học giỏi lắm! 🍵' : score >= questions.length * 0.5 ? 'Khá tốt, tiếp tục cố gắng nhé!' : 'Ôn luyện thêm một chút nữa nhé!'}</div>
-            </div>
-            <button class="btn btn-yes" id="btn-retry-quiz" style="width:100%; margin-top:6px;">Chơi lại 🔄</button>
-            <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
-          `);
-          shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
-          shadow.querySelector('#btn-retry-quiz').addEventListener('click', () => { currentQ = 0; score = 0; renderQuestion(); });
-          shadow.querySelector('#btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
-          if (score >= questions.length * 0.7) startAnimation('celebrating');
-          else startAnimation('crying');
-          return;
-        }
-
-        const q = questions[currentQ];
-        const choices = q.choices || [];
-        const quizHtml = `
-          <div class="bubble-header">
-            <span>Quiz ${currentQ + 1}/${questions.length} 📝</span>
-            <span class="close-btn" id="close-bubble">×</span>
-          </div>
-          <div style="font-size:0.82rem; color:#5D4037; margin-bottom:6px; line-height:1.4;">${q.question}</div>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            ${choices.map((c, i) => `
-              <button class="btn-choice" data-ans="${c}" data-correct="${c === q.answer}">
-                ${String.fromCharCode(65 + i)}. ${c}
-              </button>
-            `).join('')}
-          </div>
-          <div id="qfeedback" class="quiz-feedback"></div>
-        `;
-        openBubble(quizHtml);
-        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
-
-        shadow.querySelectorAll('.btn-choice').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const isCorrect = btn.getAttribute('data-correct') === 'true';
-            const fb = shadow.querySelector('#qfeedback');
-            shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
-            if (isCorrect) {
-              score++;
-              btn.style.background = '#E8F5E9';
-              btn.style.borderColor = '#81C784';
-              fb.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
-              startAnimation('celebrating');
-            } else {
-              btn.style.background = '#FFEBEE';
-              btn.style.borderColor = '#E57373';
-              fb.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${q.answer}</b></span>`;
-              startAnimation('crying');
-            }
-            setTimeout(() => { currentQ++; renderQuestion(); }, 2000);
-          });
-        });
-      }
-
-      renderQuestion();
-
+      startGrammarQuizSession(questions);
     } catch (err) {
       console.error(err);
-      // Fallback: vocab quiz using local words
-      showVocabReminder();
+      openBubble(`<div class="bubble-header"><span>Quiz 📝</span><span class="close-btn" id="close-bubble">×</span></div><div style="text-align:center;padding:10px;font-size:0.82rem;color:#C62828;">Lỗi kết nối máy chủ. Thử lại sau! 🍵</div>`);
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
     }
+  }
+
+  function startGrammarQuizSession(questions, startIdx = 0, initialScore = 0) {
+    let currentQ = startIdx;
+    let score = initialScore;
+
+    function renderQuestion() {
+      if (currentQ >= questions.length) {
+        clearActiveQuizState();
+        // Show result
+        openBubble(`
+          <div class="bubble-header">
+            <span>Kết quả Quiz 🎉</span>
+            <span class="close-btn" id="close-bubble">×</span>
+          </div>
+          <div style="text-align:center; padding:12px; font-size:0.9rem;">
+            <div style="font-size:2rem; margin-bottom:8px;">${score >= questions.length * 0.7 ? '🎉' : score >= questions.length * 0.5 ? '😊' : '😢'}</div>
+            <div style="font-weight:bold; color:#3b7a13; font-size:1.1rem;">${score}/${questions.length} câu đúng!</div>
+            <div style="color:#8D6E63; margin-top:4px; font-size:0.78rem;">${score >= questions.length * 0.7 ? 'Xuất sắc! Cậu học giỏi lắm! 🍵' : score >= questions.length * 0.5 ? 'Khá tốt, tiếp tục cố gắng nhé!' : 'Ôn luyện thêm một chút nữa nhé!'}</div>
+          </div>
+          <button class="btn btn-yes" id="btn-retry-quiz" style="width:100%; margin-top:6px;">Chơi lại 🔄</button>
+          <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
+        `);
+        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+        shadow.querySelector('#btn-retry-quiz').addEventListener('click', () => { startGrammarQuizSession(questions); });
+        shadow.querySelector('#btn-back-menu-quiz').addEventListener('click', toggleMascotMenu);
+        if (score >= questions.length * 0.7) {
+          startAnimation('celebrating');
+          stopAngryRun();
+        } else if (score < questions.length * 0.5) {
+          setTimeout(() => {
+            triggerTantrumLockout();
+          }, 1500);
+        } else {
+          startAnimation('crying');
+          stopAngryRun();
+        }
+        return;
+      }
+
+      // Save state
+      saveActiveQuizState(questions, currentQ, score, 'grammar');
+
+      const q = questions[currentQ];
+      const choices = q.choices || [];
+      const quizHtml = `
+        <div class="bubble-header">
+          <span>Quiz ${currentQ + 1}/${questions.length} 📝</span>
+          <span class="close-btn" id="close-bubble">×</span>
+        </div>
+        <div style="font-size:0.82rem; color:#5D4037; margin-bottom:6px; line-height:1.4;">${q.question}</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          ${choices.map((c, i) => `
+            <button class="btn-choice" data-ans="${c}" data-correct="${c === q.answer}">
+              ${String.fromCharCode(65 + i)}. ${c}
+            </button>
+          `).join('')}
+        </div>
+        <div id="qfeedback" class="quiz-feedback"></div>
+      `;
+      openBubble(quizHtml);
+
+      shadow.querySelector('#close-bubble').addEventListener('click', () => {
+        consecutiveIgnored++;
+        if (consecutiveIgnored >= 3) {
+          triggerTantrumLockout();
+        } else {
+          closeBubble();
+        }
+      });
+
+      shadow.querySelectorAll('.btn-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const isCorrect = btn.getAttribute('data-correct') === 'true';
+          const fb = shadow.querySelector('#qfeedback');
+          shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
+          if (isCorrect) {
+            score++;
+            consecutiveIgnored = 0;
+            btn.style.background = '#E8F5E9';
+            btn.style.borderColor = '#81C784';
+            fb.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
+            startAnimation('celebrating');
+          } else {
+            consecutiveIgnored++;
+            btn.style.background = '#FFEBEE';
+            btn.style.borderColor = '#E57373';
+            fb.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${q.answer}</b></span>`;
+            startAnimation('crying');
+          }
+          setTimeout(() => {
+            if (consecutiveIgnored >= 3) {
+              triggerTantrumLockout();
+            } else {
+              currentQ++;
+              renderQuestion();
+            }
+          }, 2000);
+        });
+      });
+    }
+
+    renderQuestion();
   }
 
   // Show Synced Study Plan details
@@ -944,7 +1200,7 @@
 
   // Full Vocabulary Quiz Session — covers ALL words, no server needed
   async function showVocabReminder() {
-    const data = await chrome.storage.local.get(['user_vocab']);
+    const data = await chrome.storage.local.get(['user_vocab', 'active_quiz_state']);
     const list = data.user_vocab || [];
 
     const defaultList = [
@@ -957,19 +1213,50 @@
 
     const activeList = list.length >= 2 ? list : defaultList;
 
-    // Shuffle all words — Fisher-Yates
-    const shuffled = [...activeList].sort(() => Math.random() - 0.5);
+    let savedState = data.active_quiz_state;
+    if (savedState && savedState.mode === 'vocab' && (Date.now() - savedState.timestamp < 2 * 60 * 60 * 1000)) {
+      openBubble(`
+        <div class="bubble-header">
+          <span>Tiếp tục học? 🍵</span>
+          <span class="close-btn" id="close-bubble">×</span>
+        </div>
+        <div style="font-size:0.82rem; text-align:center; padding:10px;">
+          Tớ thấy cậu đang làm dở bài Quiz Từ Vựng trước đó (đến câu ${savedState.currentIdx + 1}). Cậu muốn làm tiếp hay học lại từ đầu?
+        </div>
+        <button class="btn btn-yes" id="btn-resume-quiz" style="width:100%; margin-top:6px;">Tiếp tục làm ➔</button>
+        <button class="btn btn-no" id="btn-restart-quiz" style="width:100%; margin-top:4px;">Học lại từ đầu 🔄</button>
+      `);
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+      shadow.querySelector('#btn-resume-quiz').addEventListener('click', () => {
+        startVocabQuizSession(activeList, savedState.shuffledList, savedState.currentIdx, savedState.score);
+      });
+      shadow.querySelector('#btn-restart-quiz').addEventListener('click', () => {
+        clearActiveQuizState();
+        startVocabQuizSession(activeList);
+      });
+      return;
+    }
+
+    startVocabQuizSession(activeList);
+  }
+
+  function startVocabQuizSession(activeList, shuffledList = null, startIdx = 0, initialScore = 0) {
+    const shuffled = shuffledList || [...activeList].sort(() => Math.random() - 0.5);
     const total = shuffled.length;
 
-    let currentIdx = 0;
-    let score = 0;
+    let currentIdx = startIdx;
+    let score = initialScore;
     let sessionConsecutiveWrong = 0;
 
     function renderQuestion() {
       if (currentIdx >= total) {
+        clearActiveQuizState();
         showQuizResult();
         return;
       }
+
+      // Save state
+      saveActiveQuizState(shuffled, currentIdx, score, 'vocab');
 
       const targetWord = shuffled[currentIdx];
       const progress = `${currentIdx + 1}/${total}`;
@@ -1037,12 +1324,25 @@
       `;
 
       openBubble(fullHtml);
-      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+
+      shadow.querySelector('#close-bubble').addEventListener('click', () => {
+        consecutiveIgnored++;
+        if (consecutiveIgnored >= 3) {
+          triggerTantrumLockout();
+        } else {
+          closeBubble();
+        }
+      });
 
       // Skip button — go to next without penalty
       shadow.querySelector('#btn-skip-word').addEventListener('click', () => {
-        currentIdx++;
-        renderQuestion();
+        consecutiveIgnored++;
+        if (consecutiveIgnored >= 3) {
+          triggerTantrumLockout();
+        } else {
+          currentIdx++;
+          renderQuestion();
+        }
       });
 
       if (quizMode === 'abcd') {
@@ -1060,18 +1360,15 @@
               nextBtn.style.cssText = 'width:100%; margin-top:8px; padding:10px; font-size:0.85rem; font-weight:bold;';
               nextBtn.textContent = 'Câu tiếp theo ➔';
               nextBtn.addEventListener('click', () => {
-                if (consecutiveWrong >= 3) {
-                  triggerTantrumLockout();
-                } else {
-                  currentIdx++;
-                  renderQuestion();
-                }
+                currentIdx++;
+                renderQuestion();
               });
               shadow.querySelector('#btn-skip-word').parentElement.appendChild(nextBtn);
             }
 
             if (isCorrect) {
               score++;
+              consecutiveIgnored = 0;
               sessionConsecutiveWrong = 0;
               consecutiveWrong = 0;
               btn.style.borderColor = '#81C784';
@@ -1079,6 +1376,7 @@
               feedback.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
               startAnimation('celebrating');
             } else {
+              consecutiveIgnored++;
               sessionConsecutiveWrong++;
               consecutiveWrong++;
               btn.style.borderColor = '#E57373';
@@ -1093,7 +1391,13 @@
               feedback.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: "${targetWord.meaning}"</span>`;
               startAnimation('crying');
             }
-            showNextBtn();
+            setTimeout(() => {
+              if (consecutiveIgnored >= 3) {
+                triggerTantrumLockout();
+              } else {
+                showNextBtn();
+              }
+            }, 1000);
           });
         });
 
@@ -1110,7 +1414,6 @@
           submitBtn.setAttribute('disabled', 'true');
           shadow.querySelector('#btn-skip-word').setAttribute('disabled', 'true');
 
-          // Accept partial match if >80% similar (allow minor typos)
           const isCorrect = userAnswer === correctAnswer || userAnswer === correctAnswer.split(' ')[0].toLowerCase();
 
           function showNextBtn() {
@@ -1120,29 +1423,33 @@
             nextBtn.style.cssText = 'width:100%; margin-top:8px; padding:10px; font-size:0.85rem; font-weight:bold;';
             nextBtn.textContent = 'Câu tiếp theo ➔';
             nextBtn.addEventListener('click', () => {
-              if (consecutiveWrong >= 3) {
-                triggerTantrumLockout();
-              } else {
-                currentIdx++;
-                renderQuestion();
-              }
+              currentIdx++;
+              renderQuestion();
             });
             shadow.querySelector('#btn-skip-word').parentElement.appendChild(nextBtn);
           }
 
           if (isCorrect) {
             score++;
+            consecutiveIgnored = 0;
             sessionConsecutiveWrong = 0;
             consecutiveWrong = 0;
             feedback.innerHTML = '<span style="color:#2E7D32;">✓ Xuất sắc! Đúng rồi! 🍵</span>';
             startAnimation('celebrating');
           } else {
+            consecutiveIgnored++;
             sessionConsecutiveWrong++;
             consecutiveWrong++;
             feedback.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${targetWord.word}</b></span>`;
             startAnimation('crying');
           }
-          showNextBtn();
+          setTimeout(() => {
+            if (consecutiveIgnored >= 3) {
+              triggerTantrumLockout();
+            } else {
+              showNextBtn();
+            }
+          }, 1000);
         };
 
         submitBtn.addEventListener('click', checkAnswer);
@@ -1184,27 +1491,28 @@
 
       if (pct >= 80) {
         startAnimation('celebrating');
-        stopAngryRun(); // Ensure it stops if it was previously set
+        stopAngryRun();
       } else if (pct < 50) {
-        chrome.storage.local.set({ is_punishment_mode: true });
-        startAngryRun();
+        setTimeout(() => {
+          triggerTantrumLockout();
+        }, 1500);
       } else {
         startAnimation('idle');
         stopAngryRun();
       }
     }
 
-    // Start the session
     renderQuestion();
   }
 
 
-  // Strict Lockout Blocker when user fails 3 consecutive times
+  // Strict Lockout Blocker when user fails 3 consecutive times or neglects mascot
   function triggerTantrumLockout() {
     closeBubble();
-    startAnimation('tantrum');
-    img.style.width = '120px';
-    img.style.height = '120px';
+    restoreMascotFromSnooze(); // Cancel snooze if tucked
+
+    // Spawn 5 bouncing cats!
+    startAngryRun(5);
 
     const existing = shadow.querySelector('.lockout-overlay');
     if (existing) existing.remove();
@@ -1226,10 +1534,10 @@
       backdrop-filter: blur(5px);
     `;
     overlay.innerHTML = `
-      <div style="background:#FFFDF5; border:3px solid #E57373; padding:28px; border-radius:24px; width:360px; box-sizing:border-box; text-align:center; box-shadow:0 15px 50px rgba(93,64,55,0.35); font-family: 'Segoe UI', system-ui, sans-serif;">
+      <div style="background:#FFFDF5; border:3px solid #E57373; padding:28px; border-radius:24px; width:360px; box-sizing:border-box; text-align:center; box-shadow:0 15px 50px rgba(93,64,55,0.35); font-family: 'Segoe UI', system-ui, sans-serif; z-index: 2147483647;">
         <h2 style="color:#C62828; margin:0 0 10px 0; font-size:1.3rem;">MÁT CHA ĐANG DỖI! 😭</h2>
         <p style="font-size:0.85rem; color:#5D4037; line-height:1.4; margin:0 0 16px 0; font-weight:bold;">
-          Cậu trả lời sai liên tiếp 3 từ rồi đó! Tớ khóa màn hình không cho cậu lướt web nữa. Hãy trả lời đúng câu dưới đây để dỗ tớ đi!
+          Cậu học tập không nghiêm túc hoặc ngó lơ tớ rồi! Tớ khóa màn hình không cho cậu lướt web nữa. Hãy trả lời đúng câu dưới đây để dỗ tớ đi!
         </p>
         <div id="lockout-quiz-box" style="text-align:left; display:flex; flex-direction:column; gap:8px;"></div>
         <div id="lockout-feedback" style="margin-top:12px; font-weight:bold; font-size:0.85rem; text-align:center; min-height:20px;"></div>
@@ -1280,11 +1588,10 @@
           feedback.innerHTML = '<span style="color:#2E7D32;">Chính xác! Ngoan lắm, tớ cho qua nha! 🍵</span>';
           startAnimation('celebrating');
           consecutiveWrong = 0;
+          consecutiveIgnored = 0;
           setTimeout(() => {
             overlay.remove();
-            img.style.width = '80px';
-            img.style.height = '80px';
-            startAnimation('idle');
+            stopAngryRun();
           }, 2500);
         } else {
           btn.style.borderColor = '#E57373';
@@ -1312,20 +1619,7 @@
   }, 7200000); // 2 hours neglect
 
   function triggerTantrum() {
-    // Switch animation to tantrum state
-    startAnimation('tantrum');
-    img.style.width = '120px';
-    img.style.height = '120px';
-
-    // Lockout Overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'lockout-overlay';
-    overlay.innerHTML = `
-      <h1 style="margin: 10px 0;">CẬU BỎ RƠI TỚ LÂU QUÁ! 😭</h1>
-      <p style="font-size:1.2rem; max-width: 500px;">Tớ đang khóc nhè đây này. Hãy quay lại học trên ieltsoasis.site ngay để dỗ tớ đi nhé! 🍵</p>
-      <a href="https://ieltsoasis.site" style="margin-top:20px; padding:12px 24px; background:#5D4037; color:#FFFDF5; text-decoration:none; border-radius:30px; font-weight:bold; font-size:1.1rem;">Đi Học Ngay Thôi!</a>
-    `;
-    shadow.appendChild(overlay);
+    triggerTantrumLockout();
   }
 
   async function handleOCRWordDetected(wordData) {
