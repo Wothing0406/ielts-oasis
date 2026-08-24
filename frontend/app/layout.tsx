@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lexend, Quicksand } from "next/font/google";
 import "./globals.css";
 import { MotionProvider } from "@/components/MotionProvider";
+import { SecurityShield } from "@/components/SecurityShield";
 
 const lexend = Lexend({ 
   subsets: ["latin", "vietnamese"],
@@ -127,7 +128,9 @@ export default function RootLayout({
       </head>
       <body className={`${lexend.variable} ${quicksand.variable} font-sans antialiased bg-[#FFFDF5] text-[#5D4037]`}>
         <MotionProvider>
-          {children}
+          <SecurityShield>
+            {children}
+          </SecurityShield>
         </MotionProvider>
       </body>
     </html>
