@@ -322,6 +322,7 @@
   let angryAnimFrameId = null;
   let runningCats = [];
   let consecutiveIgnored = 0;
+  let reminderTimer = null;
   let snoozeTimeout = null;
 
   function applySnoozeState(snoozedUntil) {
@@ -686,8 +687,7 @@
     shadow.querySelector('#btn-grammar-quiz').addEventListener('click', showGrammarQuizUI);
 
     shadow.querySelector('#btn-vocab-quiz').addEventListener('click', async () => {
-      closeBubble();
-      chrome.runtime.sendMessage({ action: 'trigger_immediate_alarm' });
+      showVocabReminder(false);
     });
 
     shadow.querySelector('#btn-view-schedule').addEventListener('click', showStudyScheduleUI);
@@ -1192,14 +1192,16 @@
   // Reminders and Quiz triggers
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'show_reminder' && !isMainSite) {
-      showVocabReminder();
+      showVocabReminder(true);
     }
   });
 
 
 
   // Full Vocabulary Quiz Session — covers ALL words, no server needed
-  async function showVocabReminder() {
+  async function showVocabReminder(isAutomatic = false) {
+    if (reminderTimer) clearTimeout(reminderTimer);
+
     const data = await chrome.storage.local.get(['user_vocab', 'active_quiz_state']);
     const list = data.user_vocab || [];
 
@@ -1232,12 +1234,116 @@
       });
       shadow.querySelector('#btn-restart-quiz').addEventListener('click', () => {
         clearActiveQuizState();
-        startVocabQuizSession(activeList);
+        showVocabReminder(isAutomatic);
       });
       return;
     }
 
-    startVocabQuizSession(activeList);
+    if (!isAutomatic) {
+      startVocabQuizSession(activeList);
+      return;
+    }
+
+    // Automatic reminder popup -> Show learning flashcard with 25s auto-dismiss
+    const targetWord = activeList[Math.floor(Math.random() * activeList.length)];
+    startAnimation('alert');
+
+    const cardHtml = `
+      <div class="bubble-header">
+        <span>Gợi ý học từ vựng 💡</span>
+        <span class="close-btn" id="close-bubble">×</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:0.82rem; color:#5D4037; font-family: 'Segoe UI', system-ui, sans-serif;">
+        <div style="text-align:center; position:relative;">
+          <div style="font-size:1.3rem; font-weight:bold; color:#3b7a13; display:inline-block; vertical-align:middle;">${targetWord.word}</div>
+          <button id="btn-speak-word" style="background:none; border:none; cursor:pointer; font-size:1.1rem; vertical-align:middle; margin-left:6px; padding:2px;">🔊</button>
+          <div style="color:#8D6E63; font-size:0.85rem;">${targetWord.phonetic || ''}</div>
+        </div>
+        <div style="background:#F1F8E9; border-left:3px solid #A7D08C; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; font-size:0.75rem; margin-bottom:2px;">📝 Nghĩa:</div>
+          <div>${targetWord.meaning}</div>
+        </div>
+        ${targetWord.example ? `
+        <div style="background:#FFF9E6; border-left:3px solid #FFD54F; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; font-size:0.75rem; margin-bottom:2px;">💬 Ví dụ:</div>
+          <div style="font-style:italic;">"${targetWord.example}"</div>
+        </div>` : ''}
+        ${targetWord.memory_hook ? `
+        <div style="background:#F3E5F5; border-left:3px solid #CE93D8; padding:6px 8px; border-radius:6px;">
+          <div style="font-weight:bold; font-size:0.75rem; margin-bottom:2px;">🧠 Mẹo nhớ:</div>
+          <div style="color:#6A1B9A; font-size:0.78rem;">${targetWord.memory_hook}</div>
+        </div>` : ''}
+        
+        <div style="margin-top:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#8D6E63; margin-bottom:2px;">
+            <span>Tự đóng sau <b id="reminder-seconds">25</b>s</span>
+            <span>Ngó lơ ${consecutiveIgnored}/3 lần sẽ bị phạt! ⚠️</span>
+          </div>
+          <div style="background:#efebe9; border-radius:4px; height:4px; overflow:hidden;">
+            <div id="reminder-progress" style="width:100%; background:#EF5350; height:100%; transition: width 1s linear;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button class="btn btn-yes" id="btn-know-word" style="flex:1; padding:8px; font-size:0.78rem;">Đã thuộc ✓</button>
+        <button class="btn btn-no" id="btn-quiz-word" style="flex:1; padding:8px; background:#e3f2fd; border:1px solid #90caf9; font-size:0.78rem;">Luyện tập 📝</button>
+      </div>
+    `;
+
+    openBubble(cardHtml);
+
+    shadow.querySelector('#btn-speak-word').addEventListener('click', () => {
+      const utterance = new SpeechSynthesisUtterance(targetWord.word);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    });
+
+    shadow.querySelector('#close-bubble').addEventListener('click', () => {
+      if (reminderTimer) clearTimeout(reminderTimer);
+      consecutiveIgnored++;
+      if (consecutiveIgnored >= 3) {
+        triggerTantrumLockout();
+      } else {
+        closeBubble();
+      }
+    });
+
+    shadow.querySelector('#btn-know-word').addEventListener('click', () => {
+      if (reminderTimer) clearTimeout(reminderTimer);
+      consecutiveIgnored = 0;
+      closeBubble();
+      startAnimation('celebrating');
+      setTimeout(() => startAnimation('idle'), 2000);
+    });
+
+    shadow.querySelector('#btn-quiz-word').addEventListener('click', () => {
+      if (reminderTimer) clearTimeout(reminderTimer);
+      consecutiveIgnored = 0;
+      startVocabQuizSession(activeList);
+    });
+
+    let timeLeft = 25;
+    const progressEl = shadow.querySelector('#reminder-progress');
+    const secondsEl = shadow.querySelector('#reminder-seconds');
+
+    const updateTimer = () => {
+      timeLeft--;
+      if (secondsEl) secondsEl.textContent = timeLeft;
+      if (progressEl) progressEl.style.width = `${(timeLeft / 25) * 100}%`;
+
+      if (timeLeft <= 0) {
+        consecutiveIgnored++;
+        if (consecutiveIgnored >= 3) {
+          triggerTantrumLockout();
+        } else {
+          closeBubble();
+        }
+      } else {
+        reminderTimer = setTimeout(updateTimer, 1000);
+      }
+    };
+
+    reminderTimer = setTimeout(updateTimer, 1000);
   }
 
   function startVocabQuizSession(activeList, shuffledList = null, startIdx = 0, initialScore = 0) {
