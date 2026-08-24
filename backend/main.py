@@ -468,6 +468,26 @@ async def detect_vocabulary(file: UploadFile = File(...)):
         print(f"Detect Error: {e}")
         return {"items": [], "image_url": ""}
 
+@app.post("/vocabulary/ocr-detect")
+async def ocr_detect_vocabulary(file: UploadFile = File(...)):
+    validate_uploaded_file(file, 10.0, ["image/jpeg", "image/png", "image/webp"])
+    try:
+        contents = await file.read()
+        img = Image.open(BytesIO(contents)).convert("RGB")
+        img_filename = f"ocr_{uuid.uuid4()}.jpg"
+        img.save(os.path.join(static_dir, img_filename))
+        detected_items = []
+        try:
+            detected_items = await ai_service.ocr_extract_vocabulary(img)
+            print(f"OCR detected {len(detected_items)} words from screenshot.")
+        except Exception as e:
+            print(f"Gemini OCR detect failed: {e}")
+            
+        return {"items": detected_items, "image_url": f"/static/{img_filename}"}
+    except Exception as e:
+        print(f"OCR Detect Error: {e}")
+        return {"items": [], "image_url": ""}
+
 @app.post("/scroll/extract")
 async def extract_scroll(file: UploadFile = File(...)):
     validate_uploaded_file(file, 10.0, ["image/jpeg", "image/png", "image/webp", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"])

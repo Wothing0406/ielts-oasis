@@ -131,16 +131,16 @@
 
     try {
       const serverUrl = await getServerUrl();
-      const response = await fetch(`${serverUrl}/api/vocabulary/detect`, {
+      const response = await fetch(`${serverUrl}/api/vocabulary/ocr-detect`, {
         method: 'POST',
         body: formData
       });
       if (response.ok) {
         const result = await response.json();
         if (result && result.items && result.items.length > 0) {
-          callback(result.items[0]); // Return the first detected word card
+          callback(result.items); // Return the full detected words list
         } else {
-          alert("Không nhận diện được từ vựng nào trong vùng quét. Thử lại nhé! 🍵");
+          alert("Không nhận diện được từ vựng học thuật nào trong vùng quét. Hãy thử quét vùng có văn bản rõ ràng nhé! 🍵");
         }
       }
     } catch (err) {

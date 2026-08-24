@@ -1758,58 +1758,94 @@
     triggerTantrumLockout();
   }
 
-  async function handleOCRWordDetected(wordData) {
+  async function handleOCRWordDetected(wordsList) {
+    if (!Array.isArray(wordsList)) {
+      wordsList = [wordsList];
+    }
+    
+    let listHtml = '';
+    wordsList.forEach((wordData, idx) => {
+      listHtml += `
+        <div style="border-bottom:1px dashed #A7D08C; padding:6px 0; display:flex; flex-direction:column; gap:2px; text-align:left;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:bold; color:#3b7a13; font-size:0.85rem;">${wordData.word}</span>
+            <span style="font-size:0.7rem; color:#8D6E63;">${wordData.phonetic || ''}</span>
+          </div>
+          <div style="font-size:0.75rem; color:#5D4037; font-weight:500;">${wordData.meaning}</div>
+          ${wordData.example ? `<div style="font-size:0.65rem; color:#795548; font-style:italic; line-height:1.2; margin-top:2px;">Cảnh: "${wordData.example}"</div>` : ''}
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:4px;">
+            <button class="btn btn-yes btn-save-ocr-item" data-idx="${idx}" style="padding:4px 8px; font-size:0.65rem; border-radius:4px; font-weight:bold; cursor:pointer;">Lưu từ 🍵</button>
+          </div>
+        </div>
+      `;
+    });
+
     const ocrHtml = `
       <div class="bubble-header">
-        <span>Đã Quét Từ Vựng 📸</span>
+        <span>Từ vựng đã quét (${wordsList.length}) 📸</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div>
-        <span class="word">${wordData.word}</span>
-        <span class="phonetic">${wordData.phonetic || ''}</span>
-      </div>
-      <div class="meaning">${wordData.meaning}</div>
-      <div class="actions">
-        <button class="btn btn-yes" id="btn-save-vocab">Lưu vào Tủ Từ 🍵</button>
+      <div class="matcha-scroll-list" style="max-height: 220px; overflow-y: auto; padding:0 4px;">
+        ${listHtml}
       </div>
     `;
     openBubble(ocrHtml);
     startAnimation('celebrating');
 
     shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
-    shadow.querySelector('#btn-save-vocab').addEventListener('click', async () => {
-      const data = await chrome.storage.local.get(['jwt_token']);
-      if (!data.jwt_token) {
-        alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
-        return;
-      }
-      try {
-        const serverUrl = await getServerUrl();
-        const res = await fetch(`${serverUrl}/api/vocabulary`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${data.jwt_token}`
-          },
-          body: JSON.stringify({
-            word: wordData.word,
-            meaning: wordData.meaning,
-            phonetic: wordData.phonetic,
-            example: wordData.example || '',
-            topic: wordData.topic || 'General',
-            source: 'Matcha OCR'
-          })
-        });
-        if (res.ok) {
-          alert(`Đã lưu thành công từ "${wordData.word}" vào Tủ Từ! 🍵`);
-          closeBubble();
-        } else {
-          const errData = await res.json();
-          alert(errData.detail || "Lỗi lưu từ vựng.");
+
+    shadow.querySelectorAll('.btn-save-ocr-item').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const wordData = wordsList[idx];
+        
+        btn.textContent = 'Đang lưu...';
+        btn.disabled = true;
+
+        const data = await chrome.storage.local.get(['jwt_token']);
+        if (!data.jwt_token) {
+          alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
+          btn.textContent = 'Lưu từ 🍵';
+          btn.disabled = false;
+          return;
         }
-      } catch (err) {
-        console.error(err);
-      }
+        try {
+          const serverUrl = await getServerUrl();
+          const res = await fetch(`${serverUrl}/api/vocabulary`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.jwt_token}`
+            },
+            body: JSON.stringify({
+              word: wordData.word,
+              meaning: wordData.meaning,
+              phonetic: wordData.phonetic,
+              example: wordData.example || '',
+              topic: wordData.topic || 'General',
+              source: 'Matcha OCR',
+              is_global: true // Save to library & share to community!
+            })
+          });
+          if (res.ok) {
+            btn.textContent = 'Đã lưu ✔';
+            btn.style.background = '#81C784';
+            btn.style.border = '1px solid #4CAF50';
+            btn.style.color = '#FFFFFF';
+            // Trigger storage update
+            chrome.runtime.sendMessage({ action: 'save_jwt_token', token: data.jwt_token });
+          } else {
+            const errData = await res.json();
+            alert(errData.detail || "Lỗi lưu từ vựng.");
+            btn.textContent = 'Lưu từ 🍵';
+            btn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          btn.textContent = 'Lưu từ 🍵';
+          btn.disabled = false;
+        }
+      });
     });
   }
 })();

@@ -91,6 +91,53 @@ Return ONLY the JSON array. Example:
             print(f"9router detect_all_objects failed: {e}")
         return []
 
+    async def ocr_extract_vocabulary(self, image: Image.Image):
+        prompt = """
+You are an IELTS vocabulary tutor. Carefully analyze the text and conversations in this image:
+1. Perform OCR to read all the visible text/conversation.
+2. Identify 3 to 6 advanced, interesting, or academic English words/phrases that actually appear in the image text (DO NOT return words that are not in the text!).
+3. For each identified word, generate:
+   - word: The exact word or phrase from the text (in English)
+   - meaning: Very short and concise Vietnamese translation (1-5 words)
+   - phonetic: IPA pronunciation (e.g. "/tʃeər/")
+   - example: The exact sentence or context from the image text where the word was used
+   - topic: The main theme/category of the text (e.g. "Work", "Education", "Travel")
+   - memory_hook: A short Vietnamese mnemonic tip to remember this word
+
+Return ONLY a valid JSON array of objects with these exact fields:
+[{"word": "...", "meaning": "...", "phonetic": "...", "example": "...", "topic": "...", "memory_hook": "..."}]
+Do not include any markdown format blocks, explanations, or notes outside the JSON array.
+"""
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
+                        ]
+                    }
+                ],
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content, expect_list=True)
+            data = json.loads(cleaned)
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    if isinstance(v, list): return v
+            if isinstance(data, list):
+                return data
+            return []
+        except Exception as e:
+            print(f"ocr_extract_vocabulary failed: {e}")
+        return []
+
     def _query_offline_dictionary(self, word: str):
         import sqlite3
         db_path = os.path.join(os.path.dirname(__file__), 'dictionary.db')
