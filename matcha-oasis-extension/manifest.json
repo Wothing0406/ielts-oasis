@@ -12,7 +12,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://ieltsoasis.site/*"
+    "<all_urls>"
   ],
   "icons": {
     "16": "assets/icons/icon16.png",
