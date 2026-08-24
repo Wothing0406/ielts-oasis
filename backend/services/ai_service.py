@@ -96,7 +96,9 @@ Return ONLY the JSON array. Example:
 You are an IELTS vocabulary tutor. Carefully analyze the text and conversations in this image (which can be in English, Vietnamese, or mixed English-Vietnamese):
 1. Perform OCR to read all the visible text/conversation.
 2. Identify 3 to 6 key, interesting, or useful concepts, words, or phrases in the text (either English words/phrases, or Vietnamese words/phrases).
-3. For each identified item:
+3. **QUY TẮC BẮT BUỘC**: Trường 'word' phải luôn luôn là **từ đơn (Single Word)** hoặc **cụm từ ngắn/collocation/phrasal verb thông dụng** có thể học được (Ví dụ: "bedtime", "occupied", "hang out"). 
+   **TUYỆT ĐỐI KHÔNG** lấy nguyên cả câu dài, không lấy cả đoạn hội thoại hay câu hoàn chỉnh (như "giờ ngủ ne" hoặc "it's bedtime now") chèn vào trường 'word'.
+4. For each identified item:
    - If the item is in English:
      - word: The English word/phrase (e.g. "occupied")
      - meaning: The Vietnamese translation (concise, 1-5 words, e.g. "bận rộn")
