@@ -40,6 +40,11 @@ graph TD
     %% User Interfaces
     Web[Next.js Web Dashboard]
     Bot[Discord Bot Interface]
+    Ext[Chrome Mascot Extension]
+
+    %% Cloudflare Security Shield
+    Web -->|First Load / F5 Refresh| Shield[Cloudflare Turnstile Shield]
+    Shield -->|Pass Verification| Web
 
     %% Matcha Lens Ingestion Flow
     Web -->|1a. Upload Image| CV[YOLOv8 & Gemini Vision]
@@ -93,17 +98,30 @@ graph TD
     Bot -->|30. Slash /xinnghi| BotAbsence[Absence Grading Agent]
     BotAbsence -->|31. Evaluate Reason| DB
     Bot -->|32. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
-    
+
+    %% Mascot Chrome Extension Loop
+    Ext -->|33. Toggle Menu| ExtMenu[Mascot Menu]
+    ExtMenu -->|34. Start Quiz| Quiz
+    ExtMenu -->|35. Snooze 30 mins| ExtSnooze[Mascot Snooze Timer]
+    ExtMenu -->|36. OCR Screen Grab| ExtOCR[OCR Area Selector]
+    ExtOCR -->|37. Request OCR Extract| ExtOCRAPI[Gemini OCR API]
+    ExtOCRAPI -->|38. Parse English/Vietnamese Vocab| Ext
+    Ext -->|39. Save Word (is_global: true)| DB
+    DB -->|40. Sync Shared Vocab| Feed
+    Quiz -->|41. Final Score < 50% / Neglect 3 times| Lockout[Bouncing Cats Lockout Overlay]
+    Lockout -->|42. Solve Recovery Vocab Quiz| Ext
+
     %% Scheduler Job
-    DB -->|33. Read Schedule| Cron[APScheduler Cron Job]
-    Cron -->|34. Push DM Reminders| Bot
+    DB -->|43. Read Schedule| Cron[APScheduler Cron Job]
+    Cron -->|44. Push DM Reminders| Bot
+    Cron -->|45. Trigger 30m Active Reminder| Ext
 
     %% Matcha Game Center Flow
-    Web -->|35. Play Game| Wordle[Wordle Matcha Game]
-    Wordle -->|36. AI Generates Secret Word & Hint| Refine
-    Wordle -->|37. Update Leaderboard & Level| DB
-    Web -->|38. Speak Game| TeaTalk[Tea Talk with Matcha Bear]
-    TeaTalk -->|39. Reflex Timing & Filler Check| DB
+    Web -->|46. Play Game| Wordle[Wordle Matcha Game]
+    Wordle -->|47. AI Generates Secret Word & Hint| Refine
+    Wordle -->|48. Update Leaderboard & Level| DB
+    Web -->|49. Speak Game| TeaTalk[Tea Talk with Matcha Bear]
+    TeaTalk -->|50. Reflex Timing & Filler Check| DB
 ```
 
 ---

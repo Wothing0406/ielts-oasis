@@ -2,13 +2,24 @@ graph TD
     %% User Interfaces
     Web[Next.js Web Dashboard]
     Bot[Discord Bot Interface]
+    Ext[Chrome Mascot Extension]
+
+    %% Cloudflare Security Shield
+    Web -->|First Load / F5 Refresh| Shield[Cloudflare Turnstile Shield]
+    Shield -->|Pass Verification| Web
 
     %% Matcha Lens Ingestion Flow
-    Web -->|1. Upload Image| CV[YOLOv8 & Gemini Vision]
+    Web -->|1a. Upload Image| CV[YOLOv8 & Gemini Vision]
     CV -->|2. Detect & Crop| Crop[Crop Coordinator]
     Crop -->|3. Vocab Refinement| Refine[Gemini Vocabulary Enrichment]
     Refine -->|4. Generate TTS & Unsplash| TTS[TTS & Unsplash Service]
     TTS -->|5. Save to Library| DB[(MySQL Database)]
+
+    %% Matcha Scroll Ingestion Flow
+    Web -->|1b. Upload PDF/DOCX/Image| Scroll[Matcha Scroll Extractor]
+    Scroll -->|2. Extract Text / Vision Scan| ScrollRefine[Gemini Document Enrichment]
+    ScrollRefine -->|3. Batch Generate TTS| TTS
+    ScrollRefine -->|4. Save all/individual to Library| DB
 
     %% Writing Sanctuary Flow
     Web -->|6. Write Essay| Essay[Writing Sanctuary Canvas]
@@ -33,20 +44,43 @@ graph TD
     Web -->|19. Post Vocabulary/Essay| Feed[Oasis Community Feed]
     Feed -->|20. Like & Comment| DB
     Feed -->|21. Convert to Lesson| Book
+    Feed -->|21b. Practice Shadowing| Speak[Mát Cha Speaking Studio]
+
+    %% Daily Planner & Speaking Studio Flow
+    Web -->|22. Speak Exercises| Speak
+    Speak -->|23. Generate AI Sentence & Cuecard| Refine
+    Speak -->|24. Generate Pronunciation Guide| Guide[Gemini Pronunciation Guide]
+    Speak -->|25. Evaluate Pronunciation & Sandbox| SpeakEvaluator[Gemini Speaking Grader]
+    SpeakEvaluator -->|26. Save Results| DB
 
     %% Discord Bot Commands & Reminders
-    Bot -->|22. Slash /tuvan| BotAdvisor[Active Level Advisor Agent]
-    BotAdvisor -->|23. Interview & Test| BotAdvisor
-    BotAdvisor -->|24. Evaluate & Schedule| DB
-    Bot -->|25. Slash /xinnghi| BotAbsence[Absence Grading Agent]
-    BotAbsence -->|26. Evaluate Reason| DB
-    Bot -->|27. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
-    
+    Bot -->|27. Slash /tuvan| BotAdvisor[Active Level Advisor Agent]
+    BotAdvisor -->|28. Interview & Test| BotAdvisor
+    BotAdvisor -->|29. Evaluate & Schedule| DB
+    Bot -->|30. Slash /xinnghi| BotAbsence[Absence Grading Agent]
+    BotAbsence -->|31. Evaluate Reason| DB
+    Bot -->|32. Reply / Mention| BotChat[Context-Aware Conversational Tutor]
+
+    %% Mascot Chrome Extension Loop
+    Ext -->|33. Toggle Menu| ExtMenu[Mascot Menu]
+    ExtMenu -->|34. Start Quiz| Quiz
+    ExtMenu -->|35. Snooze 30 mins| ExtSnooze[Mascot Snooze Timer]
+    ExtMenu -->|36. OCR Screen Grab| ExtOCR[OCR Area Selector]
+    ExtOCR -->|37. Request OCR Extract| ExtOCRAPI[Gemini OCR API]
+    ExtOCRAPI -->|38. Parse English/Vietnamese Vocab| Ext
+    Ext -->|39. Save Word (is_global: true)| DB
+    DB -->|40. Sync Shared Vocab| Feed
+    Quiz -->|41. Final Score < 50% / Neglect 3 times| Lockout[Bouncing Cats Lockout Overlay]
+    Lockout -->|42. Solve Recovery Vocab Quiz| Ext
+
     %% Scheduler Job
-    DB -->|28. Read Schedule| Cron[APScheduler Cron Job]
-    Cron -->|29. Push DM Reminders| Bot
+    DB -->|43. Read Schedule| Cron[APScheduler Cron Job]
+    Cron -->|44. Push DM Reminders| Bot
+    Cron -->|45. Trigger 30m Active Reminder| Ext
 
     %% Matcha Game Center Flow
-    Web -->|30. Play Game| Wordle[Wordle Matcha Game]
-    Wordle -->|31. AI Generates Secret Word & Hint| Refine
-    Wordle -->|32. Update Leaderboard & Level| DB
+    Web -->|46. Play Game| Wordle[Wordle Matcha Game]
+    Wordle -->|47. AI Generates Secret Word & Hint| Refine
+    Wordle -->|48. Update Leaderboard & Level| DB
+    Web -->|49. Speak Game| TeaTalk[Tea Talk with Matcha Bear]
+    TeaTalk -->|50. Reflex Timing & Filler Check| DB

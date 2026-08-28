@@ -1152,12 +1152,7 @@
       openBubble(quizHtml);
 
       shadow.querySelector('#close-bubble').addEventListener('click', () => {
-        consecutiveIgnored++;
-        if (consecutiveIgnored >= 3) {
-          triggerTantrumLockout();
-        } else {
-          closeBubble();
-        }
+        closeBubble();
       });
 
       shadow.querySelectorAll('.btn-choice').forEach(btn => {
@@ -1167,25 +1162,19 @@
           shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
           if (isCorrect) {
             score++;
-            consecutiveIgnored = 0;
             btn.style.background = '#E8F5E9';
             btn.style.borderColor = '#81C784';
             fb.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
             startAnimation('celebrating');
           } else {
-            consecutiveIgnored++;
             btn.style.background = '#FFEBEE';
             btn.style.borderColor = '#E57373';
             fb.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${q.answer}</b></span>`;
             startAnimation('crying');
           }
           setTimeout(() => {
-            if (consecutiveIgnored >= 3) {
-              triggerTantrumLockout();
-            } else {
-              currentQ++;
-              renderQuestion();
-            }
+            currentQ++;
+            renderQuestion();
           }, 2000);
         });
       });
@@ -1462,23 +1451,13 @@
       openBubble(fullHtml);
 
       shadow.querySelector('#close-bubble').addEventListener('click', () => {
-        consecutiveIgnored++;
-        if (consecutiveIgnored >= 3) {
-          triggerTantrumLockout();
-        } else {
-          closeBubble();
-        }
+        closeBubble();
       });
 
       // Skip button — go to next without penalty
       shadow.querySelector('#btn-skip-word').addEventListener('click', () => {
-        consecutiveIgnored++;
-        if (consecutiveIgnored >= 3) {
-          triggerTantrumLockout();
-        } else {
-          currentIdx++;
-          renderQuestion();
-        }
+        currentIdx++;
+        renderQuestion();
       });
 
       if (quizMode === 'abcd') {
@@ -1504,7 +1483,6 @@
 
             if (isCorrect) {
               score++;
-              consecutiveIgnored = 0;
               sessionConsecutiveWrong = 0;
               consecutiveWrong = 0;
               btn.style.borderColor = '#81C784';
@@ -1512,7 +1490,6 @@
               feedback.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
               startAnimation('celebrating');
             } else {
-              consecutiveIgnored++;
               sessionConsecutiveWrong++;
               consecutiveWrong++;
               btn.style.borderColor = '#E57373';
@@ -1528,11 +1505,7 @@
               startAnimation('crying');
             }
             setTimeout(() => {
-              if (consecutiveIgnored >= 3) {
-                triggerTantrumLockout();
-              } else {
-                showNextBtn();
-              }
+              showNextBtn();
             }, 1000);
           });
         });
@@ -1567,24 +1540,18 @@
 
           if (isCorrect) {
             score++;
-            consecutiveIgnored = 0;
             sessionConsecutiveWrong = 0;
             consecutiveWrong = 0;
             feedback.innerHTML = '<span style="color:#2E7D32;">✓ Xuất sắc! Đúng rồi! 🍵</span>';
             startAnimation('celebrating');
           } else {
-            consecutiveIgnored++;
             sessionConsecutiveWrong++;
             consecutiveWrong++;
             feedback.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${targetWord.word}</b></span>`;
             startAnimation('crying');
           }
           setTimeout(() => {
-            if (consecutiveIgnored >= 3) {
-              triggerTantrumLockout();
-            } else {
-              showNextBtn();
-            }
+            showNextBtn();
           }, 1000);
         };
 
@@ -1650,8 +1617,10 @@
     // Spawn 5 bouncing cats!
     startAngryRun(5);
 
-    const existing = shadow.querySelector('.lockout-overlay');
-    if (existing) existing.remove();
+    const existingOverlay = shadow.querySelector('.lockout-overlay');
+    if (existingOverlay) existingOverlay.remove();
+    const existingCard = shadow.querySelector('.lockout-card');
+    if (existingCard) existingCard.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'lockout-overlay';
@@ -1661,29 +1630,48 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(167, 208, 140, 0.95);
-      z-index: 2147483646;
+      background: rgba(167, 208, 140, 0.85);
+      z-index: 2147483645;
       display: flex;
       align-items: center;
       justify-content: center;
       pointer-events: auto;
       backdrop-filter: blur(5px);
     `;
-    overlay.innerHTML = `
-      <div style="background:#FFFDF5; border:3px solid #E57373; padding:28px; border-radius:24px; width:360px; box-sizing:border-box; text-align:center; box-shadow:0 15px 50px rgba(93,64,55,0.35); font-family: 'Segoe UI', system-ui, sans-serif; z-index: 2147483647;">
-        <h2 style="color:#C62828; margin:0 0 10px 0; font-size:1.3rem;">MÁT CHA ĐANG DỖI! 😭</h2>
-        <p style="font-size:0.85rem; color:#5D4037; line-height:1.4; margin:0 0 16px 0; font-weight:bold;">
-          Cậu học tập không nghiêm túc hoặc ngó lơ tớ rồi! Tớ khóa màn hình không cho cậu lướt web nữa. Hãy trả lời đúng câu dưới đây để dỗ tớ đi!
-        </p>
-        <div id="lockout-quiz-box" style="text-align:left; display:flex; flex-direction:column; gap:8px;"></div>
-        <div id="lockout-feedback" style="margin-top:12px; font-weight:bold; font-size:0.85rem; text-align:center; min-height:20px;"></div>
-      </div>
-    `;
     shadow.appendChild(overlay);
-    generateLockoutQuiz(overlay);
+
+    const card = document.createElement('div');
+    card.className = 'lockout-card';
+    card.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #FFFDF5;
+      border: 3px solid #E57373;
+      padding: 28px;
+      border-radius: 24px;
+      width: 360px;
+      box-sizing: border-box;
+      text-align: center;
+      box-shadow: 0 15px 50px rgba(93, 64, 55, 0.35);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      z-index: 2147483649;
+      pointer-events: auto;
+    `;
+    card.innerHTML = `
+      <h2 style="color:#C62828; margin:0 0 10px 0; font-size:1.3rem;">MÁT CHA ĐANG DỖI! 😭</h2>
+      <p style="font-size:0.85rem; color:#5D4037; line-height:1.4; margin:0 0 16px 0; font-weight:bold;">
+        Cậu học tập không nghiêm túc hoặc ngó lơ tớ rồi! Tớ khóa màn hình không cho cậu lướt web nữa. Hãy trả lời đúng câu dưới đây để dỗ tớ đi!
+      </p>
+      <div id="lockout-quiz-box" style="text-align:left; display:flex; flex-direction:column; gap:8px;"></div>
+      <div id="lockout-feedback" style="margin-top:12px; font-weight:bold; font-size:0.85rem; text-align:center; min-height:20px;"></div>
+    `;
+    shadow.appendChild(card);
+    generateLockoutQuiz(card);
   }
 
-  async function generateLockoutQuiz(overlay) {
+  async function generateLockoutQuiz(card) {
     const data = await chrome.storage.local.get(['user_vocab']);
     const list = data.user_vocab || [];
     const defaultList = [
@@ -1698,7 +1686,7 @@
     const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
     const choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
 
-    const quizBox = shadow.querySelector('#lockout-quiz-box');
+    const quizBox = card.querySelector('#lockout-quiz-box');
     quizBox.innerHTML = `
       <div style="font-size:0.85rem; color:#5D4037; font-weight:bold; text-align:center; margin-bottom:6px;">
         Nghĩa của từ: <strong style="font-size:1.05rem; color:#3b7a13;">${target.word}</strong>
@@ -1710,11 +1698,11 @@
       `).join('')}
     `;
 
-    const choiceBtns = shadow.querySelectorAll('.lockout-choice');
+    const choiceBtns = card.querySelectorAll('.lockout-choice');
     choiceBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const isCorrect = btn.getAttribute('data-correct') === 'true';
-        const feedback = shadow.querySelector('#lockout-feedback');
+        const feedback = card.querySelector('#lockout-feedback');
 
         choiceBtns.forEach(b => b.setAttribute('disabled', 'true'));
 
@@ -1726,17 +1714,26 @@
           consecutiveWrong = 0;
           consecutiveIgnored = 0;
           setTimeout(() => {
-            overlay.remove();
+            const overlay = shadow.querySelector('.lockout-overlay');
+            if (overlay) overlay.remove();
+            card.remove();
             stopAngryRun();
           }, 2500);
         } else {
           btn.style.borderColor = '#E57373';
           btn.style.background = '#FFEBEE';
-          feedback.innerHTML = `<span style="color:#C62828;">Sai rồi! Thử lại câu khác nhé! 😭</span>`;
+          // Highlight correct answer
+          choiceBtns.forEach(b => {
+            if (b.getAttribute('data-correct') === 'true') {
+              b.style.borderColor = '#81C784';
+              b.style.background = '#E8F5E9';
+            }
+          });
+          feedback.innerHTML = `<span style="color:#C62828;">✗ Sai rồi! Đáp án đúng: "${target.meaning}" 😭</span>`;
           startAnimation('crying');
           setTimeout(() => {
-            generateLockoutQuiz(overlay);
-          }, 2500);
+            generateLockoutQuiz(card);
+          }, 3000);
         }
       });
     });
