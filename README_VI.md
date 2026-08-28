@@ -106,9 +106,9 @@ graph TD
     ExtMenu -->|36. OCR Screen Grab| ExtOCR[OCR Area Selector]
     ExtOCR -->|37. Request OCR Extract| ExtOCRAPI[Gemini OCR API]
     ExtOCRAPI -->|38. Parse English/Vietnamese Vocab| Ext
-    Ext -->|39. Save Word (is_global: true)| DB
+    Ext -->|39. Save Word with global flag| DB
     DB -->|40. Sync Shared Vocab| Feed
-    Quiz -->|41. Final Score < 50% / Neglect 3 times| Lockout[Bouncing Cats Lockout Overlay]
+    Quiz -->|41. Final Score under 50% or Neglect 3 times| Lockout[Bouncing Cats Lockout Overlay]
     Lockout -->|42. Solve Recovery Vocab Quiz| Ext
 
     %% Scheduler Job
