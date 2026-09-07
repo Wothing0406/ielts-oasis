@@ -814,13 +814,11 @@ from typing import Optional
 
 @app.get("/community/feed")
 async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Optional[bool] = False, topic: Optional[str] = None, search: Optional[str] = None, user: Optional[dict] = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not user:
-        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem bảng tin cộng đồng.")
-    user_id = user["user_id"]
+    user_id = user["user_id"] if user else None
     
     # Get vocabularies
     vocab_query = db.query(Vocabulary)
-    if filter_mine:
+    if filter_mine and user_id:
         vocab_query = vocab_query.filter(Vocabulary.user_id == user_id)
     else:
         # Show global vocabularies only (prevent private leaking)

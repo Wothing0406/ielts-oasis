@@ -196,6 +196,33 @@ export default function Home() {
     }
   };
 
+  const ensureUserSession = async (): Promise<string | null> => {
+    let token = localStorage.getItem("oasis_token");
+    if (token) return token;
+
+    // Auto-create/resume isolated guest session for guest user
+    try {
+      const storedGuestId = localStorage.getItem("oasis_guest_id");
+      const res = await fetch(`${API_URL}/auth/guest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guest_id: storedGuestId || null })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("oasis_token", data.token);
+        localStorage.setItem("oasis_user", JSON.stringify(data.user));
+        localStorage.setItem("oasis_guest_id", data.guest_id);
+        setUser(data.user);
+        fetchVocabs(data.token);
+        return data.token;
+      }
+    } catch (err) {
+      console.error("Failed to auto-init guest session:", err);
+    }
+    return null;
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
     const savedToken = localStorage.getItem("oasis_token");
@@ -206,6 +233,9 @@ export default function Home() {
     }
     if (savedToken) {
       fetchVocabs(savedToken);
+    } else {
+      // Initialize an isolated guest session so guest immediately has independent storage & community access
+      ensureUserSession();
     }
   }, []);
 
@@ -216,9 +246,12 @@ export default function Home() {
       return { success: false, status: "duplicate", word: formData.word };
     }
 
-    const token = localStorage.getItem("oasis_token");
+    let token = localStorage.getItem("oasis_token");
     if (!token) {
-      (window as any).showToast("Please log in to save vocabulary! 🍵", "info");
+      token = await ensureUserSession();
+    }
+    if (!token) {
+      (window as any).showToast("Please log in or try again to save vocabulary! 🍵", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
     const headers: any = {

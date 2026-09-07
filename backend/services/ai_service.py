@@ -444,14 +444,15 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
 
     async def generate_grammar_questions(self):
         prompt = """
-        Tạo 5 câu hỏi trắc nghiệm ngữ pháp tiếng Anh trình độ IELTS.
-        Yêu cầu trả về DUY NHẤT một định dạng mảng JSON chứa các câu hỏi, không thêm bất kỳ văn bản nào khác. Mỗi câu hỏi phải là một đối tượng JSON có các trường chính xác như sau:
+        Tạo 5 câu hỏi ngữ pháp tiếng Anh trình độ IELTS để ôn tập.
+        Yêu cầu trả về DUY NHẤT một mảng JSON chứa các câu hỏi, không thêm bất kỳ văn bản nào khác.
+        Mỗi câu hỏi có thể là trắc nghiệm hoặc có thể dùng để điền từ, có các trường:
         [
             {
                 "question": "Câu tiếng Anh có chỗ trống chứa ____...",
                 "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
                 "correct_answer": "Đáp án đúng chính xác (phải khớp hoàn toàn với một trong các phần tử trong options)",
-                "explanation": "Giải thích chi tiết bằng tiếng Việt lý do chọn đáp án này và điểm ngữ pháp tương ứng."
+                "explanation": "Giải thích chi tiết bằng tiếng Việt lý do chọn đáp án này, điểm ngữ pháp và cấu trúc câu tương ứng."
             }
         ]
         """
@@ -463,23 +464,67 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             )
             content = response.choices[0].message.content
             cleaned = self._clean_json(content)
-            return json.loads(cleaned)
+            raw_questions = json.loads(cleaned)
+            
+            # Normalize fields for both extension and web (choices/options, answer/correct_answer)
+            normalized = []
+            for q in raw_questions:
+                opts = q.get("options") or q.get("choices") or []
+                ans = q.get("correct_answer") or q.get("answer") or (opts[0] if opts else "")
+                expl = q.get("explanation") or "Điểm ngữ pháp quan trọng trong bài thi IELTS."
+                normalized.append({
+                    "question": q.get("question", ""),
+                    "options": opts,
+                    "choices": opts,
+                    "correct_answer": ans,
+                    "answer": ans,
+                    "explanation": expl
+                })
+            return normalized
         except Exception as e:
             print(f"Gemini generate_grammar_questions failed: {e}")
             
-        # Fallback dummy questions
+        # Fallback dummy questions (normalized)
         return [
             {
                 "question": "If I ______ more time, I would study IELTS every day.",
                 "options": ["have", "had", "will have", "would have"],
+                "choices": ["have", "had", "will have", "would have"],
                 "correct_answer": "had",
+                "answer": "had",
                 "explanation": "Đây là câu điều kiện loại 2 (diễn tả giả định không có thật ở hiện tại). Mệnh đề If dùng thì quá khứ đơn (had)."
             },
             {
                 "question": "The government is trying to encourage the use of ______ energy.",
                 "options": ["renew", "renewable", "renewed", "renewal"],
+                "choices": ["renew", "renewable", "renewed", "renewal"],
                 "correct_answer": "renewable",
+                "answer": "renewable",
                 "explanation": "Chúng ta cần một tính từ đứng trước danh từ 'energy' để bổ nghĩa cho nó. 'Renewable energy' nghĩa là năng lượng tái tạo."
+            },
+            {
+                "question": "Hardly ______ the station when the train began to leave.",
+                "options": ["had I reached", "I had reached", "did I reach", "I reached"],
+                "choices": ["had I reached", "I had reached", "did I reach", "I reached"],
+                "correct_answer": "had I reached",
+                "answer": "had I reached",
+                "explanation": "Cấu trúc đảo ngữ với 'Hardly... when...': Hardly + had + S + V3/ed + when + S + V2/ed."
+            },
+            {
+                "question": "She suggested that he ______ more academic vocabulary in his essay.",
+                "options": ["use", "used", "uses", "using"],
+                "choices": ["use", "used", "uses", "using"],
+                "correct_answer": "use",
+                "answer": "use",
+                "explanation": "Cấu trúc giả định (Subjunctive): S + suggest + that + S + (should) + V nguyên thể (use)."
+            },
+            {
+                "question": "Neither the teacher nor the students ______ satisfied with the exam results.",
+                "options": ["were", "was", "is", "are being"],
+                "choices": ["were", "was", "is", "are being"],
+                "correct_answer": "were",
+                "answer": "were",
+                "explanation": "Quy tắc hòa hợp chủ ngữ - vị ngữ: 'Neither... nor...' thì động từ chia theo chủ ngữ gần nó nhất (the students số nhiều -> were)."
             }
         ]
 

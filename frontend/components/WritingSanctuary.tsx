@@ -152,7 +152,24 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
 
   const handleShareToCommunity = async () => {
     if (!analysis || !text) return;
-    const token = localStorage.getItem('oasis_token');
+    let token = localStorage.getItem('oasis_token');
+    if (!token) {
+      try {
+        const storedGuestId = localStorage.getItem("oasis_guest_id");
+        const res = await fetch(`/api/auth/guest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guest_id: storedGuestId || null })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          token = data.token;
+          localStorage.setItem("oasis_token", data.token);
+          localStorage.setItem("oasis_user", JSON.stringify(data.user));
+          localStorage.setItem("oasis_guest_id", data.guest_id);
+        }
+      } catch (e) {}
+    }
     if (!token) return (window as any).showToast('Bạn cần đăng nhập để chia sẻ bài viết! 🍵', 'info');
     
     try {

@@ -1107,7 +1107,7 @@
           <div style="text-align:center; padding:12px; font-size:0.9rem;">
             <div style="font-size:2rem; margin-bottom:8px;">${score >= questions.length * 0.7 ? '🎉' : score >= questions.length * 0.5 ? '😊' : '😢'}</div>
             <div style="font-weight:bold; color:#3b7a13; font-size:1.1rem;">${score}/${questions.length} câu đúng!</div>
-            <div style="color:#8D6E63; margin-top:4px; font-size:0.78rem;">${score >= questions.length * 0.7 ? 'Xuất sắc! Cậu học giỏi lắm! 🍵' : score >= questions.length * 0.5 ? 'Khá tốt, tiếp tục cố gắng nhé!' : 'Ôn luyện thêm một chút nữa nhé!'}</div>
+            <div style="color:#8D6E63; margin-top:4px; font-size:0.78rem;">${score >= questions.length * 0.7 ? 'Xuất sắc! Cậu học ngữ pháp rất vững! 🍵' : score >= questions.length * 0.5 ? 'Khá tốt, tiếp tục cố gắng nhé!' : 'Ôn luyện thêm một chút nữa nhé!'}</div>
           </div>
           <button class="btn btn-yes" id="btn-retry-quiz" style="width:100%; margin-top:6px;">Chơi lại 🔄</button>
           <button class="btn btn-no" id="btn-back-menu-quiz" style="width:100%; margin-top:4px;">Quay lại Menu</button>
@@ -1133,51 +1133,158 @@
       saveActiveQuizState(questions, currentQ, score, 'grammar');
 
       const q = questions[currentQ];
-      const choices = q.choices || [];
+      const choices = q.options || q.choices || [];
+      const correctAnswer = (q.correct_answer || q.answer || '').trim();
+      const explanation = q.explanation || '';
+      
+      // Alternate mode: even index = ABCD Multiple Choice, odd index = Fill In The Blank
+      const isBlankMode = currentQ % 2 === 1;
+
+      const progressPct = Math.round((currentQ / questions.length) * 100);
+      const progressBar = `
+        <div style="margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8D6E63; margin-bottom:2px;">
+            <span>Câu ${currentQ + 1}/${questions.length} (${isBlankMode ? 'Điền từ' : 'Trắc nghiệm'})</span>
+            <span>Điểm: ${score}/${currentQ}</span>
+          </div>
+          <div style="background:#E8F5E9; border-radius:6px; height:6px; overflow:hidden;">
+            <div style="width:${progressPct}%; background:#A7D08C; height:100%; border-radius:6px; transition:width 0.3s;"></div>
+          </div>
+        </div>
+      `;
+
+      let questionBodyHtml = '';
+      if (!isBlankMode) {
+        questionBodyHtml = `
+          <div style="font-size:0.84rem; color:#5D4037; margin-bottom:8px; line-height:1.45; font-weight:500;">
+            ${q.question}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
+            ${choices.map((c, i) => `
+              <button class="btn-choice" data-ans="${c}" data-correct="${c.trim().toLowerCase() === correctAnswer.toLowerCase()}">
+                ${String.fromCharCode(65 + i)}. ${c}
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        questionBodyHtml = `
+          <div style="font-size:0.84rem; color:#5D4037; margin-bottom:8px; line-height:1.45; font-weight:500;">
+            Điền từ còn thiếu vào chỗ trống:<br/>
+            <strong style="color:#2E7D32; display:block; margin-top:4px;">${q.question}</strong>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+            <input type="text" id="grammar-blank-input" class="quiz-input" placeholder="Nhập từ cần điền..." autocomplete="off" />
+            <button class="btn btn-yes" id="btn-submit-grammar-blank" style="padding:8px; font-weight:bold;">Kiểm tra đáp án ✓</button>
+          </div>
+        `;
+      }
+
       const quizHtml = `
         <div class="bubble-header">
-          <span>Quiz ${currentQ + 1}/${questions.length} 📝</span>
+          <span>Quiz Ngữ Pháp 📝</span>
           <span class="close-btn" id="close-bubble">×</span>
         </div>
-        <div style="font-size:0.82rem; color:#5D4037; margin-bottom:6px; line-height:1.4;">${q.question}</div>
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          ${choices.map((c, i) => `
-            <button class="btn-choice" data-ans="${c}" data-correct="${c === q.answer}">
-              ${String.fromCharCode(65 + i)}. ${c}
-            </button>
-          `).join('')}
-        </div>
-        <div id="qfeedback" class="quiz-feedback"></div>
+        ${progressBar}
+        ${questionBodyHtml}
+        <div id="qfeedback" class="quiz-feedback" style="margin-top:6px;"></div>
+        <div id="qexplanation" style="display:none; margin-top:6px; padding:8px 10px; background:#F1F8E9; border:1px solid #C8E6C9; border-radius:10px; font-size:0.75rem; color:#33691E; line-height:1.4; text-align:left; max-height:120px; overflow-y:auto;"></div>
+        <button class="btn btn-no" id="btn-skip-grammar" style="width:100%; margin-top:6px; font-size:0.72rem;">Bỏ qua câu này →</button>
       `;
       openBubble(quizHtml);
 
-      shadow.querySelector('#close-bubble').addEventListener('click', () => {
-        closeBubble();
+      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+
+      const skipBtn = shadow.querySelector('#btn-skip-grammar');
+      skipBtn.addEventListener('click', () => {
+        currentQ++;
+        renderQuestion();
       });
 
-      shadow.querySelectorAll('.btn-choice').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const isCorrect = btn.getAttribute('data-correct') === 'true';
-          const fb = shadow.querySelector('#qfeedback');
-          shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
-          if (isCorrect) {
-            score++;
-            btn.style.background = '#E8F5E9';
-            btn.style.borderColor = '#81C784';
-            fb.innerHTML = '<span style="color:#2E7D32;">✓ Chính xác! 🍵</span>';
-            startAnimation('celebrating');
-          } else {
-            btn.style.background = '#FFEBEE';
-            btn.style.borderColor = '#E57373';
-            fb.innerHTML = `<span style="color:#C62828;">✗ Đáp án đúng: <b>${q.answer}</b></span>`;
-            startAnimation('crying');
-          }
-          setTimeout(() => {
-            currentQ++;
-            renderQuestion();
-          }, 2000);
+      function handleFeedbackDisplay(isCorrect, chosenText) {
+        const fb = shadow.querySelector('#qfeedback');
+        const expBox = shadow.querySelector('#qexplanation');
+        skipBtn.style.display = 'none';
+
+        if (isCorrect) {
+          score++;
+          fb.innerHTML = '<span style="color:#2E7D32; font-size:0.85rem;">✓ Chính xác! Rất giỏi 🍵</span>';
+          startAnimation('celebrating');
+        } else {
+          fb.innerHTML = `<span style="color:#C62828; font-size:0.82rem;">✗ Chưa đúng! Đáp án chính xác: <b>${correctAnswer}</b></span>`;
+          startAnimation('crying');
+        }
+
+        if (explanation) {
+          expBox.style.display = 'block';
+          expBox.innerHTML = `<strong>💡 Giải thích chi tiết:</strong><br/>${explanation}`;
+        }
+
+        // Add explicit "Next Question" button so the user can read the explanation
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'btn btn-yes';
+        nextBtn.style.cssText = 'width:100%; margin-top:8px; padding:8px; font-size:0.82rem; font-weight:bold; cursor:pointer;';
+        nextBtn.textContent = 'Câu tiếp theo ➔';
+        nextBtn.addEventListener('click', () => {
+          currentQ++;
+          renderQuestion();
         });
-      });
+        fb.parentElement.appendChild(nextBtn);
+      }
+
+      if (!isBlankMode) {
+        shadow.querySelectorAll('.btn-choice').forEach(btn => {
+          btn.addEventListener('click', () => {
+            shadow.querySelectorAll('.btn-choice').forEach(b => b.setAttribute('disabled', 'true'));
+            const isCorrect = btn.getAttribute('data-correct') === 'true';
+            if (isCorrect) {
+              btn.style.background = '#E8F5E9';
+              btn.style.borderColor = '#81C784';
+            } else {
+              btn.style.background = '#FFEBEE';
+              btn.style.borderColor = '#E57373';
+              // Highlight the right answer
+              shadow.querySelectorAll('.btn-choice').forEach(b => {
+                if (b.getAttribute('data-correct') === 'true') {
+                  b.style.background = '#E8F5E9';
+                  b.style.borderColor = '#81C784';
+                }
+              });
+            }
+            handleFeedbackDisplay(isCorrect, btn.getAttribute('data-ans'));
+          });
+        });
+      } else {
+        const blankInput = shadow.querySelector('#grammar-blank-input');
+        const blankBtn = shadow.querySelector('#btn-submit-grammar-blank');
+
+        const submitBlank = () => {
+          const val = blankInput.value.trim();
+          if (!val) return;
+          blankInput.setAttribute('disabled', 'true');
+          blankBtn.setAttribute('disabled', 'true');
+
+          const isCorrect = val.toLowerCase() === correctAnswer.toLowerCase() ||
+                            val.toLowerCase() === correctAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
+          
+          if (isCorrect) {
+            blankInput.style.borderColor = '#81C784';
+            blankInput.style.background = '#E8F5E9';
+          } else {
+            blankInput.style.borderColor = '#E57373';
+            blankInput.style.background = '#FFEBEE';
+          }
+          handleFeedbackDisplay(isCorrect, val);
+        };
+
+        blankBtn.addEventListener('click', submitBlank);
+        blankInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            submitBlank();
+          }
+        });
+      }
     }
 
     renderQuestion();

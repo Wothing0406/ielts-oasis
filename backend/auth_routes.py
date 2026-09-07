@@ -56,6 +56,10 @@ class ExtensionLoginPayload(BaseModel):
     username: str
     password: str
 
+class GuestSessionPayload(BaseModel):
+    guest_id: str = None
+    username: str = None
+
 import hashlib
 import collections
 import time
@@ -328,6 +332,83 @@ async def login_user_extension(payload: ExtensionLoginPayload, request: Request,
         "username": user.username,
         "avatar_url": user.avatar_url,
         "exp": datetime.utcnow() + timedelta(days=7)
+    }
+    token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    
+    return {
+        "token": token,
+        "user": jwt_payload,
+        "guest_id": user.discord_id
+    }
+
+@router.post("/guest")
+async def create_or_resume_guest_session(payload: GuestSessionPayload = None, request: Request = None, db: Session = Depends(get_db)):
+    """Cấp phát phiên làm việc độc lập cho Guest chưa login để lưu từ vựng, chấm điểm và đưa lên Community"""
+    ip = get_client_ip(request) if request else None
+    guest_id = payload.guest_id.strip() if (payload and payload.guest_id) else None
+    
+    user = None
+    if guest_id:
+        user = db.query(User).filter(User.discord_id == guest_id).first()
+        
+    if not user:
+        # Tạo mới một guest hoàn toàn độc lập
+        new_guest_id = f"guest-{uuid.uuid4()}"
+        random_suffix = uuid.uuid4().hex[:4]
+        username = payload.username.strip() if (payload and payload.username) else f"Guest_{random_suffix}"
+        
+        # Đảm bảo username không trùng lặp
+        if db.query(User).filter(User.username == username).first():
+            username = f"Guest_{uuid.uuid4().hex[:6]}"
+            
+        user = User(
+            discord_id=new_guest_id,
+            username=username,
+            last_ip=ip,
+            created_at=datetime.utcnow(),
+            last_login=datetime.utcnow()
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Copy từ vựng starter (is_global == True) cho guest này
+        try:
+            starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(20).all()
+            for sv in starter_vocabs:
+                user_v = Vocabulary(
+                    user_id=user.id,
+                    word=sv.word,
+                    meaning=sv.meaning,
+                    phonetic=sv.phonetic,
+                    example=sv.example,
+                    topic=sv.topic,
+                    audio_url=sv.audio_url,
+                    image_url=sv.image_url,
+                    synonyms=sv.synonyms,
+                    memory_hook=sv.memory_hook,
+                    is_global=False,
+                    source=sv.source or "Starter",
+                    creator_username=sv.creator_username
+                )
+                db.add(user_v)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"Failed to copy starter vocabs for guest: {e}")
+    else:
+        user.last_login = datetime.utcnow()
+        if ip:
+            user.last_ip = ip
+        db.commit()
+        
+    jwt_payload = {
+        "user_id": user.id,
+        "discord_id": user.discord_id,
+        "username": user.username,
+        "avatar_url": user.avatar_url,
+        "is_guest": True,
+        "exp": datetime.utcnow() + timedelta(days=30)
     }
     token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     
