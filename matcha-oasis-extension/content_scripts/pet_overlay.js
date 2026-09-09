@@ -97,22 +97,22 @@
     
     .speech-bubble {
       position: absolute;
-      bottom: 95px;
+      bottom: 85px;
       right: 0;
       background-color: #FFFDF5;
       border: 2px solid #A7D08C;
-      border-radius: 1.5rem;
-      padding: 16px 20px;
-      width: 360px;
+      border-radius: 1.25rem;
+      padding: 12px 14px;
+      width: 310px;
       box-sizing: border-box;
       color: #5D4037;
-      box-shadow: 0 12px 36px rgba(167, 208, 140, 0.35);
+      box-shadow: 0 10px 30px rgba(167, 208, 140, 0.35);
       display: none;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
       pointer-events: auto;
       animation: floatBubble 3s ease-in-out infinite;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .speech-bubble::before {
@@ -152,6 +152,59 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      user-select: none;
+    }
+
+    .bubble-resize-handle {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      cursor: nwse-resize;
+      font-size: 0.8rem;
+      color: #A7D08C;
+      user-select: none;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .bubble-resize-handle:hover {
+      opacity: 1;
+      color: #2E7D32;
+    }
+
+    .bubble-scale-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(167, 208, 140, 0.15);
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      color: #8D6E63;
+      user-select: none;
+    }
+
+    .bubble-scale-btn {
+      background: #FFFDF5;
+      border: 1px solid #A7D08C;
+      border-radius: 6px;
+      width: 20px;
+      height: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5D4037;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .bubble-scale-btn:hover {
+      background: #A7D08C;
+      color: #fff;
     }
 
     .word {
@@ -686,8 +739,115 @@
     }
   });
 
+  // Dynamic Bubble Scaling (User-customizable size)
+  let currentBubbleScale = 1.0;
+  chrome.storage.local.get(['bubble_scale'], (res) => {
+    if (res.bubble_scale && typeof res.bubble_scale === 'number') {
+      currentBubbleScale = Math.max(0.75, Math.min(1.5, res.bubble_scale));
+      applyBubbleScale();
+    }
+  });
+
+  function applyBubbleScale() {
+    bubble.style.transform = `scale(${currentBubbleScale})`;
+    bubble.style.transformOrigin = (bubble.style.left === '0px' || bubble.style.left === '0') ? 'bottom left' : 'bottom right';
+  }
+
   function openBubble(html) {
+    // Inject Scale controls into bubble header
     bubble.innerHTML = html;
+    
+    // Add resize handle and zoom buttons if header exists
+    const header = bubble.querySelector('.bubble-header');
+    if (header) {
+      const scaleBar = document.createElement('div');
+      scaleBar.className = 'bubble-scale-bar';
+      scaleBar.innerHTML = `
+        <button class="bubble-scale-btn" id="btn-scale-down" title="Thu nhỏ (hoặc lăn chuột xuống)">−</button>
+        <span id="bubble-scale-text">${Math.round(currentBubbleScale * 100)}%</span>
+        <button class="bubble-scale-btn" id="btn-scale-up" title="Phóng to (hoặc lăn chuột lên)">+</button>
+      `;
+      // Insert before close button
+      const closeBtn = header.querySelector('.close-btn');
+      if (closeBtn) {
+        header.insertBefore(scaleBar, closeBtn);
+      } else {
+        header.appendChild(scaleBar);
+      }
+
+      // Hook zoom buttons
+      const btnDown = scaleBar.querySelector('#btn-scale-down');
+      const btnUp = scaleBar.querySelector('#btn-scale-up');
+      const scaleText = scaleBar.querySelector('#bubble-scale-text');
+
+      const setScale = (newScale) => {
+        currentBubbleScale = Math.round(Math.max(0.75, Math.min(1.5, newScale)) * 20) / 20;
+        scaleText.textContent = `${Math.round(currentBubbleScale * 100)}%`;
+        applyBubbleScale();
+        chrome.storage.local.set({ bubble_scale: currentBubbleScale });
+      };
+
+      btnDown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setScale(currentBubbleScale - 0.1);
+      });
+
+      btnUp.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setScale(currentBubbleScale + 0.1);
+      });
+
+      // Add Drag-to-Resize Handle at top-left corner
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'bubble-resize-handle';
+      resizeHandle.innerHTML = '⤡';
+      resizeHandle.title = 'Kéo hoặc vuốt để tăng/giảm kích thước';
+      bubble.appendChild(resizeHandle);
+
+      let isResizing = false;
+      let startResizeY = 0;
+      let startScale = 1.0;
+
+      resizeHandle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        isResizing = true;
+        startResizeY = e.clientY;
+        startScale = currentBubbleScale;
+
+        const onMouseMove = (moveEvent) => {
+          if (!isResizing) return;
+          // Dragging up = larger, dragging down = smaller
+          const deltaY = startResizeY - moveEvent.clientY;
+          const newScale = startScale + (deltaY / 150);
+          setScale(newScale);
+        };
+
+        const onMouseUp = () => {
+          isResizing = false;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // Pinch-to-zoom / Wheel swipe zoom on header
+    if (header) {
+      header.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY < 0 ? 0.05 : -0.05;
+        currentBubbleScale = Math.round(Math.max(0.75, Math.min(1.5, currentBubbleScale + delta)) * 20) / 20;
+        const text = bubble.querySelector('#bubble-scale-text');
+        if (text) text.textContent = `${Math.round(currentBubbleScale * 100)}%`;
+        applyBubbleScale();
+        chrome.storage.local.set({ bubble_scale: currentBubbleScale });
+      }, { passive: false });
+    }
+
     bubble.style.display = 'flex';
     const rect = wrapper.getBoundingClientRect();
     if (rect.left < 210) {
@@ -697,6 +857,7 @@
       bubble.style.left = 'auto';
       bubble.style.right = '0';
     }
+    applyBubbleScale();
 
     // Stop the page from intercepting clicks/keyboard inside the bubble
     bubble.addEventListener('click', (e) => e.stopPropagation());
@@ -732,16 +893,16 @@
         <span>Mát Cha AI Eo 🍵</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="font-weight: bold; margin: 4px 0 6px; font-size: 1.05rem; text-align: center; color: #43281C;">Tớ có thể giúp gì cho cậu?</div>
-      <div class="actions" style="flex-direction: column; gap: 6px; align-items: stretch; width: 100%; margin: 0;">
-        <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 10px; font-size: 0.95rem;">💬 Trò chuyện AI</button>
-        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét từ vựng (OCR)</button>
-        <button class="btn btn-yes" id="btn-add-vocab-ui" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm nhanh từ mới</button>
-        <button class="btn btn-yes" id="btn-view-vocab" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng của tớ</button>
-        <button class="btn btn-yes" id="btn-grammar-quiz" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ Pháp AI</button>
-        <button class="btn btn-yes" id="btn-vocab-quiz" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng (Quiz)</button>
-        <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
-        <button class="btn btn-no" id="btn-snooze-pet" style="width: 100%; padding: 9px; font-size: 0.9rem; background: #efebe9; border: 1.5px solid #d7ccc8; margin-top: 4px;">💤 Tạm ẩn Mascot 30 phút</button>
+      <div style="font-weight: bold; margin: 2px 0 4px; font-size: 0.95rem; text-align: center; color: #43281C;">Tớ có thể giúp gì cho cậu?</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+        <button class="btn btn-yes" id="btn-sidepanel" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25;">💬 Chat AI</button>
+        <button class="btn btn-yes" id="btn-ocr" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét OCR</button>
+        <button class="btn btn-yes" id="btn-add-vocab-ui" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm từ</button>
+        <button class="btn btn-yes" id="btn-view-vocab" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng</button>
+        <button class="btn btn-yes" id="btn-grammar-quiz" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ pháp</button>
+        <button class="btn btn-yes" id="btn-vocab-quiz" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng</button>
+        <button class="btn btn-yes" id="btn-view-schedule" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học</button>
+        <button class="btn btn-no" id="btn-snooze-pet" style="padding: 8px 6px; font-size: 0.85rem; line-height: 1.25; background: #efebe9; border: 1.5px solid #d7ccc8;">💤 Ẩn 30 phút</button>
       </div>
     `;
     openBubble(menuHtml);
