@@ -97,21 +97,22 @@
     
     .speech-bubble {
       position: absolute;
-      bottom: 90px;
+      bottom: 95px;
       right: 0;
       background-color: #FFFDF5;
       border: 2px solid #A7D08C;
       border-radius: 1.5rem;
-      padding: 12px 16px;
-      width: 280px;
+      padding: 16px 20px;
+      width: 360px;
       box-sizing: border-box;
       color: #5D4037;
-      box-shadow: 0 10px 30px rgba(167, 208, 140, 0.3);
+      box-shadow: 0 12px 36px rgba(167, 208, 140, 0.35);
       display: none;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       pointer-events: auto;
       animation: floatBubble 3s ease-in-out infinite;
+      font-size: 1rem;
     }
 
     .speech-bubble::before {
@@ -145,55 +146,55 @@
 
     .bubble-header {
       font-weight: bold;
-      font-size: 0.95rem;
-      border-bottom: 1px solid rgba(167, 208, 140, 0.3);
-      padding-bottom: 4px;
+      font-size: 1.15rem;
+      border-bottom: 1.5px solid rgba(167, 208, 140, 0.4);
+      padding-bottom: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .word {
-      font-size: 1.1rem;
+      font-size: 1.35rem;
       font-weight: bold;
-      color: #3b7a13;
+      color: #2E7D32;
     }
 
     .phonetic {
       color: #8D6E63;
-      font-size: 0.85rem;
+      font-size: 1rem;
     }
 
     .meaning {
-      font-size: 0.9rem;
-      line-height: 1.3;
+      font-size: 1.05rem;
+      line-height: 1.4;
     }
 
     .example {
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       color: #795548;
       font-style: italic;
     }
 
     .actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       justify-content: flex-end;
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     .btn {
-      padding: 4px 10px;
+      padding: 8px 14px;
       border: none;
-      border-radius: 10px;
-      font-size: 0.75rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
     }
 
     .btn-yes {
       background-color: #A7D08C;
-      color: #5D4037;
+      color: #43281C;
     }
 
     .btn-no {
@@ -205,35 +206,39 @@
       cursor: pointer;
       font-weight: bold;
       color: #8D6E63;
+      font-size: 1.25rem;
+      padding: 0 4px;
+      line-height: 1;
     }
 
     /* Interactive Quiz elements */
     .btn-choice {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 14px;
       background: #FFFDF5;
       border: 1.5px solid #A7D08C;
       border-radius: 12px;
       text-align: left;
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       cursor: pointer !important;
-      color: #5D4037;
-      font-weight: bold;
+      color: #43281C;
+      font-weight: 600;
+      line-height: 1.35;
       transition: all 0.2s;
       pointer-events: all !important;
     }
 
     .btn-choice:hover {
       background: #E8F5E9;
-      transform: scale(1.02);
+      transform: scale(1.01);
     }
 
     .quiz-input {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border: 2px solid #A7D08C;
       border-radius: 12px;
-      font-size: 0.85rem;
+      font-size: 1rem;
       outline: none;
       background: #FFFDF5;
       color: #5D4037;
@@ -245,27 +250,25 @@
       z-index: 1;
     }
 
-
-
     .quiz-feedback {
       font-weight: bold;
-      font-size: 0.85rem;
-      margin-top: 4px;
+      font-size: 1rem;
+      margin-top: 6px;
       text-align: center;
     }
 
     /* Scrollable items */
     .matcha-scroll-list {
-      max-height: 150px;
+      max-height: 220px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding-right: 4px;
+      gap: 8px;
+      padding-right: 6px;
     }
 
     .matcha-scroll-list::-webkit-scrollbar {
-      width: 4px;
+      width: 6px;
     }
 
     .matcha-scroll-list::-webkit-scrollbar-thumb {
@@ -274,10 +277,11 @@
     }
 
     .list-item {
-      padding: 6px 8px;
+      padding: 8px 12px;
       background: #FAF8F5;
-      border-left: 3px solid #A7D08C;
-      font-size: 0.75rem;
+      border-left: 4px solid #A7D08C;
+      border-radius: 6px;
+      font-size: 0.92rem;
       border-radius: 4px;
     }
 
@@ -728,16 +732,16 @@
         <span>Mát Cha AI Eo 🍵</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="font-weight: bold; margin: 4px 0; font-size: 0.85rem; text-align: center;">Tớ có thể giúp gì cho cậu?</div>
-      <div class="actions" style="flex-direction: column; gap: 4px; align-items: stretch; width: 100%; margin: 0;">
-        <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 6px;">💬 Trò chuyện AI</button>
-        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 6px; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét từ vựng (OCR)</button>
-        <button class="btn btn-yes" id="btn-add-vocab-ui" style="width: 100%; padding: 6px; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm nhanh từ mới</button>
-        <button class="btn btn-yes" id="btn-view-vocab" style="width: 100%; padding: 6px; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng của tớ</button>
-        <button class="btn btn-yes" id="btn-grammar-quiz" style="width: 100%; padding: 6px; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ Pháp AI</button>
-        <button class="btn btn-yes" id="btn-vocab-quiz" style="width: 100%; padding: 6px; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng (Quiz)</button>
-        <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 6px; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
-        <button class="btn btn-no" id="btn-snooze-pet" style="width: 100%; padding: 6px; background: #efebe9; border: 1.5px solid #d7ccc8; margin-top: 4px;">💤 Tạm ẩn Mascot 30 phút</button>
+      <div style="font-weight: bold; margin: 4px 0 6px; font-size: 1.05rem; text-align: center; color: #43281C;">Tớ có thể giúp gì cho cậu?</div>
+      <div class="actions" style="flex-direction: column; gap: 6px; align-items: stretch; width: 100%; margin: 0;">
+        <button class="btn btn-yes" id="btn-sidepanel" style="width: 100%; padding: 10px; font-size: 0.95rem;">💬 Trò chuyện AI</button>
+        <button class="btn btn-yes" id="btn-ocr" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #E8F5E9; border: 1.5px solid #81C784;">📸 Quét từ vựng (OCR)</button>
+        <button class="btn btn-yes" id="btn-add-vocab-ui" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #E3F2FD; border: 1.5px solid #64B5F6;">➕ Thêm nhanh từ mới</button>
+        <button class="btn btn-yes" id="btn-view-vocab" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FFF3E0; border: 1.5px solid #FFB74D;">📚 Tủ từ vựng của tớ</button>
+        <button class="btn btn-yes" id="btn-grammar-quiz" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FCE4EC; border: 1.5px solid #F48FB1;">🧩 Quiz Ngữ Pháp AI</button>
+        <button class="btn btn-yes" id="btn-vocab-quiz" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #FFF9E6; border: 1.5px solid #A7D08C;">📝 Ôn từ vựng (Quiz)</button>
+        <button class="btn btn-yes" id="btn-view-schedule" style="width: 100%; padding: 10px; font-size: 0.95rem; background: #F3E5F5; border: 1.5px solid #BA68C8;">📅 Lịch học của tớ</button>
+        <button class="btn btn-no" id="btn-snooze-pet" style="width: 100%; padding: 9px; font-size: 0.9rem; background: #efebe9; border: 1.5px solid #d7ccc8; margin-top: 4px;">💤 Tạm ẩn Mascot 30 phút</button>
       </div>
     `;
     openBubble(menuHtml);
@@ -998,17 +1002,17 @@
 
     let listHtml = '';
     if (list.length === 0) {
-      listHtml = '<div style="font-size:0.8rem; text-align:center; padding:10px;">Kho từ trống. Hãy thêm từ vựng mới nhé! 🍵</div>';
+      listHtml = '<div style="font-size:0.95rem; text-align:center; padding:16px; color:#5D4037;">Kho từ trống. Hãy thêm từ vựng mới nhé! 🍵</div>';
     } else {
       listHtml = `<div class="matcha-scroll-list" id="vocab-scroll-list">`;
       list.forEach((v, idx) => {
         listHtml += `
-          <div class="list-item vocab-clickable" data-idx="${idx}" style="cursor:pointer; transition:background 0.15s;">
-            <div style="font-weight:bold; color:#3b7a13; font-size:0.8rem; display:flex; justify-content:space-between;">
+          <div class="list-item vocab-clickable" data-idx="${idx}" style="cursor:pointer; transition:background 0.15s; padding: 10px 12px;">
+            <div style="font-weight:bold; color:#2E7D32; font-size:1.05rem; display:flex; justify-content:space-between; align-items:center;">
               <span>${v.word}</span>
-              <span style="font-weight:normal; color:#8D6E63; font-size:0.7rem;">${v.phonetic || ''}</span>
+              <span style="font-weight:normal; color:#8D6E63; font-size:0.85rem;">${v.phonetic || ''}</span>
             </div>
-            <div style="color:#5D4037; font-size:0.75rem;">${v.meaning ? v.meaning.slice(0, 60) + (v.meaning.length > 60 ? '...' : '') : ''}</div>
+            <div style="color:#43281C; font-size:0.92rem; margin-top:2px; line-height:1.35;">${v.meaning ? v.meaning.slice(0, 80) + (v.meaning.length > 80 ? '...' : '') : ''}</div>
           </div>
         `;
       });
@@ -1020,9 +1024,9 @@
         <span>Tủ từ của tớ (${list.length}) 📚</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="font-size:0.7rem; color:#8D6E63; text-align:center; margin-bottom:4px;">Bấm vào từng từ để xem chi tiết & mẹo nhớ 👇</div>
+      <div style="font-size:0.85rem; color:#8D6E63; text-align:center; margin-bottom:4px;">Bấm vào từng từ để xem chi tiết & mẹo nhớ 👇</div>
       ${listHtml}
-      <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:4px;">Quay lại</button>
+      <button class="btn btn-yes" id="btn-back-menu" style="width:100%; margin-top:8px; padding:10px; font-size:0.95rem;">Quay lại</button>
     `;
     openBubble(listHtmlContent);
 
@@ -1068,28 +1072,28 @@
         <span>Chi tiết từ vựng 📖</span>
         <span class="close-btn" id="close-bubble">×</span>
       </div>
-      <div style="display:flex; flex-direction:column; gap:6px; font-size:0.82rem;">
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:0.95rem;">
         <div style="text-align:center;">
-          <div style="font-size:1.3rem; font-weight:bold; color:#3b7a13;">${v.word}</div>
-          <div style="color:#8D6E63; font-size:0.85rem;">${v.phonetic || ''}</div>
-          <div style="color:#A7D08C; font-size:0.75rem; margin-top:2px;">Độ thuần thục: ${masteryStars}</div>
+          <div style="font-size:1.45rem; font-weight:bold; color:#2E7D32;">${v.word}</div>
+          <div style="color:#8D6E63; font-size:0.95rem; margin-top:2px;">${v.phonetic || ''}</div>
+          <div style="color:#F57F17; font-size:0.85rem; margin-top:4px;">Độ thuần thục: ${masteryStars}</div>
         </div>
-        <div style="background:#F1F8E9; border-left:3px solid #A7D08C; padding:6px 8px; border-radius:6px;">
-          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">📝 Nghĩa:</div>
-          <div style="color:#5D4037;">${v.meaning || 'Chưa có nghĩa'}</div>
+        <div style="background:#F1F8E9; border-left:4px solid #A7D08C; padding:8px 12px; border-radius:8px;">
+          <div style="font-weight:bold; color:#43281C; font-size:0.85rem; margin-bottom:3px;">📝 Nghĩa:</div>
+          <div style="color:#2E7D32; font-size:1rem; font-weight:500;">${v.meaning || 'Chưa có nghĩa'}</div>
         </div>
         ${v.example ? `
-        <div style="background:#FFF9E6; border-left:3px solid #FFD54F; padding:6px 8px; border-radius:6px;">
-          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">💬 Ví dụ:</div>
-          <div style="color:#795548; font-style:italic;">"${v.example}"</div>
+        <div style="background:#FFF9E6; border-left:4px solid #FFD54F; padding:8px 12px; border-radius:8px;">
+          <div style="font-weight:bold; color:#43281C; font-size:0.85rem; margin-bottom:3px;">💬 Ví dụ:</div>
+          <div style="color:#5D4037; font-style:italic; font-size:0.92rem; line-height:1.4;">"${v.example}"</div>
         </div>` : ''}
         ${memoryHook ? `
-        <div style="background:#F3E5F5; border-left:3px solid #CE93D8; padding:6px 8px; border-radius:6px;">
-          <div style="font-weight:bold; color:#5D4037; font-size:0.75rem; margin-bottom:2px;">🧠 Mẹo nhớ:</div>
-          <div style="color:#6A1B9A; font-size:0.78rem;">${memoryHook}</div>
-        </div>` : '<div style="color:#8D6E63; font-size:0.72rem; text-align:center;">Đang tải mẹo nhớ...</div>'}
+        <div style="background:#F3E5F5; border-left:4px solid #CE93D8; padding:8px 12px; border-radius:8px;">
+          <div style="font-weight:bold; color:#43281C; font-size:0.85rem; margin-bottom:3px;">🧠 Mẹo nhớ:</div>
+          <div style="color:#6A1B9A; font-size:0.92rem; line-height:1.4;">${memoryHook}</div>
+        </div>` : '<div style="color:#8D6E63; font-size:0.85rem; text-align:center;">Đang tải mẹo nhớ...</div>'}
       </div>
-      <button class="btn btn-yes" id="btn-back-list" style="width:100%; margin-top:6px;">← Quay lại danh sách</button>
+      <button class="btn btn-yes" id="btn-back-list" style="width:100%; margin-top:8px; padding:10px; font-size:0.95rem;">← Quay lại danh sách</button>
     `;
     openBubble(detailHtml);
 
@@ -1207,12 +1211,12 @@
 
       const progressPct = Math.round((currentQ / questions.length) * 100);
       const progressBar = `
-        <div style="margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8D6E63; margin-bottom:2px;">
+        <div style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#8D6E63; margin-bottom:4px; font-weight:600;">
             <span>Câu ${currentQ + 1}/${questions.length} (${isBlankMode ? 'Điền từ' : 'Trắc nghiệm'})</span>
             <span>Điểm: ${score}/${currentQ}</span>
           </div>
-          <div style="background:#E8F5E9; border-radius:6px; height:6px; overflow:hidden;">
+          <div style="background:#E8F5E9; border-radius:6px; height:8px; overflow:hidden;">
             <div style="width:${progressPct}%; background:#A7D08C; height:100%; border-radius:6px; transition:width 0.3s;"></div>
           </div>
         </div>
@@ -1221,12 +1225,12 @@
       let questionBodyHtml = '';
       if (!isBlankMode) {
         questionBodyHtml = `
-          <div style="font-size:0.84rem; color:#5D4037; margin-bottom:8px; line-height:1.45; font-weight:500;">
+          <div style="font-size:1.02rem; color:#43281C; margin-bottom:10px; line-height:1.5; font-weight:600;">
             ${q.question}
           </div>
-          <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
+          <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
             ${choices.map((c, i) => `
-              <button class="btn-choice" data-ans="${c}" data-correct="${c.trim().toLowerCase() === correctAnswer.toLowerCase()}">
+              <button class="btn-choice" data-ans="${c}" data-correct="${c.trim().toLowerCase() === correctAnswer.toLowerCase()}" style="padding: 10px 14px; font-size: 0.95rem;">
                 ${String.fromCharCode(65 + i)}. ${c}
               </button>
             `).join('')}
@@ -1234,13 +1238,13 @@
         `;
       } else {
         questionBodyHtml = `
-          <div style="font-size:0.84rem; color:#5D4037; margin-bottom:8px; line-height:1.45; font-weight:500;">
+          <div style="font-size:1.02rem; color:#43281C; margin-bottom:10px; line-height:1.5; font-weight:600;">
             Điền từ còn thiếu vào chỗ trống:<br/>
-            <strong style="color:#2E7D32; display:block; margin-top:4px;">${q.question}</strong>
+            <strong style="color:#2E7D32; display:block; margin-top:6px; font-size:1.05rem;">${q.question}</strong>
           </div>
-          <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
-            <input type="text" id="grammar-blank-input" class="quiz-input" placeholder="Nhập từ cần điền..." autocomplete="off" />
-            <button class="btn btn-yes" id="btn-submit-grammar-blank" style="padding:8px; font-weight:bold;">Kiểm tra đáp án ✓</button>
+          <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+            <input type="text" id="grammar-blank-input" class="quiz-input" placeholder="Nhập từ cần điền..." autocomplete="off" style="padding: 10px 14px; font-size: 1rem;" />
+            <button class="btn btn-yes" id="btn-submit-grammar-blank" style="padding:10px; font-size:0.95rem; font-weight:bold;">Kiểm tra đáp án ✓</button>
           </div>
         `;
       }
@@ -1252,9 +1256,9 @@
         </div>
         ${progressBar}
         ${questionBodyHtml}
-        <div id="qfeedback" class="quiz-feedback" style="margin-top:6px;"></div>
-        <div id="qexplanation" style="display:none; margin-top:6px; padding:8px 10px; background:#F1F8E9; border:1px solid #C8E6C9; border-radius:10px; font-size:0.75rem; color:#33691E; line-height:1.4; text-align:left; max-height:120px; overflow-y:auto;"></div>
-        <button class="btn btn-no" id="btn-skip-grammar" style="width:100%; margin-top:6px; font-size:0.72rem;">Bỏ qua câu này →</button>
+        <div id="qfeedback" class="quiz-feedback" style="margin-top:8px;"></div>
+        <div id="qexplanation" style="display:none; margin-top:8px; padding:10px 12px; background:#F1F8E9; border:1px solid #C8E6C9; border-radius:10px; font-size:0.9rem; color:#2E7D32; line-height:1.45; text-align:left; max-height:140px; overflow-y:auto;"></div>
+        <button class="btn btn-no" id="btn-skip-grammar" style="width:100%; margin-top:8px; font-size:0.85rem; padding:8px;">Bỏ qua câu này →</button>
       `;
       openBubble(quizHtml);
 
@@ -1578,12 +1582,12 @@
       const choices = [targetWord, ...distractors].sort(() => Math.random() - 0.5);
 
       const progressBar = `
-        <div style="margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8D6E63; margin-bottom:2px;">
+        <div style="margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#8D6E63; margin-bottom:4px; font-weight:600;">
             <span>Câu ${progress}</span>
             <span>Điểm: ${score}/${currentIdx}</span>
           </div>
-          <div style="background:#E8F5E9; border-radius:6px; height:6px; overflow:hidden;">
+          <div style="background:#E8F5E9; border-radius:6px; height:8px; overflow:hidden;">
             <div style="width:${pct}%; background:#A7D08C; height:100%; border-radius:6px; transition:width 0.3s;"></div>
           </div>
         </div>
@@ -1592,14 +1596,14 @@
       let quizBodyHtml = '';
       if (quizMode === 'abcd') {
         quizBodyHtml = `
-          <div style="font-size:0.82rem; text-align:center; margin-bottom:4px; color:#5D4037;">
+          <div style="font-size:0.95rem; text-align:center; margin-bottom:6px; color:#5D4037;">
             Nghĩa tiếng Việt của:<br/>
-            <strong style="font-size:1.1rem; color:#3b7a13;">${targetWord.word}</strong>
-            <span style="font-size:0.72rem; color:#8D6E63; display:block;">${targetWord.phonetic || ''}</span>
+            <strong style="font-size:1.35rem; color:#2E7D32; display:block; margin: 4px 0 2px;">${targetWord.word}</strong>
+            <span style="font-size:0.9rem; color:#8D6E63; display:block;">${targetWord.phonetic || ''}</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+          <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
             ${choices.map((c, i) => `
-              <button class="btn-choice" data-correct="${c.word === targetWord.word}">
+              <button class="btn-choice" data-correct="${c.word === targetWord.word}" style="padding: 10px 14px; font-size: 0.95rem;">
                 ${String.fromCharCode(65 + i)}. ${c.meaning}
               </button>
             `).join('')}
@@ -1608,13 +1612,13 @@
         `;
       } else {
         quizBodyHtml = `
-          <div style="font-size:0.82rem; text-align:center; margin-bottom:4px; color:#5D4037;">
+          <div style="font-size:0.95rem; text-align:center; margin-bottom:6px; color:#5D4037;">
             Từ tiếng Anh nào có nghĩa là:<br/>
-            <strong style="font-size:1rem; color:#3b7a13;">"${targetWord.meaning}"</strong>
+            <strong style="font-size:1.15rem; color:#2E7D32; display:block; margin-top:4px;">"${targetWord.meaning}"</strong>
           </div>
-          <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
-            <input type="text" id="blank-input" class="quiz-input" placeholder="Gõ từ tiếng Anh..." />
-            <button class="btn btn-yes" id="btn-submit-blank" style="padding:8px;">Kiểm tra ✓</button>
+          <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+            <input type="text" id="blank-input" class="quiz-input" placeholder="Gõ từ tiếng Anh..." style="padding: 10px 14px; font-size: 1rem;" />
+            <button class="btn btn-yes" id="btn-submit-blank" style="padding:10px; font-size:0.95rem; font-weight:bold;">Kiểm tra ✓</button>
           </div>
           <div id="quiz-feedback" class="quiz-feedback"></div>
         `;
@@ -1627,7 +1631,7 @@
         </div>
         ${progressBar}
         ${quizBodyHtml}
-        <button class="btn btn-no" id="btn-skip-word" style="width:100%; margin-top:4px; font-size:0.72rem;">Bỏ qua →</button>
+        <button class="btn btn-no" id="btn-skip-word" style="width:100%; margin-top:8px; font-size:0.85rem; padding:8px;">Bỏ qua →</button>
       `;
 
       openBubble(fullHtml);

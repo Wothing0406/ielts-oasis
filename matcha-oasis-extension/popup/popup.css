@@ -4,43 +4,45 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #FFFDF5;
   color: #5D4037;
-  width: 320px;
+  width: 360px;
+  font-size: 15px;
 }
 
 .popup-container {
-  padding: 16px;
+  padding: 18px;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  border-bottom: 2px solid rgba(167, 208, 140, 0.3);
+  gap: 12px;
+  border-bottom: 2px solid rgba(167, 208, 140, 0.4);
   padding-bottom: 12px;
   margin-bottom: 16px;
 }
 
 .logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .header h3 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #5D4037;
+  font-size: 1.35rem;
+  color: #43281C;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .status-text {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #795548;
   margin: 0;
+  line-height: 1.4;
 }
 
 .user-profile {
@@ -51,32 +53,32 @@ body {
 
 .user-name {
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .badge {
   background-color: #A7D08C;
-  color: #5D4037;
-  padding: 4px 8px;
+  color: #43281C;
+  padding: 5px 10px;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: bold;
 }
 
 .stats-card {
   background-color: #FFF9E6;
-  border: 1px solid rgba(167, 208, 140, 0.3);
-  border-radius: 12px;
-  padding: 12px;
+  border: 1px solid rgba(167, 208, 140, 0.4);
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .stat-item {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .stat-label {
@@ -85,6 +87,7 @@ body {
 
 .stat-value {
   font-weight: 600;
+  color: #43281C;
 }
 
 .control-group {
@@ -97,19 +100,19 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   cursor: pointer;
 }
 
 .btn {
-  padding: 10px 16px;
+  padding: 12px 18px;
   border: none;
   border-radius: 20px;
   font-weight: bold;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   transition: all 0.2s ease;
 }
 
