@@ -9,8 +9,7 @@
   const currentHost = window.location.hostname;
   const isMainSite = currentHost.includes("ieltsoasis.site") ||
                      currentHost === "localhost" ||
-                     currentHost === "127.0.0.1" ||
-                     currentHost === "100.127.204.9";
+                     currentHost === "127.0.0.1";
   let consecutiveWrong = 0;
 
   async function getServerUrl() {
@@ -791,7 +790,15 @@
       <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
         <input type="text" id="login-username" class="quiz-input" placeholder="Tên đăng nhập" style="padding: 8px; font-size: 0.8rem;" required />
         <input type="password" id="login-password" class="quiz-input" placeholder="Mật khẩu" style="padding: 8px; font-size: 0.8rem;" required />
-        <button class="btn btn-yes" id="btn-submit-login" style="margin-top:6px; padding:10px; font-size:0.85rem; font-weight:bold; cursor: pointer;">Đăng nhập ➔</button>
+        <button class="btn btn-yes" id="btn-submit-login" style="margin-top:4px; padding:9px; font-size:0.85rem; font-weight:bold; cursor: pointer;">Đăng nhập ➔</button>
+        <div style="display:flex; align-items:center; gap:6px; margin: 4px 0;">
+          <div style="flex:1; height:1px; background:#e0e0e0;"></div>
+          <span style="font-size:0.7rem; color:#9e9e9e;">HOẶC</span>
+          <div style="flex:1; height:1px; background:#e0e0e0;"></div>
+        </div>
+        <button class="btn btn-yes" id="btn-oauth-login" style="padding:8px; font-size:0.8rem; font-weight:bold; background:#5865F2; border-color:#4752C4; color:#fff; cursor:pointer;">
+          👾 Đăng nhập Discord OAuth2
+        </button>
         <div style="font-size:0.72rem; text-align:center; color:#795548; margin-top:4px;">
           Chưa có tài khoản? Hãy đăng ký tại <a href="https://ieltsoasis.site" target="_blank" style="color:#3b7a13; font-weight:bold; text-decoration:none;">ieltsoasis.site</a>
         </div>
@@ -801,6 +808,15 @@
     startAnimation('alert');
 
     shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+
+    const oauthBtn = shadow.querySelector('#btn-oauth-login');
+    if (oauthBtn) {
+      oauthBtn.addEventListener('click', async () => {
+        const serverUrl = await getServerUrl();
+        const oauthUrl = `${serverUrl}/api/auth/discord/login?redirect_uri=${encodeURIComponent(serverUrl + '/auth/callback')}`;
+        window.open(oauthUrl, '_blank');
+      });
+    }
 
     const submitBtn = shadow.querySelector('#btn-submit-login');
     submitBtn.addEventListener('click', async () => {

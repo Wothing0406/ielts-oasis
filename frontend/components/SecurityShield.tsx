@@ -117,7 +117,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
 
             {/* Bottom Footer Details */}
             <div className="text-[11px] text-[#4b5563] flex flex-col items-center gap-1 font-mono text-center">
-              <span>Ray ID: {Math.random().toString(16).substring(2, 10).toUpperCase()} • IP: 100.127.204.9</span>
+              <span>Ray ID: {Math.random().toString(16).substring(2, 10).toUpperCase()} • Performance &amp; Security</span>
               <span>Dịch vụ bảo mật cung cấp bởi Cloudflare</span>
             </div>
           </motion.div>
