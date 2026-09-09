@@ -103,6 +103,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Keep message channel open for async response
   }
+
+  if (message.action === 'sync_vocab') {
+    chrome.storage.local.get(['jwt_token'], async (data) => {
+      if (data.jwt_token) {
+        await syncUserProfile(data.jwt_token);
+        sendResponse({ status: 'synced' });
+      } else {
+        sendResponse({ status: 'no_token' });
+      }
+    });
+    return true;
+  }
   
   if (message.action === 'toggle_reminders') {
     setupAlarms();
@@ -167,6 +179,17 @@ async function syncUserProfile(token) {
       const vocabList = await vocabRes.json();
       await chrome.storage.local.set({ user_vocab: vocabList });
       console.log("Synced user vocabulary cards count: ", vocabList.length);
+
+      // Validate and clean up any stale active quiz state
+      const { active_quiz_state } = await chrome.storage.local.get(['active_quiz_state']);
+      if (active_quiz_state && active_quiz_state.mode === 'vocab' && active_quiz_state.shuffledList) {
+        const validWords = new Set(vocabList.map(v => (v.word || '').toLowerCase()));
+        const isStale = active_quiz_state.shuffledList.some(item => !validWords.has((item.word || '').toLowerCase()));
+        if (isStale || vocabList.length < 2) {
+          await chrome.storage.local.set({ active_quiz_state: null });
+          console.log("Stale active_quiz_state cleared after vocab sync.");
+        }
+      }
     }
   } catch (err) {
     console.error("Failed to sync user data: ", err);

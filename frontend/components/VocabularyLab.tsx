@@ -149,10 +149,18 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     }
   };
 
-  // Auto-focus on the newly added word when vocabulary list grows
+  // Keep currentIndex clamped safely within bounds when vocabulary list changes
+  const prevListLengthRef = React.useRef(vocabList.length);
   useEffect(() => {
-    setCurrentIndex(0);
-  }, [vocabList.length]);
+    if (vocabList.length > prevListLengthRef.current) {
+      // If newly added, focus on top
+      setCurrentIndex(0);
+    } else {
+      // If deleted/shrunk, safely clamp currentIndex
+      setCurrentIndex(prev => Math.max(0, Math.min(prev, Math.max(0, filteredVocabList.length - 1))));
+    }
+    prevListLengthRef.current = vocabList.length;
+  }, [vocabList.length, filteredVocabList.length]);
 
   // Swipe gesture hooks
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -516,23 +524,34 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         <div className="flex flex-col items-center w-full mt-8">
           <div className="w-full max-w-[290px] xs:max-w-[320px] sm:max-w-sm flex justify-center">
             <div 
-              className="w-full flex justify-center"
+              className="w-full flex justify-center min-h-[320px]"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
-              <Flashcard 
-                word={current.word}
-                phonetic={current.phonetic}
-                meaning={current.meaning}
-                audioPath={current.audio_path}
-                synonyms={current.synonyms}
-                memoryHook={current.memory_hook}
-                imageUrl={current.image_url}
-                topic={current.topic}
-                example={current.example}
-                onAudioClick={() => playAudio(current.word)}
-              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={current.id ? `card-${current.id}` : `card-${current.word}-${currentIndex}`}
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full flex justify-center"
+                >
+                  <Flashcard 
+                    word={current.word}
+                    phonetic={current.phonetic}
+                    meaning={current.meaning}
+                    audioPath={current.audio_path}
+                    synonyms={current.synonyms}
+                    memoryHook={current.memory_hook}
+                    imageUrl={current.image_url}
+                    topic={current.topic}
+                    example={current.example}
+                    onAudioClick={() => playAudio(current.word)}
+                  />
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
@@ -570,7 +589,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
              {current.id && current.user_id !== null && current.user_id !== undefined && (
                <button type="button" 
                  onClick={() => onDelete(current.id!)}
-                 className="w-full sm:w-auto bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all"
+                 className="w-full sm:w-auto bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all active:scale-95"
                >
                  <span className="material-symbols-rounded text-lg">delete</span> Xóa từ này
                </button>

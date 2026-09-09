@@ -210,23 +210,20 @@ export default function CommunityFeed({
   };
 
   const handleDeleteVocab = async (vocabId: number) => {
-    (window as any).showConfirm("Bạn có chắc chắn muốn xóa từ vựng này khỏi Oasis Community? 🍵", async () => {
+    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài từ vựng này khỏi Oasis Community? 🍵", async () => {
       const token = localStorage.getItem("oasis_token");
       if (!token) return (window as any).showToast("Bạn cần đăng nhập! 🍵", "info");
       try {
-        const res = await fetch(`${API_URL}/vocabulary/${vocabId}`, {
+        const res = await fetch(`${API_URL}/community/vocab/${vocabId}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          (window as any).showToast("Đã xóa từ vựng thành công! 🍵", "success");
-          if (onDeleteVocab) {
-            onDeleteVocab(vocabId);
-          }
+          (window as any).showToast("Đã xóa từ vựng khỏi Community! 🍵", "success");
           fetchFeed();
         } else {
           const errData = await res.json();
-          (window as any).showToast("Lỗi: " + (errData.detail || "Không thể xóa từ vựng"), "error");
+          (window as any).showToast("Lỗi: " + (errData.detail || "Không thể xóa bài viết này"), "error");
         }
       } catch (e) {
         console.error(e);
@@ -487,7 +484,7 @@ export default function CommunityFeed({
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-1">
-                  {currentUser && currentUser.user_id === v.user_id && (
+                  {currentUser && (currentUser.user_id === v.user_id || (currentUser.username && v.username === currentUser.username)) && (
                     <button 
                       type="button" 
                       onClick={() => handleDeleteVocab(v.id)} 

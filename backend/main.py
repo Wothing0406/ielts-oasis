@@ -663,13 +663,43 @@ async def delete_vocab(id: int, user: dict = Depends(get_current_user), db: Sess
         raise HTTPException(status_code=403, detail="Không có quyền xóa từ vựng này")
         
     word_to_delete = vocab.word
-    db.query(Vocabulary).filter(
+    user_vocabs = db.query(Vocabulary).filter(
         func.lower(Vocabulary.word) == func.lower(word_to_delete),
         Vocabulary.user_id == user_id
-    ).delete(synchronize_session=False)
+    ).all()
     
+    for v in user_vocabs:
+        if v.is_global:
+            # Preserve word in Oasis Community, just decouple from user's personal vault
+            v.user_id = None
+        else:
+            db.delete(v)
+            
     db.commit()
     return {"ok": True}
+
+@app.delete("/community/vocab/{id}")
+async def delete_community_vocab(id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = user["user_id"]
+    username = user.get("username", "")
+
+    vocab = db.query(Vocabulary).filter(Vocabulary.id == id).first()
+    if not vocab or not vocab.is_global:
+        raise HTTPException(status_code=404, detail="Community vocabulary not found")
+
+    # Only author (matching user_id or creator_username) can delete from community
+    is_author = (vocab.user_id == user_id) or (vocab.creator_username and vocab.creator_username.lower() == username.lower())
+    if not is_author:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xóa bài viết này trên Community")
+
+    vocab.is_global = False
+    if vocab.user_id is None:
+        db.delete(vocab)
+    db.commit()
+    return {"ok": True}
+
 
 class ReviewPayload(BaseModel):
     is_correct: bool

@@ -38,6 +38,18 @@
     if (token) {
       chrome.runtime.sendMessage({ action: 'save_jwt_token', token: token });
     }
+
+    // Listen to real-time events from IELTS Oasis web app
+    window.addEventListener("message", async (event) => {
+      if (event.data && (event.data.type === "OASIS_VOCAB_DELETED" || event.data.type === "OASIS_VOCAB_UPDATED")) {
+        console.log("[Matcha Mascot] Received vocab change from web:", event.data);
+        const currentToken = localStorage.getItem("oasis_token");
+        if (currentToken) {
+          chrome.runtime.sendMessage({ action: 'sync_vocab' });
+        }
+        await clearActiveQuizState();
+      }
+    });
   }
 
   // Create Shadow DOM Container
@@ -1343,26 +1355,36 @@
 
     let savedState = data.active_quiz_state;
     if (savedState && savedState.mode === 'vocab' && (Date.now() - savedState.timestamp < 2 * 60 * 60 * 1000)) {
-      openBubble(`
-        <div class="bubble-header">
-          <span>Tiếp tục học? 🍵</span>
-          <span class="close-btn" id="close-bubble">×</span>
-        </div>
-        <div style="font-size:0.82rem; text-align:center; padding:10px;">
-          Tớ thấy cậu đang làm dở bài Quiz Từ Vựng trước đó (đến câu ${savedState.currentIdx + 1}). Cậu muốn làm tiếp hay học lại từ đầu?
-        </div>
-        <button class="btn btn-yes" id="btn-resume-quiz" style="width:100%; margin-top:6px;">Tiếp tục làm ➔</button>
-        <button class="btn btn-no" id="btn-restart-quiz" style="width:100%; margin-top:4px;">Học lại từ đầu 🔄</button>
-      `);
-      shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
-      shadow.querySelector('#btn-resume-quiz').addEventListener('click', () => {
-        startVocabQuizSession(activeList, savedState.shuffledList, savedState.currentIdx, savedState.score);
-      });
-      shadow.querySelector('#btn-restart-quiz').addEventListener('click', () => {
-        clearActiveQuizState();
-        showVocabReminder(isAutomatic);
-      });
-      return;
+      // Check if savedState words are still valid in current activeList
+      const activeWordSet = new Set(activeList.map(item => (item.word || '').toLowerCase()));
+      const hasStaleWord = savedState.shuffledList && savedState.shuffledList.some(item => !activeWordSet.has((item.word || '').toLowerCase()));
+
+      if (hasStaleWord) {
+        // Automatically purge stale quiz state
+        await clearActiveQuizState();
+        savedState = null;
+      } else {
+        openBubble(`
+          <div class="bubble-header">
+            <span>Tiếp tục học? 🍵</span>
+            <span class="close-btn" id="close-bubble">×</span>
+          </div>
+          <div style="font-size:0.82rem; text-align:center; padding:10px;">
+            Tớ thấy cậu đang làm dở bài Quiz Từ Vựng trước đó (đến câu ${savedState.currentIdx + 1}). Cậu muốn làm tiếp hay học lại từ đầu?
+          </div>
+          <button class="btn btn-yes" id="btn-resume-quiz" style="width:100%; margin-top:6px;">Tiếp tục làm ➔</button>
+          <button class="btn btn-no" id="btn-restart-quiz" style="width:100%; margin-top:4px;">Học lại từ đầu 🔄</button>
+        `);
+        shadow.querySelector('#close-bubble').addEventListener('click', closeBubble);
+        shadow.querySelector('#btn-resume-quiz').addEventListener('click', () => {
+          startVocabQuizSession(activeList, savedState.shuffledList, savedState.currentIdx, savedState.score);
+        });
+        shadow.querySelector('#btn-restart-quiz').addEventListener('click', () => {
+          clearActiveQuizState();
+          showVocabReminder(isAutomatic);
+        });
+        return;
+      }
     }
 
     if (!isAutomatic) {

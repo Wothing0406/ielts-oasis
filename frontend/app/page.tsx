@@ -286,16 +286,35 @@ export default function Home() {
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    const previousVocab = [...vocabList];
+    const deletedItem = vocabList.find(v => v.id === id);
+
+    // Optimistic UI update: instantly remove from state with zero delay
+    setVocabList(prev => prev.filter(v => v.id !== id));
+
+    // Notify extension immediately
+    if (typeof window !== "undefined") {
+      window.postMessage({
+        type: "OASIS_VOCAB_DELETED",
+        id,
+        word: deletedItem?.word
+      }, "*");
+    }
+
     try {
       const res = await fetch(`${API_URL}/vocabulary/${id}`, {
         method: "DELETE",
         headers
       });
-      if (res.ok) {
-        setVocabList(prev => prev.filter(v => v.id !== id));
+      if (!res.ok) {
+        // Rollback on server error
+        setVocabList(previousVocab);
+        (window as any).showToast?.("Không thể xóa từ vựng. Đã khôi phục lại.", "error");
       }
     } catch (e) {
       console.error(e);
+      setVocabList(previousVocab);
+      (window as any).showToast?.("Lỗi kết nối khi xóa từ vựng.", "error");
     }
   };
 
