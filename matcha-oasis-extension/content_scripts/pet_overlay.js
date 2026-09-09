@@ -6,7 +6,11 @@
 
   console.log("Matcha Study Buddy injected.");
 
-  const isMainSite = window.location.hostname.includes("ieltsoasis.site");
+  const currentHost = window.location.hostname;
+  const isMainSite = currentHost.includes("ieltsoasis.site") ||
+                     currentHost === "localhost" ||
+                     currentHost === "127.0.0.1" ||
+                     currentHost === "100.127.204.9";
   let consecutiveWrong = 0;
 
   async function getServerUrl() {
@@ -34,9 +38,16 @@
 
   // Zero-touch token sync if on main website
   if (isMainSite) {
+    const origin = window.location.origin;
+    chrome.storage.local.set({ server_url: origin });
+
     const token = localStorage.getItem("oasis_token");
     if (token) {
-      chrome.runtime.sendMessage({ action: 'save_jwt_token', token: token });
+      chrome.runtime.sendMessage({
+        action: 'save_jwt_token',
+        token: token,
+        server_url: origin
+      });
     }
 
     // Listen to real-time events from IELTS Oasis web app
@@ -560,6 +571,32 @@
       triggerTantrumLockout();
     } else if (data.snoozed_until && Date.now() < data.snoozed_until) {
       applySnoozeState(data.snoozed_until);
+    }
+  });
+
+  // Listen to cross-tab storage changes (e.g. user answered lockout in another tab)
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+
+    if (changes.is_punishment_mode) {
+      if (changes.is_punishment_mode.newValue === false) {
+        // Dismiss lockout instantly across all open tabs
+        const overlay = shadow.querySelector('.lockout-overlay');
+        if (overlay) overlay.remove();
+        const card = shadow.querySelector('.lockout-card');
+        if (card) card.remove();
+        stopAngryRun();
+      } else if (changes.is_punishment_mode.newValue === true && !isAngryRunning) {
+        triggerTantrumLockout();
+      }
+    }
+
+    if (changes.lockout_quiz_state && changes.lockout_quiz_state.newValue === null) {
+      const overlay = shadow.querySelector('.lockout-overlay');
+      if (overlay) overlay.remove();
+      const card = shadow.querySelector('.lockout-card');
+      if (card) card.remove();
+      stopAngryRun();
     }
   });
 
@@ -1800,8 +1837,8 @@
     generateLockoutQuiz(card);
   }
 
-  async function generateLockoutQuiz(card) {
-    const data = await chrome.storage.local.get(['user_vocab']);
+  async function generateLockoutQuiz(card, forceNew = false) {
+    const data = await chrome.storage.local.get(['user_vocab', 'lockout_quiz_state']);
     const list = data.user_vocab || [];
     const defaultList = [
       { word: 'academic', meaning: 'tính học thuật', phonetic: '/ˌæk.əˈdem.ɪk/', example: 'She has high academic standards.' },
@@ -1809,11 +1846,32 @@
       { word: 'acquire', meaning: 'gặt hái, thu nhận được', phonetic: '/əˈkwaɪər/', example: 'To acquire language skills.' }
     ];
     const activeList = list.length >= 4 ? list : defaultList;
-    const target = activeList[Math.floor(Math.random() * activeList.length)];
 
-    const incorrectPool = activeList.filter(item => item.word !== target.word);
-    const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
-    const choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
+    let target = null;
+    let choices = null;
+
+    // Check if another tab already created a shared lockout quiz within the last 15 minutes
+    const shared = data.lockout_quiz_state;
+    const activeWordSet = new Set(activeList.map(item => (item.word || '').toLowerCase()));
+
+    if (!forceNew && shared && (Date.now() - shared.timestamp < 15 * 60 * 1000) && activeWordSet.has((shared.target?.word || '').toLowerCase())) {
+      target = shared.target;
+      choices = shared.choices;
+    } else {
+      target = activeList[Math.floor(Math.random() * activeList.length)];
+      const incorrectPool = activeList.filter(item => item.word !== target.word);
+      const shuffledIncorrect = incorrectPool.sort(() => 0.5 - Math.random()).slice(0, 3);
+      choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
+
+      // Persist shared lockout question so all browser tabs show the EXACT same question
+      await chrome.storage.local.set({
+        lockout_quiz_state: {
+          target,
+          choices,
+          timestamp: Date.now()
+        }
+      });
+    }
 
     const quizBox = card.querySelector('#lockout-quiz-box');
     quizBox.innerHTML = `
@@ -1829,7 +1887,7 @@
 
     const choiceBtns = card.querySelectorAll('.lockout-choice');
     choiceBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const isCorrect = btn.getAttribute('data-correct') === 'true';
         const feedback = card.querySelector('#lockout-feedback');
 
@@ -1842,12 +1900,17 @@
           startAnimation('celebrating');
           consecutiveWrong = 0;
           consecutiveIgnored = 0;
+          // Clear shared lockout quiz state in storage so all tabs know user passed
+          await chrome.storage.local.set({
+            lockout_quiz_state: null,
+            is_punishment_mode: false
+          });
           setTimeout(() => {
             const overlay = shadow.querySelector('.lockout-overlay');
             if (overlay) overlay.remove();
             card.remove();
             stopAngryRun();
-          }, 2500);
+          }, 2000);
         } else {
           btn.style.borderColor = '#E57373';
           btn.style.background = '#FFEBEE';
@@ -1861,7 +1924,7 @@
           feedback.innerHTML = `<span style="color:#C62828;">✗ Sai rồi! Đáp án đúng: "${target.meaning}" 😭</span>`;
           startAnimation('crying');
           setTimeout(() => {
-            generateLockoutQuiz(card);
+            generateLockoutQuiz(card, true);
           }, 3000);
         }
       });
