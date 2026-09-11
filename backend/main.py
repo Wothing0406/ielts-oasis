@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Request, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Request, Depends, Query
 from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -32,6 +32,7 @@ try:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     keywords_path = os.path.join(current_dir, "services", "wordle_keywords.json")
     guess_path = os.path.join(current_dir, "services", "wordle_guess_words.json")
+    oxford_path = os.path.join(current_dir, "services", "oxford_5000_cefr.json")
     
     if os.path.exists(keywords_path):
         with open(keywords_path, "r", encoding="utf-8") as f:
@@ -42,6 +43,14 @@ try:
         with open(guess_path, "r", encoding="utf-8") as f:
             guess_list = json.load(f)
             VALID_WORDLE_DICTIONARY.update([w.upper() for w in guess_list])
+
+    if os.path.exists(oxford_path):
+        with open(oxford_path, "r", encoding="utf-8") as f:
+            oxford_list = json.load(f)
+            for item in oxford_list:
+                w = item.get("word", "")
+                if len(w) == 5 and w.isalpha():
+                    VALID_WORDLE_DICTIONARY.add(w.upper())
             
     logger.info(f"Loaded {len(VALID_WORDLE_DICTIONARY)} words into local Wordle validation dictionary.")
 except Exception as e:
@@ -1042,6 +1051,97 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     db.close()
     return {"vocabularies": vocab_list, "writings": writing_list}
 
+# --- Curated Oxford 5000 CEFR Vocabulary Endpoints ---
+class SaveCuratedInput(BaseModel):
+    word: str
+    topic: Optional[str] = None
+
+@app.get("/community/curated-vocab")
+async def get_curated_vocabulary(
+    level: Optional[str] = Query(None, description="CEFR level: A1, A2, B1, B2, C1, or all"),
+    search: Optional[str] = Query(None, description="Search keyword"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100)
+):
+    try:
+        try:
+            from services.oxford_dataset_service import oxford_dataset_service
+        except ImportError:
+            from oxford_dataset_service import oxford_dataset_service
+        return oxford_dataset_service.query_curated_vocab(level=level, search=search, page=page, limit=limit)
+    except Exception as e:
+        logger.error(f"Failed to query curated vocab: {e}")
+        raise HTTPException(status_code=500, detail="Lỗi khi truy vấn kho từ vựng Oxford")
+
+@app.post("/community/curated-vocab/save-to-lab")
+async def save_curated_vocab_to_lab(
+    payload: SaveCuratedInput,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_id = current_user["user_id"]
+    clean_word = payload.word.strip().lower()
+
+    existing = db.query(Vocabulary).filter(
+        Vocabulary.user_id == user_id,
+        Vocabulary.word == clean_word
+    ).first()
+    if existing:
+        return {"message": "Từ vựng này đã có trong Tủ từ của bạn rồi!", "already_exists": True, "word_id": existing.id}
+
+    try:
+        from services.oxford_dataset_service import oxford_dataset_service
+    except ImportError:
+        from oxford_dataset_service import oxford_dataset_service
+    details = oxford_dataset_service.get_word_details(clean_word)
+
+    if not details:
+        details = {
+            "word": clean_word,
+            "phonetic": "/.../",
+            "meaning": "Từ vựng học thuật Oxford CEFR",
+            "example": f"Understanding '{clean_word}' is useful for IELTS.",
+            "topic": payload.topic or "Oxford 5000",
+            "audio_url": "",
+            "synonyms": [],
+            "memory_hook": f"Ghi nhớ từ: {clean_word}"
+        }
+
+    new_vocab = Vocabulary(
+        user_id=user_id,
+        word=clean_word,
+        phonetic=details.get("phonetic", "/.../"),
+        meaning=details.get("meaning", "Từ vựng học thuật"),
+        example=details.get("example", ""),
+        topic=payload.topic or details.get("topic", "Oxford 5000"),
+        audio_url=details.get("audio_url", ""),
+        synonyms=details.get("synonyms", []),
+        memory_hook=details.get("memory_hook") or f"Ghi nhớ từ '{clean_word}': {details.get('meaning', '')[:40]}",
+        mastery_level=1,
+        source="Kho từ vựng Oxford 5000",
+        creator_username=current_user.get("username", "Học viên"),
+        created_at=datetime.utcnow()
+    )
+    db.add(new_vocab)
+    db.commit()
+    db.refresh(new_vocab)
+
+    return {
+        "message": f"Đã thêm từ '{clean_word}' vào Tủ từ thành công!",
+        "already_exists": False,
+        "vocab": {
+            "id": new_vocab.id,
+            "word": new_vocab.word,
+            "level": details.get("level", "B1"),
+            "phonetic": new_vocab.phonetic,
+            "meaning": new_vocab.meaning,
+            "example": new_vocab.example,
+            "audio_url": new_vocab.audio_url
+        }
+    }
+
 from typing import Any
 
 class ShareWritingIn(BaseModel):
@@ -1693,17 +1793,28 @@ async def get_wordle_hint(current_user: dict = Depends(get_current_user), db: Se
     # Type 3: First or last letter
     hint_types.append(f"Chữ cái cuối cùng của từ là '{secret[-1]}'.")
     
-    # Prioritize Academic Skill 3 (generate_vocabulary_context for game hint)
+    # 1. Ưu tiên lấy manh mối từ Oxford 5000 CEFR Dataset (ngay lập tức < 1ms, 0 token AI)
     chosen_hint = None
     try:
-        vocab_ctx = await ai_service.generate_vocabulary_context(secret, for_game_hint=True)
-        game_hint = vocab_ctx.get("game_hint")
-        if game_hint and game_hint.get("clue"):
-            clue = game_hint.get("clue")
-            pattern = game_hint.get("scramble_or_pattern")
-            chosen_hint = f"💡 Manh mối học thuật IELTS: {clue}" + (f" (Cấu trúc: {pattern})" if pattern else "")
-    except Exception as e:
-        logger.warning(f"Academic Wordle hint generation failed, using mechanical fallback: {e}")
+        try:
+            from services.oxford_dataset_service import oxford_dataset_service
+        except ImportError:
+            from oxford_dataset_service import oxford_dataset_service
+        chosen_hint = oxford_dataset_service.get_wordle_dataset_hint(secret, game.guesses or [])
+    except Exception as ex:
+        logger.warning(f"Oxford dataset hint failed, will try AI fallback: {ex}")
+
+    # 2. Fallback sang AI Skill 3 nếu dataset không có
+    if not chosen_hint:
+        try:
+            vocab_ctx = await ai_service.generate_vocabulary_context(secret, for_game_hint=True)
+            game_hint = vocab_ctx.get("game_hint")
+            if game_hint and game_hint.get("clue"):
+                clue = game_hint.get("clue")
+                pattern = game_hint.get("scramble_or_pattern")
+                chosen_hint = f"💡 Manh mối học thuật IELTS: {clue}" + (f" (Cấu trúc: {pattern})" if pattern else "")
+        except Exception as e:
+            logger.warning(f"Academic Wordle hint generation failed, using mechanical fallback: {e}")
 
     if not chosen_hint:
         chosen_hint = random.choice(hint_types)

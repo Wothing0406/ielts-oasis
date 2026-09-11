@@ -22,7 +22,7 @@ export default function CommunityFeed({
 }) {
   const [data, setData] = useState<{ vocabularies: any[]; writings: any[] }>({ vocabularies: [], writings: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies'>('writings');
+  const [activeTab, setActiveTab] = useState<'writings' | 'vocabularies' | 'oxford'>('writings');
   const [sortBy, setSortBy] = useState('new');
   const [lesson, setLesson] = useState<any>(null);
   const [convertingId, setConvertingId] = useState<number | null>(null);
@@ -34,6 +34,18 @@ export default function CommunityFeed({
   const [newComment, setNewComment] = useState("");
   const [savingWords, setSavingWords] = useState<Set<string>>(new Set());
   const [savingAll, setSavingAll] = useState(false);
+
+  // Oxford 5000 CEFR Curated Dataset state
+  const [oxfordLevel, setOxfordLevel] = useState<string>('All');
+  const [oxfordPage, setOxfordPage] = useState<number>(1);
+  const [oxfordData, setOxfordData] = useState<{ total: number; page: number; total_pages: number; items: any[] }>({
+    total: 0,
+    page: 1,
+    total_pages: 1,
+    items: []
+  });
+  const [oxfordLoading, setOxfordLoading] = useState<boolean>(false);
+  const [playingAudioWord, setPlayingAudioWord] = useState<string | null>(null);
 
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -59,6 +71,7 @@ export default function CommunityFeed({
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
       setPage(1);
+      setOxfordPage(1);
     }, 300);
     return () => clearTimeout(handler);
   }, [searchQuery]);
@@ -82,10 +95,30 @@ export default function CommunityFeed({
       });
   };
 
+  const fetchOxfordVocab = () => {
+    setOxfordLoading(true);
+    const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : "";
+    const levelParam = oxfordLevel !== 'All' ? `&level=${oxfordLevel}` : "";
+    fetch(`${API_URL}/community/curated-vocab?page=${oxfordPage}&limit=16${levelParam}${searchParam}`)
+      .then(res => res.json())
+      .then(resData => {
+        setOxfordData(resData || { total: 0, page: 1, total_pages: 1, items: [] });
+        setOxfordLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setOxfordLoading(false);
+      });
+  };
+
   useEffect(() => {
-    fetchFeed();
-    setPage(1);
-  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch]);
+    if (activeTab === 'oxford') {
+      fetchOxfordVocab();
+    } else {
+      fetchFeed();
+      setPage(1);
+    }
+  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch, activeTab, oxfordLevel, oxfordPage]);
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
@@ -192,6 +225,82 @@ export default function CommunityFeed({
     }
   };
 
+  const playOxfordAudio = (word: string, audioUrl: string) => {
+    if (!audioUrl) return;
+    try {
+      const audio = new Audio(audioUrl);
+      setPlayingAudioWord(word);
+      audio.onended = () => setPlayingAudioWord(null);
+      audio.onerror = () => setPlayingAudioWord(null);
+      audio.play();
+    } catch (e) {
+      setPlayingAudioWord(null);
+    }
+  };
+
+  const handleSaveCuratedToVault = async (item: any) => {
+    const token = localStorage.getItem("oasis_token");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+    if (savingWords.has(item.word)) return;
+
+    const isDuplicate = vocabList.some((v: any) => v.word.toLowerCase() === item.word.toLowerCase());
+    if (isDuplicate) {
+      return (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
+    }
+
+    setSavingWords(prev => {
+      const next = new Set(prev);
+      next.add(item.word);
+      return next;
+    });
+
+    try {
+      if (onAddVocab) {
+        const result = await onAddVocab({
+          word: item.word,
+          phonetic: item.phonetic,
+          meaning: item.meaning,
+          example: item.example,
+          topic: item.topic || `Oxford ${item.level}`,
+          audio_url: item.audio_url,
+          synonyms: item.synonyms || [],
+          source: "Kho từ vựng Oxford 5000",
+          creator_username: currentUser?.username || "Oxford 5000",
+          memory_hook: item.memory_hook || `Ghi nhớ từ ${item.word}: ${item.meaning}`
+        });
+        if (result && result.status === "duplicate") {
+          (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
+        } else {
+          (window as any).showToast(`Đã thêm từ "${item.word}" (${item.level}) vào Tủ từ thành công! 🍵`, "success");
+        }
+      } else {
+        const res = await fetch(`${API_URL}/community/curated-vocab/save-to-lab`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ word: item.word, topic: `Oxford ${item.level}` })
+        });
+        const resData = await res.json();
+        if (res.ok) {
+          (window as any).showToast(resData.message || "Đã lưu thành công! 🍵", "success");
+        } else {
+          (window as any).showToast(resData.detail || "Không thể lưu từ vựng", "error");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      (window as any).showToast("Lỗi kết nối khi lưu từ vựng.", "error");
+    } finally {
+      setSavingWords(prev => {
+        const next = new Set(prev);
+        next.delete(item.word);
+        return next;
+      });
+    }
+  };
+
   const handleDeleteWriting = async (writingId: number) => {
     (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài viết này khỏi Oasis Community? 🍵", async () => {
       const token = localStorage.getItem("oasis_token");
@@ -293,15 +402,19 @@ export default function CommunityFeed({
               <span className="material-symbols-rounded text-primary text-2xl sm:text-3xl">public</span>
               Oasis Community
             </h2>
-            <p className="text-xs text-accent/60 mt-0.5">Kho bài viết & từ vựng chia sẻ bởi cộng đồng người học</p>
+            <p className="text-xs text-accent/60 mt-0.5">
+              {activeTab === 'oxford' 
+                ? '5,000 từ vựng tiêu chuẩn Oxford chuẩn hóa CEFR (A1-C1) kèm phát âm bản xứ' 
+                : 'Kho bài viết & từ vựng chia sẻ bởi cộng đồng người học'}
+            </p>
           </div>
 
-          {/* Quick Segment Tab (Essays vs Vocab) */}
-          <div className="flex bg-[#F4F1EA] p-1 rounded-2xl border border-primary/15 self-stretch sm:self-auto justify-center">
+          {/* Quick Segment Tab (Essays vs Vocab vs Oxford) */}
+          <div className="flex bg-[#F4F1EA] p-1 rounded-2xl border border-primary/15 self-stretch sm:self-auto justify-center flex-wrap gap-1">
             <button 
               type="button" 
               onClick={() => { setActiveTab('writings'); setPage(1); }}
-              className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'writings' 
                   ? 'bg-primary text-white shadow-sm' 
                   : 'text-accent/70 hover:text-accent'
@@ -313,14 +426,26 @@ export default function CommunityFeed({
             <button 
               type="button" 
               onClick={() => { setActiveTab('vocabularies'); setPage(1); }}
-              className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'vocabularies' 
                   ? 'bg-primary text-white shadow-sm' 
                   : 'text-accent/70 hover:text-accent'
               }`}
             >
-              <span className="material-symbols-rounded text-sm">menu_book</span>
-              Từ vựng ({data.vocabularies?.length || 0})
+              <span className="material-symbols-rounded text-sm">group</span>
+              Cộng đồng ({data.vocabularies?.length || 0})
+            </button>
+            <button 
+              type="button" 
+              onClick={() => { setActiveTab('oxford'); setOxfordPage(1); }}
+              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'oxford' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-accent/70 hover:text-accent'
+              }`}
+            >
+              <span className="material-symbols-rounded text-sm">school</span>
+              Kho Oxford 5000 CEFR
             </button>
           </div>
         </div>
@@ -332,7 +457,13 @@ export default function CommunityFeed({
             <span className="material-symbols-rounded text-primary text-base mr-2 select-none">search</span>
             <input
               type="text"
-              placeholder={activeTab === 'writings' ? 'Tìm bài viết, tác giả...' : 'Tìm từ vựng, định nghĩa...'}
+              placeholder={
+                activeTab === 'writings' 
+                  ? 'Tìm bài viết, tác giả...' 
+                  : activeTab === 'vocabularies'
+                  ? 'Tìm từ vựng cộng đồng, định nghĩa...'
+                  : 'Tra cứu từ vựng Oxford (e.g. abandon, ability, academic)...'
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-accent text-xs font-semibold placeholder-accent/40 border-none outline-none w-full"
@@ -349,34 +480,43 @@ export default function CommunityFeed({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {currentUser && (
-              <button
-                type="button"
-                onClick={() => setShowOnlyMine(prev => !prev)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 ${
-                  showOnlyMine 
-                    ? 'bg-primary border-primary text-white shadow-sm' 
-                    : 'bg-[#F9F8F5] border-primary/20 text-accent/70 hover:bg-white'
-                }`}
-              >
-                <span className="material-symbols-rounded text-xs">person</span>
-                Của tôi
-              </button>
-            )}
+            {activeTab === 'oxford' ? (
+              <div className="bg-primary/10 border border-primary/20 text-primary text-xs font-bold rounded-xl px-3 py-1.5 flex items-center gap-1.5">
+                <span className="material-symbols-rounded text-sm">school</span>
+                <span>{oxfordData.total ? oxfordData.total.toLocaleString() : '5,946'} từ Oxford</span>
+              </div>
+            ) : (
+              <>
+                {currentUser && (
+                  <button
+                    type="button"
+                    onClick={() => setShowOnlyMine(prev => !prev)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 ${
+                      showOnlyMine 
+                        ? 'bg-primary border-primary text-white shadow-sm' 
+                        : 'bg-[#F9F8F5] border-primary/20 text-accent/70 hover:bg-white'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-xs">person</span>
+                    Của tôi
+                  </button>
+                )}
 
-            <select 
-              className="bg-[#F9F8F5] border border-primary/20 text-accent text-xs font-bold rounded-xl px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="new">Mới nhất</option>
-              <option value="hot">Nổi bật</option>
-              <option value="top">Điểm cao</option>
-            </select>
+                <select 
+                  className="bg-[#F9F8F5] border border-primary/20 text-accent text-xs font-bold rounded-xl px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="new">Mới nhất</option>
+                  <option value="hot">Nổi bật</option>
+                  <option value="top">Điểm cao</option>
+                </select>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Topic Filter for Vocabularies */}
+        {/* Topic Filter for Community Vocabularies */}
         {activeTab === 'vocabularies' && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
             {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => {
@@ -405,10 +545,177 @@ export default function CommunityFeed({
             })}
           </div>
         )}
+
+        {/* CEFR Level Filter for Oxford 5000 */}
+        {activeTab === 'oxford' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+            {[
+              { id: 'All', label: 'Tất cả (5,946)', activeCls: 'bg-primary border-primary text-white shadow-xs' },
+              { id: 'A1', label: 'A1 Căn bản', activeCls: 'bg-emerald-600 border-emerald-600 text-white shadow-xs' },
+              { id: 'A2', label: 'A2 Sơ cấp', activeCls: 'bg-teal-600 border-teal-600 text-white shadow-xs' },
+              { id: 'B1', label: 'B1 Trung cấp', activeCls: 'bg-blue-600 border-blue-600 text-white shadow-xs' },
+              { id: 'B2', label: 'B2 Học thuật', activeCls: 'bg-indigo-600 border-indigo-600 text-white shadow-xs' },
+              { id: 'C1', label: 'C1 Chuyên sâu', activeCls: 'bg-rose-600 border-rose-600 text-white shadow-xs' }
+            ].map((lvl) => (
+              <button
+                type="button"
+                key={lvl.id}
+                onClick={() => { setOxfordLevel(lvl.id); setOxfordPage(1); }}
+                className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all border whitespace-nowrap ${
+                  oxfordLevel === lvl.id 
+                    ? lvl.activeCls 
+                    : 'bg-[#F9F8F5] border-primary/15 text-accent/65 hover:text-accent hover:bg-white'
+                }`}
+              >
+                {lvl.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content Feed */}
-      {loading ? (
+      {activeTab === 'oxford' ? (
+        oxfordLoading ? (
+          <div className="py-16 text-center text-primary font-bold animate-pulse">
+            Đang nạp kho từ vựng chuẩn Oxford 5000 CEFR... 🍵
+          </div>
+        ) : oxfordData.items.length === 0 ? (
+          <div className="py-16 text-center bg-[#F9F8F5] rounded-2xl border border-primary/10">
+            <span className="material-symbols-rounded text-accent/30 text-4xl mb-2">school</span>
+            <p className="text-xs text-accent/60 font-semibold">Không tìm thấy từ vựng Oxford nào phù hợp</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Oxford Vocabularies Grid (Compact 4-column responsive) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {oxfordData.items.map((item: any, idx: number) => {
+                const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === item.word.toLowerCase());
+                const isSaving = savingWords.has(item.word);
+                const isPlaying = playingAudioWord === item.word;
+
+                const levelBadgeStyles: Record<string, string> = {
+                  'A1': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                  'A2': 'bg-teal-50 text-teal-700 border-teal-200',
+                  'B1': 'bg-blue-50 text-blue-700 border-blue-200',
+                  'B2': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                  'C1': 'bg-rose-50 text-rose-700 border-rose-200',
+                };
+
+                return (
+                  <div 
+                    key={`${item.word}-${item.level}-${idx}`}
+                    className="bg-[#FFFDF8] border border-primary/15 hover:border-primary/35 hover:shadow-md p-3.5 rounded-2xl flex flex-col justify-between gap-2.5 shadow-xs transition-all group"
+                  >
+                    {/* Card Header: Level Badge, POS, Audio */}
+                    <div className="flex items-center justify-between border-b border-primary/10 pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase ${levelBadgeStyles[item.level] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                          {item.level}
+                        </span>
+                        <span className="text-[10px] font-semibold text-accent/50 italic">
+                          {item.type}
+                        </span>
+                      </div>
+
+                      {item.audio_url && (
+                        <button
+                          type="button"
+                          onClick={() => playOxfordAudio(item.word, item.audio_url)}
+                          title="Nghe phát âm chuẩn Oxford"
+                          className={`p-1 rounded-full transition-colors ${
+                            isPlaying 
+                              ? 'bg-primary text-white animate-pulse' 
+                              : 'text-primary/70 hover:text-primary hover:bg-primary/10'
+                          }`}
+                        >
+                          <span className="material-symbols-rounded text-base">
+                            {isPlaying ? 'volume_up' : 'volume_down'}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Card Body: Word, IPA, Meaning, Example */}
+                    <div className="flex flex-col gap-1.5 my-0.5">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <h4 className="font-display font-extrabold text-primary text-base leading-tight break-words group-hover:text-primary/90">
+                          {item.word}
+                        </h4>
+                        {item.phonetic && (
+                          <span className="text-[11px] text-accent/40 font-mono">
+                            {item.phonetic}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="px-2.5 py-1 bg-[#F0F6EB] text-accent font-bold text-xs rounded-xl border border-primary/15 line-clamp-2">
+                        {item.meaning}
+                      </div>
+
+                      {item.example && (
+                        <p className="text-[11px] text-accent/65 italic line-clamp-2 mt-0.5 leading-snug">
+                          "{item.example}"
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Card Footer: Topic & Save to Vault Button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-primary/10 gap-1 mt-auto">
+                      <span className="text-[10px] font-medium text-accent/40 truncate max-w-[120px]">
+                        {item.topic || `IELTS ${item.level}`}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => !isSaved && !isSaving && handleSaveCuratedToVault(item)}
+                        disabled={isSaved || isSaving}
+                        className={`flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                          isSaved 
+                            ? 'bg-green-100 text-green-700 border border-green-200 cursor-default' 
+                            : isSaving
+                            ? 'bg-primary/10 text-primary animate-pulse'
+                            : 'bg-primary text-white hover:bg-primary/90 shadow-xs hover:scale-[1.02] active:scale-95'
+                        }`}
+                      >
+                        <span className="material-symbols-rounded text-[13px]">
+                          {isSaved ? 'check' : isSaving ? 'sync' : 'bookmark_add'}
+                        </span>
+                        <span>{isSaved ? 'Đã lưu' : isSaving ? 'Đang lưu...' : 'Lưu vào tủ'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Oxford Pagination */}
+            {oxfordData.total_pages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-3 border-t border-primary/10">
+                <button
+                  type="button"
+                  onClick={() => setOxfordPage(p => Math.max(1, p - 1))}
+                  disabled={oxfordPage === 1}
+                  className="px-3 py-1 rounded-xl text-xs font-bold border border-primary/15 text-accent/70 hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                >
+                  ← Trước
+                </button>
+                <span className="text-xs font-bold text-accent/70 px-2">
+                  Trang {oxfordPage} / {oxfordData.total_pages} ({oxfordData.total} từ)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setOxfordPage(p => Math.min(oxfordData.total_pages, p + 1))}
+                  disabled={oxfordPage === oxfordData.total_pages}
+                  className="px-3 py-1 rounded-xl text-xs font-bold border border-primary/15 text-accent/70 hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                >
+                  Sau →
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      ) : loading ? (
         <div className="py-16 text-center text-primary font-bold animate-pulse">
           Đang tải dữ liệu cộng đồng... 🍵
         </div>

@@ -1203,6 +1203,16 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
         return {}
 
     async def generate_wordle_word(self, level: int):
+        # 1. Ưu tiên lấy từ vựng chuẩn Oxford 5000 CEFR (phản hồi tức thì < 1ms, 0 token AI)
+        try:
+            try:
+                from services.oxford_dataset_service import oxford_dataset_service
+            except ImportError:
+                from oxford_dataset_service import oxford_dataset_service
+            return oxford_dataset_service.get_wordle_word(level)
+        except Exception as ex:
+            print(f"OxfordDatasetService Wordle generation fallback to Gemini: {ex}")
+
         import random
         # Sample 40 words from our SQL keyword database
         sample_size = min(40, len(self.wordle_keywords))
