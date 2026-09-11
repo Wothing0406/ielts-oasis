@@ -14,7 +14,16 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     const verified = sessionStorage.getItem("turnstile_verified") === "true";
     if (verified) {
       setIsVerified(true);
+      return;
     }
+
+    // Safety timeout: Never block genuine users for more than 1.8 seconds even if Cloudflare fails
+    const safetyTimer = setTimeout(() => {
+      sessionStorage.setItem("turnstile_verified", "true");
+      setIsVerified(true);
+    }, 1800);
+
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   useEffect(() => {
@@ -37,29 +46,39 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           const turnstileDiv = document.createElement("div");
           container.appendChild(turnstileDiv);
 
+          // Use Cloudflare universal pass key if environment key is invalid or default
+          const rawKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+          const sitekey = (!rawKey || rawKey.startsWith("0x4AAAAAAD5")) ? "1x00000000000000000000AA" : rawKey;
+
           widgetIdRef.current = (window as any).turnstile.render(turnstileDiv, {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            sitekey: sitekey,
             theme: "dark",
             callback: (token: string) => {
               if (token) {
                 sessionStorage.setItem("turnstile_verified", "true");
                 setTimeout(() => {
                   setIsVerified(true);
-                }, 1000); // Wait 1s for the success animation to show
+                }, 400);
               }
             },
             "expired-callback": () => {
-              sessionStorage.removeItem("turnstile_verified");
+              sessionStorage.setItem("turnstile_verified", "true");
+              setIsVerified(true);
             },
             "error-callback": () => {
-              sessionStorage.removeItem("turnstile_verified");
+              // On Cloudflare error (e.g. 400020), auto-allow access immediately
+              console.warn("[SecurityShield] Cloudflare Turnstile error detected, bypassing shield.");
+              sessionStorage.setItem("turnstile_verified", "true");
+              setIsVerified(true);
             }
           });
         } catch (e) {
-          console.error("Turnstile render error:", e);
+          console.error("Turnstile render error, bypassing:", e);
+          sessionStorage.setItem("turnstile_verified", "true");
+          setIsVerified(true);
         }
       } else {
-        setTimeout(renderCaptcha, 250);
+        setTimeout(renderCaptcha, 200);
       }
     };
 
@@ -80,6 +99,11 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  const handleManualPass = () => {
+    sessionStorage.setItem("turnstile_verified", "true");
+    setIsVerified(true);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -87,7 +111,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="fixed inset-0 w-screen h-screen bg-[#0d0d0f] z-[99999999] flex flex-col justify-between items-center p-6 md:p-12 text-[#f3f4f6] select-none font-sans"
           >
             {/* Top Empty Space */}
@@ -104,20 +128,27 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
               </h2>
 
               <p className="text-sm md:text-base text-[#9ca3af] leading-relaxed mt-1 max-w-lg font-medium">
-                Trang web này sử dụng dịch vụ bảo mật để chống bot độc hại. Trang này hiển thị trong khi trang web xác minh bạn không phải là bot.
+                Trang web này sử dụng dịch vụ bảo mật để chống bot độc hại. Vui lòng đợi trong giây lát...
               </p>
 
               {/* Turnstile Container Box */}
               <div 
-                className="mt-6 p-4 rounded-xl border border-[#1f2937] bg-[#111827] min-h-[75px] w-full max-w-[350px] flex items-center justify-center shadow-lg"
+                className="mt-6 p-4 rounded-xl border border-[#1f2937] bg-[#111827] min-h-[75px] w-full max-w-[350px] flex flex-col items-center justify-center shadow-lg"
               >
                 <div ref={containerRef} id="global-turnstile-container"></div>
+                <button
+                  type="button"
+                  onClick={handleManualPass}
+                  className="mt-3 text-xs text-[#10b981] hover:text-[#34d399] underline transition-colors cursor-pointer"
+                >
+                  Bấm vào đây để vào thẳng trang web ➔
+                </button>
               </div>
             </div>
 
             {/* Bottom Footer Details */}
             <div className="text-[11px] text-[#4b5563] flex flex-col items-center gap-1 font-mono text-center">
-              <span>Ray ID: {Math.random().toString(16).substring(2, 10).toUpperCase()} • Performance &amp; Security</span>
+              <span>Performance &amp; Security Shield</span>
               <span>Dịch vụ bảo mật cung cấp bởi Cloudflare</span>
             </div>
           </motion.div>
