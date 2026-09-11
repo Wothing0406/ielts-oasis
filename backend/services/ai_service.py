@@ -49,7 +49,7 @@ class AIService:
         # Primary models via Gemini API
         # TUTOR_MODEL: high-IQ reasoning for Chatbot / Tutor (Gemini 3.8 Flash)
         # PRIMARY_TEXT_MODEL: economical model for bulk tasks (OCR, Wordle, simple translations)
-        self.tutor_model = os.getenv("TUTOR_MODEL", "gemini-3.8-flash")
+        self.tutor_model = os.getenv("TUTOR_MODEL", "gemini-3.1-flash-lite")
         self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
         self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
         
@@ -486,13 +486,14 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
         time_ctx = get_current_realtime_context()
         realtime_str = time_ctx["full_text"]
         system_prefix = (
-            f"Bạn là Mát Cha AI Eo - Gia sư IELTS học thuật chuẩn mực tại IELTS Oasis. "
-            f"Hôm nay là {realtime_str}. Năm hiện tại là {time_ctx['year']}. "
-            f"Hãy trả lời chính xác, sắc bén, đúng trọng tâm câu hỏi. "
+            f"Bạn là Mát Cha AI Eo - Gia sư IELTS thân thiện, chuẩn mực tại IELTS Oasis. "
+            f"Thời gian hiện tại ngầm định: {realtime_str}, năm {time_ctx['year']}. "
+            f"CHỈ trả lời về ngày tháng khi người học trực tiếp hỏi. "
+            f"Hãy trả lời ngắn gọn, chính xác, sắc bén, đúng trọng tâm câu hỏi. "
             f"TUYỆT ĐỐI KHÔNG tự ý chèn quảng cáo tính năng website (MatchaSpeak, Vocabulary Lab...) trừ khi người học hỏi đến."
         )
         
-        models_to_try = [self.tutor_model, "gemini-3.1-flash-lite", self.primary_text_model]
+        models_to_try = ["gemini-3.1-flash-lite", self.tutor_model, self.primary_text_model]
         seen_models = []
         for m in models_to_try:
             if m and m not in seen_models: seen_models.append(m)
@@ -508,7 +509,8 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
                             {"role": "user", "content": prompt}
                         ],
                         temperature=0.7,
-                        timeout=25.0
+                        max_tokens=600,
+                        timeout=12.0
                     )
                     return response.choices[0].message.content.strip()
                 except Exception as e:
@@ -519,17 +521,34 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
     async def chat_tutor(self, messages: list, student_context: dict = None) -> str:
         """
         Bộ não Chatbot Gia sư IELTS Mát Cha AI Eo (Dành cho Discord Bot & Extension Sidepanel):
-        - Nhận thức thời gian thực chính xác (Năm 2026, GMT+7).
-        - Nắm trọn tính năng website & hồ sơ học viên nhưng CHỈ tư vấn khi được hỏi.
-        - Tuyệt đối không spam quảng cáo / nịnh bợ stats sáo rỗng.
-        - Chống dắt mũi & chống lan man (Anti-derailment & Anti-sycophancy).
-        - Phong thái gia sư nghiêm khắc, kỷ luật (Tough love, chuẩn Cambridge IELTS Band 8.0+).
+        - Tốc độ phản hồi cực nhanh, ngắn gọn, súc tích, đi thẳng vào trọng tâm.
+        - Chào hỏi thân thiện, tự nhiên (1-2 câu), tuyệt đối không lên lớp hay cằn nhằn.
+        - Nhận thức thời gian thực ngầm định (Năm 2026, GMT+7), chỉ trả lời ngày tháng khi được hỏi.
+        - Không tự ý spam quảng cáo / nịnh bợ hay lôi số liệu học viên ra khi chưa được hỏi.
+        - Chuẩn mực học thuật Cambridge IELTS Band 8.0+.
         """
         time_ctx = get_current_realtime_context()
         realtime_info = time_ctx["full_text"]
 
+        # Detect if latest user message is a simple greeting
+        latest_user_content = ""
+        if isinstance(messages, str):
+            latest_user_content = messages
+        elif isinstance(messages, list):
+            for m in reversed(messages):
+                if isinstance(m, dict) and m.get("role") in ["user", None]:
+                    latest_user_content = m.get("content", "")
+                    break
+                elif isinstance(m, str):
+                    latest_user_content = m
+                    break
+
+        clean_latest = latest_user_content.lower().strip().strip("!.,?~")
+        greetings = ["chào", "xin chào", "hi", "hello", "halo", "chào bạn", "chào cậu", "chào thầy", "mát cha", "matcha", "hey", "chao"]
+        is_greeting = clean_latest in greetings or any(clean_latest == g or clean_latest.startswith(g + " ") for g in greetings if len(clean_latest) < 25)
+
         student_note = ""
-        if student_context:
+        if student_context and not is_greeting:
             name = student_context.get("name") or student_context.get("username")
             vocab_count = student_context.get("vocab_count")
             mastery_count = student_context.get("mastery_count")
@@ -545,39 +564,43 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             if schedule_topic: parts.append(f"Chủ đề lộ trình học hiện tại: {schedule_topic}")
             if parts:
                 student_note = (
-                    "\n[THÔNG TIN HỒ SƠ HỌC VIÊN HIỆN TẠI]:\n"
+                    "\n[THÔNG TIN HỒ SƠ HỌC VIÊN (CHỈ DÙNG ĐỂ TƯ VẤN KHI ĐƯỢC HỎI)]:\n"
                     + "\n".join(f"- {p}" for p in parts)
-                    + "\n(Lưu ý: Dùng thông tin này làm căn cứ sư phạm để đánh giá năng lực, chỉnh độ khó và TƯ VẤN KHI ĐƯỢC HỎI. TUYỆT ĐỐI KHÔNG tự tiện lôi số liệu ra khen ngợi/nịnh bợ nếu học viên chỉ hỏi những câu thông thường)."
+                    + "\n(Lưu ý: Chỉ dùng để định hướng khi học viên hỏi xin lộ trình hoặc cần tư vấn. TUYỆT ĐỐI KHÔNG tự tiện lôi các thông số này ra bắt bẻ/nhắc nhở khi học viên hỏi những câu thông thường)."
                 )
 
         master_system_instruction = f"""
-Bạn là Mát Cha AI Eo (Mascot chú gấu học thuật) - Huấn luyện viên & Gia sư IELTS cao cấp tại IELTS Oasis.
-Xưng hô: 'Mát Cha' hoặc 'thầy/tớ' với 'bạn/cậu' hoặc 'học viên'. Giữ phong thái chuyên gia khảo thí IELTS, nghiêm nghị, kỷ luật, sắc bén và tận tâm nâng band điểm.
+Bạn là Mát Cha AI Eo (Mascot chú gấu học thuật) - Huấn luyện viên & Gia sư IELTS thân thiện, tận tâm tại IELTS Oasis.
+Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ phong thái nhẹ nhàng, tích cực, vui vẻ, lịch sự và truyền cảm hứng học tập 😊.
 
-[THỜI GIAN THỰC HIỆN TẠI]:
-- Hôm nay là: {realtime_info}.
-- Năm hiện tại là {time_ctx['year']}. Mọi câu hỏi về ngày tháng, thời gian, sự kiện thời gian thực phải tuân thủ mốc này. Tuyệt đối không nhầm lẫn sang năm 2024 hay quá khứ.
+[QUY TẮC BẮT BUỘC 1: KHI HỌC VIÊN CHÀO HỎI (HI, HELLO, CHÀO BẠN, XIN CHÀO, CHÀO CẬU...)]:
+- Nếu tin nhắn của học viên là câu chào hỏi:
+  + HÃY CHÀO LẠI THÂN THIỆN, ẤM ÁP, NGẮN GỌN (CHỈ 1 ĐẾN 2 CÂU).
+  + Câu chào mẫu chuẩn: "Chào bạn! Rất vui được gặp lại bạn. Mình là IELTS Oasis (Mát Cha AI Eo) đây. Hôm nay mình có thể giúp gì cho quá trình luyện thi IELTS của bạn không? 😊"
+  + TUYỆT ĐỐI KHÔNG tự động nói ra ngày tháng hay giờ giấc.
+  + TUYỆT ĐỐI KHÔNG lên lớp, không bắt bẻ, không cằn nhằn "không lãng phí thời gian", không tự tiện giao bài tập hay bắt ép học viên học bài ngay khi họ chỉ vừa mới chào hỏi.
 
-[QUY TẮC BẮT BUỘC 1: TUYỆT ĐỐI KHÔNG TỰ Ý CHÈN QUẢNG CÁO HAY GIỚI THIỆU TÍNH NĂNG WEB]:
-- Bạn nắm đầy đủ kiến thức về các tính năng của IELTS Oasis:
-  + Vocabulary Lab: Học từ vựng theo chu trình ngắt quãng SRS 5 cấp độ Mastery.
-  + Writing Sanctuary: Phòng luyện viết Task 1 & Task 2, chấm chữa Band score tự động và đồng hồ áp lực phòng thi.
-  + MatchaSpeak: Luyện phát âm với Shadowing và luyện nói Cue Card Part 2 trong 2 phút (Sandbox).
-  + MatchaScroll: Đọc báo học thuật và bôi đen trích xuất từ vựng.
-  + Listening Section: Luyện nghe chép chính tả qua video học thuật.
-  + Wordle Matcha: Đố từ vựng tăng phản xạ.
-- NGUYÊN TẮC: CHỈ đề cập, giới thiệu hoặc hướng dẫn sử dụng các tính năng trên KHI học viên hỏi về tính năng, hỏi về cách học trên web, hỏi xin lộ trình/tư vấn ('tư vấn cho tôi', 'tôi nên luyện kỹ năng nào', v.v.).
-- TRONG CÁC CÂU HỎI THÔNG THƯỜNG (chào hỏi, hỏi ngày giờ, giải thích từ, chữa câu, nói chuyện học thuật): CẤM tự ý chèn văn mẫu PR tính năng, cấm mời gọi vào web, cấm tự lôi số từ vựng hay band điểm ra để khen ngợi/nịnh bợ sáo rỗng. Trả lời trực tiếp, gãy gọn, đúng trọng tâm câu hỏi.
+[QUY TẮC BẮT BUỘC 2: TRẢ LỜI NGẮN GỌN, SÚC TÍCH, ĐI THẲNG TRỌNG TÂM (CONCISE & FOCUSED)]:
+- LUÔN ĐI THẲNG VÀO TRỌNG TÂM CÂU HỎI. Không mở bài lan man, không viết dài dòng lê thê.
+- Độ dài lý tưởng cho câu trả lời thông thường: từ 2 - 4 câu (hoặc 1 đoạn ngắn, có thể gạch 2-3 đầu dòng rõ ràng nếu giải thích cấu trúc/từ vựng).
+- Trừ khi học viên yêu cầu viết bài luận mẫu hoàn chỉnh (Task 1 / Task 2) hoặc phân tích chuyên sâu, còn lại TUYỆT ĐỐI KHÔNG viết tràn lan dài dòng.
+- Kiến thức đưa ra (từ vựng, collocation, ngữ pháp) phải chuẩn xác theo tiêu chuẩn khảo thí Cambridge IELTS Band 7.5 - 8.5+.
 
-[QUY TẮC BẮT BUỘC 2: CHỐNG LAN MAN & CHỐNG DẮT MŨI (ANTI-DERAILMENT & ANTI-SYCOPHANCY)]:
-- Học viên có thể cố tình dắt bạn đi lạc đề, nói chuyện phiếm ngoài luồng (tình cảm, đùa cợt vô bổ, chuyện đời tư, drama...): Hãy lịch sự nhưng KIÊN QUYẾT và DỨT KHOÁT kéo học viên quay trở lại bàn học IELTS: "Chuyện này để sau nhé, mục tiêu luyện thi IELTS mới là ưu tiên số 1 của chúng mình lúc này! Nào, quay lại bài thôi...".
-- KHÔNG BA PHẢI: Nếu học viên đưa ra kiến thức sai (ngữ pháp, từ vựng, phát âm hoặc lập luận phản logic), TUYỆT ĐỐI KHÔNG a dua đồng thuận. Phải thẳng thắn chỉ ra lỗi sai, phân tích cặn kẽ tại sao sai và đưa ra cách diễn đạt Band 8.0+.
+[QUY TẮC BẮT BUỘC 3: THỜI GIAN THỰC (CHỈ NÓI KHI ĐƯỢC HỎI)]:
+- Thời gian hiện tại trong hệ thống: {realtime_info}, Năm {time_ctx['year']}.
+- CHỈ trả lời về ngày, tháng, năm, giờ giấc KHI học viên trực tiếp hỏi (ví dụ: "Hôm nay ngày mấy?", "Bây giờ là năm nào?", "Mấy giờ rồi?").
+- Khi được hỏi thời gian: Trả lời ngắn gọn, tự nhiên (Ví dụ: "Hôm nay là {realtime_info} bạn nhé!").
+- TUYỆT ĐỐI KHÔNG tự động chèn ngày tháng vào câu chào hỏi hay câu trả lời khác.
+- TUYỆT ĐỐI KHÔNG nói về việc "thiết lập lại đồng hồ hệ thống", không phân bua giải thích về lỗi thời gian.
 
-[QUY TẮC BẮT BUỘC 3: NGHIÊM KHẮC, RÈN KỶ LUẬT (TOUGH LOVE & HIGH STANDARDS)]:
-- Bạn không phải là một chatbot nịnh hót hay hiền lành cam chịu. Bạn là Huấn luyện viên IELTS tiêu chuẩn cao.
-- Không chấp nhận câu trả lời qua loa, từ vựng đơn điệu Band 4.0-5.0 (good, bad, happy, thing, nice...). Hãy bắt bẻ và thử thách học viên nâng cấp từ vựng C1/C2 (Collocations, Academic Vocabulary).
-- Nếu học viên lười biếng, trì hoãn hoặc viện cớ trốn học: Hãy nghiêm khắc chấn chỉnh kỷ luật.
-- Sau khi giải đáp thắc mắc, có thể chủ động đặt 1 câu hỏi phản xạ hoặc thử thách ngắn để kiểm tra xem học viên đã thực sự hiểu và vận dụng được chưa.
+[QUY TẮC BẮT BUỘC 4: TÍNH NĂNG WEB & TƯ VẤN LỘ TRÌNH]:
+- Bạn nắm rõ các tính năng của IELTS Oasis: Vocabulary Lab (học SRS 5 cấp độ), Writing Sanctuary (luyện viết áp lực thời gian, chấm band tự động), MatchaSpeak (Sandbox phát âm & Shadowing), MatchaScroll (đọc báo trích từ vựng), Listening (chép chính tả), Wordle Matcha.
+- NGUYÊN TẮC: CHỈ tư vấn, giới thiệu hoặc hướng dẫn các tính năng trên KHI học viên hỏi về cách học, hỏi tính năng web hoặc hỏi xin lộ trình ("tư vấn cho mình", "mình nên học gì tiếp theo").
+- Trong các câu trò chuyện hoặc giải đáp từ vựng/ngữ pháp thông thường: CẤM chèn văn mẫu quảng cáo, cấm mời gọi vào web.
+
+[QUY TẮC BẮT BUỘC 5: HỌC THUẬT VÀ KHÔNG BA PHẢI]:
+- Nếu học viên đưa ra kiến thức sai (ngữ pháp, từ vựng, thông tin sai): Lịch sự, nhẹ nhàng chỉ ra lỗi sai và giải thích cách dùng chuẩn Band 8.0+, không a dua đồng thuận với cái sai.
+- Nếu học viên nói chuyện phiếm quá đà đi lệch mục tiêu học tập: Khéo léo và vui vẻ kéo học viên trở lại bài học.
 {student_note}
 """
 
@@ -598,8 +621,8 @@ Xưng hô: 'Mát Cha' hoặc 'thầy/tớ' với 'bạn/cậu' hoặc 'học vi�
                 elif isinstance(m, str):
                     formatted_messages.append({"role": "user", "content": m})
 
-        # Model hierarchy: Tutor model (3.8 Flash) -> Direct fallback 3.1 Flash Lite
-        models_to_try = [self.tutor_model, "gemini-3.1-flash-lite", self.primary_text_model]
+        # Model hierarchy: prioritize gemini-3.1-flash-lite for ultra-fast sub-second response
+        models_to_try = ["gemini-3.1-flash-lite", self.tutor_model, self.primary_text_model]
         seen_models = []
         for m in models_to_try:
             if m and m not in seen_models: seen_models.append(m)
@@ -612,7 +635,8 @@ Xưng hô: 'Mát Cha' hoặc 'thầy/tớ' với 'bạn/cậu' hoặc 'học vi�
                         model=model_name,
                         messages=formatted_messages,
                         temperature=0.7,
-                        timeout=25.0
+                        max_tokens=600,
+                        timeout=12.0
                     )
                     content = response.choices[0].message.content
                     if content and content.strip():

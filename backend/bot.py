@@ -266,18 +266,29 @@ async def on_message(message):
                 }
             db.close()
 
+            clean_content = content.lower().strip().strip("!.,?~")
+            greetings = ["chào", "xin chào", "hi", "hello", "halo", "chào bạn", "chào cậu", "chào thầy", "mát cha", "matcha", "hey", "chao"]
+            is_simple_greeting = clean_content in greetings or any(clean_content == g or clean_content.startswith(g + " ") for g in greetings if len(clean_content) < 25)
+
             # Build multi-turn chat messages
             chat_messages = []
-            if is_reply_to_bot and ref_msg:
+            if is_simple_greeting:
+                # Standalone greeting: start fresh, do not pull past channel history
+                chat_messages = [{"role": "user", "content": content}]
+            elif is_reply_to_bot and ref_msg:
                 # Direct reply to a specific bot message
                 replied_cleaned = ref_msg.content.replace(f'<@{bot.user.id}>', '').strip()
                 if replied_cleaned:
                     chat_messages.append({"role": "assistant", "content": replied_cleaned})
                 chat_messages.append({"role": "user", "content": content})
             else:
-                # Normal mention or DM chat history
+                # Normal mention or DM chat history: only grab recent messages within last 15 minutes (max 5 turns)
                 try:
-                    async for msg in message.channel.history(limit=8):
+                    now = discord.utils.utcnow()
+                    async for msg in message.channel.history(limit=5):
+                        # Skip ancient messages older than 15 minutes
+                        if (now - msg.created_at).total_seconds() > 900:
+                            break
                         role = "assistant" if msg.author.id == bot.user.id else "user"
                         msg_text = msg.content.replace(f'<@{bot.user.id}>', '').strip()
                         if msg_text:
