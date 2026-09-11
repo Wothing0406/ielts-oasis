@@ -1693,7 +1693,21 @@ async def get_wordle_hint(current_user: dict = Depends(get_current_user), db: Se
     # Type 3: First or last letter
     hint_types.append(f"Chữ cái cuối cùng của từ là '{secret[-1]}'.")
     
-    chosen_hint = random.choice(hint_types)
+    # Prioritize Academic Skill 3 (generate_vocabulary_context for game hint)
+    chosen_hint = None
+    try:
+        vocab_ctx = await ai_service.generate_vocabulary_context(secret, for_game_hint=True)
+        game_hint = vocab_ctx.get("game_hint")
+        if game_hint and game_hint.get("clue"):
+            clue = game_hint.get("clue")
+            pattern = game_hint.get("scramble_or_pattern")
+            chosen_hint = f"💡 Manh mối học thuật IELTS: {clue}" + (f" (Cấu trúc: {pattern})" if pattern else "")
+    except Exception as e:
+        logger.warning(f"Academic Wordle hint generation failed, using mechanical fallback: {e}")
+
+    if not chosen_hint:
+        chosen_hint = random.choice(hint_types)
+
     game.hint_used = True
     db.commit()
     
@@ -2056,6 +2070,102 @@ async def speaking_pronunciation_guide(body: GuideRequest, current_user: dict = 
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# =====================================================================
+# ACADEMIC SKILLS SUITE ENDPOINTS (v2.0.0)
+# =====================================================================
+
+class SkillPronunciationIn(BaseModel):
+    audio_base64: str
+    mime_type: str = "audio/webm"
+    target_transcript: Optional[str] = None
+
+class SkillWritingIn(BaseModel):
+    content: str
+    task_type: str = "Task 2"
+    prompt_question: Optional[str] = None
+
+class SkillVocabIn(BaseModel):
+    word: str
+    target_band: float = 7.5
+    for_game_hint: bool = False
+
+class SkillReflexIn(BaseModel):
+    messages: List[Dict[str, Any]]
+    current_topic: str = "General"
+    target_band: float = 7.5
+
+class SkillSRSIn(BaseModel):
+    vocab_list: List[Dict[str, Any]]
+    focus_area: str = "balanced"
+    item_count: int = 5
+
+@app.post("/skills/evaluate-pronunciation")
+async def skill_evaluate_pronunciation(payload: SkillPronunciationIn, current_user: Optional[dict] = Depends(get_current_user)):
+    try:
+        result = await ai_service.evaluate_speech_pronunciation(
+            payload.audio_base64,
+            payload.mime_type,
+            payload.target_transcript
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Skill evaluate_speech_pronunciation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/skills/correct-writing")
+async def skill_correct_writing(payload: SkillWritingIn, current_user: Optional[dict] = Depends(get_current_user)):
+    try:
+        result = await ai_service.correct_writing_and_grammar(
+            payload.content,
+            payload.task_type,
+            payload.prompt_question
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Skill correct_writing_and_grammar failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/skills/vocabulary-context")
+async def skill_vocabulary_context(payload: SkillVocabIn, current_user: Optional[dict] = Depends(get_current_user)):
+    try:
+        result = await ai_service.generate_vocabulary_context(
+            payload.word,
+            payload.target_band,
+            payload.for_game_hint
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Skill generate_vocabulary_context failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/skills/conversation-reflex")
+async def skill_conversation_reflex(payload: SkillReflexIn, current_user: Optional[dict] = Depends(get_current_user)):
+    try:
+        result = await ai_service.drive_conversation_reflex(
+            payload.messages,
+            payload.current_topic,
+            payload.target_band
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Skill drive_conversation_reflex failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/skills/spaced-repetition-review")
+async def skill_spaced_repetition_review(payload: SkillSRSIn, current_user: Optional[dict] = Depends(get_current_user)):
+    try:
+        result = await ai_service.generate_spaced_repetition_review(
+            payload.vocab_list,
+            payload.focus_area,
+            payload.item_count
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Skill generate_spaced_repetition_review failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

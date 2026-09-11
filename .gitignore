@@ -29,4 +29,3 @@ backend/services/dictionary.db
 thuyet_minh.txt
 deploy.bat
 deploy_server.py
-deploy.bat
