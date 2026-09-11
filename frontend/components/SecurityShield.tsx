@@ -38,7 +38,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           container.appendChild(turnstileDiv);
 
           widgetIdRef.current = (window as any).turnstile.render(turnstileDiv, {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD5-TTW-02kiBkSAjkDzWTyyJII",
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD5-TV0_dcBjBpVd",
             theme: "dark",
             callback: (token: string) => {
               if (token) {
