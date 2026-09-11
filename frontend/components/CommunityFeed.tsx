@@ -5,6 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
+const LEVEL_BADGE_STYLES: Record<string, string> = {
+  'A1': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'A2': 'bg-teal-50 text-teal-700 border-teal-200',
+  'B1': 'bg-blue-50 text-blue-700 border-blue-200',
+  'B2': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'C1': 'bg-rose-50 text-rose-700 border-rose-200',
+};
+
 export default function CommunityFeed({ 
   onAddVocab, 
   vocabList = [], 
@@ -47,6 +55,15 @@ export default function CommunityFeed({
   const [oxfordLoading, setOxfordLoading] = useState<boolean>(false);
   const [playingAudioWord, setPlayingAudioWord] = useState<string | null>(null);
 
+  // High performance in-memory caches & fast lookup refs
+  const oxfordCacheRef = React.useRef<Record<string, any>>({});
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  // O(1) set lookup for saved words to avoid scanning vocabList on every render
+  const savedWordsSet = useMemo(() => {
+    return new Set(vocabList.map((v: any) => (v.word || '').toLowerCase()));
+  }, [vocabList]);
+
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -72,12 +89,12 @@ export default function CommunityFeed({
       setDebouncedSearch(searchQuery);
       setPage(1);
       setOxfordPage(1);
-    }, 300);
+    }, 250);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  const fetchFeed = () => {
-    setLoading(true);
+  const fetchFeed = (silent = false) => {
+    if (!silent) setLoading(true);
     const token = localStorage.getItem("oasis_token");
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -86,7 +103,7 @@ export default function CommunityFeed({
     fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${selectedTopic === 'All' ? '' : selectedTopic}${searchParam}`, { headers })
       .then(res => res.json())
       .then(resData => {
-        setData(resData);
+        setData(resData || { vocabularies: [], writings: [] });
         setLoading(false);
       })
       .catch(err => {
@@ -95,14 +112,23 @@ export default function CommunityFeed({
       });
   };
 
-  const fetchOxfordVocab = () => {
+  const fetchOxfordVocab = (force = false) => {
+    const cacheKey = `${oxfordLevel}_${debouncedSearch}_${oxfordPage}`;
+    if (!force && oxfordCacheRef.current[cacheKey]) {
+      setOxfordData(oxfordCacheRef.current[cacheKey]);
+      setOxfordLoading(false);
+      return;
+    }
+
     setOxfordLoading(true);
     const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : "";
     const levelParam = oxfordLevel !== 'All' ? `&level=${oxfordLevel}` : "";
     fetch(`${API_URL}/community/curated-vocab?page=${oxfordPage}&limit=16${levelParam}${searchParam}`)
       .then(res => res.json())
       .then(resData => {
-        setOxfordData(resData || { total: 0, page: 1, total_pages: 1, items: [] });
+        const valid = resData || { total: 0, page: 1, total_pages: 1, items: [] };
+        oxfordCacheRef.current[cacheKey] = valid;
+        setOxfordData(valid);
         setOxfordLoading(false);
       })
       .catch(err => {
@@ -111,14 +137,18 @@ export default function CommunityFeed({
       });
   };
 
+  // Only trigger feed fetch when community feed filters change
+  useEffect(() => {
+    fetchFeed();
+    setPage(1);
+  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch]);
+
+  // Only trigger oxford fetch when oxford tab is active or oxford filters change
   useEffect(() => {
     if (activeTab === 'oxford') {
       fetchOxfordVocab();
-    } else {
-      fetchFeed();
-      setPage(1);
     }
-  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch, activeTab, oxfordLevel, oxfordPage]);
+  }, [activeTab, oxfordLevel, oxfordPage, debouncedSearch]);
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
@@ -152,7 +182,7 @@ export default function CommunityFeed({
     if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
     if (savingWords.has(vocab.word)) return;
 
-    const isDuplicate = vocabList.some(v => v.word.toLowerCase() === vocab.word.toLowerCase());
+    const isDuplicate = savedWordsSet.has(vocab.word.toLowerCase());
     if (isDuplicate) {
       return (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
     }
@@ -228,11 +258,16 @@ export default function CommunityFeed({
   const playOxfordAudio = (word: string, audioUrl: string) => {
     if (!audioUrl) return;
     try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       const audio = new Audio(audioUrl);
+      audioRef.current = audio;
       setPlayingAudioWord(word);
       audio.onended = () => setPlayingAudioWord(null);
       audio.onerror = () => setPlayingAudioWord(null);
-      audio.play();
+      audio.play().catch(() => setPlayingAudioWord(null));
     } catch (e) {
       setPlayingAudioWord(null);
     }
@@ -243,7 +278,7 @@ export default function CommunityFeed({
     if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
     if (savingWords.has(item.word)) return;
 
-    const isDuplicate = vocabList.some((v: any) => v.word.toLowerCase() === item.word.toLowerCase());
+    const isDuplicate = savedWordsSet.has(item.word.toLowerCase());
     if (isDuplicate) {
       return (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
     }
@@ -404,7 +439,7 @@ export default function CommunityFeed({
             </h2>
             <p className="text-xs text-accent/60 mt-0.5">
               {activeTab === 'oxford' 
-                ? '5,000 từ vựng tiêu chuẩn Oxford chuẩn hóa CEFR (A1-C1) kèm phát âm bản xứ' 
+                ? '5.000 Năm Tu Luyện Khí Công Từ Vựng Mát Chá & IELTS' 
                 : 'Kho bài viết & từ vựng chia sẻ bởi cộng đồng người học'}
             </p>
           </div>
@@ -445,7 +480,7 @@ export default function CommunityFeed({
               }`}
             >
               <span className="material-symbols-rounded text-sm">school</span>
-              Kho Oxford 5000 CEFR
+              Kho Trà Mát Chá
             </button>
           </div>
         </div>
@@ -590,17 +625,9 @@ export default function CommunityFeed({
             {/* Oxford Vocabularies Grid (Compact 4-column responsive) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {oxfordData.items.map((item: any, idx: number) => {
-                const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === item.word.toLowerCase());
+                const isSaved = savedWordsSet.has(item.word.toLowerCase());
                 const isSaving = savingWords.has(item.word);
                 const isPlaying = playingAudioWord === item.word;
-
-                const levelBadgeStyles: Record<string, string> = {
-                  'A1': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                  'A2': 'bg-teal-50 text-teal-700 border-teal-200',
-                  'B1': 'bg-blue-50 text-blue-700 border-blue-200',
-                  'B2': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-                  'C1': 'bg-rose-50 text-rose-700 border-rose-200',
-                };
 
                 return (
                   <div 
@@ -610,7 +637,7 @@ export default function CommunityFeed({
                     {/* Card Header: Level Badge, POS, Audio */}
                     <div className="flex items-center justify-between border-b border-primary/10 pb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase ${levelBadgeStyles[item.level] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase ${LEVEL_BADGE_STYLES[item.level] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
                           {item.level}
                         </span>
                         <span className="text-[10px] font-semibold text-accent/50 italic">
@@ -815,7 +842,7 @@ export default function CommunityFeed({
           {activeTab === 'vocabularies' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {displayedItems.map((v: any) => {
-                const isSaved = vocabList.some((sv: any) => sv.word.toLowerCase() === v.word.toLowerCase());
+                const isSaved = savedWordsSet.has(v.word.toLowerCase());
                 const isSaving = savingWords.has(v.word);
 
                 return (

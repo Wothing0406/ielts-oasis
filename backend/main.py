@@ -966,19 +966,45 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     else:
         vocab_query = vocab_query.order_by(desc(Vocabulary.id))
     
-    # Fetch a larger batch to filter duplicates by word name
-    vocabs = vocab_query.limit(500).all()
-    vocab_list = []
+    # 1. Fetch vocabularies with deduplication (batch limit 100)
+    vocabs = vocab_query.limit(100).all()
+    filtered_vocabs = []
     seen_words = set()
     for v in vocabs:
         word_lower = v.word.strip().lower()
-        if word_lower in seen_words:
-            continue
-        seen_words.add(word_lower)
-        
-        user_obj = db.query(User).filter(User.id == v.user_id).first() if v.user_id else None
-        likes_count = db.query(Like).filter(Like.post_type == 'vocabulary', Like.post_id == v.id).count()
-        comments_count = db.query(Comment).filter(Comment.post_type == 'vocabulary', Comment.post_id == v.id).count()
+        if word_lower not in seen_words:
+            seen_words.add(word_lower)
+            filtered_vocabs.append(v)
+        if len(filtered_vocabs) >= 60:
+            break
+
+    # Batch query users, likes, and comments for vocabs (3 queries total instead of 3 * N)
+    vocab_user_ids = {v.user_id for v in filtered_vocabs if v.user_id}
+    vocab_ids = [v.id for v in filtered_vocabs]
+
+    vocab_users = {u.id: u for u in db.query(User).filter(User.id.in_(vocab_user_ids)).all()} if vocab_user_ids else {}
+
+    vocab_likes = {}
+    if vocab_ids:
+        like_rows = db.query(Like.post_id, func.count(Like.id)).filter(
+            Like.post_type == 'vocabulary',
+            Like.post_id.in_(vocab_ids)
+        ).group_by(Like.post_id).all()
+        vocab_likes = {post_id: count for post_id, count in like_rows}
+
+    vocab_comments = {}
+    if vocab_ids:
+        comment_rows = db.query(Comment.post_id, func.count(Comment.id)).filter(
+            Comment.post_type == 'vocabulary',
+            Comment.post_id.in_(vocab_ids)
+        ).group_by(Comment.post_id).all()
+        vocab_comments = {post_id: count for post_id, count in comment_rows}
+
+    vocab_list = []
+    for v in filtered_vocabs:
+        user_obj = vocab_users.get(v.user_id)
+        likes_count = vocab_likes.get(v.id, 0)
+        comments_count = vocab_comments.get(v.id, 0)
         vocab_list.append({
             "id": v.id,
             "word": v.word,
@@ -990,19 +1016,17 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             "image_url": v.image_url,
             "likes": likes_count,
             "comments": comments_count,
-            # Extra fields to skip AI refinement during save
             "example": v.example,
             "synonyms": v.synonyms,
             "memory_hook": v.memory_hook,
             "source": v.source
         })
-        if len(vocab_list) >= 100:
-            break
-        
-    # Get writings
+
+    # 2. Fetch writings (batch limit 60)
     writing_query = db.query(WritingLog)
     if filter_mine:
         if not user_id:
+            db.close()
             return {"vocabularies": [], "writings": []}
         writing_query = writing_query.filter(WritingLog.user_id == user_id)
 
@@ -1016,19 +1040,37 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         )
 
     if sort_by == "top":
-        # Sort by band score (highest first). Note: band_score is string so "9.0" > "8.0"
         writing_query = writing_query.order_by(desc(WritingLog.band_score))
     else:
         writing_query = writing_query.order_by(desc(WritingLog.id))
         
-    writings = writing_query.limit(100).all()
+    writings = writing_query.limit(60).all()
+    writing_user_ids = {w.user_id for w in writings if w.user_id}
+    writing_ids = [w.id for w in writings]
+
+    writing_users = {u.id: u for u in db.query(User).filter(User.id.in_(writing_user_ids)).all()} if writing_user_ids else {}
+
+    writing_likes = {}
+    if writing_ids:
+        like_rows = db.query(Like.post_id, func.count(Like.id)).filter(
+            Like.post_type == 'writing',
+            Like.post_id.in_(writing_ids)
+        ).group_by(Like.post_id).all()
+        writing_likes = {post_id: count for post_id, count in like_rows}
+
+    writing_comments = {}
+    if writing_ids:
+        comment_rows = db.query(Comment.post_id, func.count(Comment.id)).filter(
+            Comment.post_type == 'writing',
+            Comment.post_id.in_(writing_ids)
+        ).group_by(Comment.post_id).all()
+        writing_comments = {post_id: count for post_id, count in comment_rows}
+
     writing_list = []
     for w in writings:
-        user_obj = db.query(User).filter(User.id == w.user_id).first() if w.user_id else None
-        likes_count = db.query(Like).filter(Like.post_type == 'writing', Like.post_id == w.id).count()
-        comments_count = db.query(Comment).filter(Comment.post_type == 'writing', Comment.post_id == w.id).count()
-        
-        # Calculate hotness manually and sort later if sort_by == "hot"
+        user_obj = writing_users.get(w.user_id)
+        likes_count = writing_likes.get(w.id, 0)
+        comments_count = writing_comments.get(w.id, 0)
         hotness = likes_count * 2 + comments_count
         
         writing_list.append({
