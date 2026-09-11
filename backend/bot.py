@@ -244,91 +244,58 @@ async def on_message(message):
             if not content:
                 content = "Chào bạn"
                 
-            # Query user stats from the web database
+            # Query user stats from the web database (used as pedagogical context, not marketing)
             discord_id = str(message.author.id)
             db = SessionLocal()
             user = db.query(User).filter(User.discord_id == discord_id).first()
             
-            stats_str = ""
+            student_context = {}
             if user:
                 vocab_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id).count()
                 mastery_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id, Vocabulary.mastery_level == 5).count()
                 recent_writing = db.query(WritingLog).filter(WritingLog.user_id == user.id).order_by(WritingLog.created_at.desc()).first()
-                wordle_game = db.query(WordleGame).filter(WordleGame.user_id == user.id).first()
+                sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
                 
-                stats_str = f"\nThông tin học viên:\n- Tên trên Web: {user.username}\n- Kho từ vựng: đã lưu {vocab_count} từ (trong đó có {mastery_count} từ đạt Mastery 5)."
-                if recent_writing:
-                    stats_str += f"\n- Bài viết IELTS gần nhất đạt Band {recent_writing.band_score}."
-                if wordle_game:
-                    stats_str += f"\n- Điểm trò chơi Wordle Matcha: {wordle_game.points} điểm (Cấp độ {wordle_game.current_level})."
-            else:
-                stats_str = "\n(Lưu ý: Học viên này chưa liên kết tài khoản Discord với website IELTS Oasis. Hãy khuyên họ đăng nhập website IELTS Oasis bằng tài khoản Discord để đồng bộ lộ trình học tập, thống kê kết quả học tập và tự động hóa kho từ vựng.)"
+                student_context = {
+                    "username": user.username,
+                    "vocab_count": vocab_count,
+                    "mastery_count": mastery_count,
+                    "recent_band": recent_writing.band_score if recent_writing else None,
+                    "target_band": sched.level if sched else None,
+                    "schedule_topic": sched.topic if sched else None
+                }
             db.close()
 
-            system_instruction = f"""
-            Bạn là một gia sư IELTS tên là Mát Cha AI Eo, cực kỳ nhiệt tình, thân thiện, gọi học viên bằng tên (nếu biết tên) và luôn xưng hô 'Mát Cha' hoặc 'tớ' và gọi học viên là 'cậu' hoặc 'bạn' cực kỳ ấm áp.
-            Bạn am hiểu sâu sắc các tính năng của website IELTS Oasis và hãy hướng dẫn học viên sử dụng chúng khi họ hỏi:
-            - **Vocabulary Lab**: Kho lưu trữ từ vựng cá nhân, tích hợp thuật toán lặp lại ngắt quãng (SRS) với 5 cấp độ Mastery để học từ nhớ lâu.
-            - **Writing Sanctuary**: Nơi luyện viết các bài luận Task 1, Task 2 và nhận đánh giá Band score, sửa lỗi chi tiết thời gian thực từ AI. Có đồng hồ áp lực thi cử tự động khóa ô viết và nộp bài khi hết giờ.
-            - **MatchaSpeak (Speaking Studio)**: Gồm chế độ Shadowing (nhại giọng chuẩn) và Sandbox (luyện nói Cue Card Part 2 trong 2 phút kèm nhận xét phát âm).
-            - **MatchaScroll (Đọc báo)**: Đọc báo học thuật tiếng Anh và tự động bôi đen trích xuất từ mới vào kho từ vựng.
-            - **Listening Section**: Luyện nghe chép chính tả qua video Youtube học thuật.
-            - **Wordle Matcha**: Trò chơi đoán từ vựng giải trí giúp tăng phản xạ từ.
-
-            {stats_str}
-            """
-
+            # Build multi-turn chat messages
+            chat_messages = []
             if is_reply_to_bot and ref_msg:
                 # Direct reply to a specific bot message
                 replied_cleaned = ref_msg.content.replace(f'<@{bot.user.id}>', '').strip()
-                prompt = f"""
-                {system_instruction}
-                
-                Quy tắc quan trọng:
-                1. Hãy trả lời trực tiếp phản hồi của học viên đối với câu nói trước đó của bạn.
-                2. Nếu học viên chào hỏi, hãy chào lại thân thiện.
-                3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu được làm bài tập hay luyện tập.
-                
-                Ngữ cảnh hội thoại:
-                - Bạn (Mát Cha AI Eo) đã nói trước đó: "{replied_cleaned}"
-                - Học viên vừa reply/phản hồi lại câu trên của bạn: "{content}"
-                
-                Hãy đưa ra phản hồi tiếp theo của bạn:
-                """
+                if replied_cleaned:
+                    chat_messages.append({"role": "assistant", "content": replied_cleaned})
+                chat_messages.append({"role": "user", "content": content})
             else:
                 # Normal mention or DM chat history
-                history_messages = []
                 try:
-                    async for msg in message.channel.history(limit=6):
-                        author_name = "Học viên" if msg.author.id != bot.user.id else "Mát Cha AI Eo"
-                        msg_content = msg.content.replace(f'<@{bot.user.id}>', '').strip()
-                        if msg_content:
-                            history_messages.append(f"{author_name}: {msg_content}")
+                    async for msg in message.channel.history(limit=8):
+                        role = "assistant" if msg.author.id == bot.user.id else "user"
+                        msg_text = msg.content.replace(f'<@{bot.user.id}>', '').strip()
+                        if msg_text:
+                            chat_messages.append({"role": role, "content": msg_text})
+                    chat_messages.reverse()
                 except Exception as e:
                     logger.error(f"Failed to fetch history: {e}")
-                    
-                history_messages.reverse()
-                history_str = "\n".join(history_messages)
-                
-                prompt = f"""
-                {system_instruction}
-                
-                Quy tắc quan trọng:
-                1. Nếu học viên chào hỏi (ví dụ: hi, hello, chào thầy...), hãy chào lại một cách thân thiện và hỏi xem bạn có thể giúp gì cho họ, TUYỆT ĐỐI KHÔNG tự tiện đưa ra bài tập hay câu hỏi kiểm tra.
-                2. Nếu học viên hỏi về kiến thức tiếng Anh (ngữ pháp, từ vựng, phát âm, lời khuyên viết bài), hãy giải thích ngắn gọn, dễ hiểu và cho ví dụ rõ ràng.
-                3. CHỈ tạo bài tập/quiz trắc nghiệm nếu họ rõ ràng yêu cầu.
-                
-                Dưới đây là lịch sử hội thoại gần đây giữa bạn (Mát Cha AI Eo) và học viên:
-                {history_str}
-                
-                Hãy đưa ra câu trả lời tiếp theo của gia sư Mát Cha AI Eo:
-                """
+                    chat_messages = [{"role": "user", "content": content}]
+
+            if not chat_messages:
+                chat_messages = [{"role": "user", "content": content}]
+
             try:
-                response = await ai_service.get_advice(prompt)
+                response = await ai_service.chat_tutor(chat_messages, student_context=student_context)
                 if response:
                     await message.reply(response)
                 else:
-                    await message.reply("Xin lỗi, tôi đang bận pha trà Matcha. Bạn hỏi lại sau nhé! 🍵")
+                    await message.reply("Mát Cha đang bận rèn luyện cho các sĩ tử khác một chút. Bạn hỏi lại sau vài giây nhé! 🍵")
             except Exception as e:
                 logger.error(f"Chatbot error: {e}")
 

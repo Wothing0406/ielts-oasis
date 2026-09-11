@@ -3,19 +3,68 @@ let BASE_URL = 'https://ieltsoasis.site/api';
 async function getBaseUrl() {
   const data = await chrome.storage.local.get(['server_url']);
   if (data.server_url) {
-    BASE_URL = data.server_url + '/api';
+    BASE_URL = data.server_url.replace(/\/+$/, '') + '/api';
   }
   return BASE_URL;
+}
+
+// Zero-touch token recovery by inspecting all open tabs for oasis_token
+async function recoverTokenFromTabs() {
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (!tab.id || !tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) continue;
+      try {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const token = localStorage.getItem("oasis_token");
+            const user = localStorage.getItem("oasis_user");
+            if (token) {
+              return { token, user, origin: window.location.origin };
+            }
+            return null;
+          }
+        });
+        if (results && results[0] && results[0].result) {
+          const res = results[0].result;
+          if (res.token) {
+            let userInfo = null;
+            if (res.user) {
+              try { userInfo = typeof res.user === 'string' ? JSON.parse(res.user) : res.user; } catch (e) {}
+            }
+            await chrome.storage.local.set({
+              jwt_token: res.token,
+              user_info: userInfo,
+              server_url: res.origin
+            });
+            console.log("[Service Worker] Recovered token from tab:", tab.url);
+            await syncUserProfile(res.token);
+            return res.token;
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error("recoverTokenFromTabs error:", err);
+  }
+  return null;
 }
 
 // Install event
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Mát Cha AI Eo extension installed.");
-  // Create context menus for selected text
-  chrome.contextMenus.create({
-    id: "explain-with-matcha",
-    title: "Giải thích bằng Mát Cha AI 🍵",
-    contexts: ["selection"]
+  // Create context menus safely by clearing first
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: "explain-with-matcha",
+      title: "Giải thích bằng Mát Cha AI 🍵",
+      contexts: ["selection"]
+    }, () => {
+      if (chrome.runtime.lastError) {
+        // Ignored if already created
+      }
+    });
   });
   
   // Set default settings
@@ -104,15 +153,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
+  if (message.action === 'recover_token_from_tabs') {
+    (async () => {
+      const token = await recoverTokenFromTabs();
+      sendResponse({ token: token });
+    })();
+    return true;
+  }
+
   if (message.action === 'sync_vocab') {
-    chrome.storage.local.get(['jwt_token'], async (data) => {
-      if (data.jwt_token) {
-        await syncUserProfile(data.jwt_token);
-        sendResponse({ status: 'synced' });
-      } else {
-        sendResponse({ status: 'no_token' });
+    (async () => {
+      const data = await chrome.storage.local.get(['jwt_token']);
+      let activeToken = message.token || data.jwt_token;
+      if (!activeToken) {
+        activeToken = await recoverTokenFromTabs();
       }
-    });
+      if (activeToken) {
+        if (message.token && message.token !== data.jwt_token) {
+          await chrome.storage.local.set({ jwt_token: message.token });
+        }
+        const syncedList = await syncUserProfile(activeToken);
+        sendResponse({ status: 'synced', count: syncedList.length, vocab: syncedList });
+      } else {
+        sendResponse({ status: 'no_token', vocab: [] });
+      }
+    })();
     return true;
   }
   
@@ -190,8 +255,10 @@ async function syncUserProfile(token) {
           console.log("Stale active_quiz_state cleared after vocab sync.");
         }
       }
+      return vocabList;
     }
   } catch (err) {
     console.error("Failed to sync user data: ", err);
   }
+  return [];
 }

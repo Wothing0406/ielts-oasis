@@ -149,6 +149,21 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     }
   };
 
+  // Topic Filter State & Filtered List
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+
+  const filteredVocabList = useMemo(() => {
+    if (!selectedTopic) return vocabList;
+    return vocabList.filter(
+      (v) => v.topic?.toLowerCase().includes(selectedTopic.toLowerCase()) || 
+             (selectedTopic === 'Tech' && v.topic?.toLowerCase().includes('technology'))
+    );
+  }, [vocabList, selectedTopic]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedTopic]);
+
   // Keep currentIndex clamped safely within bounds when vocabulary list changes
   const prevListLengthRef = React.useRef(vocabList.length);
   useEffect(() => {
@@ -194,20 +209,6 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     phonetic: '',
     meaning: ''
   });
-
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-
-  const filteredVocabList = useMemo(() => {
-    if (!selectedTopic) return vocabList;
-    return vocabList.filter(
-      (v) => v.topic?.toLowerCase().includes(selectedTopic.toLowerCase()) || 
-             (selectedTopic === 'Tech' && v.topic?.toLowerCase().includes('technology'))
-    );
-  }, [vocabList, selectedTopic]);
-
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [selectedTopic]);
 
   const current = filteredVocabList[currentIndex] || {
     word: "Matcha",
@@ -522,9 +523,9 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         </div>
         
         <div className="flex flex-col items-center w-full mt-8">
-          <div className="w-full max-w-[290px] xs:max-w-[320px] sm:max-w-sm flex justify-center">
+          <div className="w-full max-w-[310px] xs:max-w-[340px] sm:max-w-sm flex justify-center">
             <div 
-              className="w-full flex justify-center min-h-[320px]"
+              className="w-full flex justify-center min-h-[380px] xs:min-h-[390px]"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}

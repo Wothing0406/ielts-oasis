@@ -6,7 +6,7 @@ let conversationHistory = []; // Multi-turn history
 async function getBaseUrl() {
   const data = await chrome.storage.local.get(['server_url']);
   if (data.server_url) {
-    BASE_URL = data.server_url + '/api';
+    BASE_URL = data.server_url.replace(/\/+$/, '') + '/api';
   }
   return BASE_URL;
 }
@@ -78,33 +78,61 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       const baseUrl = await getBaseUrl();
+      const recentTurns = conversationHistory.slice(-8).map(m => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.content
+      }));
 
-      // Build a conversational prompt with history context for multi-turn chat
-      const recentHistory = conversationHistory.slice(-6);
-      const historyContext = recentHistory.length > 1
-        ? recentHistory.map(m => `${m.role === 'user' ? 'Học viên' : 'Mát Cha'}: ${m.content}`).join('\n')
-        : text;
+      let aiMsg = '';
+      try {
+        // 1. Try dedicated multi-turn /chat endpoint
+        const response = await fetch(`${baseUrl}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({ messages: recentTurns })
+        });
 
-      const response = await fetch(`${baseUrl}/translate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify({ text: historyContext })
-      });
+        if (response.ok) {
+          const result = await response.json();
+          aiMsg = result.reply || result.meaning || '';
+        }
+      } catch (chatErr) {
+        console.warn('Dedicated /chat endpoint failed, attempting /translate fallback:', chatErr);
+      }
+
+      // 2. Fallback to /translate if /chat did not return message
+      if (!aiMsg) {
+        const historyContext = recentTurns.length > 1
+          ? recentTurns.map(m => `${m.role === 'user' ? 'Học viên' : 'Mát Cha'}: ${m.content}`).join('\n')
+          : text;
+
+        const response = await fetch(`${baseUrl}/translate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({ text: historyContext })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          aiMsg = result.reply || result.meaning || '';
+        }
+      }
 
       removeTyping(typingId);
 
-      if (response.ok) {
-        const result = await response.json();
-        const aiMsg = result.meaning || 'Mát Cha chưa hiểu ý cậu lắm. Hãy thử lại nhé!';
+      if (aiMsg) {
         appendMessage('ai', aiMsg);
         conversationHistory.push({ role: 'ai', content: aiMsg });
         // Keep history limited to 20 messages
         if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
       } else {
-        appendMessage('ai', '❌ Lỗi kết nối máy chủ. Hãy thử lại hoặc kiểm tra kết nối mạng nhé!');
+        appendMessage('ai', '❌ Không nhận được phản hồi từ Mát Cha. Hãy thử lại nhé!');
       }
     } catch (e) {
       console.error(e);
@@ -127,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function appendTyping() {
-    const id = 'typing-' + Date.now();
+    const id = 'typing-' +Date.now();
     const msg = document.createElement('div');
     msg.className = 'message ai typing-indicator';
     msg.id = id;

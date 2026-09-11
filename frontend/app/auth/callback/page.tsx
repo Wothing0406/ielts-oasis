@@ -31,6 +31,16 @@ function AuthCallbackContent() {
         if (data.token) {
           localStorage.setItem('oasis_token', data.token);
           localStorage.setItem('oasis_user', JSON.stringify(data.user));
+          if (typeof window !== "undefined") {
+            const syncMsg = {
+              type: "OASIS_AUTH_SYNC",
+              origin: window.location.origin,
+              token: data.token,
+              user: data.user
+            };
+            window.postMessage(syncMsg, "*");
+            window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: syncMsg }));
+          }
           setStatus("Đăng nhập thành công! Đang chuyển hướng...");
           timerId = setTimeout(() => {
             router.push('/');

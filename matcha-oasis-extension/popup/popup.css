@@ -5,6 +5,11 @@ body {
   background-color: #FFFDF5;
   color: #5D4037;
   width: 360px;
+  max-height: 580px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   font-size: 15px;
 }
 

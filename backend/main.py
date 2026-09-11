@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Request, Depends
+from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func, or_
@@ -384,7 +385,7 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         except Exception as e:
             print(f"Matcha Lens crop failed: {e}")
     
-    # Force AI Refinement only if core fields are missing (meaning or phonetic)
+    # Force AI Refinement if core fields are missing (meaning or phonetic)
     if not vocab.meaning or not vocab.phonetic or vocab.phonetic == "/.../":
         try:
             data = await ai_service.refine_vocabulary(vocab_in.word)
@@ -399,6 +400,15 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
                 vocab.memory_hook = data.get("memory_hook", vocab.memory_hook)
         except Exception as e:
             print(f"Refinement failed: {e}")
+    else:
+        # Strip any accidental POS tags like (n), (v), (adj) from user/input word and meaning
+        import re
+        pos_clean_regex = r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*'
+        vocab.word = re.sub(pos_clean_regex, '', str(vocab.word), flags=re.IGNORECASE).strip()
+        vocab.word = re.sub(r'[\/\\()\[\]]', '', vocab.word).strip()
+        vocab.meaning = re.sub(pos_clean_regex, '', str(vocab.meaning), flags=re.IGNORECASE).strip()
+        vocab.meaning = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', vocab.meaning, flags=re.IGNORECASE).strip()
+        vocab.meaning = vocab.meaning.strip(" -:;,")
 
     # Fetch image from Unsplash if still empty
     if not vocab.image_url:
@@ -556,6 +566,8 @@ async def extract_scroll(file: UploadFile = File(...)):
 async def translate_text(data: TranslateInput):
     """Dịch nhanh một từ/cụm từ cho tính năng Click to Translate hoặc Chatbot Mát Cha AI Eo"""
     try:
+        import json
+        import re
         text = data.text.strip()
         word_count = len(text.split())
         
@@ -566,15 +578,15 @@ async def translate_text(data: TranslateInput):
             # Generate structured vocabulary info
             prompt = (
                 f"Hãy phân tích từ/cụm từ '{text}' và trả về kết quả định dạng JSON với các trường sau:\n"
-                f"- 'word': từ/cụm từ (tiếng Anh)\n"
-                f"- 'phonetic': phiên âm quốc tế IPA (nếu có, đặt trong /.../)\n"
-                f"- 'meaning': nghĩa tiếng Việt cực kỳ ngắn gọn, súc tích (chỉ 1-7 từ, giống như mặt sau của thẻ flashcard, TUYỆT ĐỐI KHÔNG giải thích dài dòng hay viết thành câu hoàn chỉnh)\n"
-                f"- 'example': 1 câu ví dụ tiếng Anh ngắn gọn\n"
-                f"- 'memory_hook': mẹo nhớ từ (ngắn gọn, có thể dùng chiết tự, âm thanh tương tự, hoặc câu chuyện ngắn thú vị)\n"
+                f"- 'word': từ/cụm từ tiếng Anh sạch không chứa nhãn từ loại (n), (v)\n"
+                f"- 'phonetic': phiên âm quốc tế IPA (đặt trong /.../)\n"
+                f"- 'meaning': nghĩa tiếng Việt súc tích chuẩn Google Translate (translate.google.com.vn) và Oxford IELTS (chỉ 1-3 từ, ví dụ 'Tuổi trẻ' cho youth, 'Thành lập, sáng lập' cho found, TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj), không giải thích dài dòng hay viết thành câu)\n"
+                f"- 'example': 1 câu ví dụ tiếng Anh ngắn gọn hữu ích cho IELTS\n"
+                f"- 'synonyms': mảng chứa 2-4 từ đồng nghĩa tiếng Anh chất lượng cao (ví dụ: [\"synonym1\", \"synonym2\"])\n"
+                f"- 'memory_hook': mẹo nhớ từ (ngắn gọn, thú vị)\n"
                 f"Chỉ trả về JSON hợp lệ, không kèm theo văn bản giải thích nào khác."
             )
             response = await ai_service.get_advice(prompt)
-            import json
             try:
                 # Remove markdown code blocks if any
                 clean_json = response.strip()
@@ -585,30 +597,101 @@ async def translate_text(data: TranslateInput):
                 if clean_json.endswith("```"):
                     clean_json = clean_json[:-3]
                 parsed = json.loads(clean_json.strip())
+                if parsed and isinstance(parsed, dict) and parsed.get("meaning"):
+                    parsed["word"] = re.sub(r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', str(parsed["word"]), flags=re.IGNORECASE).strip()
+                    parsed["meaning"] = re.sub(r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', str(parsed["meaning"]), flags=re.IGNORECASE).strip()
+                    parsed["meaning"] = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', parsed["meaning"], flags=re.IGNORECASE).strip()
+                    parsed["meaning"] = parsed["meaning"].strip(" -:;,")
                 return parsed
             except json.JSONDecodeError:
                 logger.error(f"Failed to parse structured vocab: {response}")
                 return {"meaning": response}
                 
         if is_word_lookup:
-            prompt = f"Dịch và giải thích ngắn gọn ý nghĩa của từ/cụm từ sau sang tiếng Việt (nếu là từ đơn hãy kèm phiên âm và loại từ, nếu là cụm từ thì dịch sát nghĩa ngữ cảnh): '{text}'"
-            response = await ai_service.get_advice(prompt)
-            return {"meaning": response or "Không thể dịch."}
-        else:
             prompt = (
-                f"Bạn là Mát Cha AI Eo - chú gấu gia sư và người bạn đồng hành ôn thi IELTS siêu cấp đáng yêu, ấm áp tại IELTS Oasis. "
-                f"Hãy trả lời câu hỏi/tin nhắn của học viên một cách thông minh, tập trung trực tiếp và duy nhất vào thắc mắc chính hoặc chủ đề của học viên, "
-                f"giải thích ngắn gọn, rõ ràng và có tính học thuật cao. "
-                f"TUYỆT ĐỐI KHÔNG tự ý giới thiệu hay chèn các lời khuyên học tập liên quan đến website (như nhắc ôn Vocabulary Lab, Writing Sanctuary, games, MatchaScroll, v.v.) "
-                f"trừ khi học viên trực tiếp đặt câu hỏi liên quan đến cách sử dụng website, tính năng web, hoặc lộ trình học tại IELTS Oasis. "
-                f"Hãy giữ giọng văn thân thiện, ấm áp và sử dụng icon dễ thương hoặc 🍵. Trả lời bằng tiếng Việt trôi chảy. "
-                f"Tin nhắn của học viên: '{text}'"
+                f"Hãy dịch từ/cụm từ tiếng Anh sau sang tiếng Việt theo chuẩn Google Translate (translate.google.com.vn) và Oxford Learner's Dictionary:\n"
+                f"Input: '{text}'\n\n"
+                f"YÊU CẦU BẮT BUỘC:\n"
+                f"1. Chỉ trả về nghĩa tiếng Việt chính xác, súc tích (chỉ từ 1 đến 3 từ, ví dụ 'youth' -> 'tuổi trẻ', 'acquire' -> 'thu nhận, đạt được').\n"
+                f"2. TUYỆT ĐỐI KHÔNG giải thích dài dòng, không viết thành câu hoàn chỉnh.\n"
+                f"3. TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj), (adv) hay phát âm vào kết quả.\n"
+                f"4. Nếu từ có nghĩa khác nhau tùy theo ngữ cảnh IELTS, chỉ đưa ra nghĩa học thuật thông dụng nhất, tối đa 2 nghĩa cách nhau bằng dấu chấm phẩy.\n"
+                f"Chỉ trả về DUY NHẤT nghĩa tiếng Việt, không kèm văn bản nào khác."
             )
             response = await ai_service.get_advice(prompt)
+            clean_res = response.strip() if response else "Không thể dịch."
+            clean_res = re.sub(r'^\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', clean_res, flags=re.IGNORECASE).strip()
+            clean_res = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', clean_res, flags=re.IGNORECASE).strip()
+            clean_res = clean_res.strip(" \"':;,.")
+            return {"meaning": clean_res}
+        else:
+            # Fallback conversation / chat through /translate using enhanced chat_tutor brain
+            response = await ai_service.chat_tutor(text)
             return {"meaning": response or "Mát Cha chưa hiểu ý cậu lắm."}
     except Exception as e:
         logger.error(f"Translate error: {e}")
         return {"error": str(e), "meaning": "Lỗi kết nối máy chủ Matcha."}
+
+class ChatMessageItem(BaseModel):
+    role: str = "user"
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: Optional[List[ChatMessageItem]] = None
+    text: Optional[str] = None
+    student_context: Optional[dict] = None
+
+@app.post("/chat")
+async def chat_tutor_endpoint(data: ChatRequest, request: Request):
+    """API Chatbot Gia sư IELTS Mát Cha AI Eo cho Chrome Extension Sidepanel & Web Chat"""
+    try:
+        from auth_routes import JWT_SECRET, JWT_ALGORITHM
+        import jwt
+        
+        student_context = data.student_context or {}
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1].strip()
+            if token and token not in ["null", "undefined"]:
+                try:
+                    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                    user_id = payload.get("sub")
+                    if user_id:
+                        from database import get_db_context
+                        with get_db_context() as db:
+                            user = db.query(User).filter(User.id == int(user_id)).first()
+                            if user:
+                                vocab_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id).count()
+                                mastery_count = db.query(Vocabulary).filter(Vocabulary.user_id == user.id, Vocabulary.mastery_level == 5).count()
+                                recent_writing = db.query(WritingLog).filter(WritingLog.user_id == user.id).order_by(WritingLog.created_at.desc()).first()
+                                sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+                                student_context.setdefault("username", user.username)
+                                student_context.setdefault("vocab_count", vocab_count)
+                                student_context.setdefault("mastery_count", mastery_count)
+                                if recent_writing:
+                                    student_context.setdefault("recent_band", recent_writing.band_score)
+                                if sched:
+                                    student_context.setdefault("target_band", sched.level)
+                                    student_context.setdefault("schedule_topic", sched.topic)
+                except Exception as e:
+                    logger.debug(f"JWT decode in /chat skipped: {e}")
+
+        # Prepare messages payload
+        messages_payload = []
+        if data.messages:
+            messages_payload = [{"role": m.role, "content": m.content} for m in data.messages]
+        elif data.text:
+            messages_payload = [{"role": "user", "content": data.text}]
+        else:
+            raise HTTPException(status_code=400, detail="Thiếu nội dung câu hỏi.")
+
+        reply = await ai_service.chat_tutor(messages_payload, student_context=student_context)
+        return {"reply": reply, "meaning": reply}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Chat API error: {e}")
+        return {"reply": "Mát Cha đang gặp chút gián đoạn kết nối. Cậu hãy thử lại sau nhé! 🍵", "meaning": "Lỗi kết nối."}
 
 @app.post("/tts")
 async def text_to_speech(data: dict):

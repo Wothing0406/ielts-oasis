@@ -196,6 +196,17 @@ export default function Home() {
     }
   };
 
+  const syncToExtension = (type: string, payload: any = {}) => {
+    if (typeof window === "undefined") return;
+    const messageData = {
+      type,
+      origin: window.location.origin,
+      ...payload
+    };
+    window.postMessage(messageData, "*");
+    window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: messageData }));
+  };
+
   const ensureUserSession = async (): Promise<string | null> => {
     let token = localStorage.getItem("oasis_token");
     if (token) return token;
@@ -215,6 +226,7 @@ export default function Home() {
         localStorage.setItem("oasis_guest_id", data.guest_id);
         setUser(data.user);
         fetchVocabs(data.token);
+        syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
         return data.token;
       }
     } catch (err) {
@@ -233,6 +245,9 @@ export default function Home() {
     }
     if (savedToken) {
       fetchVocabs(savedToken);
+      let parsedUser = null;
+      try { parsedUser = savedUser ? JSON.parse(savedUser) : null; } catch(e) {}
+      syncToExtension("OASIS_AUTH_SYNC", { token: savedToken, user: parsedUser });
     } else {
       // Initialize an isolated guest session so guest immediately has independent storage & community access
       ensureUserSession();
@@ -271,6 +286,14 @@ export default function Home() {
           if (prev.some(v => v.word.toLowerCase() === newVocab.word.toLowerCase())) return prev;
           return [newVocab, ...prev];
         });
+
+        // Notify extension immediately so it updates without needing a re-login
+        syncToExtension("OASIS_VOCAB_UPDATED", {
+          action: "ADD",
+          vocab: newVocab,
+          token: token
+        });
+
         return { success: true, word: formData.word };
       } else if (res.status === 409) {
         return { success: false, status: "duplicate", word: formData.word };
@@ -293,13 +316,12 @@ export default function Home() {
     setVocabList(prev => prev.filter(v => v.id !== id));
 
     // Notify extension immediately
-    if (typeof window !== "undefined") {
-      window.postMessage({
-        type: "OASIS_VOCAB_DELETED",
-        id,
-        word: deletedItem?.word
-      }, "*");
-    }
+    syncToExtension("OASIS_VOCAB_DELETED", {
+      action: "DELETE",
+      id,
+      word: deletedItem?.word,
+      token: token
+    });
 
     try {
       const res = await fetch(`${API_URL}/vocabulary/${id}`, {
@@ -387,6 +409,7 @@ export default function Home() {
         localStorage.setItem("oasis_guest_id", data.guest_id);
         setUser(data.user);
         fetchVocabs(data.token);
+        syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
         (window as any).showToast("Login successful! Welcome back 🍵", "success");
       } else {
         (window as any).showToast(data.detail || "Login failed.", "error");

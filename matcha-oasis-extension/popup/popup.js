@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnOpenPanel = document.getElementById('btn-open-panel');
 
   // Check current config
-  let data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled', 'server_url']);
+  let data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled', 'server_url', 'user_vocab']);
   
   // Set fallback server URL if not set
   if (!data.server_url) {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               });
             });
             // Refresh configuration data
-            data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled', 'server_url']);
+            data = await chrome.storage.local.get(['jwt_token', 'user_info', 'study_schedule', 'reminders_enabled', 'server_url', 'user_vocab']);
             break; // Found token, break loop
           } else if (fetched.origin && (fetched.origin.includes('localhost') || fetched.origin.includes('ieltsoasis') || fetched.origin.includes('127.0.0.1'))) {
             // Even if not logged in, update server_url to help login button redirect to local/VPS instance
@@ -67,8 +67,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Update Login button to target active server URL
-  btnLogin.href = `${data.server_url}/api/auth/discord/login?redirect_uri=${encodeURIComponent(data.server_url + '/auth/callback')}`;
+  // Handle Username/Password Login in Popup
+  const popupLoginForm = document.getElementById('popup-login-form');
+  const popupUsernameInput = document.getElementById('popup-username');
+  const popupPasswordInput = document.getElementById('popup-password');
+  const btnSubmitPwd = document.getElementById('btn-submit-pwd');
+  const popupLoginError = document.getElementById('popup-login-error');
+
+  if (popupLoginForm) {
+    popupLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = popupUsernameInput.value.trim();
+      const password = popupPasswordInput.value.trim();
+      if (!username || !password) return;
+
+      btnSubmitPwd.textContent = 'Đang kiểm tra...';
+      btnSubmitPwd.disabled = true;
+      popupLoginError.style.display = 'none';
+
+      try {
+        const resp = await fetch(`${data.server_url}/api/auth/extension-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (resp.ok) {
+          const resJson = await resp.json();
+          if (resJson && resJson.token) {
+            await chrome.storage.local.set({ jwt_token: resJson.token });
+            chrome.runtime.sendMessage({ action: 'save_jwt_token', token: resJson.token, user: resJson.user }, () => {
+              window.location.reload();
+            });
+            return;
+          }
+        }
+        const errJson = await resp.json().catch(() => ({}));
+        popupLoginError.textContent = errJson.detail || 'Tên đăng nhập hoặc mật khẩu không đúng!';
+        popupLoginError.style.display = 'block';
+      } catch (err) {
+        console.error("Login error:", err);
+        popupLoginError.textContent = 'Lỗi kết nối máy chủ. Vui lòng thử lại!';
+        popupLoginError.style.display = 'block';
+      } finally {
+        btnSubmitPwd.textContent = 'Đăng nhập bằng Mật khẩu ➔';
+        btnSubmitPwd.disabled = false;
+      }
+    });
+  }
+
+  // Update Login button to target active server URL with direct OAuth redirection
+  btnLogin.addEventListener('click', async (e) => {
+    e.preventDefault();
+    btnLogin.textContent = 'Đang mở Discord...';
+    try {
+      const redirectUri = encodeURIComponent(data.server_url + '/auth/callback');
+      const resp = await fetch(`${data.server_url}/api/auth/discord/login?redirect_uri=${redirectUri}`);
+      if (resp.ok) {
+        const resJson = await resp.json();
+        if (resJson && resJson.url) {
+          chrome.tabs.create({ url: resJson.url });
+          return;
+        }
+      }
+      chrome.tabs.create({ url: `${data.server_url}/auth/callback` });
+    } catch (err) {
+      console.error(err);
+      chrome.tabs.create({ url: data.server_url });
+    } finally {
+      btnLogin.textContent = '👾 Đăng nhập Discord OAuth2';
+    }
+  });
 
   if (data.jwt_token) {
     authSection.style.display = 'none';
@@ -92,6 +161,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       studyTopicEl.textContent = data.study_schedule.topic || 'N/A';
       studyFocusEl.textContent = data.study_schedule.study_focus || 'Toàn diện';
     }
+
+    // Display user vocabulary count
+    const vocabCountEl = document.getElementById('study-vocab-count');
+    if (vocabCountEl) {
+      vocabCountEl.textContent = `${data.user_vocab ? data.user_vocab.length : 0} từ`;
+    }
+
+    // Proactively refresh vocab count from backend in background
+    chrome.runtime.sendMessage({ action: 'sync_vocab', token: data.jwt_token });
     
     // Set toggle state
     toggleReminders.checked = data.reminders_enabled !== false;
@@ -99,6 +177,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     authSection.style.display = 'flex';
     mainSection.style.display = 'none';
   }
+
+  // Handle manual sync vocabulary button in popup
+  const btnSyncVocab = document.getElementById('btn-sync-vocab');
+  if (btnSyncVocab) {
+    btnSyncVocab.addEventListener('click', async () => {
+      btnSyncVocab.textContent = 'Đang đồng bộ... ⏳';
+      btnSyncVocab.disabled = true;
+      const res = await new Promise(resolve => {
+        chrome.runtime.sendMessage({ action: 'sync_vocab', token: data.jwt_token }, resolve);
+      }).catch(() => null);
+      const fresh = await chrome.storage.local.get(['user_vocab']);
+      const count = fresh.user_vocab ? fresh.user_vocab.length : 0;
+      const vocabCountEl = document.getElementById('study-vocab-count');
+      if (vocabCountEl) vocabCountEl.textContent = `${count} từ`;
+      btnSyncVocab.textContent = `Đã đồng bộ (${count} từ) ✅`;
+      setTimeout(() => {
+        btnSyncVocab.textContent = '🔄 Đồng bộ kho từ vựng';
+        btnSyncVocab.disabled = false;
+      }, 2000);
+    });
+  }
+
+  // Real-time update for vocab count if storage updates while popup is open
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.user_vocab) {
+      const vocabCountEl = document.getElementById('study-vocab-count');
+      if (vocabCountEl) {
+        const list = changes.user_vocab.newValue || [];
+        vocabCountEl.textContent = `${list.length} từ`;
+      }
+    }
+  });
 
   // Toggle alarm reminders
   toggleReminders.addEventListener('change', (e) => {

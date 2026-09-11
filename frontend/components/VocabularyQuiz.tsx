@@ -84,14 +84,36 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
     }
   };
 
+  // Hàm chuẩn hóa từ vựng: loại bỏ từ loại (n), (v), (adj)... và ký tự đặc biệt
+  const normalizeWord = (str: string) => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .replace(/\s*\((n|v|adj|adv|prep|conj|pron|phr|idiom|slang|phrase)\b[^)]*\)/gi, '')
+      .replace(/[\/\\()]/g, ' ')
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const handleAnswer = async (answer: string) => {
     if (feedback !== null) return;
     const current = activeQuestions[currentIndex];
-    const isCorrect = quizType === 'vocab'
-      ? (mode === 'ABCD'
-        ? answer === current.meaning 
-        : answer.toLowerCase().trim() === current.word.toLowerCase().trim())
-      : answer === current.correct_answer;
+    
+    let isCorrect = false;
+    if (quizType === 'vocab') {
+      if (mode === 'ABCD') {
+        isCorrect = answer === current.meaning;
+      } else {
+        const cleanUser = normalizeWord(answer);
+        const cleanCorrect = normalizeWord(current.word);
+        isCorrect = cleanUser === cleanCorrect ||
+          answer.toLowerCase().trim() === current.word.toLowerCase().trim() ||
+          (cleanCorrect.length > 2 && cleanUser === cleanCorrect.split(' ')[0]);
+      }
+    } else {
+      isCorrect = answer === current.correct_answer;
+    }
 
     if (isCorrect) {
       setFeedback('correct');
@@ -307,7 +329,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                       </span>
                       <p className="text-accent text-sm font-bold mt-1">
                         {quizType === 'vocab' 
-                          ? (mode === 'ABCD' ? `Đáp án đúng: "${current.meaning}"` : `Từ đúng là: "${current.word}"`)
+                          ? (mode === 'ABCD' ? `Đáp án đúng: "${current.meaning}"` : `Từ đúng là: "${normalizeWord(current.word) || current.word}"`)
                           : `Đáp án đúng: "${current.correct_answer}"`}
                       </p>
                     </div>

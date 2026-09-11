@@ -6,19 +6,50 @@ from io import BytesIO
 from PIL import Image
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from datetime import datetime, timezone, timedelta
 
 load_dotenv()
 
+def get_current_realtime_context() -> dict:
+    """Lấy thông tin ngày giờ thực tế theo múi giờ Việt Nam (GMT+7)"""
+    vn_tz = timezone(timedelta(hours=7))
+    now = datetime.now(vn_tz)
+    weekday_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+    weekday_str = weekday_names[now.weekday()]
+    return {
+        "now": now,
+        "year": now.year,
+        "date_str": now.strftime("%d/%m/%Y"),
+        "time_str": now.strftime("%H:%M:%S"),
+        "weekday": weekday_str,
+        "full_text": f"{weekday_str}, ngày {now.day:02d} tháng {now.month:02d} năm {now.year}, lúc {now.strftime('%H:%M')} (Giờ Việt Nam GMT+7)"
+    }
+
 class AIService:
     def __init__(self):
-        # Google Gemini API via OpenAI compatibility
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        # API Keys pool: Support GEMINI_API_KEY, GEMINI_API_KEY_BACKUP, or GEMINI_API_KEYS (comma separated)
+        raw_keys = os.getenv("GEMINI_API_KEYS", "")
+        keys_list = [k.strip() for k in raw_keys.split(",") if k.strip()]
+        if not keys_list:
+            primary = os.getenv("GEMINI_API_KEY", "").strip()
+            if primary: keys_list.append(primary)
+            backup = os.getenv("GEMINI_API_KEY_BACKUP", "").strip()
+            if backup and backup not in keys_list: keys_list.append(backup)
+
+        self.api_keys = keys_list if keys_list else ["dummy-key"]
+        self.gemini_api_key = self.api_keys[0]
+        
         self.client = AsyncOpenAI(
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-            api_key=self.gemini_api_key if self.gemini_api_key else "dummy-key",
+            api_key=self.gemini_api_key,
+            max_retries=0,
+            timeout=15.0
         )
         
         # Primary models via Gemini API
+        # TUTOR_MODEL: high-IQ reasoning for Chatbot / Tutor (Gemini 3.8 Flash)
+        # PRIMARY_TEXT_MODEL: economical model for bulk tasks (OCR, Wordle, simple translations)
+        self.tutor_model = os.getenv("TUTOR_MODEL", "gemini-3.8-flash")
         self.primary_text_model = os.getenv("PRIMARY_TEXT_MODEL", "gemini-3.1-flash-lite")
         self.primary_vision_model = os.getenv("PRIMARY_VISION_MODEL", "gemini-3.1-flash-lite")
         
@@ -100,20 +131,22 @@ You are an IELTS vocabulary tutor. Carefully analyze the text and conversations 
    **TUYỆT ĐỐI KHÔNG** lấy nguyên cả câu dài, không lấy cả đoạn hội thoại hay câu hoàn chỉnh (như "giờ ngủ ne" hoặc "it's bedtime now") chèn vào trường 'word'.
 4. For each identified item:
    - If the item is in English:
-     - word: The English word/phrase (e.g. "occupied")
-     - meaning: The Vietnamese translation (concise, 1-5 words, e.g. "bận rộn")
+     - word: The clean English word/phrase (e.g. "occupied", no (n)/(v))
+     - meaning: Short, concise, natural Vietnamese definition (1-5 words, e.g. "bận rộn"). TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj) vào meaning.
      - phonetic: IPA pronunciation (e.g. "/ˈɒk.jə.paɪd/")
      - example: The exact sentence or context from the image text where it was used
+     - synonyms: 2 to 4 English synonyms (e.g. ["busy", "engaged"])
    - If the item is in Vietnamese (e.g. "giờ ngủ", "bận rộn", "đi chơi"):
      - word: The corresponding natural English translation/equivalent word or phrase (e.g. "bedtime", "occupied", "hang out") so the user can learn how to say it in English!
-     - meaning: The original Vietnamese concept/phrase from the text (e.g. "giờ ngủ")
+     - meaning: The original Vietnamese concept/phrase from the text (e.g. "giờ ngủ", no (n)/(v))
      - phonetic: IPA pronunciation of the English word (e.g. "/ˈbed.taɪm/")
      - example: An English example sentence using the English word, mentioning the original context (e.g. "It's bedtime now. (Tương ứng ngữ cảnh: giờ ngủ)")
+     - synonyms: 2 to 4 English synonyms
    - topic: The main theme/category of the text (e.g. "Daily Life", "Work", "Social")
    - memory_hook: A short Vietnamese mnemonic tip to remember this English word
 
 Return ONLY a valid JSON array of objects with these exact fields:
-[{"word": "...", "meaning": "...", "phonetic": "...", "example": "...", "topic": "...", "memory_hook": "..."}]
+[{"word": "...", "meaning": "...", "phonetic": "...", "example": "...", "synonyms": ["..."], "topic": "...", "memory_hook": "..."}]
 Do not include any markdown format blocks, explanations, or notes outside the JSON array.
 """
         buffered = BytesIO()
@@ -138,8 +171,14 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             data = json.loads(cleaned)
             if isinstance(data, dict):
                 for k, v in data.items():
-                    if isinstance(v, list): return v
+                    if isinstance(v, list):
+                        data = v
+                        break
             if isinstance(data, list):
+                import re
+                for item in data:
+                    if isinstance(item, dict) and item.get("meaning"):
+                        item["meaning"] = re.sub(r'^\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', str(item["meaning"]), flags=re.IGNORECASE).strip()
                 return data
             return []
         except Exception as e:
@@ -148,6 +187,7 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
 
     def _query_offline_dictionary(self, word: str):
         import sqlite3
+        import re
         db_path = os.path.join(os.path.dirname(__file__), 'dictionary.db')
         if not os.path.exists(db_path):
             return None
@@ -178,18 +218,18 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             
             # Synonyms
             cursor.execute("SELECT related_word FROM word_relations WHERE word_id = ? AND relation_type = 's' LIMIT 5", (word_id,))
-            syns = [r[0] for r in cursor.fetchall()]
+            syns = [r[0] for r in cursor.fetchall() if r[0] and r[0].strip()]
             
             conn.close()
             
             if not defs:
                 return None
                 
-            meanings = []
-            for definition, pos, example in defs[:2]:
-                pos_str = f"({pos})" if pos else ""
-                meanings.append(f"{pos_str} {definition}")
-            meaning = "; ".join(meanings)
+            # Take only the first definition, strip out POS labels and trailing punctuation
+            raw_def = defs[0][0] if defs[0] else ""
+            clean_def = re.sub(r'^\s*\(.*?\)\s*', '', raw_def)
+            clean_def = clean_def.split(';')[0].strip().rstrip('.,;')
+            meaning = clean_def if clean_def else raw_def
             
             phonetic = ipas[0][0] if ipas else "/.../"
             example_text = next((r[2] for r in defs if r[2]), f"It is important to understand the concept of {word_clean} in academic IELTS contexts.")
@@ -202,51 +242,93 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
                 "synonyms": syns,
                 "collocations": [f"use {word_clean}", f"concept of {word_clean}"],
                 "topic": "Academic General",
-                "memory_hook": f"Ghi nhớ từ '{word_clean}' với nghĩa: {meaning[:60]}..."
+                "memory_hook": f"Ghi nhớ từ '{word_clean}' với nghĩa: {meaning[:50]}"
             }
         except Exception as e:
             print(f"Offline dictionary lookup failed: {e}")
             return None
 
     async def refine_vocabulary(self, word: str):
-        # 1. Try local offline dictionary first
-        offline_res = self._query_offline_dictionary(word)
-        if offline_res:
-            return offline_res
-
-        # 2. Fallback to Gemini AI
+        # 1. Primary: Use Gemini AI for accurate, natural IELTS learning details
         prompt = f"""
         Provide IELTS learning details for the input: "{word}"
-        If the input is in Vietnamese, translate it to an English IELTS vocabulary word and use it as the "word" field, with the input as the "meaning".
+        If the input is in Vietnamese, translate it to a corresponding high-yield English IELTS vocabulary word and use it as the "word" field, with the input as the "meaning".
         If the input is in English, keep it as the "word" and provide the Vietnamese translation as the "meaning".
+
+        CRITICAL REQUIREMENTS FOR "meaning":
+        - Short, concise, accurate Vietnamese definition matching Google Translate (translate.google.com.vn) and Oxford/Cambridge IELTS standard (strictly 1 to 3 words, e.g. "Tuổi trẻ" for youth, "Thành lập, sáng lập" for found, "Thu nhận, đạt được" for acquire).
+        - TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj), (adv), (N), (V) vào trường "meaning" hoặc "word".
+        - TUYỆT ĐỐI KHÔNG giải thích dài dòng hay viết thành một đoạn văn/câu hoàn chỉnh.
+        - Nếu từ có nhiều nghĩa khác nhau tùy theo từ loại trong ngữ cảnh IELTS, chọn nghĩa học thuật phổ biến nhất và biểu đạt ngắn gọn (phân cách bằng dấu phẩy hoặc chấm phẩy nếu có 2 nghĩa súc tích).
+
+        CRITICAL REQUIREMENTS FOR "synonyms":
+        - Provide 2 to 4 high-quality English synonyms (e.g. ["adolescence", "young people", "early years"]). DO NOT return an empty list.
+
         Return ONLY valid JSON with exactly these fields:
         {{
-            "word": "The English word",
-            "meaning": "Vietnamese translation",
+            "word": "The clean English word without POS labels",
+            "meaning": "Short concise Vietnamese translation (1-3 words, e.g. Tuổi trẻ)",
             "phonetic": "IPA pronunciation",
-            "example": "A useful example sentence for IELTS in English",
-            "synonyms": ["synonym1", "synonym2"],
+            "example": "A natural IELTS example sentence in English",
+            "synonyms": ["synonym1", "synonym2", "synonym3"],
             "collocations": ["collocation1", "collocation2"],
-            "topic": "The topic of this word (e.g. Environment, Technology, Health, etc.)",
-            "memory_hook": "A short, memorable explanation or trick in Vietnamese to remember this word."
+            "topic": "The topic of this word (e.g. Environment, Technology, Health, Education, Society, etc.)",
+            "memory_hook": "A short, memorable trick or story in Vietnamese to remember this word."
         }}
         """
         try:
-            # 1. Try 9router
             response = await self.client.chat.completions.create(
                 model=self.primary_text_model,
                 messages=[{"role": "user", "content": prompt}],
-                # Removed response_format to ensure compatibility with all models
             )
             content = response.choices[0].message.content
-            return json.loads(self._clean_json(content))
+            parsed = json.loads(self._clean_json(content))
+            if parsed and parsed.get("meaning"):
+                import re
+                # Ensure no stray (n), (v), (adj) leaked into meaning or word
+                parsed["word"] = re.sub(r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', str(parsed["word"]), flags=re.IGNORECASE).strip()
+                parsed["meaning"] = re.sub(r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*', '', str(parsed["meaning"]), flags=re.IGNORECASE).strip()
+                parsed["meaning"] = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', parsed["meaning"], flags=re.IGNORECASE).strip()
+                parsed["meaning"] = parsed["meaning"].strip(" -:;,")
+                return parsed
         except Exception as e:
-            print(f"9router refine_vocabulary failed: {e}")
+            print(f"Gemini refine_vocabulary failed: {e}")
+
+        # 2. Emergency fallback: local offline dictionary
+        offline_res = self._query_offline_dictionary(word)
+        if offline_res:
+            return offline_res
             
         return {
             "word": word, "meaning": word, "phonetic": "/.../", 
             "example": "", "synonyms": [], "collocations": [], "topic": "General", "memory_hook": ""
         }
+
+    def _normalize_extracted_vocab_list(self, items: list):
+        if not isinstance(items, list):
+            return []
+        normalized = []
+        pos_regex = re.compile(r'\s*\(((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*)\)', re.IGNORECASE)
+        for item in items:
+            if not isinstance(item, dict) or not item.get("word"):
+                continue
+            raw_word = str(item.get("word", "")).strip()
+            meaning = str(item.get("meaning", "")).strip()
+
+            # Clean POS tags completely from word (e.g. "found (v)" -> "found")
+            clean_word = pos_regex.sub('', raw_word).strip()
+            clean_word = re.sub(r'[\/\\()\[\]]', '', clean_word).strip()
+
+            # Clean POS tags completely from meaning (no "(v) thành lập", just "thành lập")
+            clean_meaning = pos_regex.sub('', meaning).strip()
+            clean_meaning = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', clean_meaning, flags=re.IGNORECASE).strip()
+            clean_meaning = clean_meaning.strip(" -:;,")
+
+            item["word"] = clean_word
+            item["meaning"] = clean_meaning
+
+            normalized.append(item)
+        return normalized
 
     async def extract_scroll_vocabulary_from_text(self, text: str):
         prompt = f"""
@@ -254,9 +336,10 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
         Analyze this text document and extract ALL English vocabulary words, phrases, or idioms listed.
         
         CRITICAL MANDATORY INSTRUCTIONS:
-        1. EXTRACT ALL WORDS: Extract EVERY SINGLE vocabulary entry present in the text from the very first line to the end. Do NOT limit or filter out any word regardless of how simple or advanced it is.
-        2. EXACT MEANING: For each word, preserve the EXACT Vietnamese meaning provided in the text context.
-        3. DETAILS: Provide IPA phonetic symbols, a clear English example sentence, a memorable Vietnamese memory hook, 1-3 English synonyms, and the topic category.
+        1. EXTRACT ALL WORDS: Extract EVERY SINGLE vocabulary entry present in the text from the very first line to the end.
+        2. CLEAN WORD FIELD: In the "word" field, put ONLY the clean English word/phrase without part-of-speech labels (DO NOT put "(n)", "(v)", "(adj)", etc. in the word field). Example: "found", not "found (v)".
+        3. CONCISE VIETNAMESE MEANING (NO POS TAGS): In the "meaning" field, provide ONLY the concise Vietnamese translation (1-3 words, matching Google Translate / Oxford IELTS standard, e.g. "thành lập, sáng lập" or "tuổi trẻ"). TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj) vào meaning.
+        4. DETAILS: Provide IPA phonetic symbols, a clear English example sentence, a memorable Vietnamese memory hook, 2-4 English synonyms, and the topic category.
 
         Input text:
         "{text}"
@@ -264,9 +347,9 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
         Return ONLY a valid JSON array of objects with exactly this structure (no markdown fences, no other text):
         [
           {{
-            "word": "English word",
+            "word": "Clean English word without (n), (v), etc.",
             "phonetic": "/.../",
-            "meaning": "Exact Vietnamese meaning from text",
+            "meaning": "Concise Vietnamese meaning (1-3 words, no POS tags)",
             "example": "Context sentence in English",
             "memory_hook": "Vietnamese memory hook",
             "synonyms": ["synonym1", "synonym2"],
@@ -281,7 +364,8 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             )
             content = response.choices[0].message.content
             cleaned = self._clean_json(content, expect_list=True)
-            return json.loads(cleaned)
+            items = json.loads(cleaned)
+            return self._normalize_extracted_vocab_list(items)
         except Exception as e:
             print(f"extract_scroll_vocabulary_from_text failed: {e}")
         return []
@@ -292,16 +376,17 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
         Analyze this vocabulary document/table image thoroughly.
         
         CRITICAL MANDATORY INSTRUCTIONS:
-        1. EXTRACT ALL WORDS: Identify and extract EVERY SINGLE English vocabulary word, term, or phrase listed in the image from the top row to the bottom row (e.g. from row 1 to 34 or more). DO NOT skip any rows or words, regardless of whether they are basic words (like 'a', 'about', 'agree', 'am', 'and', 'apple') or advanced terms.
-        2. EXACT VIETNAMESE MEANING: For each word, preserve the EXACT Vietnamese translation/meaning printed in the image table column. Do NOT generate a different meaning if a Vietnamese translation is already given in the image.
-        3. ACCURATE IPA & DETAILS: Extract or provide accurate IPA phonetic symbols, an English example sentence, a memorable Vietnamese memory hook, 1-3 English synonyms, and an appropriate topic category (e.g. General, Tech, Environment, Education, etc.).
+        1. EXTRACT ALL WORDS: Identify and extract EVERY SINGLE English vocabulary word, term, or phrase listed in the image from top to bottom.
+        2. CLEAN WORD FIELD: In the "word" field, put ONLY the clean English headword/phrase without part-of-speech labels (DO NOT put "(n)", "(v)", "(adj)", "(adv)", etc. in the word field). Example: if text says "found (v)" or "achievement (n)", the "word" must be "found" or "achievement".
+        3. CONCISE VIETNAMESE MEANING (NO POS TAGS): In the "meaning" field, provide ONLY the concise Vietnamese translation (1-3 words, matching Google Translate / Oxford IELTS standard, e.g. "thành lập, sáng lập" or "tuổi trẻ"). TUYỆT ĐỐI KHÔNG để nhãn từ loại như (n), (v), (adj) vào meaning.
+        4. ACCURATE IPA & DETAILS: Extract or provide accurate IPA phonetic symbols, an English example sentence, a memorable Vietnamese memory hook, 2-4 English synonyms, and an appropriate topic category.
 
         Return ONLY a valid JSON array of objects with exactly this structure (no markdown fences, no other text):
         [
           {
-            "word": "English word",
+            "word": "Clean English word without (n), (v), etc.",
             "phonetic": "/.../",
-            "meaning": "Exact Vietnamese meaning printed in image",
+            "meaning": "Concise Vietnamese meaning (1-3 words, no POS tags)",
             "example": "Example sentence in English",
             "memory_hook": "Vietnamese memory hook",
             "synonyms": ["synonym1", "synonym2"],
@@ -328,7 +413,8 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             )
             content = response.choices[0].message.content
             cleaned = self._clean_json(content, expect_list=True)
-            return json.loads(cleaned)
+            items = json.loads(cleaned)
+            return self._normalize_extracted_vocab_list(items)
         except Exception as e:
             print(f"extract_scroll_vocabulary_from_image failed: {e}")
         return []
@@ -387,16 +473,155 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
             print(f"Gemini get_encouragement failed: {e}")
         return "Chào mừng bạn đến với Oasis! 🌴"
 
+    def _get_client_for_key(self, api_key: str):
+        return AsyncOpenAI(
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            api_key=api_key if api_key else "dummy-key",
+            max_retries=0,
+            timeout=12.0
+        )
+
     async def get_advice(self, prompt: str):
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.primary_text_model,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"Gemini get_advice failed: {e}")
-        return "Hiện tại tôi đang bận cập nhật dữ liệu. Bạn cứ tiếp tục học từ vựng nhé!"
+        """Hàm lấy phản hồi ngắn hoặc lời khuyên với ngữ cảnh thời gian thực hiện tại"""
+        time_ctx = get_current_realtime_context()
+        realtime_str = time_ctx["full_text"]
+        system_prefix = (
+            f"Bạn là Mát Cha AI Eo - Gia sư IELTS học thuật chuẩn mực tại IELTS Oasis. "
+            f"Hôm nay là {realtime_str}. Năm hiện tại là {time_ctx['year']}. "
+            f"Hãy trả lời chính xác, sắc bén, đúng trọng tâm câu hỏi. "
+            f"TUYỆT ĐỐI KHÔNG tự ý chèn quảng cáo tính năng website (MatchaSpeak, Vocabulary Lab...) trừ khi người học hỏi đến."
+        )
+        
+        models_to_try = [self.tutor_model, "gemini-3.1-flash-lite", self.primary_text_model]
+        seen_models = []
+        for m in models_to_try:
+            if m and m not in seen_models: seen_models.append(m)
+
+        for model_name in seen_models:
+            for key in self.api_keys:
+                try:
+                    client = self._get_client_for_key(key)
+                    response = await client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prefix},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        timeout=25.0
+                    )
+                    return response.choices[0].message.content.strip()
+                except Exception as e:
+                    print(f"Gemini get_advice failed with model {model_name} and key {key[:8]}...: {e}")
+                    continue
+        return "Hiện tại hệ thống Mát Cha AI Eo đang bận xử lý dữ liệu. Bạn hãy thử lại sau ít giây nhé!"
+
+    async def chat_tutor(self, messages: list, student_context: dict = None) -> str:
+        """
+        Bộ não Chatbot Gia sư IELTS Mát Cha AI Eo (Dành cho Discord Bot & Extension Sidepanel):
+        - Nhận thức thời gian thực chính xác (Năm 2026, GMT+7).
+        - Nắm trọn tính năng website & hồ sơ học viên nhưng CHỈ tư vấn khi được hỏi.
+        - Tuyệt đối không spam quảng cáo / nịnh bợ stats sáo rỗng.
+        - Chống dắt mũi & chống lan man (Anti-derailment & Anti-sycophancy).
+        - Phong thái gia sư nghiêm khắc, kỷ luật (Tough love, chuẩn Cambridge IELTS Band 8.0+).
+        """
+        time_ctx = get_current_realtime_context()
+        realtime_info = time_ctx["full_text"]
+
+        student_note = ""
+        if student_context:
+            name = student_context.get("name") or student_context.get("username")
+            vocab_count = student_context.get("vocab_count")
+            mastery_count = student_context.get("mastery_count")
+            recent_band = student_context.get("recent_band")
+            target_band = student_context.get("target_band")
+            schedule_topic = student_context.get("schedule_topic")
+            
+            parts = []
+            if name: parts.append(f"Tên học viên: {name}")
+            if recent_band: parts.append(f"Band điểm Writing gần nhất: {recent_band}")
+            if target_band: parts.append(f"Mục tiêu: {target_band}")
+            if vocab_count is not None: parts.append(f"Kho từ vựng: {vocab_count} từ ({mastery_count or 0} từ đạt Mastery 5)")
+            if schedule_topic: parts.append(f"Chủ đề lộ trình học hiện tại: {schedule_topic}")
+            if parts:
+                student_note = (
+                    "\n[THÔNG TIN HỒ SƠ HỌC VIÊN HIỆN TẠI]:\n"
+                    + "\n".join(f"- {p}" for p in parts)
+                    + "\n(Lưu ý: Dùng thông tin này làm căn cứ sư phạm để đánh giá năng lực, chỉnh độ khó và TƯ VẤN KHI ĐƯỢC HỎI. TUYỆT ĐỐI KHÔNG tự tiện lôi số liệu ra khen ngợi/nịnh bợ nếu học viên chỉ hỏi những câu thông thường)."
+                )
+
+        master_system_instruction = f"""
+Bạn là Mát Cha AI Eo (Mascot chú gấu học thuật) - Huấn luyện viên & Gia sư IELTS cao cấp tại IELTS Oasis.
+Xưng hô: 'Mát Cha' hoặc 'thầy/tớ' với 'bạn/cậu' hoặc 'học viên'. Giữ phong thái chuyên gia khảo thí IELTS, nghiêm nghị, kỷ luật, sắc bén và tận tâm nâng band điểm.
+
+[THỜI GIAN THỰC HIỆN TẠI]:
+- Hôm nay là: {realtime_info}.
+- Năm hiện tại là {time_ctx['year']}. Mọi câu hỏi về ngày tháng, thời gian, sự kiện thời gian thực phải tuân thủ mốc này. Tuyệt đối không nhầm lẫn sang năm 2024 hay quá khứ.
+
+[QUY TẮC BẮT BUỘC 1: TUYỆT ĐỐI KHÔNG TỰ Ý CHÈN QUẢNG CÁO HAY GIỚI THIỆU TÍNH NĂNG WEB]:
+- Bạn nắm đầy đủ kiến thức về các tính năng của IELTS Oasis:
+  + Vocabulary Lab: Học từ vựng theo chu trình ngắt quãng SRS 5 cấp độ Mastery.
+  + Writing Sanctuary: Phòng luyện viết Task 1 & Task 2, chấm chữa Band score tự động và đồng hồ áp lực phòng thi.
+  + MatchaSpeak: Luyện phát âm với Shadowing và luyện nói Cue Card Part 2 trong 2 phút (Sandbox).
+  + MatchaScroll: Đọc báo học thuật và bôi đen trích xuất từ vựng.
+  + Listening Section: Luyện nghe chép chính tả qua video học thuật.
+  + Wordle Matcha: Đố từ vựng tăng phản xạ.
+- NGUYÊN TẮC: CHỈ đề cập, giới thiệu hoặc hướng dẫn sử dụng các tính năng trên KHI học viên hỏi về tính năng, hỏi về cách học trên web, hỏi xin lộ trình/tư vấn ('tư vấn cho tôi', 'tôi nên luyện kỹ năng nào', v.v.).
+- TRONG CÁC CÂU HỎI THÔNG THƯỜNG (chào hỏi, hỏi ngày giờ, giải thích từ, chữa câu, nói chuyện học thuật): CẤM tự ý chèn văn mẫu PR tính năng, cấm mời gọi vào web, cấm tự lôi số từ vựng hay band điểm ra để khen ngợi/nịnh bợ sáo rỗng. Trả lời trực tiếp, gãy gọn, đúng trọng tâm câu hỏi.
+
+[QUY TẮC BẮT BUỘC 2: CHỐNG LAN MAN & CHỐNG DẮT MŨI (ANTI-DERAILMENT & ANTI-SYCOPHANCY)]:
+- Học viên có thể cố tình dắt bạn đi lạc đề, nói chuyện phiếm ngoài luồng (tình cảm, đùa cợt vô bổ, chuyện đời tư, drama...): Hãy lịch sự nhưng KIÊN QUYẾT và DỨT KHOÁT kéo học viên quay trở lại bàn học IELTS: "Chuyện này để sau nhé, mục tiêu luyện thi IELTS mới là ưu tiên số 1 của chúng mình lúc này! Nào, quay lại bài thôi...".
+- KHÔNG BA PHẢI: Nếu học viên đưa ra kiến thức sai (ngữ pháp, từ vựng, phát âm hoặc lập luận phản logic), TUYỆT ĐỐI KHÔNG a dua đồng thuận. Phải thẳng thắn chỉ ra lỗi sai, phân tích cặn kẽ tại sao sai và đưa ra cách diễn đạt Band 8.0+.
+
+[QUY TẮC BẮT BUỘC 3: NGHIÊM KHẮC, RÈN KỶ LUẬT (TOUGH LOVE & HIGH STANDARDS)]:
+- Bạn không phải là một chatbot nịnh hót hay hiền lành cam chịu. Bạn là Huấn luyện viên IELTS tiêu chuẩn cao.
+- Không chấp nhận câu trả lời qua loa, từ vựng đơn điệu Band 4.0-5.0 (good, bad, happy, thing, nice...). Hãy bắt bẻ và thử thách học viên nâng cấp từ vựng C1/C2 (Collocations, Academic Vocabulary).
+- Nếu học viên lười biếng, trì hoãn hoặc viện cớ trốn học: Hãy nghiêm khắc chấn chỉnh kỷ luật.
+- Sau khi giải đáp thắc mắc, có thể chủ động đặt 1 câu hỏi phản xạ hoặc thử thách ngắn để kiểm tra xem học viên đã thực sự hiểu và vận dụng được chưa.
+{student_note}
+"""
+
+        # Format multi-turn messages
+        formatted_messages = [{"role": "system", "content": master_system_instruction.strip()}]
+        if isinstance(messages, str):
+            formatted_messages.append({"role": "user", "content": messages})
+        elif isinstance(messages, list):
+            for m in messages:
+                if isinstance(m, dict) and "content" in m:
+                    role = m.get("role", "user")
+                    # Map standard roles
+                    if role in ["assistant", "ai", "bot", "model"]:
+                        role = "assistant"
+                    elif role != "system":
+                        role = "user"
+                    formatted_messages.append({"role": role, "content": str(m["content"])})
+                elif isinstance(m, str):
+                    formatted_messages.append({"role": "user", "content": m})
+
+        # Model hierarchy: Tutor model (3.8 Flash) -> Direct fallback 3.1 Flash Lite
+        models_to_try = [self.tutor_model, "gemini-3.1-flash-lite", self.primary_text_model]
+        seen_models = []
+        for m in models_to_try:
+            if m and m not in seen_models: seen_models.append(m)
+
+        for model_name in seen_models:
+            for key in self.api_keys:
+                try:
+                    client = self._get_client_for_key(key)
+                    response = await client.chat.completions.create(
+                        model=model_name,
+                        messages=formatted_messages,
+                        temperature=0.7,
+                        timeout=25.0
+                    )
+                    content = response.choices[0].message.content
+                    if content and content.strip():
+                        return content.strip()
+                except Exception as e:
+                    print(f"Chat tutor error with {model_name} (key {key[:8]}...): {e}")
+                    continue
+
+        return "Mát Cha đang gặp chút gián đoạn kết nối máy chủ AI. Cậu hãy đợi một chút rồi gửi lại tin nhắn nhé! 🍵"
 
     async def search_unsplash_image(self, word: str):
         import re
