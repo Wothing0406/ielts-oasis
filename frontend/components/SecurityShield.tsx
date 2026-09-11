@@ -46,9 +46,8 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           const turnstileDiv = document.createElement("div");
           container.appendChild(turnstileDiv);
 
-          // Use Cloudflare universal pass key if environment key is invalid or default
-          const rawKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-          const sitekey = (!rawKey || rawKey.startsWith("0x4AAAAAAD5")) ? "1x00000000000000000000AA" : rawKey;
+          // Configure Turnstile site key
+          const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD5-TTW-02kiBkSAjkDzWTyyJII";
 
           widgetIdRef.current = (window as any).turnstile.render(turnstileDiv, {
             sitekey: sitekey,

@@ -101,7 +101,7 @@ export default function Home() {
           container.appendChild(turnstileDiv);
 
           widgetId = (window as any).turnstile.render(turnstileDiv, {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD5-TTW-02kiBkSAjkDzWTyyJII",
             theme: "light",
             callback: (token: string) => {
               setCaptchaToken(token);
