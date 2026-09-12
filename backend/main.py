@@ -346,9 +346,16 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         Vocabulary.is_global == True
     ).first() is not None
     
-    # Determine is_global: only share if not copied from community, and not already global, and user allowed it
+    # Determine is_global: NEVER share curated Oxford words or words copied from community. Only share when explicitly enabled by user on their own words.
+    source_lower = (vocab_in.source or "").lower()
+    is_curated_or_community = (
+        "oxford" in source_lower or 
+        "community" in source_lower or 
+        "kho từ vựng" in source_lower
+    )
+    
     is_global_val = False
-    if vocab_in.is_global and vocab_in.source != "Oasis Community" and not is_already_global:
+    if vocab_in.is_global and not is_curated_or_community and not is_already_global:
         is_global_val = True
         
     vocab = Vocabulary(
@@ -1162,6 +1169,7 @@ async def save_curated_vocab_to_lab(
         synonyms=details.get("synonyms", []),
         memory_hook=details.get("memory_hook") or f"Ghi nhớ từ '{clean_word}': {details.get('meaning', '')[:40]}",
         mastery_level=1,
+        is_global=False,
         source="Kho từ vựng Oxford 5000",
         creator_username=current_user.get("username", "Học viên"),
         created_at=datetime.utcnow()

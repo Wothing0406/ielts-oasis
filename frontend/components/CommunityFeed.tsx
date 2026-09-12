@@ -204,7 +204,8 @@ export default function CommunityFeed({
           synonyms: vocab.synonyms,
           memory_hook: vocab.memory_hook,
           source: "Oasis Community",
-          creator_username: vocab.username
+          creator_username: vocab.username,
+          is_global: false
         });
         if (result && result.status === "duplicate") {
           (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
@@ -222,7 +223,8 @@ export default function CommunityFeed({
             synonyms: vocab.synonyms,
             memory_hook: vocab.memory_hook,
             source: "Oasis Community",
-            creator_username: vocab.username
+            creator_username: vocab.username,
+            is_global: false
           })
         });
         if (res.ok) {
@@ -301,7 +303,8 @@ export default function CommunityFeed({
           synonyms: item.synonyms || [],
           source: "Kho từ vựng Oxford 5000",
           creator_username: currentUser?.username || "Oxford 5000",
-          memory_hook: item.memory_hook || `Ghi nhớ từ ${item.word}: ${item.meaning}`
+          memory_hook: item.memory_hook || `Ghi nhớ từ ${item.word}: ${item.meaning}`,
+          is_global: false
         });
         if (result && result.status === "duplicate") {
           (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
@@ -319,6 +322,17 @@ export default function CommunityFeed({
         });
         const resData = await res.json();
         if (res.ok) {
+          if (resData.vocab && typeof window !== "undefined") {
+            const syncMsg = {
+              type: "OASIS_VOCAB_UPDATED",
+              action: "ADD",
+              vocab: resData.vocab,
+              token: token,
+              origin: window.location.origin
+            };
+            window.postMessage(syncMsg, "*");
+            window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: syncMsg }));
+          }
           (window as any).showToast(resData.message || "Đã lưu thành công! 🍵", "success");
         } else {
           (window as any).showToast(resData.detail || "Không thể lưu từ vựng", "error");

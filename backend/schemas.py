@@ -31,7 +31,7 @@ class VocabIn(BaseModel):
     memory_hook: Optional[str] = None
     source: Optional[str] = "Tự thêm"
     creator_username: Optional[str] = None
-    is_global: Optional[bool] = True
+    is_global: Optional[bool] = False
 
 class VocabularyCreate(VocabIn):
     user_id: Optional[int] = None
