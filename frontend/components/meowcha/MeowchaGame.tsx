@@ -342,6 +342,57 @@ export const MeowchaGame: React.FC = () => {
               setActiveTargetId(null);
               targetLockRef.current = null;
 
+              // 1. KÍCH HOẠT VẠN KIẾM QUY TÔNG (ULTIMATE BLAST)
+              setCatState("ultimate");
+              setTimeout(() => setCatState("idle"), 650);
+
+              // 2. PHÓNG BARRAGE 6 ĐẠO THẦN KIẾM VẠN KIẾM QUY TÔNG
+              const swordCount = 6;
+              const barrageProjs: Projectile[] = Array.from({ length: swordCount }).map((_, idx) => {
+                const spreadX = (idx - (swordCount - 1) / 2) * 26;
+                return {
+                  id: `barrage_${Date.now()}_${idx}_${Math.random()}`,
+                  type: realm.projectileType,
+                  startX: 400 + spreadX,
+                  startY: 630,
+                  targetX: target!.x + (Math.random() - 0.5) * 35,
+                  targetY: target!.y + (Math.random() - 0.5) * 35,
+                  x: 400 + spreadX,
+                  y: 630,
+                  targetAsteroidId: target!.id,
+                  speed: projSpeed * 1.35,
+                  progress: 0,
+                  color: realm.blastColor,
+                  trail: [],
+                  damage: 2
+                };
+              });
+              setProjectiles(projs => [...projs, ...barrageProjs]);
+
+              // 3. HIỆU ỨNG VỤ NỔ TRÀ XANH (TEA EXPLOSION) & TRẢM KÍCH (SWORD SLASH)
+              const explosionP: Particle = {
+                x: target.x,
+                y: target.y,
+                vx: 0,
+                vy: 0,
+                color: realm.blastColor,
+                size: 80,
+                alpha: 1,
+                decay: 0.035,
+                shape: "tea_explosion"
+              };
+              const slashP: Particle = {
+                x: target.x,
+                y: target.y,
+                vx: 0,
+                vy: 0,
+                color: "#ffffff",
+                size: 70,
+                alpha: 1,
+                decay: 0.05,
+                shape: "slash"
+              };
+
               // Award Score & Combo
               setCombo(c => {
                 const nextCombo = c + 1;

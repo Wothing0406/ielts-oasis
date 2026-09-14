@@ -189,12 +189,9 @@ export default function MeowchaGamePage() {
             <span className="font-serif font-bold text-sm sm:text-base text-[#ffdf79] tracking-wider drop-shadow">
               MEOW-CHA: VẠN KIẾM QUY TÔNG
             </span>
-            <span className="hidden md:inline text-[10px] px-2 py-0.5 bg-[#789262] text-[#eef5db] rounded border border-[#98b06f] font-mono font-bold uppercase tracking-wider">
-              SQL Cloud Sync
-            </span>
+          
           </div>
         </div>
-
         {/* Action Buttons & Tabs */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           

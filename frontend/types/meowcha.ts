@@ -144,7 +144,7 @@ export interface Particle {
   size: number;
   alpha: number;
   decay: number;
-  shape: "circle" | "spark" | "shard" | "flame" | "lightning";
+  shape: "circle" | "spark" | "shard" | "flame" | "lightning" | "slash" | "tea_explosion";
 }
 
 export interface FloatingText {
