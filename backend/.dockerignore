@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+logs/
+*.log
+.git
+.gitignore
+.vscode
+.dockerignore
+*.db
+ielts_oasis.db

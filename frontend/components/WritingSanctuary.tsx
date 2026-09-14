@@ -279,8 +279,13 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                     <span className="material-symbols-rounded text-[14px]">menu_book</span> Matcha Book
                   </button>
                 )}
-                <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap">
-                  {analysis ? `Band ${analysis.band_score}` : isAnalyzing ? "Grading..." : "Not Graded"}
+                <div className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold whitespace-nowrap flex items-center gap-1.5">
+                  <span>{analysis ? `Band ${analysis.band_score}` : isAnalyzing ? "Grading..." : "Not Graded"}</span>
+                  {analysis?.cefr_level && (
+                    <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                      {analysis.cefr_level}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -368,6 +373,35 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   </div>
                 )}
 
+                {/* Skill 2: Cambridge Band 8.5+ Model Rephrase */}
+                {analysis?.band_8_rephrase && (
+                  <div className="p-4 bg-emerald-50/90 dark:bg-emerald-950/20 rounded-2xl shadow-sm border-2 border-emerald-200/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-rounded text-emerald-600 text-base">school</span>
+                        <span className="text-xs font-black uppercase text-emerald-800 dark:text-emerald-300 tracking-wider">
+                          Cambridge Band 8.5+ Model Rephrase
+                        </span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(analysis.band_8_rephrase);
+                          if ((window as any).showToast) {
+                            (window as any).showToast("Đã sao chép bài mẫu Band 8.5+! 📋", "success");
+                          }
+                        }}
+                        className="text-[10px] font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-full border border-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer"
+                      >
+                        Copy bài mẫu
+                      </button>
+                    </div>
+                    <p className="text-xs text-neutral-800 dark:text-neutral-200 leading-relaxed font-serif italic bg-white/80 dark:bg-neutral-900/60 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/40">
+                      "{analysis.band_8_rephrase}"
+                    </p>
+                  </div>
+                )}
+
                 {analysis?.strengths && analysis.strengths.length > 0 && (
                   <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl shadow-sm border border-green-100 dark:border-green-900/30">
                     <div className="flex items-center gap-2 mb-2">
@@ -414,7 +448,14 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                   {analysis.corrections.map((c: any, i: number) => (
                     <div key={i} className="p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
                        <p className="text-[10px] line-through text-red-400 mb-1">{c.original}</p>
-                       <p className="text-xs font-bold text-green-600 dark:text-green-400 mb-1">{c.corrected}</p>
+                       <div className="flex items-center justify-between gap-2 mb-1">
+                         <p className="text-xs font-bold text-green-600 dark:text-green-400">{c.corrected}</p>
+                         {c.cefr_upgrade && (
+                           <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[9px] font-black rounded uppercase">
+                             {c.cefr_upgrade} Upgrade
+                           </span>
+                         )}
+                       </div>
                        <p className="text-[10px] text-accent/60 italic">{c.reason}</p>
                     </div>
                   ))}

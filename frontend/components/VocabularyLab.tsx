@@ -18,6 +18,7 @@ interface VocabItem {
   audio_path?: string;
   image_url?: string;
   topic?: string;
+  source?: string;
 }
 
 const playAudio = async (word: string) => {
@@ -79,14 +80,33 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
       });
       if (res.ok) {
         const data = await res.json();
-        setExtractedWords(data.extracted_words || []);
+        const words = data.extracted_words || [];
+        setExtractedWords(words);
+        if (words.length > 0) {
+          if ((window as any).showToast) {
+            (window as any).showToast(`Đã tìm thấy ${words.length} từ vựng từ tài liệu! 🍵`, "success");
+          }
+        } else {
+          if ((window as any).showToast) {
+            (window as any).showToast("Không tìm thấy từ vựng nào trong các trang đầu của tài liệu.", "info");
+          }
+        }
       } else {
-        const errData = await res.json();
-        alert(errData.detail || "Có lỗi xảy ra khi trích xuất tài liệu.");
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.detail || "Có lỗi xảy ra khi trích xuất tài liệu.";
+        if ((window as any).showToast) {
+          (window as any).showToast(msg, "error");
+        } else {
+          alert(msg);
+        }
       }
     } catch (err) {
       console.error(err);
-      alert("Lỗi kết nối máy chủ.");
+      if ((window as any).showToast) {
+        (window as any).showToast("Lỗi kết nối máy chủ khi tải tệp.", "error");
+      } else {
+        alert("Lỗi kết nối máy chủ.");
+      }
     } finally {
       setIsExtracting(false);
     }
@@ -153,11 +173,36 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   const filteredVocabList = useMemo(() => {
-    if (!selectedTopic) return vocabList;
-    return vocabList.filter(
-      (v) => v.topic?.toLowerCase().includes(selectedTopic.toLowerCase()) || 
-             (selectedTopic === 'Tech' && v.topic?.toLowerCase().includes('technology'))
-    );
+    if (!selectedTopic || selectedTopic === 'All') return vocabList;
+    const t = selectedTopic.toLowerCase();
+    return vocabList.filter((v) => {
+      const vTopic = (v.topic || '').toLowerCase();
+      const vMeaning = (v.meaning || '').toLowerCase();
+      const vSource = (v.source || '').toLowerCase();
+
+      if (t === 'awl') {
+        return vTopic.includes('awl') || vSource.includes('awl') || vTopic.includes('academic');
+      }
+      if (t === 'tech') {
+        return vTopic.includes('tech') || vMeaning.includes('công nghệ');
+      }
+      if (t === 'health') {
+        return vTopic.includes('health') || vTopic.includes('medicin') || vMeaning.includes('sức khỏe');
+      }
+      if (t === 'economy') {
+        return vTopic.includes('econom') || vTopic.includes('business') || vMeaning.includes('kinh tế');
+      }
+      if (t === 'environment') {
+        return vTopic.includes('environ') || vMeaning.includes('môi trường');
+      }
+      if (t === 'education') {
+        return vTopic.includes('educat') || vMeaning.includes('giáo dục');
+      }
+      if (t === 'society') {
+        return vTopic.includes('societ') || vTopic.includes('social') || vMeaning.includes('xã hội');
+      }
+      return vTopic.includes(t);
+    });
   }, [vocabList, selectedTopic]);
 
   useEffect(() => {
@@ -207,8 +252,21 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [formData, setFormData] = useState({
     word: '',
     phonetic: '',
-    meaning: ''
+    meaning: '',
+    topic: 'General',
+    is_global: true
   });
+
+  const TOPIC_OPTIONS = [
+    { value: 'General', label: 'Chung / Khác' },
+    { value: 'Environment', label: 'Môi trường (Environment)' },
+    { value: 'Technology', label: 'Công nghệ (Technology)' },
+    { value: 'Health', label: 'Sức khỏe (Health)' },
+    { value: 'Education', label: 'Giáo dục (Education)' },
+    { value: 'Economy', label: 'Kinh tế (Economy)' },
+    { value: 'Society', label: 'Xã hội (Society)' },
+    { value: 'AWL', label: 'Academic (AWL)' },
+  ];
 
   const current = filteredVocabList[currentIndex] || {
     word: "Matcha",
@@ -227,7 +285,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     setIsAdding(true);
     try {
       await onAdd(formData);
-      setFormData({ word: '', phonetic: '', meaning: '' });
+      setFormData({ word: '', phonetic: '', meaning: '', topic: 'General', is_global: true });
     } finally {
       setIsAdding(false);
     }
@@ -280,7 +338,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input 
                     className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                    placeholder="English Word"
+                    placeholder="English Word (e.g. Sustainable)" 
                     value={formData.word}
                     onChange={(e) => setFormData({...formData, word: e.target.value})}
                   />
@@ -291,18 +349,53 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                     onChange={(e) => setFormData({...formData, phonetic: e.target.value})}
                   />
                </div>
-               <input 
-                 className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                 placeholder="Vietnamese Meaning"
-                 value={formData.meaning}
-                 onChange={(e) => setFormData({...formData, meaning: e.target.value})}
-               />
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 <input 
+                   className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
+                   placeholder="Vietnamese Meaning"
+                   value={formData.meaning}
+                   onChange={(e) => setFormData({...formData, meaning: e.target.value})}
+                 />
+                 <select
+                   className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm font-semibold text-accent outline-none cursor-pointer"
+                   value={formData.topic}
+                   onChange={(e) => setFormData({...formData, topic: e.target.value})}
+                 >
+                   {TOPIC_OPTIONS.map(opt => (
+                     <option key={opt.value} value={opt.value}>{opt.label}</option>
+                   ))}
+                 </select>
+               </div>
+
+               <div className="flex items-center justify-between pt-1">
+                 <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer select-none">
+                   <input 
+                     type="checkbox"
+                     checked={formData.is_global}
+                     onChange={(e) => setFormData({...formData, is_global: e.target.checked})}
+                     className="rounded border-primary/20 text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer"
+                   />
+                   <span>Chia sẻ lên cộng đồng Oasis 🍵</span>
+                 </label>
+               </div>
+
                <button 
                  type="submit"
                  disabled={isAdding || !formData.word}
-                 className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                 className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                >
-                 {isAdding ? "Adding..." : "Add Vocabulary"}
+                 {isAdding ? (
+                   <>
+                     <span className="material-symbols-rounded animate-spin text-sm">sync</span>
+                     Đang thêm...
+                   </>
+                 ) : (
+                   <>
+                     <span className="material-symbols-rounded text-sm">add_circle</span>
+                     Thêm từ vựng
+                   </>
+                 )}
                </button>
             </motion.form>
           ) : activeMode === 'ai' ? (
@@ -312,27 +405,54 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               onSubmit={handleAdd} 
-              className="flex items-center mb-6 relative"
+              className="mb-6 space-y-2.5"
             >
-              <input 
-                className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60" 
-                placeholder="Type a word for AI auto-fill..."
-                type="text"
-                value={formData.word}
-                onChange={(e) => setFormData({...formData, word: e.target.value})}
-                disabled={isAdding}
-              />
-              <button 
-                type="submit"
-                disabled={isAdding || !formData.word}
-                className="absolute right-1.5 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-opacity"
-              >
-                {isAdding ? (
-                  <span className="material-symbols-rounded animate-spin">sync</span>
-                ) : (
-                  <span className="material-symbols-rounded">auto_awesome</span>
-                )}
-              </button>
+              <div className="flex items-center relative">
+                <input 
+                  className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60 shadow-inner" 
+                  placeholder="Gõ từ tiếng Anh để AI tự động tra cứu..."
+                  type="text"
+                  value={formData.word}
+                  onChange={(e) => setFormData({...formData, word: e.target.value})}
+                  disabled={isAdding}
+                />
+                <button 
+                  type="submit"
+                  disabled={isAdding || !formData.word}
+                  className="absolute right-1.5 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-opacity hover:shadow"
+                >
+                  {isAdding ? (
+                    <span className="material-symbols-rounded animate-spin">sync</span>
+                  ) : (
+                    <span className="material-symbols-rounded">auto_awesome</span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between px-2 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-accent/60 font-semibold text-[11px]">Chủ đề:</span>
+                  <select
+                    className="bg-secondary/60 text-accent font-bold text-[11px] px-2.5 py-1 rounded-lg border border-primary/10 outline-none cursor-pointer"
+                    value={formData.topic}
+                    onChange={(e) => setFormData({...formData, topic: e.target.value})}
+                  >
+                    {TOPIC_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <label className="flex items-center gap-1.5 font-bold text-primary cursor-pointer select-none text-[11px]">
+                  <input 
+                    type="checkbox"
+                    checked={formData.is_global}
+                    onChange={(e) => setFormData({...formData, is_global: e.target.checked})}
+                    className="rounded border-primary/20 text-primary focus:ring-primary/20 w-3.5 h-3.5 cursor-pointer"
+                  />
+                  <span>Chia sẻ cộng đồng 🍵</span>
+                </label>
+              </div>
             </motion.form>
           ) : (
             <motion.div
@@ -497,14 +617,16 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         </AnimatePresence>
         
         <div className="flex flex-wrap gap-2 mt-4 mb-6">
-          {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => {
+          {['All', 'AWL', 'Environment', 'Tech', 'Health', 'Education', 'Economy', 'Society'].map((topic) => {
             const topicLabels: Record<string, string> = {
               'All': 'All Topics',
+              'AWL': 'AWL (Academic)',
               'Environment': 'Environment',
               'Tech': 'Technology',
               'Health': 'Health',
               'Education': 'Education',
-              'Economy': 'Economy'
+              'Economy': 'Economy',
+              'Society': 'Society'
             };
             return (
               <button type="button"

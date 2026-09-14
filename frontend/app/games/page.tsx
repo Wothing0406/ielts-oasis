@@ -18,6 +18,16 @@ export default function GamesHubPage() {
 
   const games = [
     {
+      id: "meowcha",
+      title: "Meow-Cha: Vạn Kiếm Quy Tông ⚔️",
+      description: "Tiên hiệp tu chân gõ phím trảm ma thạch! Học 100+ từ vựng IELTS phân tầng 4.0 - 8.5+, đột phá cảnh giới và lưu đạo quả lên SQL Database.",
+      icon: "military_tech",
+      color: "bg-[#789262] text-[#ffdf79]",
+      badge: "MỚI • HOT 🔥",
+      active: true,
+      link: "/games/meowcha"
+    },
+    {
       id: "wordle",
       title: "Wordle Matcha 🍵",
       description: "Thách thức đoán từ vựng IELTS gồm 5 chữ cái cùng gợi ý từ Gemini AI. Vượt qua các cấp độ để ghi danh bảng vàng!",

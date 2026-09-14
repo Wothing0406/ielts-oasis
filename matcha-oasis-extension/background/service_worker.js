@@ -101,6 +101,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         }).catch(() => {}); // ignore if tab has no content script
       }
     }
+  } else if (alarm.name === 'matcha-snooze-alarm') {
+    console.log("[Service Worker] Pet snooze alarm expired. Clearing snoozed_until.");
+    await chrome.storage.local.set({ snoozed_until: null });
+    const allTabs = await chrome.tabs.query({});
+    for (const tab of allTabs) {
+      if (tab.id && tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://")) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "wake_pet_from_snooze"
+        }).catch(() => {});
+      }
+    }
   }
 });
 
@@ -196,6 +207,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.tab) {
       triggerVocabReminderImmediate(sender.tab.id);
     }
+  }
+
+  if (message.action === 'set_snooze_alarm') {
+    const minutes = message.minutes || 30;
+    chrome.alarms.create("matcha-snooze-alarm", {
+      delayInMinutes: minutes
+    });
+    console.log(`[Service Worker] Snooze alarm set for ${minutes} minutes.`);
+    sendResponse({ status: 'ok' });
+  }
+
+  if (message.action === 'cancel_snooze_alarm') {
+    chrome.alarms.clear("matcha-snooze-alarm");
+    console.log("[Service Worker] Snooze alarm cleared.");
+    sendResponse({ status: 'ok' });
   }
 
   if (message.action === 'capture_screen') {

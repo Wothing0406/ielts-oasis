@@ -26,6 +26,11 @@ data/
 yolov8n.pt
 tokenbot.txt
 backend/services/dictionary.db
+backend/yolov8n.pt
+backend/logs/
+backend/__pycache__/
 thuyet_minh.txt
 deploy.bat
 deploy_server.py
+*.db
+*.pdf

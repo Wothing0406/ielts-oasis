@@ -727,17 +727,23 @@
   }
 
   async function restoreMascotFromSnooze() {
-    if (snoozeTimeout) clearTimeout(snoozeTimeout);
+    if (snoozeTimeout) {
+      clearTimeout(snoozeTimeout);
+      snoozeTimeout = null;
+    }
     wrapper.onmouseenter = null;
     wrapper.onmouseleave = null;
     wrapper.style.transition = "all 0.5s ease";
     wrapper.style.opacity = "1";
-    wrapper.style.right = "20px";
-    wrapper.style.bottom = "20px";
-    wrapper.style.left = "auto";
-    wrapper.style.top = "auto";
+    wrapper.style.pointerEvents = "none";
     img.style.cursor = "grab";
+
+    // Restore proper position (saved coordinates or default bottom-right)
+    restoreMascotPosition();
+    startAnimation("idle");
+
     await chrome.storage.local.set({ snoozed_until: null });
+    chrome.runtime.sendMessage({ action: "cancel_snooze_alarm" }).catch(() => {});
   }
 
   function restoreMascotPosition() {
@@ -871,7 +877,37 @@
         showVocabListUI();
       }
     }
+
+    if (changes.snoozed_until) {
+      const val = changes.snoozed_until.newValue;
+      if (!val || Date.now() >= val) {
+        restoreMascotFromSnooze();
+      } else if (val && Date.now() < val) {
+        applySnoozeState(val);
+      }
+    }
   });
+
+  // Listen for broadcast wake message from background service worker
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === "wake_pet_from_snooze") {
+      restoreMascotFromSnooze();
+    }
+  });
+
+  // Periodically check and check on tab focus if snooze has expired
+  function verifySnoozeExpiry() {
+    chrome.storage.local.get(["snoozed_until"], (data) => {
+      if (data.snoozed_until) {
+        if (Date.now() >= data.snoozed_until) {
+          restoreMascotFromSnooze();
+        }
+      }
+    });
+  }
+
+  window.addEventListener("focus", verifySnoozeExpiry);
+  setInterval(verifySnoozeExpiry, 15000); // Check every 15s to bypass throttling delays
 
   // Restore pet position from local storage
   chrome.storage.local.get(["pet_pos_x", "pet_pos_y"], (res) => {
@@ -1391,6 +1427,10 @@
       .addEventListener("click", async () => {
         const snoozedUntil = Date.now() + 30 * 60 * 1000;
         await chrome.storage.local.set({ snoozed_until: snoozedUntil });
+        chrome.runtime.sendMessage({
+          action: "set_snooze_alarm",
+          minutes: 30
+        }).catch(() => {});
         applySnoozeState(snoozedUntil);
       });
   }
@@ -2352,6 +2392,16 @@
     if (!isAutomatic) {
       startVocabQuizSession(activeList);
       return;
+    }
+
+    // If pet was snoozed, wake it up fully so reminder card isn't obscured off-screen
+    const snoozeCheck = await chrome.storage.local.get(["snoozed_until"]);
+    if (snoozeCheck.snoozed_until) {
+      await restoreMascotFromSnooze();
+    } else {
+      // Ensure opacity and position are standard
+      wrapper.style.opacity = "1";
+      restoreMascotPosition();
     }
 
     // Automatic reminder popup -> Show learning flashcard with 25s auto-dismiss

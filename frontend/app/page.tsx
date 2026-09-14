@@ -294,6 +294,11 @@ export default function Home() {
           token: token
         });
 
+        // If shared globally, notify CommunityFeed to refresh immediately
+        if (newVocab.is_global && typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("oasis_community_refresh", { detail: { action: "ADD", vocab: newVocab } }));
+        }
+
         return { success: true, word: formData.word };
       } else if (res.status === 409) {
         return { success: false, status: "duplicate", word: formData.word };
@@ -322,6 +327,10 @@ export default function Home() {
       word: deletedItem?.word,
       token: token
     });
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("oasis_community_refresh", { detail: { action: "DELETE", id } }));
+    }
 
     try {
       const res = await fetch(`${API_URL}/vocabulary/${id}`, {

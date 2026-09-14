@@ -1,14 +1,16 @@
 /** @type {import('next').NextConfig} */
+const backendTarget = process.env.BACKEND_URL || (process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://127.0.0.1:8000');
+
 const nextConfig = {
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://backend:8000/:path*', // Proxy to Backend container
+        destination: `${backendTarget}/api/:path*`,
       },
       {
         source: '/static/:path*',
-        destination: 'http://backend:8000/static/:path*', // Proxy static files (audio)
+        destination: `${backendTarget}/static/:path*`,
       },
     ];
   },

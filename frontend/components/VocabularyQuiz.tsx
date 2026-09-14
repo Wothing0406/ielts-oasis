@@ -22,9 +22,11 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   onClose: () => void,
   onReview: (id: number, isCorrect: boolean) => Promise<void>
 }) => {
-  const [quizType, setQuizType] = useState<'vocab' | 'grammar' | null>(null);
+  const [quizType, setQuizType] = useState<'vocab' | 'grammar' | 'srs' | null>(null);
   const [grammarQuestions, setGrammarQuestions] = useState<any[]>([]);
   const [isLoadingGrammar, setIsLoadingGrammar] = useState(false);
+  const [srsQuestions, setSrsQuestions] = useState<any[]>([]);
+  const [isLoadingSRS, setIsLoadingSRS] = useState(false);
   const [shuffledQuestions, setShuffledQuestions] = useState<VocabItem[]>(() => {
     return [...vocabList].sort(() => Math.random() - 0.5);
   });
@@ -36,7 +38,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
   const [isFinished, setIsFinished] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
-  const activeQuestions = quizType === 'vocab' ? shuffledQuestions : grammarQuestions;
+  const activeQuestions = quizType === 'vocab' ? shuffledQuestions : quizType === 'grammar' ? grammarQuestions : srsQuestions;
 
   // Handle question setup when index or activeQuestions changes
   useEffect(() => {
@@ -52,7 +54,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
         
         setOptions(newOptions);
       } else {
-        // Grammar mode
+        // Grammar or SRS mode
         setMode('ABCD');
         const current = activeQuestions[currentIndex];
         if (current && current.options) {
@@ -81,6 +83,37 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
       setQuizType(null);
     } finally {
       setIsLoadingGrammar(false);
+    }
+  };
+
+  const fetchSRSQuestions = async () => {
+    setIsLoadingSRS(true);
+    try {
+      const words = vocabList.map(v => v.word).slice(0, 10);
+      const res = await fetch(`/api/skills/spaced-repetition-review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weak_words: words.length > 0 ? words : ["mitigate", "profound", "facilitate", "resilient", "versatile"],
+          weak_grammar_points: ["Subject-verb agreement", "Conjunction vs Preposition", "Relative clauses", "Conditional clauses"],
+          count: 5
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.quiz_items || data.items || [];
+        setSrsQuestions(items);
+        setCurrentIndex(0);
+      } else {
+        alert("Không thể tạo bài tập ôn tập SRS.");
+        setQuizType(null);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Lỗi kết nối máy chủ.");
+      setQuizType(null);
+    } finally {
+      setIsLoadingSRS(false);
     }
   };
 
@@ -147,7 +180,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
         <h3 className="text-2xl font-display font-black text-accent mb-2">Matcha Quiz 🍵</h3>
         <p className="text-sm opacity-60 mb-8">Luyện tập giúp củng cố kiến thức tốt hơn. Hãy chọn phần thi bạn muốn ôn tập!</p>
         
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-3.5 w-full">
           <button type="button"
             onClick={() => {
               if (vocabList.length === 0) {
@@ -156,7 +189,7 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
               }
               setQuizType('vocab');
             }}
-            className="w-full bg-primary text-white p-5 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3"
+            className="w-full bg-primary text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer"
           >
             <span className="material-symbols-rounded text-2xl">style</span>
             <div className="text-left">
@@ -167,10 +200,27 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
           
           <button type="button"
             onClick={() => {
+              setQuizType('srs');
+              fetchSRSQuestions();
+            }}
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer"
+          >
+            <span className="material-symbols-rounded text-2xl text-white">psychology</span>
+            <div className="text-left text-white">
+              <div className="flex items-center gap-1.5">
+                <p className="text-base font-black leading-none text-white">Ôn Tập SRS AI (Skill 5)</p>
+                <span className="px-1.5 py-0.5 bg-white/25 text-[8px] font-black rounded uppercase">Spaced Rep</span>
+              </div>
+              <p className="text-[10px] font-medium opacity-90 mt-1 text-white/95">Bài tập trúng điểm yếu & Collocations C1</p>
+            </div>
+          </button>
+
+          <button type="button"
+            onClick={() => {
               setQuizType('grammar');
               fetchGrammarQuestions();
             }}
-            className="w-full bg-accent text-white p-5 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3"
+            className="w-full bg-accent text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer"
           >
             <span className="material-symbols-rounded text-2xl text-white">translate</span>
             <div className="text-left text-white">
@@ -188,8 +238,8 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
     );
   }
 
-  // 2. Loading Screen for Grammar Mode
-  if (isLoadingGrammar) {
+  // 2. Loading Screen for Grammar / SRS Mode
+  if (isLoadingGrammar || isLoadingSRS) {
     return (
       <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full flex flex-col items-center justify-center">
@@ -197,7 +247,9 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
            <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
          </div>
-         <p className="text-sm font-bold uppercase tracking-widest text-primary animate-pulse">AI is brewing grammar questions...</p>
+         <p className="text-sm font-bold uppercase tracking-widest text-primary animate-pulse">
+           {isLoadingSRS ? "Gemini AI is generating SRS questions..." : "AI is brewing grammar questions..."}
+         </p>
         </div>
       </div>
     );
@@ -233,6 +285,8 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full">
                  {quizType === 'vocab' 
                    ? (mode === 'ABCD' ? 'Trắc nghiệm Từ vựng (ABCD)' : 'Điền từ vựng còn thiếu')
+                   : quizType === 'srs'
+                   ? `Ôn Tập SRS AI • ${current?.type === 'collocation_cloze' ? 'Collocation Cloze C1' : 'Error Identification'}`
                    : 'Trắc nghiệm Ngữ pháp (IELTS)'}
                </span>
                <span className="text-xs font-bold opacity-40">{currentIndex + 1} / {activeQuestions.length}</span>
@@ -254,6 +308,10 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
               <p className="text-xs opacity-60 mb-2">
                 {quizType === 'vocab'
                   ? (mode === 'ABCD' ? 'Nghĩa tiếng Việt của từ này là:' : 'Từ tiếng Anh nào có nghĩa là:')
+                  : quizType === 'srs'
+                  ? (current?.type === 'error_identification' 
+                      ? 'Tìm và chọn phần bị sai ngữ pháp trong câu dưới đây:' 
+                      : 'Chọn từ học thuật (Collocation) phù hợp nhất điền vào chỗ trống:')
                   : 'Chọn đáp án chính xác để điền vào chỗ trống:'}
               </p>
               <h3 className="text-2xl md:text-3xl font-display font-black text-accent leading-tight">
@@ -336,6 +394,21 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
                   )}
 
                   {/* Hints and Explanations */}
+                  {(quizType === 'srs' && current?.explanation) && (
+                    <div className="mt-4 p-4 bg-emerald-50 rounded-2xl text-left border border-emerald-200 text-xs text-neutral-800 font-medium leading-relaxed max-h-36 overflow-y-auto custom-scrollbar">
+                      <div className="flex items-center gap-1.5 font-black text-emerald-800 mb-1">
+                        <span className="material-symbols-rounded text-sm">school</span>
+                        <span>Giải thích chuẩn Cambridge IELTS:</span>
+                      </div>
+                      <p className="mb-1 text-neutral-700">{current.explanation}</p>
+                      {current.target_word && (
+                        <p className="text-[11px] font-bold text-emerald-700 mt-1">🎯 Target Word: <span className="font-mono">{current.target_word}</span></p>
+                      )}
+                      {current.target_grammar && (
+                        <p className="text-[11px] font-bold text-teal-700 mt-1">📐 Target Rule: <span className="font-mono">{current.target_grammar}</span></p>
+                      )}
+                    </div>
+                  )}
                   {(quizType === 'grammar' && current.explanation) && (
                     <div className="mt-4 p-4 bg-primary/5 rounded-2xl text-left border border-primary/10 text-xs text-accent font-medium leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
                       <span className="font-black text-primary block mb-1">💡 Giải thích:</span>

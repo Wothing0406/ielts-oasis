@@ -134,3 +134,70 @@ class AuthRateLimit(Base):
     request_timestamp = Column(Float)
 
 
+class MeowchaVocab(Base):
+    """
+    Kho từ vựng IELTS phân tầng của trò chơi Meow-Cha: Vạn Kiếm Quy Tông.
+    Phân loại theo 4 cấp độ ma thạch:
+    - 0: Band 4.0 - 5.0 (FROST - Huyền Băng Cực Phách)
+    - 1: Band 6.0 - 6.5 (INFERNO - Cửu U Hỏa Diễm)
+    - 2: Band 7.0 - 7.5 (VOID - Hắc Diệu Hư Không)
+    - 3: Band 8.0+ (BLOOD_THUNDER - Vạn Kiếp Huyết Lôi)
+    """
+    __tablename__ = "meowcha_vocab"
+
+    id = Column(Integer, primary_key=True, index=True)
+    word = Column(String(100), index=True, nullable=False)
+    ipa = Column(String(100), nullable=False)
+    part_of_speech = Column(String(50), default="vocab")
+    meaning = Column(Text, nullable=False)
+    band_level = Column(Integer, index=True, default=0) # 0, 1, 2, 3
+    asteroid_type = Column(String(50), default="FROST") # FROST, INFERNO, VOID, BLOOD_THUNDER
+    difficulty_score = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MeowchaSave(Base):
+    """
+    Lưu trữ tiến trình tu vi (Cloud Save 3 Slot) cho người chơi Meow-Cha.
+    Hỗ trợ cả người dùng có tài khoản lẫn khách vãng lai thông qua guest_token.
+    """
+    __tablename__ = "meowcha_saves"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    guest_token = Column(String(64), nullable=True, index=True)
+    slot_id = Column(Integer, index=True, nullable=False) # 1, 2, 3
+    slot_name = Column(String(100), default="FILE 1 - Chính")
+    is_occupied = Column(Boolean, default=True)
+    realm = Column(String(50), default="Luyện Khí Kỳ")
+    realm_idx = Column(Integer, default=0)
+    title = Column(String(100), default="Kiếm Đồng")
+    hp = Column(Integer, default=50)
+    max_hp = Column(Integer, default=50)
+    score = Column(Integer, default=0)
+    words_slain = Column(Integer, default=0)
+    band_idx = Column(Integer, default=0)
+    talents = Column(JSON, default={})
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class MeowchaLeaderboard(Base):
+    """
+    Bảng Phong Thần lưu danh các cao thủ diệt ma thạch trong Meow-Cha.
+    """
+    __tablename__ = "meowcha_leaderboard"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    player_name = Column(String(100), default="Tiểu Miêu Kiếm Sĩ")
+    score = Column(Integer, index=True, default=0)
+    words_slain = Column(Integer, default=0)
+    realm = Column(String(50), default="Luyện Khí Kỳ")
+    accuracy = Column(Float, default=100.0)
+    wpm = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+

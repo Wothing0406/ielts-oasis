@@ -64,3 +64,81 @@ class WritingLog(WritingLogBase):
 
 class ReviewUpdate(BaseModel):
     is_correct: bool
+
+
+# ==========================================
+# MEOW-CHA SCHEMAS (VẠN KIẾM QUY TÔNG)
+# ==========================================
+from typing import Any, Dict
+
+class MeowchaVocabResponse(BaseModel):
+    id: int
+    word: str
+    ipa: str
+    part_of_speech: str
+    meaning: str
+    band_level: int
+    asteroid_type: str
+    difficulty_score: int
+
+    class Config:
+        from_attributes = True
+
+
+class MeowchaSaveCreate(BaseModel):
+    slot_id: int
+    guest_token: Optional[str] = None
+    slot_name: Optional[str] = None
+    realm: Optional[str] = "Luyện Khí Kỳ"
+    realm_idx: Optional[int] = 0
+    title: Optional[str] = "Kiếm Đồng"
+    hp: Optional[int] = 50
+    max_hp: Optional[int] = 50
+    score: Optional[int] = 0
+    words_slain: Optional[int] = 0
+    band_idx: Optional[int] = 0
+    talents: Optional[Dict[str, Any]] = {}
+
+
+class MeowchaSaveResponse(BaseModel):
+    id: int
+    slot_id: int
+    slot_name: str
+    is_occupied: bool
+    realm: str
+    realm_idx: int
+    title: str
+    hp: int
+    max_hp: int
+    score: int
+    words_slain: int
+    band_idx: int
+    talents: Dict[str, Any]
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MeowchaLeaderboardCreate(BaseModel):
+    player_name: str
+    score: int
+    words_slain: int
+    realm: str
+    accuracy: float
+    wpm: int
+
+
+class MeowchaLeaderboardResponse(BaseModel):
+    id: int
+    player_name: str
+    score: int
+    words_slain: int
+    realm: str
+    accuracy: float
+    wpm: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

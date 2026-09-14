@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw, Heart } from 'lucide-react';
+import Link from 'next/link';
+import { Mic, Square, Volume2, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw, Heart, Zap, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
@@ -94,7 +95,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   // Shadowing state
   const [currentLevel, setCurrentLevel] = useState<'easy' | 'medium' | 'hard' | null>(null);
   const [selectedSentence, setSelectedSentence] = useState<string>("");
-  const [shadowResult, setShadowResult] = useState<any[] | null>(null);
+  const [shadowResult, setShadowResult] = useState<any | null>(null);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   
@@ -524,14 +525,19 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
 
   // Calculate Shadowing Score
   const calculateShadowScore = () => {
-    if (!shadowResult || shadowResult.length === 0) return 0;
+    if (!shadowResult) return 0;
+    if (typeof shadowResult === 'object' && !Array.isArray(shadowResult) && typeof shadowResult.overall_score === 'number') {
+      return shadowResult.overall_score;
+    }
+    const words = Array.isArray(shadowResult) ? shadowResult : (shadowResult.words || []);
+    if (words.length === 0) return 0;
     let correctCount = 0;
     let warningCount = 0;
-    shadowResult.forEach(w => {
+    words.forEach((w: any) => {
       if (w.status === 'correct') correctCount += 1;
       else if (w.status === 'warning') warningCount += 1;
     });
-    return Math.round(((correctCount + warningCount * 0.5) / shadowResult.length) * 100);
+    return Math.round(((correctCount + warningCount * 0.5) / words.length) * 100);
   };
 
   const accuracyScore = calculateShadowScore();
@@ -547,7 +553,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
           </h2>
           <p className="text-sm text-accent/70">Cozy space to sharpen your IELTS Speaking skills & pronunciation with smart feedback</p>
         </div>
-        <div className="flex bg-secondary/50 p-1 rounded-full border border-primary/10">
+        <div className="flex flex-wrap items-center gap-1.5 bg-secondary/50 p-1 rounded-full border border-primary/10">
           <button type="button" 
             onClick={() => {
               setActiveMode('shadowing');
@@ -556,7 +562,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               setAudioUrl(null);
               setIsRecording(false);
             }}
-            className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeMode === 'shadowing' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${activeMode === 'shadowing' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
           >
             Matcha Shadowing
           </button>
@@ -568,10 +574,16 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               setAudioUrl(null);
               setIsRecording(false);
             }}
-            className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeMode === 'sandbox' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${activeMode === 'sandbox' ? 'bg-primary text-white shadow-md' : 'text-accent/70 hover:text-accent'}`}
           >
             Speaking Sandbox
           </button>
+          <Link
+            href="/games/speak"
+            className="px-5 py-2 rounded-full text-xs font-bold transition-all text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 shadow-sm flex items-center gap-1.5"
+          >
+            <span className="text-sm">🐻</span> Gemini Live Tea Talk
+          </Link>
         </div>
       </div>
 
@@ -964,7 +976,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   <div>
                     <h4 className="text-xs font-black uppercase text-accent/50 tracking-wider mb-3">Word-by-word Breakdown</h4>
                     <div className="flex flex-wrap gap-2 text-xl font-bold leading-relaxed">
-                      {shadowResult.map((w, i) => {
+                      {(Array.isArray(shadowResult) ? shadowResult : (shadowResult?.words || [])).map((w: any, i: number) => {
                         const statusColors = {
                           correct: 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200',
                           warning: 'text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-200',
@@ -1003,6 +1015,43 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       {selectedWord.tip && (
                         <p className="text-xs text-accent/80 font-medium bg-white p-2 rounded-lg border border-primary/5">{selectedWord.tip}</p>
                       )}
+                    </div>
+                  )}
+
+                  {/* Skill 1: Phonetic Assessment Academic Card (docs/skills.md) */}
+                  {shadowResult?.phonetic_feedback && (
+                    <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/60 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-black uppercase text-emerald-900 tracking-wider flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                          Đánh Giá Ngữ Âm Chuyên Sâu Band 8.5+ (Skill 1 - docs/skills.md)
+                        </h5>
+                        {shadowResult.wpm > 0 && (
+                          <span className="text-[10px] font-extrabold bg-white px-2 py-0.5 rounded-md border border-emerald-200 text-emerald-800">
+                            Tốc độ: {shadowResult.wpm} WPM
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                        <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
+                          <p className="font-bold text-accent text-[11px]">🎯 Âm cuối (Ending Sounds):</p>
+                          <p className="text-accent/80 text-[11px] leading-relaxed">
+                            {shadowResult.phonetic_feedback.ending_sounds}
+                          </p>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
+                          <p className="font-bold text-accent text-[11px]">🔗 Nối âm (Linking Sounds):</p>
+                          <p className="text-accent/80 text-[11px] leading-relaxed">
+                            {shadowResult.phonetic_feedback.linking_sounds}
+                          </p>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
+                          <p className="font-bold text-accent text-[11px]">🎵 Ngữ điệu (Intonation):</p>
+                          <p className="text-accent/80 text-[11px] leading-relaxed">
+                            {shadowResult.phonetic_feedback.intonation}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -1251,6 +1300,33 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                             <p className="text-[11px] line-through text-red-400">{c.original}</p>
                             <p className="text-xs font-bold text-green-600">➔ {c.corrected}</p>
                             <p className="text-[10px] text-accent/60 italic font-medium">Why: {c.reason}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skill 4: Shadow Error Logging (docs/skills.md) */}
+                  {sandboxResult.shadow_errors_logged && sandboxResult.shadow_errors_logged.length > 0 && (
+                    <div className="p-6 bg-amber-50/70 rounded-3xl border border-amber-200/80 space-y-3">
+                      <h4 className="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-amber-600" />
+                        Ghi Nhận Lỗi Ngầm & Nâng Cấp Band 8.5+ (Skill 4 - docs/skills.md)
+                      </h4>
+                      <div className="space-y-2">
+                        {sandboxResult.shadow_errors_logged.map((err: any, idx: number) => (
+                          <div key={idx} className="bg-white p-3 rounded-2xl border border-amber-100 text-xs space-y-1">
+                            <p className="text-red-700 font-medium">
+                              ❌ Học viên nói: <span className="line-through italic">{err.learner_utterance}</span>
+                            </p>
+                            <p className="text-emerald-800 font-extrabold">
+                              ✨ Diễn đạt Band 8.5+: <span>{err.band_8_alternative}</span>
+                            </p>
+                            {err.identified_flaw && (
+                              <p className="text-[10px] text-accent/60">
+                                Nhận diện lỗi: {err.identified_flaw}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>

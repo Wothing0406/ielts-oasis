@@ -15,13 +15,30 @@ if DB_HOST == "db":
     DB_PORT = "3306"
 DB_NAME = os.getenv("DB_NAME", "ielts_oasis")
 
-SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600
-)
+try:
+    if "sqlite" in DATABASE_URL:
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    else:
+        engine = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+            pool_size=10,
+            max_overflow=20
+        )
+        # Test connection quickly
+        with engine.connect() as conn:
+            pass
+except Exception as e:
+    # If MySQL is not running on local machine, fall back to SQLite for local development
+    fallback_url = "sqlite:///./ielts_oasis.db"
+    print(f"[DATABASE] Primary DB connection failed ({e}). Falling back to local SQLite: {fallback_url}")
+    engine = create_engine(fallback_url, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

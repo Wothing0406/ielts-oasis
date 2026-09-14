@@ -12,9 +12,10 @@ import uuid
 import json
 import base64
 from datetime import datetime, timedelta
-from PIL import Image
-from io import BytesIO
-from ultralytics import YOLO
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 from services.ai_service import ai_service
 from services.tts_service import tts_service
 from logger import setup_logger
@@ -121,10 +122,12 @@ def seed_db():
 
 from auth_routes import router as auth_router
 from auth_routes import get_current_user
+from meowcha_routes import router as meowcha_router
 from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
 app.include_router(auth_router)
+app.include_router(meowcha_router)
 
 async def cleanup_static_files_loop():
     logger.info("Static files cleanup background task started.")
@@ -305,7 +308,11 @@ if not os.path.exists(static_dir):
     os.makedirs(static_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-yolo_model = YOLO("yolov8n.pt")
+try:
+    yolo_model = YOLO("yolov8n.pt") if YOLO is not None else None
+except Exception as e:
+    logger.warning(f"Could not load YOLO model: {e}")
+    yolo_model = None
 
 YOLO_TRANSLATIONS = {
     'person': ('Con người', '/ˈpɜː.sən/'), 'bicycle': ('Xe đạp', '/ˈbaɪ.sɪ.kəl/'),
@@ -357,6 +364,28 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
     is_global_val = False
     if vocab_in.is_global and not is_curated_or_community and not is_already_global:
         is_global_val = True
+
+    # Normalize topic to match standard community categories
+    def normalize_vocab_topic(raw_topic: Optional[str]) -> str:
+        if not raw_topic:
+            return "General"
+        t = raw_topic.strip()
+        tl = t.lower()
+        if "awl" in tl or "academic" in tl:
+            return t if "sublist" in tl else "AWL"
+        if any(k in tl for k in ["tech", "technology", "công nghệ", "software", "ai", "digital", "internet"]):
+            return "Technology"
+        if any(k in tl for k in ["health", "medicin", "sức khỏe", "y tế", "disease", "fitness"]):
+            return "Health"
+        if any(k in tl for k in ["econom", "business", "kinh tế", "finance", "money", "trade", "market"]):
+            return "Economy"
+        if any(k in tl for k in ["environ", "môi trường", "nature", "climate", "ecology", "pollution"]):
+            return "Environment"
+        if any(k in tl for k in ["educat", "giáo dục", "school", "university", "learning", "student"]):
+            return "Education"
+        if any(k in tl for k in ["societ", "social", "xã hội", "culture", "community", "relationship", "family"]):
+            return "Society"
+        return t
         
     vocab = Vocabulary(
         user_id=user_id,
@@ -364,7 +393,7 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
         meaning=vocab_in.meaning, 
         phonetic=vocab_in.phonetic,
         example=vocab_in.example,
-        topic=vocab_in.topic or "General",
+        topic=normalize_vocab_topic(vocab_in.topic),
         synonyms=vocab_in.synonyms or [],
         memory_hook=vocab_in.memory_hook,
         image_url=vocab_in.image_url,
@@ -412,7 +441,9 @@ async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_use
                 vocab.meaning = data.get("meaning", vocab.meaning)
                 vocab.example = data.get("example", vocab.example)
                 vocab.synonyms = data.get("synonyms", vocab.synonyms)
-                vocab.topic = data.get("topic", vocab.topic)
+                # Keep user-provided topic if already specified and not General, otherwise use AI topic
+                if not vocab_in.topic or vocab_in.topic == "General":
+                    vocab.topic = normalize_vocab_topic(data.get("topic", vocab.topic))
                 vocab.memory_hook = data.get("memory_hook", vocab.memory_hook)
         except Exception as e:
             print(f"Refinement failed: {e}")
@@ -535,7 +566,8 @@ async def extract_scroll(file: UploadFile = File(...)):
             reader = PdfReader(pdf_file)
             
             pages_text = []
-            for i in range(min(5, len(reader.pages))):
+            max_pages = min(10, len(reader.pages))
+            for i in range(max_pages):
                 page_text = reader.pages[i].extract_text()
                 if page_text:
                     pages_text.append(page_text)
@@ -567,6 +599,7 @@ async def extract_scroll(file: UploadFile = File(...)):
         else:
             raise HTTPException(status_code=400, detail="Định dạng file không được hỗ trợ. Vui lòng tải lên PDF, Word (.docx), file Text (.txt) hoặc Hình ảnh.")
             
+        logger.info(f"Scroll extraction success for '{filename}': {len(extracted_words)} words found.")
         return {
             "text": text_content,
             "layout_type": layout_type,
@@ -954,7 +987,72 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         vocab_query = vocab_query.filter(Vocabulary.is_global == True)
     
     if topic and topic.strip() and topic.lower() != "all":
-        vocab_query = vocab_query.filter(func.lower(Vocabulary.topic) == func.lower(topic.strip()))
+        topic_clean = topic.strip()
+        t_low = topic_clean.lower()
+        if t_low in ["awl", "academic", "awl 570"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("awl%"),
+                    func.lower(Vocabulary.source).like("%awl%"),
+                    func.lower(Vocabulary.topic).like("%academic%")
+                )
+            )
+        elif t_low.startswith("awl sublist"):
+            vocab_query = vocab_query.filter(func.lower(Vocabulary.topic) == t_low)
+        elif t_low in ["tech", "technology"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%tech%"),
+                    func.lower(Vocabulary.meaning).like("%công nghệ%")
+                )
+            )
+        elif t_low in ["health", "medicine", "medical"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%health%"),
+                    func.lower(Vocabulary.topic).like("%medicin%"),
+                    func.lower(Vocabulary.meaning).like("%sức khỏe%"),
+                    func.lower(Vocabulary.meaning).like("%y tế%")
+                )
+            )
+        elif t_low in ["economy", "business", "finance"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%econom%"),
+                    func.lower(Vocabulary.topic).like("%business%"),
+                    func.lower(Vocabulary.topic).like("%finance%"),
+                    func.lower(Vocabulary.meaning).like("%kinh tế%")
+                )
+            )
+        elif t_low in ["environment", "nature"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%environ%"),
+                    func.lower(Vocabulary.meaning).like("%môi trường%")
+                )
+            )
+        elif t_low in ["education", "school"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%educat%"),
+                    func.lower(Vocabulary.meaning).like("%giáo dục%")
+                )
+            )
+        elif t_low in ["society", "social"]:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic).like("%societ%"),
+                    func.lower(Vocabulary.topic).like("%social%"),
+                    func.lower(Vocabulary.meaning).like("%xã hội%")
+                )
+            )
+        else:
+            vocab_query = vocab_query.filter(
+                or_(
+                    func.lower(Vocabulary.topic) == t_low,
+                    func.lower(Vocabulary.topic).like(f"%{t_low}%")
+                )
+            )
 
     if search and search.strip():
         search_term = f"%{search.strip().lower()}%"
@@ -973,8 +1071,8 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
     else:
         vocab_query = vocab_query.order_by(desc(Vocabulary.id))
     
-    # 1. Fetch vocabularies with deduplication (batch limit 100)
-    vocabs = vocab_query.limit(100).all()
+    # 1. Fetch vocabularies with deduplication (allow up to 2000 items)
+    vocabs = vocab_query.limit(2000).all()
     filtered_vocabs = []
     seen_words = set()
     for v in vocabs:
@@ -982,8 +1080,6 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
         if word_lower not in seen_words:
             seen_words.add(word_lower)
             filtered_vocabs.append(v)
-        if len(filtered_vocabs) >= 60:
-            break
 
     # Batch query users, likes, and comments for vocabs (3 queries total instead of 3 * N)
     vocab_user_ids = {v.user_id for v in filtered_vocabs if v.user_id}
@@ -1017,6 +1113,7 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             "word": v.word,
             "meaning": v.meaning,
             "phonetic": v.phonetic,
+            "topic": v.topic or "Chung",
             "user_id": v.user_id,
             "username": v.creator_username or (user_obj.username if user_obj else "Anonymous"),
             "avatar_url": user_obj.avatar_url if user_obj else None,
@@ -2238,15 +2335,18 @@ async def speaking_pronunciation_guide(body: GuideRequest, current_user: dict = 
 class SkillPronunciationIn(BaseModel):
     audio_base64: str
     mime_type: str = "audio/webm"
+    reference_text: Optional[str] = None
     target_transcript: Optional[str] = None
 
 class SkillWritingIn(BaseModel):
     content: str
-    task_type: str = "Task 2"
+    task_type: str = "sentence"
+    target_band: float = 8.0
     prompt_question: Optional[str] = None
 
 class SkillVocabIn(BaseModel):
     word: str
+    context_sentence: Optional[str] = ""
     target_band: float = 7.5
     for_game_hint: bool = False
 
@@ -2256,17 +2356,21 @@ class SkillReflexIn(BaseModel):
     target_band: float = 7.5
 
 class SkillSRSIn(BaseModel):
-    vocab_list: List[Dict[str, Any]]
+    weak_words: Optional[List[str]] = None
+    weak_grammar_points: Optional[List[str]] = None
+    count: int = 3
+    vocab_list: Optional[List[Dict[str, Any]]] = None
     focus_area: str = "balanced"
-    item_count: int = 5
+    item_count: Optional[int] = None
 
 @app.post("/skills/evaluate-pronunciation")
 async def skill_evaluate_pronunciation(payload: SkillPronunciationIn, current_user: Optional[dict] = Depends(get_current_user)):
     try:
+        ref_text = payload.reference_text or payload.target_transcript or ""
         result = await ai_service.evaluate_speech_pronunciation(
-            payload.audio_base64,
-            payload.mime_type,
-            payload.target_transcript
+            audio_base64=payload.audio_base64,
+            mime_type=payload.mime_type,
+            target_transcript=ref_text
         )
         return result
     except Exception as e:
@@ -2277,9 +2381,9 @@ async def skill_evaluate_pronunciation(payload: SkillPronunciationIn, current_us
 async def skill_correct_writing(payload: SkillWritingIn, current_user: Optional[dict] = Depends(get_current_user)):
     try:
         result = await ai_service.correct_writing_and_grammar(
-            payload.content,
-            payload.task_type,
-            payload.prompt_question
+            text=payload.content,
+            task_type=payload.task_type,
+            target_band=payload.target_band
         )
         return result
     except Exception as e:
@@ -2290,9 +2394,10 @@ async def skill_correct_writing(payload: SkillWritingIn, current_user: Optional[
 async def skill_vocabulary_context(payload: SkillVocabIn, current_user: Optional[dict] = Depends(get_current_user)):
     try:
         result = await ai_service.generate_vocabulary_context(
-            payload.word,
-            payload.target_band,
-            payload.for_game_hint
+            word=payload.word,
+            context_sentence=payload.context_sentence or "",
+            target_band=payload.target_band,
+            for_game_hint=payload.for_game_hint
         )
         return result
     except Exception as e:
@@ -2303,9 +2408,9 @@ async def skill_vocabulary_context(payload: SkillVocabIn, current_user: Optional
 async def skill_conversation_reflex(payload: SkillReflexIn, current_user: Optional[dict] = Depends(get_current_user)):
     try:
         result = await ai_service.drive_conversation_reflex(
-            payload.messages,
-            payload.current_topic,
-            payload.target_band
+            messages=payload.messages,
+            current_topic=payload.current_topic,
+            target_band=payload.target_band
         )
         return result
     except Exception as e:
@@ -2316,9 +2421,12 @@ async def skill_conversation_reflex(payload: SkillReflexIn, current_user: Option
 async def skill_spaced_repetition_review(payload: SkillSRSIn, current_user: Optional[dict] = Depends(get_current_user)):
     try:
         result = await ai_service.generate_spaced_repetition_review(
-            payload.vocab_list,
-            payload.focus_area,
-            payload.item_count
+            weak_words=payload.weak_words,
+            weak_grammar_points=payload.weak_grammar_points,
+            count=payload.count or payload.item_count or 3,
+            vocab_list=payload.vocab_list,
+            focus_area=payload.focus_area,
+            item_count=payload.item_count
         )
         return result
     except Exception as e:

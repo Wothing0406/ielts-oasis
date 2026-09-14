@@ -1,4 +1,7 @@
-import edge_tts
+try:
+    import edge_tts
+except ImportError:
+    edge_tts = None
 import os
 import uuid
 import json

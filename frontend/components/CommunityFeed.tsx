@@ -69,7 +69,7 @@ export default function CommunityFeed({
 
   // Pagination & Compact view
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 24;
 
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
@@ -81,6 +81,7 @@ export default function CommunityFeed({
   }, []);
 
   const [selectedTopic, setSelectedTopic] = useState('All');
+  const [awlSublist, setAwlSublist] = useState('All');
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -99,8 +100,13 @@ export default function CommunityFeed({
     const headers: any = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    let topicQuery = selectedTopic === 'All' ? '' : selectedTopic;
+    if (selectedTopic === 'AWL' && awlSublist !== 'All') {
+      topicQuery = awlSublist;
+    }
+
     const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : "";
-    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${selectedTopic === 'All' ? '' : selectedTopic}${searchParam}`, { headers })
+    fetch(`${API_URL}/community/feed?sort_by=${sortBy}&filter_mine=${showOnlyMine}&topic=${encodeURIComponent(topicQuery)}${searchParam}`, { headers })
       .then(res => res.json())
       .then(resData => {
         setData(resData || { vocabularies: [], writings: [] });
@@ -141,7 +147,18 @@ export default function CommunityFeed({
   useEffect(() => {
     fetchFeed();
     setPage(1);
-  }, [sortBy, showOnlyMine, selectedTopic, debouncedSearch]);
+  }, [sortBy, showOnlyMine, selectedTopic, awlSublist, debouncedSearch]);
+
+  // Listen for real-time vocabulary additions/deletions from other components
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchFeed(true); // silent refresh
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("oasis_community_refresh", handleRefresh);
+      return () => window.removeEventListener("oasis_community_refresh", handleRefresh);
+    }
+  }, [sortBy, showOnlyMine, selectedTopic, awlSublist, debouncedSearch]);
 
   // Only trigger oxford fetch when oxford tab is active or oxford filters change
   useEffect(() => {
@@ -567,31 +584,75 @@ export default function CommunityFeed({
 
         {/* Topic Filter for Community Vocabularies */}
         {activeTab === 'vocabularies' && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-            {['All', 'Environment', 'Tech', 'Health', 'Education', 'Economy'].map((topic) => {
-              const topicLabels: Record<string, string> = {
-                'All': 'Tất cả',
-                'Environment': 'Môi trường',
-                'Tech': 'Công nghệ',
-                'Health': 'Sức khỏe',
-                'Education': 'Giáo dục',
-                'Economy': 'Kinh tế'
-              };
-              return (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+              {['All', 'AWL', 'Environment', 'Tech', 'Health', 'Education', 'Economy', 'Society'].map((topic) => {
+                const topicLabels: Record<string, string> = {
+                  'All': 'Tất cả từ',
+                  'AWL': 'Academic (AWL 570)',
+                  'Environment': 'Môi trường',
+                  'Tech': 'Công nghệ',
+                  'Health': 'Sức khỏe',
+                  'Education': 'Giáo dục',
+                  'Economy': 'Kinh tế',
+                  'Society': 'Xã hội'
+                };
+                return (
+                  <button
+                    type="button"
+                    key={topic}
+                    onClick={() => {
+                      setSelectedTopic(topic);
+                      if (topic !== 'AWL') setAwlSublist('All');
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border whitespace-nowrap ${
+                      selectedTopic === topic 
+                        ? 'bg-primary border-primary text-white shadow-xs' 
+                        : 'bg-[#F9F8F5] border-primary/15 text-accent/65 hover:text-accent hover:bg-white'
+                    }`}
+                  >
+                    {topicLabels[topic] || topic}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* AWL Sublists Filter (Sublist 1 to 10) */}
+            {selectedTopic === 'AWL' && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar pl-2 border-l-2 border-primary/30">
+                <span className="text-[10px] font-black text-accent/50 uppercase tracking-wider whitespace-nowrap mr-1">
+                  Sublist:
+                </span>
                 <button
                   type="button"
-                  key={topic}
-                  onClick={() => setSelectedTopic(topic)}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all border whitespace-nowrap ${
-                    selectedTopic === topic 
-                      ? 'bg-primary border-primary text-white shadow-xs' 
-                      : 'bg-[#F9F8F5] border-primary/15 text-accent/65 hover:text-accent hover:bg-white'
+                  onClick={() => setAwlSublist('All')}
+                  className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition-all ${
+                    awlSublist === 'All'
+                      ? 'bg-accent text-white border-accent'
+                      : 'bg-white border-primary/15 text-accent/70 hover:bg-primary/5'
                   }`}
                 >
-                  {topicLabels[topic] || topic}
+                  Tất cả 10 Sublists (525 từ)
                 </button>
-              );
-            })}
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(subNum => {
+                  const val = `AWL Sublist ${subNum}`;
+                  return (
+                    <button
+                      type="button"
+                      key={val}
+                      onClick={() => setAwlSublist(val)}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition-all ${
+                        awlSublist === val
+                          ? 'bg-primary text-white border-primary shadow-xs'
+                          : 'bg-white border-primary/15 text-accent/60 hover:bg-primary/5'
+                      }`}
+                    >
+                      Sublist {subNum}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -884,9 +945,19 @@ export default function CommunityFeed({
                     </div>
 
                     <div className="flex flex-col items-center text-center my-0.5">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase tracking-wider rounded-md border border-primary/15">
+                          {v.topic || "Chung"}
+                        </span>
+                        {v.source && v.source.toLowerCase().includes("awl") && (
+                          <span className="px-1.5 py-0.5 bg-accent/5 text-accent/70 text-[9px] font-bold rounded-md">
+                            AWL
+                          </span>
+                        )}
+                      </div>
                       <h4 className="font-display font-extrabold text-primary text-base leading-tight break-words">{v.word}</h4>
                       {v.phonetic && <p className="text-[10px] text-accent/40 font-mono italic mt-0.5">{v.phonetic}</p>}
-                      <div className="mt-1.5 px-2.5 py-0.5 bg-[#F0F6EB] text-accent font-bold text-[11px] rounded-lg border border-primary/10 max-w-full truncate">
+                      <div className="mt-1.5 px-2.5 py-0.5 bg-[#F0F6EB] text-accent font-bold text-[11px] rounded-lg border border-primary/10 max-w-full truncate" title={v.meaning}>
                         {v.meaning}
                       </div>
                     </div>
@@ -938,7 +1009,7 @@ export default function CommunityFeed({
                 ← Trước
               </button>
               <span className="text-xs font-bold text-accent/70 px-2">
-                Trang {page} / {totalPages}
+                Trang {page} / {totalPages} ({activeItems.length} mục)
               </span>
               <button
                 type="button"

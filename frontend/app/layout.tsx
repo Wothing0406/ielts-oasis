@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { Lexend, Quicksand } from "next/font/google";
 import "./globals.css";
 import { MotionProvider } from "@/components/MotionProvider";
 import { SecurityShield } from "@/components/SecurityShield";
 
-const lexend = Lexend({ 
-  subsets: ["latin", "vietnamese"],
-  variable: '--font-lexend',
-  weight: ['300', '400', '500', '600', '700', '800', '900']
-});
-
-const quicksand = Quicksand({ 
-  subsets: ["latin", "vietnamese"],
-  variable: '--font-quicksand',
-  weight: ['300', '400', '500', '600', '700']
-});
+const lexend = { variable: "font-display" };
+const quicksand = { variable: "font-sans" };
 
 const safeJsonStringify = (obj: any) => 
   JSON.stringify(obj)
