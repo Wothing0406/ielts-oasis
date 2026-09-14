@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const backendTarget = process.env.BACKEND_URL || (process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://127.0.0.1:8000');
+const backendTarget = process.env.BACKEND_URL || (process.env.NODE_ENV === 'development' && !process.env.DOCKER_ENV ? 'http://127.0.0.1:8000' : 'http://backend:8000');
 
 const nextConfig = {
   async rewrites() {
