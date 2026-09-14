@@ -71,6 +71,9 @@ services:
         - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
     container_name: ielts_oasis_web
     restart: always
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - DOCKER_ENV=true
     ports:
       - "3000:3000"
     # volumes:
