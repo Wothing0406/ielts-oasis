@@ -27,7 +27,7 @@ export function useMeowchaAudio() {
     return audioCtxRef.current;
   }, []);
 
-  // Sync mute setting with localStorage
+  // Sync mute setting with localStorage & auto-resume audio context on first user gesture
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedMute = localStorage.getItem("meowcha_muted");
@@ -38,8 +38,23 @@ export function useMeowchaAudio() {
       if (savedBgm !== null) {
         setBgmEnabled(savedBgm === "true");
       }
+
+      const handleFirstInteraction = () => {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === "suspended") {
+          ctx.resume().catch(() => {});
+        }
+      };
+
+      window.addEventListener("pointerdown", handleFirstInteraction, { once: true });
+      window.addEventListener("keydown", handleFirstInteraction, { once: true });
+
+      return () => {
+        window.removeEventListener("pointerdown", handleFirstInteraction);
+        window.removeEventListener("keydown", handleFirstInteraction);
+      };
     }
-  }, []);
+  }, [getAudioContext]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => {

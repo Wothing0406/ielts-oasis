@@ -37,11 +37,11 @@ export const REALMS: Realm[] = [
     name: "Trúc Cơ Kỳ",
     title: "Bích Ngọc Kiếm Sĩ",
     skillName: "Bích Hải Lưu Quang",
-    sprite: "/meowcha/sprites/cat_weak_attack.png",
+    sprite: "/meowcha/sprites/cat_idle.png",
     auraColor: "#34d399",
     blastColor: "#059669",
     projectileType: "jade",
-    reqScore: 500,
+    reqScore: 120, // Reached in 2-3 words!
     minBand: 1,
     description: "Đạo cơ vững chắc, ngự song kiếm ngọc bích xé tan ma diễm Cửu U."
   },
@@ -54,7 +54,7 @@ export const REALMS: Realm[] = [
     auraColor: "#ffdf79",
     blastColor: "#f59e0b",
     projectileType: "solar",
-    reqScore: 1500,
+    reqScore: 320, // Reached in 5-6 words!
     minBand: 2,
     description: "Ngưng kết Kim Đan bất hoại, kiếm mang Thái Dương rực lửa thiêu rụi Hư Không dị thạch."
   },
@@ -67,7 +67,7 @@ export const REALMS: Realm[] = [
     auraColor: "#c084fc",
     blastColor: "#9333ea",
     projectileType: "lightning",
-    reqScore: 3000,
+    reqScore: 680, // Reached in 8-10 words!
     minBand: 3,
     description: "Xuất khiếu thông linh, triệu hoán vạn đạo lôi kiếp xé toạc Huyết Lôi ma quái."
   },
@@ -80,7 +80,7 @@ export const REALMS: Realm[] = [
     auraColor: "#fbbf24",
     blastColor: "#fbbf24",
     projectileType: "dragon",
-    reqScore: 5500,
+    reqScore: 1200,
     minBand: 3,
     description: "Phá toái hư không, triệu hoán Cửu Trảo Kim Long chấn nhiếp chư thiên vạn giới!"
   }
@@ -90,7 +90,7 @@ export interface VocabItem {
   id: number;
   word: string;
   ipa: string;
-  type: string;
+  type?: string;
   meaning: string;
   band_level: number;
   asteroid_type: AsteroidType;

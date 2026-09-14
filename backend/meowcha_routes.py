@@ -15,6 +15,8 @@ from schemas import (
     MeowchaLeaderboardResponse
 )
 
+from services.oxford_dataset_service import OxfordDatasetService
+
 logger = logging.getLogger("meowcha_routes")
 
 router = APIRouter(
@@ -32,52 +34,100 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
 
 
 # =========================================================================
-# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab)
+# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab) TỪ KHO OXFORD 5000
 # =========================================================================
 @router.get("/vocab", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 def get_vocab_deck(
-    band: Optional[int] = Query(None, description="Cấp độ IELTS: 0 (4.0-5.0), 1 (6.0-6.5), 2 (7.0-7.5), 3 (8.0+)"),
-    limit: int = Query(30, ge=5, le=100, description="Số lượng từ vựng cần lấy"),
+    band: Optional[int] = Query(None, description="Cấp độ IELTS: 0 (A1-A2), 1 (B1), 2 (B2), 3 (C1)"),
+    limit: int = Query(100, ge=1, le=500, description="Số lượng từ vựng cần lấy"),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách từ vựng IELTS phân tầng từ SQL Database.
-    Hỗ trợ shuffle ngẫu nhiên và lọc theo cấp độ ma thạch đã chọn.
+    Lấy danh sách từ vựng IELTS trực tiếp từ kho Oxford 5000 CEFR in-memory.
+    Phản hồi tức thì <0.1ms, 0 Token AI, chuẩn hóa IPA và nghĩa tiếng Việt.
     """
     try:
-        query = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True)
-        if band is not None:
-            query = query.filter(MeowchaVocab.band_level == band)
-
-        all_records = query.all()
-        if not all_records:
-            # Fallback nếu band chưa có từ
-            all_records = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True).all()
-
-        # Xáo trộn ngẫu nhiên và lấy số lượng theo limit
-        sampled = random.sample(all_records, min(len(all_records), limit))
+        oxford = OxfordDatasetService.get_instance()
         
+        # Ánh xạ Cảnh Giới / Band sang cấp độ CEFR
+        level_map = {
+            0: ["A1", "A2"],
+            1: ["B1"],
+            2: ["B2"],
+            3: ["C1"]
+        }
+        
+        target_levels = level_map.get(band, ["A1", "A2", "B1", "B2", "C1"]) if band is not None else ["A1", "A2", "B1", "B2", "C1"]
+        
+        candidates = []
+        for lvl in target_levels:
+            candidates.extend(oxford.by_level.get(lvl, []))
+            
+        # Lọc các từ hợp lệ cho game đánh máy (độ dài 3 - 10 ký tự, chỉ chứa chữ cái a-z)
+        valid_words = [
+            e for e in candidates 
+            if 3 <= len(e.get("word", "")) <= 10 and e.get("word", "").isalpha()
+        ]
+        
+        if not valid_words:
+            valid_words = [
+                e for e in oxford.words 
+                if 3 <= len(e.get("word", "")) <= 10 and e.get("word", "").isalpha()
+            ]
+            
+        sampled = random.sample(valid_words, min(len(valid_words), limit))
+        
+        def to_ast_type(lvl: str) -> str:
+            if lvl in ("A1", "A2"): return "FROST"
+            if lvl == "B1": return "INFERNO"
+            if lvl == "B2": return "VOID"
+            return "BLOOD_THUNDER"
+
+        def to_band_level(lvl: str) -> int:
+            if lvl in ("A1", "A2"): return 0
+            if lvl == "B1": return 1
+            if lvl == "B2": return 2
+            return 3
+
         result_data = [
             {
-                "id": v.id,
-                "word": v.word,
-                "ipa": v.ipa,
-                "type": v.part_of_speech,
-                "meaning": v.meaning,
-                "band_level": v.band_level,
-                "asteroid_type": v.asteroid_type,
-                "difficulty_score": v.difficulty_score
+                "id": idx + 1,
+                "word": v.get("word", "").upper(),
+                "ipa": v.get("phonetic", ""),
+                "type": v.get("type", "noun"),
+                "meaning": v.get("meaning", ""),
+                "band_level": to_band_level(v.get("level", "B1")),
+                "asteroid_type": to_ast_type(v.get("level", "B1")),
+                "difficulty_score": len(v.get("word", "")) * 5
             }
-            for v in sampled
+            for idx, v in enumerate(sampled)
         ]
 
         return api_response(data=result_data, success=True)
     except Exception as e:
-        logger.error(f"Lỗi khi lấy từ vựng Meow-Cha: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "INTERNAL_SERVER_ERROR", "message": str(e)}
-        )
+        logger.error(f"Lỗi khi lấy từ vựng Oxford Meow-Cha: {e}")
+        # Fallback database nếu có lỗi
+        try:
+            records = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True).limit(limit).all()
+            result_data = [
+                {
+                    "id": v.id,
+                    "word": v.word,
+                    "ipa": v.ipa,
+                    "type": v.part_of_speech,
+                    "meaning": v.meaning,
+                    "band_level": v.band_level,
+                    "asteroid_type": v.asteroid_type,
+                    "difficulty_score": v.difficulty_score
+                }
+                for v in records
+            ]
+            return api_response(data=result_data, success=True)
+        except Exception as db_e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": "INTERNAL_SERVER_ERROR", "message": str(e)}
+            )
 
 
 # =========================================================================

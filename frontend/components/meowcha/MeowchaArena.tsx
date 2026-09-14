@@ -14,6 +14,7 @@ interface MeowchaArenaProps {
   catState: "idle" | "attack" | "hurt" | "ultimate" | "defeated";
   activeTargetId: string | null;
   activeTalents?: Talent[];
+  screenShake?: number;
   onCanvasClick?: () => void;
 }
 
@@ -29,6 +30,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
   catState,
   activeTargetId,
   activeTalents = [],
+  screenShake = 0,
   onCanvasClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -84,7 +86,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
     let animId: number;
 
     const render = () => {
-      // 1. UNIFIED VIRTUAL COORDINATE TRANSFORMATION (800 x 700)
+      // 1. UNIFIED VIRTUAL COORDINATE TRANSFORMATION WITH ASPECT RATIO PRESERVATION
       const parent = canvas.parentElement;
       const cssW = parent ? parent.clientWidth : 800;
       const cssH = parent ? parent.clientHeight : 700;
@@ -100,30 +102,40 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
         canvas.style.height = `${cssH}px`;
       }
 
-      const scaleX = (cssW * dpr) / V_WIDTH;
-      const scaleY = (cssH * dpr) / V_HEIGHT;
-      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+      // Reset transform before drawing full-bleed background
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-      // Clear virtual frame
-      ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
-
-      const time = performance.now() * 0.002;
-
-      // 2. BACKGROUND & SANCTUARY ATMOSPHERE
+      // 2. BACKGROUND & SANCTUARY ATMOSPHERE (FULL BLEED COVER)
       const bgImg = spritesRef.current["bg"];
       if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-        ctx.drawImage(bgImg, 0, 0, V_WIDTH, V_HEIGHT);
-        // Vignette
-        ctx.fillStyle = "rgba(8, 14, 10, 0.22)";
-        ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+        // Draw full cover on entire canvas
+        ctx.drawImage(bgImg, 0, 0, targetCanvasW, targetCanvasH);
+        ctx.fillStyle = "rgba(4, 10, 6, 0.22)";
+        ctx.fillRect(0, 0, targetCanvasW, targetCanvasH);
       } else {
-        const bgGrad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
-        bgGrad.addColorStop(0, "#060b08");
-        bgGrad.addColorStop(0.6, "#132317");
-        bgGrad.addColorStop(1, "#1c2e1b");
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, targetCanvasH);
+        bgGrad.addColorStop(0, "#050b07");
+        bgGrad.addColorStop(0.6, "#0d1f14");
+        bgGrad.addColorStop(1, "#14291c");
         ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+        ctx.fillRect(0, 0, targetCanvasW, targetCanvasH);
       }
+
+      // Compute uniform scale to fit 800x700 virtual space without stretching/squashing
+      const scale = Math.min(targetCanvasW / V_WIDTH, targetCanvasH / V_HEIGHT);
+      const offsetX = (targetCanvasW - V_WIDTH * scale) / 2;
+      const offsetY = (targetCanvasH - V_HEIGHT * scale) / 2;
+
+      ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+
+      // SCREEN SHAKE EFFECT ("HIỆU ỨNG RUNG")
+      if (screenShake > 0) {
+        const sx = (Math.random() - 0.5) * screenShake;
+        const sy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(sx, sy);
+      }
+
+      const time = performance.now() * 0.002;
 
       // 3. CELESTIAL ALTAR & LOTUS PLATFORM
       // Anchored permanently at (400, 635)
@@ -133,7 +145,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
       // Misty Cloud Aura under Altar
       ctx.save();
       const cloudGrad = ctx.createRadialGradient(altarX, altarY + 22, 15, altarX, altarY + 22, 140);
-      cloudGrad.addColorStop(0, "rgba(220, 245, 225, 0.28)");
+      cloudGrad.addColorStop(0, "rgba(220, 245, 225, 0.32)");
       cloudGrad.addColorStop(0.6, "rgba(152, 176, 111, 0.12)");
       cloudGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
       ctx.fillStyle = cloudGrad;
@@ -164,8 +176,92 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
       ctx.stroke();
       ctx.restore();
 
-      // 4. TALENT VISUAL TRANSMUTATION ("HÓA MẠNH NHẤT")
       const isDefeated = catState === "defeated";
+
+      // 3.5. REALM-SPECIFIC CELESTIAL PHENOMENA (Kim Đan Bagua, Nguyên Anh Plasma, Thiên Tôn Swords)
+      if (!isDefeated) {
+        if (currentRealmIdx === 2) {
+          // KIM ĐAN KỲ: Rotating 8-Trigram Golden Bagua Wheel behind Golden Core Cat
+          ctx.save();
+          ctx.translate(altarX, altarY - 50);
+          ctx.rotate(time * 0.8);
+          ctx.strokeStyle = "rgba(251, 191, 36, 0.65)";
+          ctx.lineWidth = 2.2;
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(0, 0, 56, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (let i = 0; i < 8; i++) {
+            const ang = (Math.PI / 4) * i;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang) * 24, Math.sin(ang) * 24);
+            ctx.lineTo(Math.cos(ang) * 54, Math.sin(ang) * 54);
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (currentRealmIdx === 3) {
+          // NGUYÊN ANH KỲ: 3 Crackling Purple Plasma Orbs orbiting the Nascent Soul Cat
+          ctx.save();
+          ctx.translate(altarX, altarY - 50);
+          for (let i = 0; i < 3; i++) {
+            const ang = time * 2.2 + (Math.PI * 2 / 3) * i;
+            const ox = Math.cos(ang) * 58;
+            const oy = Math.sin(ang) * 26;
+            ctx.fillStyle = "#c084fc";
+            ctx.shadowColor = "#9333ea";
+            ctx.shadowBlur = 18;
+            ctx.beginPath();
+            ctx.arc(ox, oy, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            const nextAng = time * 2.2 + (Math.PI * 2 / 3) * ((i + 1) % 3);
+            const nox = Math.cos(nextAng) * 58;
+            const noy = Math.sin(nextAng) * 26;
+            ctx.strokeStyle = "rgba(216, 180, 254, 0.75)";
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo((ox + nox) / 2 + (Math.random() - 0.5) * 12, (oy + noy) / 2 + (Math.random() - 0.5) * 12);
+            ctx.lineTo(nox, noy);
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (currentRealmIdx >= 4) {
+          // ĐỘ KIẾP / THIÊN TÔN: 6 Orbiting Sacred Golden Flying Swords
+          ctx.save();
+          ctx.translate(altarX, altarY - 55);
+          for (let i = 0; i < 6; i++) {
+            const ang = time * 1.6 + (Math.PI * 2 / 6) * i;
+            const ox = Math.cos(ang) * 68;
+            const oy = Math.sin(ang) * 32;
+            ctx.save();
+            ctx.translate(ox, oy);
+            ctx.rotate(ang + Math.PI / 2);
+            ctx.fillStyle = "#fbbf24";
+            ctx.shadowColor = "#f59e0b";
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(0, -18);
+            ctx.lineTo(5, 16);
+            ctx.lineTo(-5, 16);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(0, 14);
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+      }
+
+      // 4. TALENT VISUAL TRANSMUTATION ("HÓA MẠNH NHẤT")
       if (!isDefeated && activeTalents && activeTalents.length > 0) {
         ctx.save();
 
@@ -296,8 +392,11 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
       } else if (catState === "hurt") {
         spriteImg = spritesRef.current["cat_hurt"];
       } else if (catState === "ultimate") {
-        // VẠN KIẾM QUY TÔNG: Chưởng ấn xuất thần
-        spriteImg = spritesRef.current["cat_blast"] || spritesRef.current["cat_weak"];
+        // VẠN KIẾM QUY TÔNG: Higher realms retain their divine form with ultimate radiance aura!
+        if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
+        else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
+        else if (currentRealmIdx === 2) spriteImg = spritesRef.current["cat_golden"];
+        else spriteImg = spritesRef.current["cat_blast"] || spritesRef.current["cat_weak"];
       } else if (catState === "attack") {
         if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
         else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
@@ -309,7 +408,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
         if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
         else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
         else if (currentRealmIdx === 2) spriteImg = spritesRef.current["cat_golden"];
-        else if (currentRealmIdx === 1) spriteImg = spritesRef.current["cat_weak"];
+        else if (currentRealmIdx === 1) spriteImg = spritesRef.current["cat_idle"];
         else spriteImg = spritesRef.current["cat_idle"];
       }
 
@@ -340,6 +439,18 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
           ctx.drawImage(spriteImg, altarX - catW / 2, altarY - catH + 18 + floatY, catW, catH);
           ctx.restore();
         }
+      }
+
+      // Draw Horizontal Bamboo Sword on Tatami Mat in Front of Cat (as seen in Image 1)
+      const bambooSwordImg = spritesRef.current["prop_bamboo_sword"];
+      if (bambooSwordImg && bambooSwordImg.complete && bambooSwordImg.naturalWidth > 0 && !isDefeated) {
+        ctx.save();
+        ctx.translate(altarX, altarY + 8);
+        ctx.rotate(Math.PI / 2); // Lay horizontal across altar
+        ctx.shadowColor = "#4ade80";
+        ctx.shadowBlur = 8;
+        ctx.drawImage(bambooSwordImg, -10, -32, 20, 64);
+        ctx.restore();
       }
 
       // 6. REALM CHIÊU THỨC CHƯỞNG ẤN (QI SKILLS & BARRAGE AURA)
@@ -409,266 +520,293 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
         ctx.restore();
       }
 
-      // 7. DRAW ASTEROIDS WITH AUTHENTIC SPRITE & ELEMENTAL AURAS
-      const asteroidSprite = spritesRef.current["prop_asteroid"];
-
+      // 7. DRAW ASTEROIDS & AUTHENTIC TALISMAN WORD BOX (EXACT TO IMAGE 1)
       asteroids.forEach(ast => {
         ctx.save();
         ctx.translate(ast.x, ast.y);
 
-        const r = ast.radius;
+        const r = Math.max(ast.radius, 48);
         const pTime = performance.now() * 0.003;
-        const isTarget = ast.id === activeTargetId;
 
-        // Active Target Reticle
-        if (isTarget) {
-          ctx.save();
-          ctx.strokeStyle = "#ffdf79";
-          ctx.lineWidth = 2.2;
-          ctx.setLineDash([7, 4]);
-          ctx.lineDashOffset = -pTime * 25;
+        // A. CELESTIAL METEOR SHAPES PER REALM / ASTEROID TYPE
+        if (ast.type === "FROST") {
+          // BĂNG PHÁCH THẠCH (As shown in Image 1): Faceted Glowing Blue Ice Crystal
+          ctx.rotate(ast.rotation * 0.6);
+
+          // Deep Ice Core Glow
+          const iceHalo = ctx.createRadialGradient(0, 0, 5, 0, 0, r * 1.5);
+          iceHalo.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+          iceHalo.addColorStop(0.3, "rgba(125, 211, 252, 0.85)");
+          iceHalo.addColorStop(0.7, "rgba(2, 132, 199, 0.45)");
+          iceHalo.addColorStop(1, "rgba(2, 132, 199, 0)");
+          ctx.fillStyle = iceHalo;
           ctx.beginPath();
-          ctx.arc(0, 0, r + 18, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 3D Faceted Crystal Polygon (Gemstone cut)
+          const crystalPoints = [
+            { x: 0, y: -r * 1.15 },
+            { x: r * 0.95, y: -r * 0.45 },
+            { x: r * 0.75, y: r * 0.85 },
+            { x: -r * 0.75, y: r * 0.85 },
+            { x: -r * 0.95, y: -r * 0.45 },
+          ];
+
+          // Base crystal
+          ctx.fillStyle = "#38bdf8";
+          ctx.strokeStyle = "#bae6fd";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          crystalPoints.forEach((pt, i) => {
+            if (i === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          });
+          ctx.closePath();
+          ctx.fill();
           ctx.stroke();
 
-          // Reticle pointer notches
-          for (let i = 0; i < 4; i++) {
-            const angle = (Math.PI / 2) * i + pTime;
-            const nx = Math.cos(angle) * (r + 15);
-            const ny = Math.sin(angle) * (r + 15);
-            ctx.fillStyle = "#ffdf79";
+          // Facet inner lines
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+          ctx.lineWidth = 1.4;
+          crystalPoints.forEach(pt => {
             ctx.beginPath();
-            ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.restore();
-        }
+            ctx.moveTo(0, 0);
+            ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+          });
 
-        // A. ELEMENTAL AURA (Behind Asteroid)
-        ctx.save();
-        const auraSize = r * 2.1;
-        if (ast.type === "FROST") {
-          // Băng Phách: Cyan ice aura with crystal glint
-          const iceGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, auraSize * 0.7);
-          iceGrad.addColorStop(0, "rgba(255, 255, 255, 0.75)");
-          iceGrad.addColorStop(0.4, "rgba(125, 211, 252, 0.55)");
-          iceGrad.addColorStop(0.8, "rgba(2, 132, 199, 0.35)");
-          iceGrad.addColorStop(1, "rgba(2, 132, 199, 0)");
-          ctx.fillStyle = iceGrad;
-          ctx.beginPath();
-          ctx.arc(0, 0, auraSize * 0.7, 0, Math.PI * 2);
-          ctx.fill();
         } else if (ast.type === "INFERNO") {
-          // Hỏa Diễm: Blazing magma flame halo
-          const fireGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, auraSize * 0.75);
-          fireGrad.addColorStop(0, "rgba(254, 240, 138, 0.85)");
-          fireGrad.addColorStop(0.4, "rgba(249, 115, 22, 0.65)");
-          fireGrad.addColorStop(0.8, "rgba(220, 38, 38, 0.35)");
-          fireGrad.addColorStop(1, "rgba(220, 38, 38, 0)");
-          ctx.fillStyle = fireGrad;
+          // U HỎA THẠCH: Volcanic Magma Core with Flame Tongues
+          ctx.rotate(-ast.rotation * 1.2);
+          const fireHalo = ctx.createRadialGradient(0, 0, 4, 0, 0, r * 1.5);
+          fireHalo.addColorStop(0, "rgba(254, 240, 138, 0.95)");
+          fireHalo.addColorStop(0.35, "rgba(249, 115, 22, 0.75)");
+          fireHalo.addColorStop(0.75, "rgba(220, 38, 38, 0.4)");
+          fireHalo.addColorStop(1, "rgba(220, 38, 38, 0)");
+          ctx.fillStyle = fireHalo;
           ctx.beginPath();
-          ctx.arc(0, 0, auraSize * 0.75, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
           ctx.fill();
+
+          ctx.fillStyle = "#431407";
+          ctx.strokeStyle = "#f97316";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#ea580c";
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          const spikes = 9;
+          for (let i = 0; i < spikes; i++) {
+            const angle = (Math.PI * 2 / spikes) * i;
+            const dist = r * (i % 2 === 0 ? 1 : 0.8) + Math.sin(pTime * 6 + i) * 4;
+            const sx = Math.cos(angle) * dist;
+            const sy = Math.sin(angle) * dist;
+            if (i === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
         } else if (ast.type === "VOID") {
-          // Hư Không: Dark cosmic vortex
-          const voidGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, auraSize * 0.75);
-          voidGrad.addColorStop(0, "rgba(216, 180, 254, 0.85)");
-          voidGrad.addColorStop(0.4, "rgba(147, 51, 234, 0.6)");
-          voidGrad.addColorStop(0.8, "rgba(59, 7, 100, 0.35)");
-          voidGrad.addColorStop(1, "rgba(59, 7, 100, 0)");
-          ctx.fillStyle = voidGrad;
+          // HƯ KHÔNG THẠCH: Cosmic Singularity Nebula
+          ctx.rotate(ast.rotation * 0.7);
+          const voidHalo = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 1.5);
+          voidHalo.addColorStop(0, "#090514");
+          voidHalo.addColorStop(0.4, "#581c87");
+          voidHalo.addColorStop(0.7, "#9333ea");
+          voidHalo.addColorStop(1, "rgba(147, 51, 234, 0)");
+          ctx.fillStyle = voidHalo;
           ctx.beginPath();
-          ctx.arc(0, 0, auraSize * 0.75, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
           ctx.fill();
-        } else {
-          // Huyết Lôi: Crimson electric pulse
-          const bloodGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, auraSize * 0.75);
-          bloodGrad.addColorStop(0, "rgba(254, 205, 211, 0.85)");
-          bloodGrad.addColorStop(0.4, "rgba(225, 29, 72, 0.65)");
-          bloodGrad.addColorStop(0.8, "rgba(136, 19, 55, 0.35)");
-          bloodGrad.addColorStop(1, "rgba(136, 19, 55, 0)");
-          ctx.fillStyle = bloodGrad;
-          ctx.beginPath();
-          ctx.arc(0, 0, auraSize * 0.75, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
 
-        // B. AUTHENTIC ASTEROID SPRITE
-        ctx.save();
-        ctx.rotate(ast.rotation);
-        const spriteDrawSize = r * 2.25;
-
-        if (asteroidSprite && asteroidSprite.complete && asteroidSprite.naturalWidth > 0) {
-          ctx.drawImage(
-            asteroidSprite,
-            -spriteDrawSize / 2,
-            -spriteDrawSize / 2,
-            spriteDrawSize,
-            spriteDrawSize
-          );
-        } else {
-          // Fallback shaded rock
-          ctx.fillStyle = "#38bdf8";
+          ctx.fillStyle = "#1e1035";
+          ctx.strokeStyle = "#c084fc";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 22;
           ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
           ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = "rgba(216, 180, 254, 0.7)";
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r * 1.25, r * 0.45, pTime * 2, 0, Math.PI * 2);
+          ctx.stroke();
+
+        } else {
+          // HUYẾT LÔI THẠCH: Crimson Thunder Obsidian with Crackling Arcs
+          const pulseR = r + Math.sin(pTime * 8) * 3;
+          const bloodHalo = ctx.createRadialGradient(0, 0, 4, 0, 0, pulseR * 1.5);
+          bloodHalo.addColorStop(0, "#fecdd3");
+          bloodHalo.addColorStop(0.35, "#e11d48");
+          bloodHalo.addColorStop(0.75, "#881337");
+          bloodHalo.addColorStop(1, "rgba(136, 19, 55, 0)");
+          ctx.fillStyle = bloodHalo;
+          ctx.beginPath();
+          ctx.arc(0, 0, pulseR * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#3f0a14";
+          ctx.strokeStyle = "#f43f5e";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#e11d48";
+          ctx.shadowBlur = 25;
+          ctx.beginPath();
+          ctx.arc(0, 0, pulseR * 0.85, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = "#fecdd3";
+          ctx.lineWidth = 1.8;
+          for (let i = 0; i < 4; i++) {
+            const a = (Math.PI / 2) * i + pTime * 4;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * (pulseR * 0.6), Math.sin(a) * (pulseR * 0.6));
+            ctx.lineTo(Math.cos(a + 0.3) * (pulseR * 1.2), Math.sin(a + 0.3) * (pulseR * 1.2));
+            ctx.stroke();
+          }
         }
-        ctx.restore();
 
         ctx.restore(); // end asteroid transform
 
-        // 8. "KHUNG Ô CHỮ PHÙ LỤC" - DAOIST TALISMAN WORD PLAQUE WITH INDIVIDUAL LETTER CELLS
+        // B. CELESTIAL TALISMAN WORD BOX (EXACT DESIGN FROM IMAGE 1: [ 冰  V I G O R  魄 ])
         ctx.save();
 
-        const cellW = 26;
-        const cellH = 30;
-        const cellGap = 3;
-        const wordLen = ast.word.length;
-        const totalCellsWidth = wordLen * cellW + (wordLen - 1) * cellGap;
-        const plaqueW = Math.max(130, totalCellsWidth + 24);
-        const plaqueH = cellH + 34; // cell row + divider + subtext (IPA & Meaning)
+        let sealLeft = "冰";
+        let sealRight = "魄";
+        let plaqueBg = "rgba(224, 242, 254, 0.94)";
+        let plaqueBorder = "#38bdf8";
+        let plaqueText = "#0f172a";
+        let typedColor = "#059669";
+        let nextBg = "rgba(251, 191, 36, 0.45)";
+        let nextBorder = "#f59e0b";
 
-        const px = ast.x - plaqueW / 2;
-        const py = ast.y + ast.radius + 8;
+        if (ast.type === "INFERNO") {
+          sealLeft = "炎"; sealRight = "魂";
+          plaqueBg = "rgba(254, 243, 199, 0.94)";
+          plaqueBorder = "#f97316";
+          plaqueText = "#431407";
+          typedColor = "#ea580c";
+        } else if (ast.type === "VOID") {
+          sealLeft = "虚"; sealRight = "劫";
+          plaqueBg = "rgba(243, 232, 255, 0.94)";
+          plaqueBorder = "#a855f7";
+          plaqueText = "#3b0764";
+          typedColor = "#7e22ce";
+        } else if (ast.type === "BLOOD_THUNDER") {
+          sealLeft = "雷"; sealRight = "煞";
+          plaqueBg = "rgba(255, 228, 230, 0.94)";
+          plaqueBorder = "#f43f5e";
+          plaqueText = "#4c0519";
+          typedColor = "#be123c";
+        }
 
-        // Plaque Backdrop: Lacquered Xianxia plaque with gold border
-        ctx.fillStyle = "rgba(13, 19, 14, 0.94)";
-        ctx.strokeStyle = isTarget ? "#fbbf24" : "rgba(196, 165, 87, 0.65)";
-        ctx.lineWidth = isTarget ? 2 : 1.2;
-        ctx.shadowColor = isTarget ? "#fbbf24" : "rgba(0, 0, 0, 0.6)";
-        ctx.shadowBlur = isTarget ? 14 : 6;
+        const charCount = ast.word.length;
+        const charSpacing = 24;
+        const textWidth = charCount * charSpacing;
+        const boxPadding = 34;
+        const boxW = Math.max(140, textWidth + boxPadding * 2);
+        const boxH = 36;
+
+        // Position plaque centered directly ACROSS the asteroid gemstone (as seen in Image 1)
+        const bx = ast.x - boxW / 2;
+        const by = ast.y - boxH / 2;
+
+        // Plaque Outer Container
+        ctx.fillStyle = plaqueBg;
+        ctx.strokeStyle = plaqueBorder;
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = plaqueBorder;
+        ctx.shadowBlur = 14;
 
         ctx.beginPath();
-        ctx.roundRect(px, py, plaqueW, plaqueH, 6);
+        ctx.roundRect(bx, by, boxW, boxH, 6);
         ctx.fill();
         ctx.stroke();
 
-        // Corner studs
-        const studColor = isTarget ? "#fbbf24" : "rgba(196, 165, 87, 0.8)";
-        ctx.fillStyle = studColor;
+        // Left Seal Tile Box [ 冰 ]
+        const sealTileW = 28;
+        const sealTileH = boxH - 6;
+        ctx.fillStyle = ast.type === "FROST" ? "rgba(186, 230, 253, 0.65)" : "rgba(255, 255, 255, 0.5)";
+        ctx.strokeStyle = plaqueBorder;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.arc(px + 4, py + 4, 1.8, 0, Math.PI * 2);
-        ctx.arc(px + plaqueW - 4, py + 4, 1.8, 0, Math.PI * 2);
-        ctx.arc(px + 4, py + plaqueH - 4, 1.8, 0, Math.PI * 2);
-        ctx.arc(px + plaqueW - 4, py + plaqueH - 4, 1.8, 0, Math.PI * 2);
+        ctx.roundRect(bx + 3, by + 3, sealTileW, sealTileH, 4);
         ctx.fill();
+        ctx.stroke();
 
-        // Target Tag badge
-        if (isTarget) {
-          ctx.fillStyle = "#fbbf24";
-          ctx.font = "bold 9px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("✦ TRẢM ✦", px + plaqueW / 2, py - 4);
-        }
+        ctx.fillStyle = plaqueBorder;
+        ctx.font = "bold 15px 'Noto Serif', serif";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        ctx.fillText(sealLeft, bx + 3 + sealTileW / 2, by + boxH / 2);
 
-        // Draw Individual Letter Cells
-        const cellsStartX = px + (plaqueW - totalCellsWidth) / 2;
-        const cellsY = py + 6;
+        // Right Seal Tile Box [ 魄 ]
+        ctx.beginPath();
+        ctx.roundRect(bx + boxW - 3 - sealTileW, by + 3, sealTileW, sealTileH, 4);
+        ctx.fill();
+        ctx.stroke();
 
-        for (let i = 0; i < wordLen; i++) {
+        ctx.fillText(sealRight, bx + boxW - 3 - sealTileW / 2, by + boxH / 2);
+
+        // Inner Word Characters (Serif / Crisp Cultivation Typography)
+        const textStartX = bx + (boxW - textWidth) / 2 + charSpacing / 2;
+        const textY = by + boxH / 2;
+
+        for (let i = 0; i < charCount; i++) {
           const char = ast.word[i];
-          const cx = cellsStartX + i * (cellW + cellGap);
-          const cy = cellsY;
+          const cx = textStartX + i * charSpacing;
 
           const isCharTyped = i < ast.typed.length;
           const isNextTarget = i === ast.typed.length;
 
           if (isCharTyped) {
-            // State: Typed (Emerald Green)
-            ctx.fillStyle = "rgba(34, 197, 94, 0.35)";
-            ctx.strokeStyle = "#4ade80";
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.roundRect(cx, cy, cellW, cellH, 4);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = "#4ade80";
-            ctx.font = "bold 15px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, cx + cellW / 2, cy + cellH / 2);
-
-            // Subtle check dot
-            ctx.fillStyle = "#86efac";
-            ctx.beginPath();
-            ctx.arc(cx + cellW - 4, cy + 4, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-
+            // Typed: Glowing Emerald/Theme color
+            ctx.fillStyle = typedColor;
+            ctx.font = "bold 17px 'Cinzel', 'Times New Roman', Georgia, serif";
+            ctx.fillText(char, cx, textY);
           } else if (isNextTarget) {
-            // State: Next Target Letter (Pulsing Gold with Bouncing Caret)
-            ctx.save();
-            ctx.fillStyle = "rgba(245, 158, 11, 0.45)";
-            ctx.strokeStyle = "#fbbf24";
-            ctx.lineWidth = 2;
-            ctx.shadowColor = "#fbbf24";
-            ctx.shadowBlur = 10;
+            // Next Target: Highlighted with amber background and bouncing caret
+            ctx.fillStyle = nextBg;
             ctx.beginPath();
-            ctx.roundRect(cx, cy, cellW, cellH, 4);
+            ctx.roundRect(cx - 10, by + 4, 20, boxH - 8, 3);
             ctx.fill();
+
+            ctx.strokeStyle = nextBorder;
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            ctx.fillStyle = "#fffbeb";
-            ctx.font = "bold 17px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, cx + cellW / 2, cy + cellH / 2);
+            ctx.fillStyle = "#b45309";
+            ctx.font = "bold 18px 'Cinzel', 'Times New Roman', Georgia, serif";
+            ctx.fillText(char, cx, textY);
 
             // Bouncing Caret
-            const caretBounce = Math.sin(time * 8) * 3;
-            ctx.fillStyle = "#fbbf24";
+            const bounce = Math.sin(time * 8) * 3;
+            ctx.fillStyle = "#d97706";
             ctx.beginPath();
-            const caretX = cx + cellW / 2;
-            const caretY = cy - 3 + caretBounce;
-            ctx.moveTo(caretX - 4, caretY - 4);
-            ctx.lineTo(caretX + 4, caretY - 4);
-            ctx.lineTo(caretX, caretY);
+            ctx.moveTo(cx - 4, by - 2 + bounce);
+            ctx.lineTo(cx + 4, by - 2 + bounce);
+            ctx.lineTo(cx, by + 2 + bounce);
             ctx.closePath();
             ctx.fill();
-            ctx.restore();
-
           } else {
-            // State: Untyped (Translucent Dark)
-            ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(cx, cy, cellW, cellH, 4);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = "#cbd5e1";
-            ctx.font = "bold 14px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, cx + cellW / 2, cy + cellH / 2);
+            // Untyped: Clean dark text
+            ctx.fillStyle = plaqueText;
+            ctx.font = "bold 17px 'Cinzel', 'Times New Roman', Georgia, serif";
+            ctx.fillText(char, cx, textY);
           }
         }
-
-        // Subtext Divider
-        ctx.strokeStyle = "rgba(196, 165, 87, 0.25)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(px + 8, py + cellH + 9);
-        ctx.lineTo(px + plaqueW - 8, py + cellH + 9);
-        ctx.stroke();
-
-        // Subtext (IPA & Vietnamese Meaning)
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";
-
-        const subY = py + cellH + 20;
-        const subDisplay = `${ast.ipa || ""} • ${ast.meaning || ""}`;
-
-        ctx.fillStyle = "#fef08a";
-        ctx.font = "11px sans-serif";
-        ctx.fillText(subDisplay, px + plaqueW / 2, subY);
 
         ctx.restore();
       });
 
-      // 9. DRAW PROJECTILES (AUTHENTIC FLYING SWORDS & BARRAGES)
+      // 8. DRAW PROJECTILES (AUTHENTIC FLYING SWORDS & BARRAGES)
       projectiles.forEach(p => {
         ctx.save();
         const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
@@ -783,14 +921,12 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
           ctx.shadowColor = "#d97706";
           ctx.shadowBlur = 26;
 
-          // Dragon Head
           ctx.fillStyle = "#fef08a";
           ctx.beginPath();
           ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
-          // Sinuous dragon trail
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           p.trail.forEach((pt, idx) => {
@@ -803,7 +939,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
         ctx.restore();
       });
 
-      // 10. DRAW PARTICLES & SPECIAL IMPACT SPRITES
+      // 9. DRAW PARTICLES & IMPACT EFFECTS
       particles.forEach(pt => {
         ctx.save();
         ctx.globalAlpha = Math.max(0, pt.alpha);
@@ -827,7 +963,6 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
             ctx.drawImage(slashImg, pt.x - sz / 2, pt.y - sz / 2, sz, sz);
           }
         } else {
-          // Standard sparks / elemental motes
           ctx.fillStyle = pt.color;
           ctx.shadowColor = pt.color;
           ctx.shadowBlur = 8;
@@ -839,35 +974,43 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
         ctx.restore();
       });
 
-      // 11. DRAW FLOATING COMBAT TEXT
+      // 10. DRAW FLOATING COMBAT TEXT & TRIUMPHANT IPA FLASHCARDS
       floatingTexts.forEach(ft => {
         ctx.save();
         ctx.globalAlpha = Math.max(0, ft.alpha);
 
         if (ft.type === "ipa_card") {
-          // Xianxia IPA Card
-          const cardW = 210;
-          const cardH = 52;
-          ctx.fillStyle = "rgba(20, 14, 8, 0.95)";
-          ctx.strokeStyle = "#ffdf79";
-          ctx.lineWidth = 1.8;
-          ctx.shadowColor = "#ffdf79";
-          ctx.shadowBlur = 14;
+          // TRIUMPHANT XIANXIA IPA FLASHCARD (Only shown upon slaying word!)
+          const cardW = 230;
+          const cardH = 54;
+          ctx.fillStyle = "rgba(10, 31, 19, 0.96)";
+          ctx.strokeStyle = "#ca8a04";
+          ctx.lineWidth = 2;
+          ctx.shadowColor = "#fbbf24";
+          ctx.shadowBlur = 16;
 
           ctx.beginPath();
           ctx.roundRect(ft.x - cardW / 2, ft.y - cardH / 2, cardW, cardH, 8);
           ctx.fill();
           ctx.stroke();
 
+          // Header Seal dot
+          ctx.fillStyle = "#fbbf24";
+          ctx.beginPath();
+          ctx.arc(ft.x - cardW / 2 + 10, ft.y, 3, 0, Math.PI * 2);
+          ctx.arc(ft.x + cardW / 2 - 10, ft.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+
           ctx.fillStyle = "#ffdf79";
-          ctx.font = "bold 13px serif";
+          ctx.font = "bold 14px serif";
           ctx.textAlign = "center";
-          ctx.fillText(ft.text, ft.x, ft.y - 7);
+          ctx.textBaseline = "middle";
+          ctx.fillText(ft.text, ft.x, ft.y - 9);
 
           if (ft.subtext) {
-            ctx.fillStyle = "#98b06f";
-            ctx.font = "italic 11px sans-serif";
-            ctx.fillText(ft.subtext, ft.x, ft.y + 13);
+            ctx.fillStyle = "#6ee7b7";
+            ctx.font = "italic 11.5px sans-serif";
+            ctx.fillText(ft.subtext, ft.x, ft.y + 11);
           }
         } else {
           // Combo & Score
@@ -890,7 +1033,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [asteroids, projectiles, particles, floatingTexts, currentRealmIdx, catState, activeTargetId, activeTalents, imagesLoaded]);
+  }, [asteroids, projectiles, particles, floatingTexts, currentRealmIdx, catState, activeTargetId, activeTalents, screenShake, imagesLoaded]);
 
   return (
     <div 
