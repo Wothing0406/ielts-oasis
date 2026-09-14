@@ -23,6 +23,8 @@ static/*.jpg
 static/*.png
 static/*.mp3
 data/
+!frontend/data/
+!frontend/data/**
 yolov8n.pt
 tokenbot.txt
 backend/services/dictionary.db
