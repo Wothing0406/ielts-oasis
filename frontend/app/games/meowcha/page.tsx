@@ -219,57 +219,114 @@ export default function MeowchaGamePage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#050b07] text-[#f9f5e8] flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-[#0d140e] text-[#f9f5e8] flex flex-col font-sans select-none overflow-hidden">
       
       {/* ===================================================================== */}
-      {/* 1. TOP HEADER & BRAND BAR */}
+      {/* 1. MASTER XIANXIA RIBBON BAR (CỔ PHONG TIÊN ĐẠO - TIẾT KIỆM KHÔNG GIAN) */}
       {/* ===================================================================== */}
-      <header className="w-full bg-[#08160e] border-b border-[#1b432a] px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-3 shadow-md z-30 sticky top-0">
+      <header className="w-full bg-[#1a100a] border-b-2 border-[#5A4010] px-3 sm:px-5 py-1.5 flex items-center justify-between shadow-xl z-30 sticky top-0 shrink-0">
         
-        {/* Brand & Back Button */}
-        <div className="flex items-center gap-3">
+        {/* Left: Brand & Back to Games Hub */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/games"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0c2417] hover:bg-[#133521] text-[#ffdf79] rounded-lg border border-[#ca8a04]/50 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#281a11] hover:bg-[#3b2719] text-[#ffdf79] rounded border border-[#5A4010] text-xs font-bold transition-all active:scale-95 cursor-pointer shadow"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Games Hub</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Games Hub</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-bold text-sm sm:text-base text-[#ffdf79] tracking-wider drop-shadow">
-              MEOW-CHA: VẠN KIẾM QUY TÔNG
+          <div className="flex items-center gap-1.5">
+            <span className="font-serif font-bold text-xs sm:text-sm text-[#ffdf79] tracking-wider drop-shadow truncate max-w-[200px] sm:max-w-none">
+              🍵 MEOW-CHA: VẠN KIẾM QUY TÔNG
             </span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          
-          {/* Refresh Client Button */}
+        {/* Center: Ancient Seal Navigation Tabs */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={() => setActiveTab("arena")}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "arena"
+                ? "bg-[#b5372d] text-[#ffdf79] border border-[#ca8a04] shadow-[0_0_10px_rgba(181,55,45,0.6)]"
+                : "bg-[#281a11] text-[#d8ccb0] hover:text-[#ffdf79] border border-[#5A4010]"
+            }`}
+          >
+            <Swords className="w-3.5 h-3.5 text-[#ffdf79]" />
+            <span>Độ Kiếp Đài</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("leaderboard");
+              fetchLeaderboard();
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "leaderboard"
+                ? "bg-[#b5372d] text-[#ffdf79] border border-[#ca8a04] shadow-[0_0_10px_rgba(181,55,45,0.6)]"
+                : "bg-[#281a11] text-[#d8ccb0] hover:text-[#ffdf79] border border-[#5A4010]"
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-[#ffdf79]" />
+            <span>Phong Thần</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("saves");
+              fetchSaveSlots();
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "saves"
+                ? "bg-[#b5372d] text-[#ffdf79] border border-[#ca8a04] shadow-[0_0_10px_rgba(181,55,45,0.6)]"
+                : "bg-[#281a11] text-[#d8ccb0] hover:text-[#ffdf79] border border-[#5A4010]"
+            }`}
+          >
+            <Save className="w-3.5 h-3.5 text-[#34d399]" />
+            <span className="hidden sm:inline">Ngọc Giản</span> [Lưu]
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("vocab");
+              fetchVocabList();
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+              activeTab === "vocab"
+                ? "bg-[#b5372d] text-[#ffdf79] border border-[#ca8a04] shadow-[0_0_10px_rgba(181,55,45,0.6)]"
+                : "bg-[#281a11] text-[#d8ccb0] hover:text-[#ffdf79] border border-[#5A4010]"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[#60a5fa]" />
+            <span className="hidden sm:inline">Đạo Tạng</span> [Từ]
+          </button>
+        </div>
+
+        {/* Right: Quick Controls */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={reloadGameClient}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 bg-[#0c2417] hover:bg-[#133521] text-[#a7f3d0] rounded-lg border border-[#1b432a] text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+            className="p-1 px-2 bg-[#281a11] hover:bg-[#3b2719] text-[#d8ccb0] hover:text-[#ffdf79] rounded border border-[#5A4010] text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
             title="Làm mới trận địa"
           >
             <RefreshCw className="w-3.5 h-3.5 text-[#ffdf79]" />
-            <span className="hidden sm:inline">Khởi Động Lại</span>
+            <span className="hidden md:inline">Khởi Động</span>
           </button>
 
-          {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 bg-[#0c2417] hover:bg-[#133521] text-[#ffdf79] rounded-lg border border-[#ca8a04]/50 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+            className="p-1 px-2 bg-[#281a11] hover:bg-[#3b2719] text-[#ffdf79] rounded border border-[#5A4010] text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
             title="Bật/Tắt Toàn Màn Hình"
           >
             {isFullscreen ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 text-[#ffdf79]" />
-                <span className="hidden sm:inline">Thu Nhỏ</span>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Thu Nhỏ</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-3.5 h-3.5 text-[#ffdf79]" />
-                <span className="hidden sm:inline">Toàn Màn Hình</span>
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Toàn Màn</span>
               </>
             )}
           </button>
@@ -277,90 +334,18 @@ export default function MeowchaGamePage() {
       </header>
 
       {/* ===================================================================== */}
-      {/* 2. SUB NAVIGATION TABS BAR */}
-      {/* ===================================================================== */}
-      <div className="w-full bg-[#07130c] border-b border-[#1b432a] px-3 py-1.5 flex items-center justify-center">
-        <div className="flex items-center gap-1.5 sm:gap-3 bg-[#0a1f13] p-1 rounded-xl border border-[#1b432a] max-w-2xl w-full justify-between sm:justify-center">
-          
-          {/* Tab 1: Trận Địa */}
-          <button
-            onClick={() => setActiveTab("arena")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "arena"
-                ? "bg-[#15803d] text-[#ffdf79] border border-[#ca8a04]/60 shadow-[0_0_12px_#15803d]"
-                : "text-[#a7f3d0] hover:text-[#ffdf79] hover:bg-[#0c2417]"
-            }`}
-          >
-            <Swords className="w-4 h-4 text-[#ffdf79]" />
-            <span>Độ Kiếp Đài</span>
-          </button>
-
-          {/* Tab 2: Bảng Phong Thần */}
-          <button
-            onClick={() => {
-              setActiveTab("leaderboard");
-              fetchLeaderboard();
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "leaderboard"
-                ? "bg-[#15803d] text-[#ffdf79] border border-[#ca8a04]/60 shadow-[0_0_12px_#15803d]"
-                : "text-[#a7f3d0] hover:text-[#ffdf79] hover:bg-[#0c2417]"
-            }`}
-          >
-            <Trophy className="w-4 h-4 text-[#ffdf79]" />
-            <span>Phong Thần Bảng</span>
-          </button>
-
-          {/* Tab 3: Ngọc Giản Save Slots */}
-          <button
-            onClick={() => {
-              setActiveTab("saves");
-              fetchSaveSlots();
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "saves"
-                ? "bg-[#15803d] text-[#ffdf79] border border-[#ca8a04]/60 shadow-[0_0_12px_#15803d]"
-                : "text-[#a7f3d0] hover:text-[#ffdf79] hover:bg-[#0c2417]"
-            }`}
-          >
-            <Save className="w-4 h-4 text-[#34d399]" />
-            <span>Ngọc Giản (Saves)</span>
-          </button>
-
-          {/* Tab 4: Đạo Tạng IELTS Vocab */}
-          <button
-            onClick={() => {
-              setActiveTab("vocab");
-              fetchVocabList();
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "vocab"
-                ? "bg-[#15803d] text-[#ffdf79] border border-[#ca8a04]/60 shadow-[0_0_12px_#15803d]"
-                : "text-[#a7f3d0] hover:text-[#ffdf79] hover:bg-[#0c2417]"
-            }`}
-          >
-            <BookOpen className="w-4 h-4 text-[#60a5fa]" />
-            <span>Đạo Tạng (Oxford)</span>
-          </button>
-
-        </div>
-      </div>
-
-      {/* ===================================================================== */}
-      {/* 3. TAB 1: ĐỘ KIẾP ĐÀI (MASTER CANVAS GAME ARENA VIEWPORT) */}
+      {/* 2. TAB 1: ĐỘ KIẾP ĐÀI (FULL VIEWPORT ARENA - KHÔNG CHE KHUẤT NHÂN VẬT) */}
       {/* ===================================================================== */}
       {activeTab === "arena" && (
-        <main className="flex-1 w-full flex flex-col items-center justify-center p-0 md:p-2 bg-[#050b07]" id="meowcha-frame-container">
-          <div className="w-full max-w-6xl h-[calc(100vh-105px)] min-h-[640px] max-h-[920px] bg-black rounded-none md:rounded-2xl overflow-hidden border-0 md:border-2 border-[#1b432a] shadow-[0_0_35px_rgba(0,0,0,0.95)] relative flex flex-col">
-            <iframe
-              ref={gameIframeRef}
-              id="meowcha-master-frame"
-              src={`/meowcha/index.html?embedded=true&v=${gameKey}`}
-              className="w-full h-full border-0 block"
-              allow="autoplay; fullscreen"
-              title="Meow-Cha: Vạn Kiếm Quy Tông Master Engine"
-            />
-          </div>
+        <main className="flex-1 w-full h-[calc(100vh-42px)] bg-[#0d140e] flex flex-col items-center justify-center p-0 m-0 overflow-hidden" id="meowcha-frame-container">
+          <iframe
+            ref={gameIframeRef}
+            id="meowcha-master-frame"
+            src={`/meowcha/index.html?embedded=true&v=${gameKey}`}
+            className="w-full h-full border-0 block"
+            allow="autoplay; fullscreen"
+            title="Meow-Cha: Vạn Kiếm Quy Tông Master Engine"
+          />
         </main>
       )}
 
