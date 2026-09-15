@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@300;400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap&subset=vietnamese');
 
 @import "tailwindcss";
 
@@ -10,6 +10,8 @@
 
   --font-display: "Lexend", sans-serif;
   --font-sans: "Quicksand", sans-serif;
+  --font-serif: "Noto Serif", "Be Vietnam Pro", serif;
+  --font-daoist: "Cinzel", "Noto Serif", serif;
 
   --radius-large: 3rem;
   --radius-medium: 2rem;

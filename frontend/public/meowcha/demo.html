@@ -719,7 +719,7 @@
   <!-- ======================================================================= -->
   <!-- 1. THANH TIÊU ĐỀ & TRẠNG THÁI GỌN GÀNG (CLEAN RESPONSIVE HEADER) -->
   <!-- ======================================================================= -->
-  <header class="w-full bg-[#281a11] border-b-4 border-[#3b2719] shadow-[0_6px_0_#1a100a] sticky top-0 z-40">
+  <header id="lobbyHeader" class="w-full bg-[#281a11] border-b-4 border-[#3b2719] shadow-[0_6px_0_#1a100a] sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
       
       <!-- Brand & Tông Môn -->
@@ -1844,6 +1844,7 @@
       showPantheon = false;
       setCatSpeech("Đan điền chấn động... nguyên khí cạn kiệt...", 3500);
       playSound("hurt");
+      submitScoreToBackend();
       // Tự động lưu tiến trình tu vi vào slot hiện tại
       saveToSlot(activeSaveSlot, false);
     }
@@ -1868,6 +1869,7 @@
       updateSceneViews();
       playSound("chime");
       setCatSpeech("Hồi hương trà viện... Tịnh dưỡng đan điền chuẩn bị độ kiếp tiếp theo!", 3000);
+      submitScoreToBackend();
       statusBar.innerHTML = "[ TRÙNG SINH ] Đã hồi hương Sảnh Chờ! Toàn bộ Đạo Quả và Cảnh Giới đã được lưu giữ an toàn.";
     }
 
@@ -5215,6 +5217,7 @@
         setCatSpeech("Đã lưu Đạo Quả vào File " + slotId + "!", 2000);
       }
       statusBar.innerHTML = "[ THÀNH CÔNG ] Đạo Quả đã được khắc ghi vào File " + slotId + " (" + dateStr + ")!";
+      syncSaveSlotToBackend(slotId);
     }
 
     function loadFromSlot(slotId) {
@@ -5326,6 +5329,187 @@
       playSound("chime");
     };
 
+
+    // =========================================================================
+    // 14. ĐỒNG BỘ BACKEND API (TOP PHONG THẦN, NGỌC GIẢN 3 SLOTS, ĐẠO TẠNG OXFORD)
+    // =========================================================================
+    function submitScoreToBackend(pName) {
+      if (cultivationScore <= 0) return;
+      const playerName = pName || localStorage.getItem("meowcha_player_name") || "Tiểu Miêu Kiếm Sĩ";
+      const durationMin = Math.max(0.5, (Date.now() - (startTime || Date.now())) / 60000);
+      const calculatedWpm = Math.round(wordsSlainCount / durationMin);
+      const accuracyVal = totalKeystrokes > 0 ? Math.min(100, Math.round((correctKeystrokes / totalKeystrokes) * 1000) / 10) : 100;
+
+      const payload = {
+        player_name: playerName,
+        score: cultivationScore,
+        words_slain: wordsSlainCount,
+        realm: currentRealm,
+        accuracy: accuracyVal,
+        wpm: calculatedWpm
+      };
+
+      fetch('/api/meowcha/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).then(res => {
+        console.log("[Meowcha] Ghi danh Phong Thần Bảng:", res);
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'MEOWCHA_SCORE_SUBMITTED', data: payload }, '*');
+        }
+      }).catch(err => {
+        console.warn("[Meowcha] Lỗi gửi điểm Bảng Phong Thần:", err);
+      });
+    }
+
+    // Gửi dữ liệu lưu trữ lên SQL Database
+    function syncSaveSlotToBackend(slotId) {
+      try {
+        const payload = {
+          slot_name: "FILE " + slotId + " - " + currentRealm,
+          realm: currentRealm,
+          realm_idx: currentRealmIdx,
+          title: currentTitle,
+          hp: playerHP,
+          max_hp: playerMaxHP,
+          score: cultivationScore,
+          words_slain: wordsSlainCount,
+          band_idx: currentRealmIdx,
+          talents: Object.assign({}, playerTalents)
+        };
+
+        fetch('/api/meowcha/saves/' + slotId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(r => r.json()).then(res => {
+          console.log("[Meowcha] Đã đồng bộ Save Slot " + slotId + " lên SQL:", res);
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'MEOWCHA_SAVE_UPDATED', slotId: slotId }, '*');
+          }
+        }).catch(err => console.warn("[Meowcha] Lỗi sync save slot:", err));
+      } catch (e) {
+        console.warn("[Meowcha] Ngoại lệ lưu slot:", e);
+      }
+    }
+
+    // Tải và nạp dữ liệu Oxford 5000 + Save Slots khi khởi động
+    function initBackendDataSync() {
+      // Nạp từ vựng Oxford 5000
+      fetch('/api/meowcha/vocab?limit=250')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const seen = new Set(WORD_DECK.map(w => (typeof w === 'string' ? w : w.word).toUpperCase()));
+            res.data.forEach(item => {
+              const w = (item.word || '').toUpperCase().trim();
+              if (w && !seen.has(w) && w.length >= 3 && w.length <= 11) {
+                seen.add(w);
+                WORD_DECK.push({
+                  word: w,
+                  meaning: item.meaning || '',
+                  ipa: item.ipa || '',
+                  band: item.band_level || 0,
+                  type: item.asteroid_type || 'FROST'
+                });
+              }
+            });
+            console.log("[Meowcha] Đã kết nối Đạo Tạng Oxford: tổng " + WORD_DECK.length + " từ!");
+          }
+        })
+        .catch(e => console.warn("[Meowcha] Sử dụng kho từ vựng nội bộ:", e));
+
+      // Nạp các cuộn trục lưu file từ SQL
+      fetch('/api/meowcha/saves')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            const localSlots = getSaveSlotsFromStorage();
+            for (let s = 1; s <= 3; s++) {
+              const remote = res.data[s];
+              if (remote && remote.is_occupied) {
+                localSlots[s] = {
+                  slotId: s,
+                  slotName: remote.slot_name,
+                  isOccupied: true,
+                  dateStr: remote.updated_at,
+                  realm: remote.realm,
+                  realmIdx: remote.realm_idx,
+                  title: remote.title,
+                  hp: remote.hp,
+                  maxHp: remote.max_hp,
+                  score: remote.score,
+                  words: remote.words_slain,
+                  talents: remote.talents || {}
+                };
+              }
+            }
+            writeSaveSlotsToStorage(localSlots);
+            renderSaveSlotsModalUI();
+            updateLobbyStatsDOM();
+            console.log("[Meowcha] Đã đồng bộ 3 Ngọc Giản từ SQL Database!");
+          }
+        })
+        .catch(e => console.warn("[Meowcha] Dùng bộ nhớ cục bộ:", e));
+    }
+
+    // Lắng nghe lệnh từ trang Next.js cha (/games/meowcha)
+    window.addEventListener("message", (event) => {
+      if (!event.data) return;
+      if (event.data.type === "MEOWCHA_LOAD_SLOT") {
+        const slot = event.data.data;
+        if (slot) {
+          activeSaveSlot = slot.slot_id || 1;
+          playerHP = slot.hp || 50;
+          playerMaxHP = slot.max_hp || 50;
+          cultivationScore = slot.score || 0;
+          wordsSlainCount = slot.words_slain || 0;
+          currentRealmIdx = slot.realm_idx || 0;
+          currentRealm = slot.realm || CULTIVATION_REALMS[0].name;
+          currentTitle = slot.title || CULTIVATION_REALMS[0].title;
+          if (slot.talents) Object.assign(playerTalents, slot.talents);
+          currentScene = "BATTLE";
+          isPaused = false;
+          showGameOver = false;
+          showPantheon = false;
+          updateSceneViews();
+          updateBattleHUD();
+          if (!currentTarget) spawnNewWord();
+          playSound("breakthrough");
+          setCatSpeech("Đã nạp Đạo Quả " + currentRealm + "! Sẵn sàng nghênh chiến!", 3000);
+          statusBar.innerHTML = "[ THÀNH CÔNG ] Đã nạp thành công Đạo Quả: " + currentRealm + " (" + cultivationScore + " tu vi)!";
+        }
+      } else if (event.data.type === "MEOWCHA_RELOAD") {
+        window.location.reload();
+      }
+    });
+
+    // Chế độ nhúng vào Next.js page (hide duplicate header, full viewport height)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEmbeddedMode = urlParams.get("embedded") === "true" || window.parent !== window;
+    if (isEmbeddedMode) {
+      document.documentElement.classList.add("is-embedded");
+      document.body.classList.add("is-embedded");
+      const embeddedStyle = document.createElement("style");
+      embeddedStyle.innerHTML = `
+        body.is-embedded header#lobbyHeader,
+        body.is-embedded footer {
+          display: none !important;
+        }
+        body.is-embedded #lobbyView {
+          min-h: 100% !important;
+          padding-top: 8px !important;
+          padding-bottom: 8px !important;
+        }
+        body.is-embedded main {
+          padding-top: 4px !important;
+          padding-bottom: 8px !important;
+        }
+      `;
+      document.head.appendChild(embeddedStyle);
+    }
+
 // Bộ điều khiển bàn phím chuẩn được quản trị tại Mục 5 (Keyboard Controller)
 
     // Màn hình khởi tạo loading khi mở trang lần đầu
@@ -5333,6 +5517,7 @@
       showLoadingScreen("MEOW-CHA: VẠN KIẾM QUY TÔNG", 800, () => {
         updateSceneViews();
         selectIeltsBand(0);
+        initBackendDataSync();
       });
     });
   </script>

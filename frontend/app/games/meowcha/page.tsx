@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, Maximize2, Minimize2, Sparkles, Database, Shield, 
   Trophy, BookOpen, Save, RefreshCw, Volume2, Search, Swords, 
-  ChevronRight, Flame, Zap, Award, CheckCircle2, Play
+  ChevronRight, Flame, Zap, Award, CheckCircle2, Play, Trash2
 } from "lucide-react";
-import { MeowchaGame } from "@/components/meowcha/MeowchaGame";
 
 interface LeaderboardItem {
   id: number;
@@ -52,6 +51,7 @@ export default function MeowchaGamePage() {
   const [activeTab, setActiveTab] = useState<"arena" | "leaderboard" | "saves" | "vocab">("arena");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
@@ -68,14 +68,33 @@ export default function MeowchaGamePage() {
   const [loadingVocab, setLoadingVocab] = useState(false);
   const [gameKey, setGameKey] = useState(0);
 
+  const gameIframeRef = useRef<HTMLIFrameElement | null>(null);
+
   useEffect(() => {
     setMounted(true);
     fetchLeaderboard();
     fetchSaveSlots();
     fetchVocabList();
+
+    // Lắng nghe tín hiệu đồng bộ từ Master Game Engine qua window.postMessage
+    const handleGameMessage = (event: MessageEvent) => {
+      if (!event.data) return;
+      if (event.data.type === "MEOWCHA_SCORE_SUBMITTED") {
+        fetchLeaderboard();
+        setToastMsg(`Chiến tích ${event.data.data?.score || 0} pts đã được ghi danh vào Bảng Phong Thần!`);
+        setTimeout(() => setToastMsg(null), 3500);
+      } else if (event.data.type === "MEOWCHA_SAVE_UPDATED") {
+        fetchSaveSlots();
+        setToastMsg(`Đạo Quả File ${event.data.slotId || 1} đã được khắc ghi vào Ngọc Giản!`);
+        setTimeout(() => setToastMsg(null), 3500);
+      }
+    };
+
+    window.addEventListener("message", handleGameMessage);
+    return () => window.removeEventListener("message", handleGameMessage);
   }, []);
 
-  // 1. Fetch Leaderboard from API
+  // 1. Fetch Leaderboard from Backend SQL
   const fetchLeaderboard = async () => {
     setLoadingLeaderboard(true);
     try {
@@ -93,7 +112,7 @@ export default function MeowchaGamePage() {
     }
   };
 
-  // 2. Fetch Save Slots from API
+  // 2. Fetch Save Slots from Backend SQL
   const fetchSaveSlots = async () => {
     setLoadingSaves(true);
     try {
@@ -111,11 +130,11 @@ export default function MeowchaGamePage() {
     }
   };
 
-  // 3. Fetch Vocab Vault from API
+  // 3. Fetch Oxford Vocab Vault from Backend API
   const fetchVocabList = async () => {
     setLoadingVocab(true);
     try {
-      const res = await fetch("/api/meowcha/vocab?limit=100");
+      const res = await fetch("/api/meowcha/vocab?limit=150");
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
@@ -155,6 +174,37 @@ export default function MeowchaGamePage() {
 
   const reloadGameClient = () => {
     setGameKey(k => k + 1);
+    if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
+      gameIframeRef.current.contentWindow.postMessage({ type: "MEOWCHA_RELOAD" }, "*");
+    }
+  };
+
+  const handleLoadSlotIntoGame = (slot: SaveSlotItem) => {
+    setActiveTab("arena");
+    setToastMsg(`Đang nạp Đạo Quả File ${slot.slot_id} (${slot.realm}) vào trận chiến...`);
+    setTimeout(() => {
+      if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
+        gameIframeRef.current.contentWindow.postMessage({
+          type: "MEOWCHA_LOAD_SLOT",
+          data: slot
+        }, "*");
+      }
+      setTimeout(() => setToastMsg(null), 3000);
+    }, 350);
+  };
+
+  const handleDeleteSlot = async (slotId: number) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa Đạo Quả lưu trữ tại File ${slotId}?`)) return;
+    try {
+      const res = await fetch(`/api/meowcha/saves/${slotId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchSaveSlots();
+        setToastMsg(`Đã hoàn nguyên File ${slotId} về trạng thái trống!`);
+        setTimeout(() => setToastMsg(null), 3000);
+      }
+    } catch (e) {
+      console.warn("Xóa file thất bại:", e);
+    }
   };
 
   // Filtered Vocab
@@ -192,7 +242,7 @@ export default function MeowchaGamePage() {
           </div>
         </div>
 
-        {/* Action Buttons & Tabs */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           
           {/* Refresh Client Button */}
@@ -229,7 +279,7 @@ export default function MeowchaGamePage() {
       {/* ===================================================================== */}
       {/* 2. SUB NAVIGATION TABS BAR */}
       {/* ===================================================================== */}
-      <div className="w-full bg-[#07130c] border-b border-[#1b432a] px-3 py-1 flex items-center justify-center">
+      <div className="w-full bg-[#07130c] border-b border-[#1b432a] px-3 py-1.5 flex items-center justify-center">
         <div className="flex items-center gap-1.5 sm:gap-3 bg-[#0a1f13] p-1 rounded-xl border border-[#1b432a] max-w-2xl w-full justify-between sm:justify-center">
           
           {/* Tab 1: Trận Địa */}
@@ -297,12 +347,19 @@ export default function MeowchaGamePage() {
       </div>
 
       {/* ===================================================================== */}
-      {/* 3. TAB 1: ĐỘ KIẾP ĐÀI (GAME ARENA VIEWPORT) */}
+      {/* 3. TAB 1: ĐỘ KIẾP ĐÀI (MASTER CANVAS GAME ARENA VIEWPORT) */}
       {/* ===================================================================== */}
       {activeTab === "arena" && (
-        <main className="flex-1 w-full flex flex-col items-center justify-center p-0 md:p-2" id="meowcha-frame-container">
-          <div className="w-full max-w-5xl h-[calc(100vh-100px)] md:h-[820px] bg-black rounded-none md:rounded-2xl overflow-hidden border-0 md:border-2 border-[#1b432a] shadow-2xl relative flex flex-col">
-            <MeowchaGame key={gameKey} />
+        <main className="flex-1 w-full flex flex-col items-center justify-center p-0 md:p-2 bg-[#050b07]" id="meowcha-frame-container">
+          <div className="w-full max-w-6xl h-[calc(100vh-105px)] min-h-[640px] max-h-[920px] bg-black rounded-none md:rounded-2xl overflow-hidden border-0 md:border-2 border-[#1b432a] shadow-[0_0_35px_rgba(0,0,0,0.95)] relative flex flex-col">
+            <iframe
+              ref={gameIframeRef}
+              id="meowcha-master-frame"
+              src={`/meowcha/index.html?embedded=true&v=${gameKey}`}
+              className="w-full h-full border-0 block"
+              allow="autoplay; fullscreen"
+              title="Meow-Cha: Vạn Kiếm Quy Tông Master Engine"
+            />
           </div>
         </main>
       )}
@@ -314,7 +371,7 @@ export default function MeowchaGamePage() {
         <main className="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-[#1b432a] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#ffdf79] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#ffdf79] flex items-center justify-center shadow">
                 <Trophy className="w-5 h-5 text-[#ffdf79]" />
               </div>
               <div>
@@ -329,7 +386,7 @@ export default function MeowchaGamePage() {
             <button
               onClick={fetchLeaderboard}
               disabled={loadingLeaderboard}
-              className="px-3 py-1.5 bg-[#0d2618] hover:bg-[#1b432a] text-[#ffdf79] rounded-lg border border-[#22543d] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3 py-1.5 bg-[#0d2618] hover:bg-[#1b432a] text-[#ffdf79] rounded-lg border border-[#22543d] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingLeaderboard ? "animate-spin" : ""}`} />
               <span>Cập Nhật</span>
@@ -346,55 +403,61 @@ export default function MeowchaGamePage() {
               <span className="col-span-2 text-right">Kiếm Tốc</span>
             </div>
 
-            <div className="divide-y divide-[#2a1b10]">
-              {leaderboard.map((item, idx) => (
-                <div
-                  key={item.id || idx}
-                  className={`grid grid-cols-12 px-4 py-3 items-center text-xs transition-colors hover:bg-[#0d2618]/80 ${
-                    idx === 0
-                      ? "bg-[#1b432a]/40 text-[#ffdf79]"
-                      : idx === 1
-                      ? "bg-[#0d2618]/30 text-[#e2e8f0]"
-                      : idx === 2
-                      ? "bg-[#0d2618]/20 text-[#fed7aa]"
-                      : "text-[#e2e8f0]"
-                  }`}
-                >
-                  {/* Hạng */}
-                  <span className="col-span-1 text-center font-mono font-bold text-sm">
-                    {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
-                  </span>
-
-                  {/* Tên */}
-                  <div className="col-span-4 flex items-center gap-2">
-                    <span className="font-serif font-bold text-sm text-[#f9f5e8] truncate">
-                      {item.player_name}
-                    </span>
-                    {idx === 0 && (
-                      <span className="hidden sm:inline px-1.5 py-0.2 bg-[#ffdf79] text-[#0a1f13] font-mono text-[9px] rounded font-bold">
-                        TOP 1
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Cảnh giới */}
-                  <div className="col-span-3 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 bg-[#0d2618] rounded border border-[#22543d] font-serif text-[11px] text-[#98b06f]">
-                      {item.realm || "Luyện Khí Kỳ"}
-                    </span>
-                  </div>
-
-                  {/* Điểm Tu Vi */}
-                  <span className="col-span-2 text-right font-mono font-bold text-[#ffdf79] text-sm">
-                    {item.score.toLocaleString()} pts
-                  </span>
-
-                  {/* Kiếm Tốc / WPM */}
-                  <span className="col-span-2 text-right font-mono text-[#98b06f]">
-                    {item.wpm} WPM
-                  </span>
+            <div className="divide-y divide-[#1b432a]/60">
+              {leaderboard.length === 0 ? (
+                <div className="p-8 text-center text-[#86efac] font-serif text-sm">
+                  Chưa có cao thủ nào ghi danh trên Bảng Phong Thần. Hãy là người đầu tiên độ kiếp!
                 </div>
-              ))}
+              ) : (
+                leaderboard.map((item, idx) => (
+                  <div
+                    key={item.id || idx}
+                    className={`grid grid-cols-12 px-4 py-3 items-center text-xs transition-colors hover:bg-[#0d2618]/80 ${
+                      idx === 0
+                        ? "bg-[#1b432a]/40 text-[#ffdf79]"
+                        : idx === 1
+                        ? "bg-[#0d2618]/30 text-[#e2e8f0]"
+                        : idx === 2
+                        ? "bg-[#0d2618]/20 text-[#fed7aa]"
+                        : "text-[#e2e8f0]"
+                    }`}
+                  >
+                    {/* Hạng */}
+                    <span className="col-span-1 text-center font-mono font-bold text-sm">
+                      {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx + 1}`}
+                    </span>
+
+                    {/* Tên */}
+                    <div className="col-span-4 flex items-center gap-2">
+                      <span className="font-serif font-bold text-sm text-[#f9f5e8] truncate">
+                        {item.player_name}
+                      </span>
+                      {idx === 0 && (
+                        <span className="hidden sm:inline px-1.5 py-0.2 bg-[#ffdf79] text-[#0a1f13] font-mono text-[9px] rounded font-bold">
+                          TOP 1
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Cảnh giới */}
+                    <div className="col-span-3 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 bg-[#0d2618] rounded border border-[#22543d] font-serif text-[11px] text-[#98b06f]">
+                        {item.realm || "Luyện Khí Kỳ"}
+                      </span>
+                    </div>
+
+                    {/* Điểm Tu Vi */}
+                    <span className="col-span-2 text-right font-mono font-bold text-[#ffdf79] text-sm">
+                      {item.score.toLocaleString()} pts
+                    </span>
+
+                    {/* Kiếm Tốc / WPM */}
+                    <span className="col-span-2 text-right font-mono text-[#98b06f]">
+                      {item.wpm} WPM
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </main>
@@ -407,7 +470,7 @@ export default function MeowchaGamePage() {
         <main className="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-[#1b432a] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#34d399] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#34d399] flex items-center justify-center shadow">
                 <Save className="w-5 h-5 text-[#34d399]" />
               </div>
               <div>
@@ -422,7 +485,7 @@ export default function MeowchaGamePage() {
             <button
               onClick={fetchSaveSlots}
               disabled={loadingSaves}
-              className="px-3 py-1.5 bg-[#0d2618] hover:bg-[#1b432a] text-[#34d399] rounded-lg border border-[#22543d] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3 py-1.5 bg-[#0d2618] hover:bg-[#1b432a] text-[#34d399] rounded-lg border border-[#22543d] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingSaves ? "animate-spin" : ""}`} />
               <span>Đồng Bộ</span>
@@ -492,21 +555,31 @@ export default function MeowchaGamePage() {
                     </div>
                   </div>
 
-                  {/* Nạp vào trận button */}
-                  <button
-                    onClick={() => {
-                      setActiveTab("arena");
-                    }}
-                    disabled={!isOccupied}
-                    className={`w-full py-2 rounded-lg text-xs font-bold font-serif flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      isOccupied
-                        ? "bg-[#15803d] hover:bg-[#8aa970] text-[#f9f5e8] shadow"
-                        : "bg-[#0d2618] text-[#334e3f] cursor-not-allowed"
-                    }`}
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>NẠP VÀO TRẬN ĐẤU</span>
-                  </button>
+                  {/* Actions: Nạp vào trận & Xóa */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => isOccupied && handleLoadSlotIntoGame(slot)}
+                      disabled={!isOccupied}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold font-serif flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        isOccupied
+                          ? "bg-[#15803d] hover:bg-[#8aa970] text-[#f9f5e8] shadow active:scale-95"
+                          : "bg-[#0d2618] text-[#334e3f] cursor-not-allowed"
+                      }`}
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>NẠP VÀO TRẬN</span>
+                    </button>
+
+                    {isOccupied && (
+                      <button
+                        onClick={() => handleDeleteSlot(slotId)}
+                        className="p-2 bg-[#2a1212] hover:bg-[#401a1a] text-[#fca5a5] rounded-lg border border-[#7f1d1d] text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                        title="Xóa cuộn trục này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -515,18 +588,18 @@ export default function MeowchaGamePage() {
       )}
 
       {/* ===================================================================== */}
-      {/* 6. TAB 4: ĐẠO TẠNG IELTS (115+ VOCABULARY VAULT) */}
+      {/* 6. TAB 4: ĐẠO TẠNG IELTS (OXFORD 5000 VAULT) */}
       {/* ===================================================================== */}
       {activeTab === "vocab" && (
         <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1b432a] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#60a5fa] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-[#1b432a] border border-[#60a5fa] flex items-center justify-center shadow">
                 <BookOpen className="w-5 h-5 text-[#60a5fa]" />
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold font-serif text-[#ffdf79]">
-                  ĐẠO TẠNG TỪ VỰNG IELTS (115+ TỪ AWL & OXFORD)
+                  ĐẠO TẠNG TỪ VỰNG IELTS (KHO OXFORD 5000)
                 </h2>
                 <p className="text-xs text-[#86efac]">
                   Kho từ vựng phân tầng 4 cấp độ ma thạch • Bấm loa để nghe phát âm giọng bản xứ
@@ -550,7 +623,7 @@ export default function MeowchaGamePage() {
           {/* Band Filters */}
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: "all", label: "Tất Cả (115+)" },
+              { id: "all", label: "Tất Cả" },
               { id: 0, label: "Band 4.0 - 5.0 [ BĂNG PHÁCH ]" },
               { id: 1, label: "Band 6.0 - 6.5 [ HỎA DIỄM ]" },
               { id: 2, label: "Band 7.0 - 7.5 [ HƯ KHÔNG ]" },
@@ -609,7 +682,7 @@ export default function MeowchaGamePage() {
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-[#2a1b10] flex items-center justify-between">
+                  <div className="pt-2 border-t border-[#1b432a]/60 flex items-center justify-between">
                     <button
                       onClick={() => playWordAudio(item.word)}
                       className="flex items-center gap-1 text-[11px] text-[#34d399] hover:text-[#6ee7b7] font-semibold cursor-pointer"
@@ -625,7 +698,7 @@ export default function MeowchaGamePage() {
                       }}
                       className="text-[11px] text-[#ffdf79] hover:underline font-serif flex items-center gap-0.5 cursor-pointer"
                     >
-                      <span>Vào trận diệt từ này</span>
+                      <span>Vào trận trảm từ này</span>
                       <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
@@ -637,7 +710,17 @@ export default function MeowchaGamePage() {
       )}
 
       {/* ===================================================================== */}
-      {/* 7. FOOTER */}
+      {/* 7. TOAST NOTIFICATION BADGE */}
+      {/* ===================================================================== */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0c2417] text-[#ffdf79] border-2 border-[#ca8a04] px-4 py-2.5 rounded-xl shadow-2xl font-serif text-xs flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4 text-[#fbbf24]" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 8. FOOTER */}
       {/* ===================================================================== */}
       <footer className="w-full bg-[#0a1f13] border-t border-[#1b432a] py-2 px-4 text-center text-xs text-[#86efac] font-serif">
         <span>Tiên Đạo Trà Viện • Luyện từ vựng IELTS 4.0 - 8.5+ cùng Miêu Kiếm Tôn • IELTS Oasis Platform</span>

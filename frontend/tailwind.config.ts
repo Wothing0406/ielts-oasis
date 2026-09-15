@@ -30,6 +30,8 @@ const config: Config = {
       fontFamily: {
         display: ["Lexend", "sans-serif"],
         sans: ["Quicksand", "sans-serif"],
+        serif: ["Noto Serif", "Be Vietnam Pro", "serif"],
+        daoist: ["Cinzel", "Noto Serif", "serif"],
       },
       borderRadius: {
         large: "3.5rem",

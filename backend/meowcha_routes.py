@@ -329,6 +329,54 @@ def save_progress_to_slot(
         )
 
 
+@router.delete("/saves/{slot_id}", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+def delete_save_slot(
+    slot_id: int,
+    guest_token: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Xóa hoặc hoàn nguyên một cuộn trục lưu file (Save Slot) về trạng thái trống.
+    """
+    if slot_id not in (1, 2, 3):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_SLOT", "message": "Slot ID chỉ nhận giá trị 1, 2 hoặc 3."}
+        )
+
+    try:
+        query = db.query(MeowchaSave).filter(MeowchaSave.slot_id == slot_id)
+        if guest_token:
+            query = query.filter(MeowchaSave.guest_token == guest_token)
+        save_item = query.first()
+
+        if save_item:
+            save_item.is_occupied = False
+            save_item.realm = "Chưa ghi chép"
+            save_item.realm_idx = 0
+            save_item.title = "Chưa tu tập"
+            save_item.hp = 50
+            save_item.max_hp = 50
+            save_item.score = 0
+            save_item.words_slain = 0
+            save_item.band_idx = 0
+            save_item.talents = {}
+            save_item.updated_at = datetime.utcnow()
+            db.commit()
+
+        return api_response(
+            data={"slot_id": slot_id, "deleted": True, "message": f"Đã xóa thành công File {slot_id}."},
+            success=True
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Lỗi khi xóa save slot {slot_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "DB_DELETE_FAILED", "message": str(e)}
+        )
+
+
 # =========================================================================
 # 3. BẢNG PHONG THẦN / LEADERBOARD (/api/meowcha/leaderboard)
 # =========================================================================
