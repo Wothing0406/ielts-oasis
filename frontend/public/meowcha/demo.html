@@ -85,6 +85,48 @@
       cursor: crosshair;
     }
 
+    /* CHẾ ĐỘ NHÚNG TRONG NEXT.JS NATIVE TSX (KHÔNG VIỀN ĐEN - FULL VIEWPORT) */
+    body.is-embedded {
+      min-height: 100vh !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #120a06 !important;
+      justify-content: flex-start !important;
+    }
+    body.is-embedded #lobbyHeader {
+      display: none !important;
+    }
+    body.is-embedded #lobbyView {
+      min-height: 100% !important;
+      padding-top: 6px !important;
+    }
+    body.is-embedded #battleView {
+      height: 100vh !important;
+      max-height: 100vh !important;
+      justify-content: flex-start !important;
+      padding: 4px 6px !important;
+    }
+    body.is-embedded .game-wrapper {
+      max-width: 100% !important;
+      max-height: calc(100vh - 65px) !important;
+      width: 100% !important;
+      height: calc(100vh - 65px) !important;
+      aspect-ratio: auto !important;
+      border: 2px solid #5A4010 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.9) !important;
+    }
+    body.is-embedded canvas {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+    }
+    body.is-embedded footer {
+      display: none !important;
+    }
+
     /* BÀN PHÍM ẢO DI ĐỘNG CỔ PHONG - TOUCH TỨC THÌ 0MS, PHÍM TO RÕ RÀNG */
     .virtual-keyboard {
       display: none;
@@ -1187,6 +1229,11 @@
 
 
   <script>
+    // Kiểm tra chế độ nhúng từ Next.js TSX
+    if (window.location.search.includes('embedded=true') || window.parent !== window) {
+      document.body.classList.add('is-embedded');
+    }
+
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const statusBar = document.getElementById("statusBar");
@@ -1194,6 +1241,26 @@
     const vKeyboard = document.getElementById("virtualKeyboard");
     const wrapper = document.getElementById("gameWrapper");
     const realmBadge = document.getElementById("realmBadge");
+
+    // Lắng nghe lệnh từ cha Next.js (Nạp Slot, Đổi Từ, Vào Trận Trực Tiếp)
+    window.addEventListener("message", function(event) {
+      if (!event.data) return;
+      if (event.data.type === "MEOWCHA_START_BATTLE") {
+        if (typeof startActualBattle === 'function') startActualBattle();
+      } else if (event.data.type === "MEOWCHA_RELOAD") {
+        window.location.reload();
+      } else if (event.data.type === "MEOWCHA_LOAD_SLOT" && event.data.data) {
+        if (typeof applySlotDataToGame === 'function') {
+          applySlotDataToGame(event.data.data);
+        }
+      } else if (event.data.type === "MEOWCHA_TARGET_WORD" && event.data.word) {
+        if (typeof forceNextWordAsteroid === 'function') {
+          forceNextWordAsteroid(event.data.word);
+        } else if (typeof startActualBattle === 'function') {
+          startActualBattle();
+        }
+      }
+    });
 
     // ==========================================
     // 1. PROCEDURAL WEB AUDIO SYNTHESIZER

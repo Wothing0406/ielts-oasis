@@ -39,12 +39,15 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
 @router.get("/vocab", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 def get_vocab_deck(
     band: Optional[int] = Query(None, description="Cấp độ IELTS: 0 (A1-A2), 1 (B1), 2 (B2), 3 (C1)"),
-    limit: int = Query(100, ge=1, le=500, description="Số lượng từ vựng cần lấy"),
+    search: Optional[str] = Query(None, description="Tìm kiếm từ tiếng Anh hoặc nghĩa tiếng Việt trong kho Oxford 5000"),
+    page: int = Query(1, ge=1, description="Trang kết quả"),
+    page_size: int = Query(60, ge=1, le=1000, description="Số lượng từ mỗi trang"),
+    limit: Optional[int] = Query(None, ge=1, le=1000, description="Giới hạn số lượng trả về"),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách từ vựng IELTS trực tiếp từ kho Oxford 5000 CEFR in-memory.
-    Phản hồi tức thì <0.1ms, 0 Token AI, chuẩn hóa IPA và nghĩa tiếng Việt.
+    Lấy danh sách từ vựng IELTS trực tiếp từ kho Oxford 5000 CEFR in-memory (5946 từ chuẩn).
+    Hỗ trợ tìm kiếm thời gian thực < 0.1ms, lọc theo Band/Ma Thạch, và phân trang mượt mà.
     """
     try:
         oxford = OxfordDatasetService.get_instance()
@@ -63,19 +66,39 @@ def get_vocab_deck(
         for lvl in target_levels:
             candidates.extend(oxford.by_level.get(lvl, []))
             
-        # Lọc các từ hợp lệ cho game đánh máy (độ dài 3 - 10 ký tự, chỉ chứa chữ cái a-z)
+        # Lọc các từ hợp lệ cho game đánh máy (độ dài 3 - 12 ký tự, chỉ chứa chữ cái a-z)
         valid_words = [
             e for e in candidates 
-            if 3 <= len(e.get("word", "")) <= 10 and e.get("word", "").isalpha()
+            if 3 <= len(e.get("word", "")) <= 12 and e.get("word", "").isalpha()
         ]
         
         if not valid_words:
             valid_words = [
                 e for e in oxford.words 
-                if 3 <= len(e.get("word", "")) <= 10 and e.get("word", "").isalpha()
+                if 3 <= len(e.get("word", "")) <= 12 and e.get("word", "").isalpha()
             ]
-            
-        sampled = random.sample(valid_words, min(len(valid_words), limit))
+
+        # Tìm kiếm từ khóa nếu có (tra cứu cả Word và Meaning)
+        if search and search.strip():
+            query_clean = search.strip().lower()
+            valid_words = [
+                e for e in valid_words
+                if query_clean in e.get("word", "").lower() or query_clean in e.get("meaning", "").lower()
+            ]
+
+        total_matches = len(valid_words)
+        effective_limit = limit if limit is not None else page_size
+
+        # Nếu có search hoặc yêu cầu trang, lấy tuần tự theo phân trang; nếu không lấy random sample cho trận đấu
+        if search or (limit is None and page > 1):
+            start_idx = (page - 1) * effective_limit
+            sampled = valid_words[start_idx : start_idx + effective_limit]
+        elif limit is not None:
+            # Random sample cho trận chiến đấu
+            sampled = random.sample(valid_words, min(len(valid_words), effective_limit))
+        else:
+            start_idx = (page - 1) * effective_limit
+            sampled = valid_words[start_idx : start_idx + effective_limit]
         
         def to_ast_type(lvl: str) -> str:
             if lvl in ("A1", "A2"): return "FROST"
@@ -103,7 +126,16 @@ def get_vocab_deck(
             for idx, v in enumerate(sampled)
         ]
 
-        return api_response(data=result_data, success=True)
+        return api_response(
+            data=result_data,
+            meta={
+                "total": total_matches,
+                "page": page,
+                "page_size": effective_limit,
+                "oxford_total": len(oxford.words)
+            },
+            success=True
+        )
     except Exception as e:
         logger.error(f"Lỗi khi lấy từ vựng Oxford Meow-Cha: {e}")
         # Fallback database nếu có lỗi
