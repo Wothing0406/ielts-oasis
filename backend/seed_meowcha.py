@@ -219,22 +219,8 @@ def seed_meowcha_database():
         db.commit()
         logger.info(f"Hoàn tất nạp MeowchaVocab: {inserted_count} từ mới, {updated_count} từ cập nhật.")
 
-        # 2. KHỞI TẠO BẢNG PHONG THẦN (LEADERBOARD) NẾU CHƯA CÓ
-        lb_count = db.query(MeowchaLeaderboard).count()
-        if lb_count == 0:
-            logger.info("Khởi tạo danh sách Cao Thủ Tiên Cảnh trên Bảng Phong Thần...")
-            default_champions = [
-                {"player_name": "Bạch Miêu Tiên Tôn", "score": 28500, "words_slain": 125, "realm": "Độ Kiếp Kỳ", "accuracy": 98.5, "wpm": 68},
-                {"player_name": "Thái Hư Kiếm Khách", "score": 19400, "words_slain": 88, "realm": "Nguyên Anh Kỳ", "accuracy": 96.2, "wpm": 54},
-                {"player_name": "Thanh Phong Kiếm Tông", "score": 12800, "words_slain": 62, "realm": "Kim Đan Kỳ", "accuracy": 95.0, "wpm": 47},
-                {"player_name": "Linh Trà Đạo Sĩ", "score": 7500, "words_slain": 41, "realm": "Trúc Cơ Kỳ", "accuracy": 92.5, "wpm": 39},
-                {"player_name": "Tiểu Miêu Kiếm Đồng", "score": 3200, "words_slain": 24, "realm": "Luyện Khí Kỳ", "accuracy": 90.0, "wpm": 32},
-            ]
-            for champ in default_champions:
-                entry = MeowchaLeaderboard(**champ)
-                db.add(entry)
-            db.commit()
-            logger.info("Đã khởi tạo Top 5 Cao Thủ Bảng Phong Thần.")
+        # 2. BẢNG PHONG THẦN (LEADERBOARD) - Để trống cho người chơi thực thụ ghi danh
+        logger.info("Bảng Phong Thần sẵn sàng đón nhận chiến tích của các Đạo Hữu!")
 
         # 3. KHỞI TẠO 3 SAVE SLOTS MẪU CHO GUEST HOẶC SYSTEM NẾU CHƯA CÓ
         save_count = db.query(MeowchaSave).count()

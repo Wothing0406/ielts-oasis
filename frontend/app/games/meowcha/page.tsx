@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { MeowchaGame } from "@/components/meowcha/MeowchaGame";
 import { 
   ArrowLeft, Maximize2, Minimize2, Sparkles, Database, Shield, 
   Trophy, BookOpen, Save, RefreshCw, Volume2, Search, Swords, 
@@ -53,16 +54,15 @@ export default function MeowchaGamePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [targetWord, setTargetWord] = useState<string | null>(null);
+  const [activeLoadedSave, setActiveLoadedSave] = useState<any | null>(null);
+
 
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-  const [showSubmitScoreModal, setShowSubmitScoreModal] = useState(false);
-  const [submitPlayerName, setSubmitPlayerName] = useState("");
-  const [submitScore, setSubmitScore] = useState(12800);
-  const [submitRealm, setSubmitRealm] = useState("Kim Đan Kỳ");
-  const [submitWpm, setSubmitWpm] = useState(48);
-  const [submittingScore, setSubmittingScore] = useState(false);
+
 
   // Save slots state
   const [saveSlots, setSaveSlots] = useState<Record<number, SaveSlotItem>>({});
@@ -91,6 +91,13 @@ export default function MeowchaGamePage() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("oasis_user");
+        if (raw) setCurrentUser(JSON.parse(raw));
+      } catch (e) {}
+    }
+
     fetchLeaderboard();
     fetchSaveSlots();
     fetchVocabList(1, selectedBand, debouncedSearch);
@@ -138,37 +145,7 @@ export default function MeowchaGamePage() {
     }
   };
 
-  // 2. Submit Score to Leaderboard
-  const handleSubmitScore = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!submitPlayerName.trim()) return;
-    setSubmittingScore(true);
-    try {
-      const payload = {
-        player_name: submitPlayerName.trim(),
-        score: Number(submitScore) || 0,
-        words_slain: Math.round(Number(submitScore) / 100),
-        realm: submitRealm,
-        accuracy: 98.5,
-        wpm: Number(submitWpm) || 45
-      };
-      const res = await fetch("/api/meowcha/leaderboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        await fetchLeaderboard();
-        setShowSubmitScoreModal(false);
-        setToastMsg(`Đạo hiệu "${submitPlayerName}" đã được khắc bia trên Bảng Phong Thần!`);
-        setTimeout(() => setToastMsg(null), 4000);
-      }
-    } catch (err) {
-      console.warn("Ghi danh thất bại:", err);
-    } finally {
-      setSubmittingScore(false);
-    }
-  };
+
 
   // 3. Fetch Save Slots from Backend SQL
   const fetchSaveSlots = async () => {
@@ -248,33 +225,21 @@ export default function MeowchaGamePage() {
     setTimeout(() => setToastMsg(null), 2500);
   };
 
-  const handleLoadSlotIntoGame = (slot: SaveSlotItem) => {
+    const handleLoadSlotIntoGame = (slot: SaveSlotItem) => {
+    setActiveLoadedSave(slot);
     setActiveTab("arena");
     setToastMsg(`Đang nạp Đạo Quả File ${slot.slot_id} (${slot.realm}) vào trận chiến...`);
-    setTimeout(() => {
-      if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
-        gameIframeRef.current.contentWindow.postMessage({
-          type: "MEOWCHA_LOAD_SLOT",
-          data: slot
-        }, "*");
-      }
-      setTimeout(() => setToastMsg(null), 3000);
-    }, 400);
+    setTimeout(() => setToastMsg(null), 3000);
   };
 
   const handleLaunchTargetWord = (word: string) => {
+    setTargetWord(word.toUpperCase());
     setActiveTab("arena");
     setToastMsg(`Khởi tạo thiên thạch chứa cổ ngữ: "${word.toUpperCase()}"!`);
-    setTimeout(() => {
-      if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
-        gameIframeRef.current.contentWindow.postMessage({
-          type: "MEOWCHA_TARGET_WORD",
-          word: word.toUpperCase()
-        }, "*");
-      }
-      setTimeout(() => setToastMsg(null), 3000);
-    }, 400);
+    setTimeout(() => setToastMsg(null), 3000);
   };
+
+
 
   const handleDeleteSlot = async (slotId: number) => {
     if (!confirm(`Đạo hữu có chắc chắn muốn giải trừ Đạo Quả lưu trữ tại File ${slotId}? Dữ liệu sẽ không thể khôi phục!`)) return;
@@ -413,17 +378,28 @@ export default function MeowchaGamePage() {
       </header>
 
       {/* ===================================================================== */}
-      {/* 2. TAB 1: ĐỘ KIẾP ĐÀI (FULL VIEWPORT ARENA - KHÔNG VIỀN ĐEN LỆCH) */}
+      {/* 2. TAB 1: ĐỘ KIẾP ĐÀI (NATIVE REACT TSX + CANVAS GAME ENGINE) */}
       {/* ===================================================================== */}
       {activeTab === "arena" && (
-        <main className="flex-1 w-full h-[calc(100vh-44px)] bg-[#120a06] flex flex-col items-center justify-center p-0 m-0 overflow-hidden relative" id="meowcha-frame-container">
-          <iframe
-            ref={gameIframeRef}
-            id="meowcha-master-frame"
-            src={`/meowcha/index.html?embedded=true&v=${gameKey}`}
-            className="w-full h-full border-0 block"
-            allow="autoplay; fullscreen"
-            title="Meow-Cha: Vạn Kiếm Quy Tông Master Engine"
+        <main className="flex-1 w-full h-[calc(100vh-44px)] bg-[#100804] flex flex-col items-center justify-center p-0 m-0 overflow-hidden relative" id="meowcha-frame-container">
+          <MeowchaGame
+            key={gameKey}
+            currentUser={currentUser}
+            onScoreSubmitted={() => fetchLeaderboard()}
+            targetInitialWord={targetWord}
+            loadedSave={activeLoadedSave}
+            onOpenLeaderboardTab={() => {
+              setActiveTab("leaderboard");
+              fetchLeaderboard();
+            }}
+            onOpenSavesTab={() => {
+              setActiveTab("saves");
+              fetchSaveSlots();
+            }}
+            onOpenVocabTab={() => {
+              setActiveTab("vocab");
+              fetchVocabList(1, selectedBand, debouncedSearch);
+            }}
           />
         </main>
       )}
@@ -451,13 +427,7 @@ export default function MeowchaGamePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowSubmitScoreModal(true)}
-                className="px-3.5 py-1.5 bg-gradient-to-b from-[#b5372d] to-[#7f1d1d] hover:brightness-110 text-[#ffdf79] rounded-lg border border-[#ca8a04] text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-[0_2px_8px_rgba(181,55,45,0.6)]"
-              >
-                <Feather className="w-3.5 h-3.5" />
-                <span>Khắc Tên Lên Bảng</span>
-              </button>
+              
 
               <button
                 onClick={fetchLeaderboard}
@@ -520,8 +490,19 @@ export default function MeowchaGamePage() {
 
             <div className="divide-y divide-[#3d2516]">
               {leaderboard.length === 0 ? (
-                <div className="p-8 text-center text-[#d8ccb0] font-serif text-sm">
-                  Chưa có cao thủ nào ghi danh trên Bảng Phong Thần. Hãy là người đầu tiên độ kiếp!
+                <div className="p-10 flex flex-col items-center justify-center gap-3 text-center">
+                  <span className="text-3xl">📜</span>
+                  <h4 className="font-bold text-sm text-[#ffdf79]">CHƯA CÓ ĐẠO HỮU NÀO LƯU DANH THIÊN CỔ</h4>
+                  <p className="text-xs text-[#d8ccb0] max-w-md">
+                    Bảng Phong Thần đang chờ đợi vị Chân Nhân đầu tiên trảm ma thạch IELTS. Hãy bước vào trận địa độ kiếp ngay!
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("arena")}
+                    className="mt-2 px-5 py-2 bg-gradient-to-b from-[#15803d] to-[#14532d] hover:brightness-110 text-[#fbf8ea] rounded-xl border border-[#22c55e] text-xs font-bold flex items-center gap-2 cursor-pointer shadow"
+                  >
+                    <Swords className="w-4 h-4 text-[#ffdf79]" />
+                    <span>▶ Vào Trận Độ Kiếp Ngay</span>
+                  </button>
                 </div>
               ) : (
                 leaderboard.map((item, idx) => (
@@ -578,95 +559,7 @@ export default function MeowchaGamePage() {
         </main>
       )}
 
-      {/* MODAL KHẮC TÊN LÊN BẢNG PHONG THẦN */}
-      {showSubmitScoreModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1e130b] border-2 border-[#ffdf79] rounded-xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 text-center relative">
-            <button 
-              onClick={() => setShowSubmitScoreModal(false)}
-              className="absolute top-3 right-3 text-[#d8ccb0] hover:text-[#ffdf79] cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
 
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 rounded-full bg-[#2c1a0f] border-2 border-[#ffdf79] flex items-center justify-center text-[#ffdf79]">
-                <Feather className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-[#ffdf79] tracking-wider">KHẮC DANH PHONG THẦN</h3>
-              <p className="text-xs text-[#d8ccb0]">Ghi lại chiến tích tu tiên vào cơ sở dữ liệu MySQL</p>
-            </div>
-
-            <form onSubmit={handleSubmitScore} className="flex flex-col gap-3 text-left">
-              <div>
-                <label className="text-xs text-[#ffdf79] font-bold block mb-1">Đạo Hiệu Của Đạo Hữu:</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Bạch Miêu Tiên Tôn..."
-                  value={submitPlayerName}
-                  onChange={e => setSubmitPlayerName(e.target.value)}
-                  className="w-full bg-[#2c1a0f] border border-[#6d4a1b] rounded-lg px-3 py-2 text-sm text-[#fbf8ea] focus:outline-none focus:border-[#ffdf79]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-[#ffdf79] font-bold block mb-1">Điểm Tu Vi:</label>
-                  <input
-                    type="number"
-                    value={submitScore}
-                    onChange={e => setSubmitScore(Number(e.target.value))}
-                    className="w-full bg-[#2c1a0f] border border-[#6d4a1b] rounded-lg px-3 py-2 text-sm text-[#fbf8ea] font-mono focus:outline-none focus:border-[#ffdf79]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-[#ffdf79] font-bold block mb-1">Kiếm Tốc (WPM):</label>
-                  <input
-                    type="number"
-                    value={submitWpm}
-                    onChange={e => setSubmitWpm(Number(e.target.value))}
-                    className="w-full bg-[#2c1a0f] border border-[#6d4a1b] rounded-lg px-3 py-2 text-sm text-[#fbf8ea] font-mono focus:outline-none focus:border-[#ffdf79]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-[#ffdf79] font-bold block mb-1">Cảnh Giới:</label>
-                <select
-                  value={submitRealm}
-                  onChange={e => setSubmitRealm(e.target.value)}
-                  className="w-full bg-[#2c1a0f] border border-[#6d4a1b] rounded-lg px-3 py-2 text-sm text-[#fbf8ea] focus:outline-none focus:border-[#ffdf79]"
-                >
-                  <option value="Luyện Khí Kỳ">Luyện Khí Kỳ (IELTS 4.0 - 5.0)</option>
-                  <option value="Trúc Cơ Kỳ">Trúc Cơ Kỳ (IELTS 6.0 - 6.5)</option>
-                  <option value="Kim Đan Kỳ">Kim Đan Kỳ (IELTS 7.0 - 7.5)</option>
-                  <option value="Nguyên Anh Kỳ">Nguyên Anh Kỳ (IELTS 8.0+)</option>
-                  <option value="Hóa Thần Kỳ">Hóa Thần Kỳ (Master C2)</option>
-                  <option value="Độ Kiếp Kỳ">Độ Kiếp Kỳ (Chí Tôn Vô Địch)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2.5 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSubmitScoreModal(false)}
-                  className="flex-1 py-2 bg-[#2c1a0f] hover:bg-[#3d2516] text-[#d8ccb0] rounded-lg border border-[#6d4a1b] text-xs font-bold cursor-pointer"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingScore}
-                  className="flex-1 py-2 bg-gradient-to-b from-[#b5372d] to-[#7f1d1d] hover:brightness-110 text-[#ffdf79] rounded-lg border border-[#ca8a04] text-xs font-bold cursor-pointer shadow"
-                >
-                  {submittingScore ? "Đang Khắc Bia..." : "Khắc Danh"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ===================================================================== */}
       {/* 4. TAB 3: NGỌC GIẢN LƯU TRỮ TU VI (3 CLOUD SLOTS) */}
