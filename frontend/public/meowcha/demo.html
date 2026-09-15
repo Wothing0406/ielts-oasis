@@ -78,55 +78,64 @@
       cursor: crosshair;
     }
 
-    /* BÀN PHÍM ẢO DI ĐỘNG CỔ PHONG */
+    /* BÀN PHÍM ẢO DI ĐỘNG CỔ PHONG - TOUCH TỨC THÌ 0MS, PHÍM TO RÕ RÀNG */
     .virtual-keyboard {
       display: none;
       width: 100%;
-      background: rgba(18, 28, 20, 0.98);
+      background: rgba(14, 24, 16, 0.98);
       border-top: 2px solid #5A4010;
-      padding: 8px 4px 12px;
+      padding: 10px 4px 18px;
       flex-direction: column;
-      gap: 5px;
-      z-index: 10;
+      gap: 6px;
+      z-index: 20;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
     }
     .kb-row {
       display: flex;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
+      width: 100%;
     }
     .kb-key {
       background: #253626;
       color: #FFFDF5;
-      border: 1px solid #4B6E58;
-      border-radius: 6px;
-      height: 42px;
-      min-width: 28px;
+      border: 1.5px solid #4B6E58;
+      border-radius: 8px;
+      height: 52px;
+      min-width: 32px;
       flex: 1;
-      max-width: 40px;
+      max-width: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.9rem;
+      font-size: 1.15rem;
       font-weight: bold;
-      font-family: -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       cursor: pointer;
-      transition: transform 0.05s ease, background 0.1s ease;
+      box-shadow: 0 3px 0 #182419;
+      transition: transform 0.04s ease, background 0.08s ease, box-shadow 0.04s ease;
       touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .kb-key:active, .kb-key.pressed {
       background: #66FFB2 !important;
       color: #121813 !important;
-      transform: scale(0.92);
+      transform: translateY(2px) scale(0.96);
+      box-shadow: 0 1px 0 #182419 !important;
     }
     .kb-key.error-key {
       background: #FF4444 !important;
       border-color: #FF6B6B !important;
-      transform: scale(0.95);
+      transform: translateY(1px) scale(0.97);
     }
     .kb-space {
-      max-width: 220px;
+      max-width: 250px;
       background: #384F3B;
-      font-size: 0.8rem;
+      font-size: 0.95rem;
+      letter-spacing: 2px;
     }
 
     /* THANH TRẠNG THÁI TÔNG MÔN CỔ TRANG */
@@ -549,7 +558,7 @@
       <!-- 4. Trùng Sinh Lại -->
       <button class="retro-btn py-2 px-4 bg-cinnabar-seal/80 hover:bg-cinnabar-seal text-parchment-rice font-classic-serif text-xs rounded border border-red-900 flex items-center justify-center gap-2 cursor-pointer" onclick="restartBattleFromBeginning()">
         <svg class="w-4 h-4 fill-current" style="width:16px;height:16px;"><use href="#sticker-skull"/></svg>
-        <span>🔄 TRÙNG SINH ĐỘ KIẾP LẠI TỪ ĐẦU</span>
+        <span>[ 歸 ] TRÙNG SINH HỒI HƯƠNG SẢNH CHỜ TỪ ĐẦU</span>
       </button>
     </div>
 
@@ -890,88 +899,95 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- 3. PHÁP TRẬN CHỌN ĐỘ KHÓ IELTS (TIỆN ÍCH GAME THỰC TẾ) -->
+    <!-- 3. LỘ TRÌNH TU TIÊN TIẾN HÓA & MA THẠCH ĐỘ KIẾP (TỰ ĐỘNG THEO CẢNH GIỚI) -->
     <!-- ======================================================================= -->
     <div class="w-full flex flex-col gap-3">
       <div class="flex items-center justify-between border-b-2 border-[#3b2719] pb-2">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-[#ffdf79] fill-current" style="width:20px;height:20px;"><use href="#sticker-swords"/></svg>
           <h3 class="font-classic-serif font-bold text-sm sm:text-base text-[#ffdf79]">
-            CHỌN PHÁP TRẬN TẬP LUYỆN (IELTS VOCABULARY BAND)
+            LỘ TRÌNH ĐỘ KIẾP & PHÁP TRẬN MA THẠCH
           </h3>
         </div>
-        <span class="font-classic-serif text-xs text-[#d8ccb0]">
-          Quyết định loại Ma Thạch & Tốc Độ Xuất Hiện
+        <span class="font-classic-serif text-xs text-[#a7d08c]">
+          ⚡ Tự động thăng cấp & biến hóa ma thạch khi đủ Tu Vi
         </span>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5" id="cultivationRoadmapCards">
         
-        <!-- Band 1: IELTS 4.0 - 5.0 -->
-        <div id="cardBand1" onclick="selectIeltsBand(0)" class="band-card p-3 rounded-lg bg-[#281a11] hover:bg-[#3b2719] border-2 border-[#789262] cursor-pointer transition-all flex flex-col justify-between gap-2 shadow relative">
+        <!-- Cảnh 1: Luyện Khí Kỳ -->
+        <div id="roadmapCard0" class="p-2.5 rounded-lg bg-[#281a11] border-2 border-[#66FFB2] flex flex-col justify-between gap-1.5 shadow transition-all relative">
           <div class="flex items-center justify-between">
-            <span class="px-2 py-0.5 bg-[#789262] text-[#eef5db] font-retro-mono text-xs rounded font-bold">
-              BAND 4.0 - 5.0
-            </span>
-            <span class="text-xs font-classic-serif text-cyan-300 font-bold">[ BĂNG PHÁCH ]</span>
+            <span class="px-1.5 py-0.5 bg-[#10B981] text-[#FFFDF5] font-retro-mono text-[11px] rounded font-bold">CẢNH 1</span>
+            <span class="text-[11px] font-classic-serif text-cyan-300 font-bold">[ BĂNG PHÁCH ]</span>
           </div>
           <div>
-            <span class="font-classic-serif font-bold text-sm text-[#ffdf79] block">Luyện Khí Sơ Cảnh</span>
-            <span class="font-classic-serif text-xs text-[#d8ccb0] block mt-0.5">Từ vựng 3-5 ký tự • Tốc độ êm dịu</span>
+            <span class="font-classic-serif font-bold text-xs text-[#ffdf79] block">Luyện Khí Kỳ</span>
+            <span class="font-classic-serif text-[11px] text-[#d8ccb0] block">Tiểu Miêu Kiếm Đồng • IELTS 4.0-5.0</span>
           </div>
-          <div class="text-[11px] text-[#98b06f] font-classic-serif italic">
-            Dị thạch Băng Phách xoay tròn bão tuyết
+          <div class="text-[10px] text-[#98b06f] font-classic-serif italic">
+            Băng Phách Ma Thạch • Khí lạnh tuyết sương
           </div>
         </div>
 
-        <!-- Band 2: IELTS 6.0 - 6.5 -->
-        <div id="cardBand2" onclick="selectIeltsBand(1)" class="band-card p-3 rounded-lg bg-[#281a11] hover:bg-[#3b2719] border-2 border-[#543924] cursor-pointer transition-all flex flex-col justify-between gap-2 shadow relative">
+        <!-- Cảnh 2: Trúc Cơ Kỳ -->
+        <div id="roadmapCard1" class="p-2.5 rounded-lg bg-[#281a11] border border-[#543924] opacity-80 flex flex-col justify-between gap-1.5 shadow transition-all relative">
           <div class="flex items-center justify-between">
-            <span class="px-2 py-0.5 bg-[#b45309] text-[#fef08a] font-retro-mono text-xs rounded font-bold">
-              BAND 6.0 - 6.5
-            </span>
-            <span class="text-xs font-classic-serif text-orange-400 font-bold">[ HỎA DIỄM ]</span>
+            <span class="px-1.5 py-0.5 bg-[#b45309] text-[#fef08a] font-retro-mono text-[11px] rounded font-bold">CẢNH 2</span>
+            <span class="text-[11px] font-classic-serif text-orange-400 font-bold">[ HỎA DIỄM ]</span>
           </div>
           <div>
-            <span class="font-classic-serif font-bold text-sm text-[#ffdf79] block">Trúc Cơ Trung Giai</span>
-            <span class="font-classic-serif text-xs text-[#d8ccb0] block mt-0.5">Từ vựng 6-7 ký tự • Tốc độ tiêu chuẩn</span>
+            <span class="font-classic-serif font-bold text-xs text-[#ffdf79] block">Trúc Cơ Kỳ</span>
+            <span class="font-classic-serif text-[11px] text-[#d8ccb0] block">Miêu Tiên Trúc Cơ • IELTS 6.0-6.5</span>
           </div>
-          <div class="text-[11px] text-orange-300 font-classic-serif italic">
-            Ma thạch Cửu U rực lửa dung nham
+          <div class="text-[10px] text-orange-300 font-classic-serif italic">
+            Hỏa Diễm Ma Thạch • Nham thạch rực lửa
           </div>
         </div>
 
-        <!-- Band 3: IELTS 7.0 - 7.5 -->
-        <div id="cardBand3" onclick="selectIeltsBand(2)" class="band-card p-3 rounded-lg bg-[#281a11] hover:bg-[#3b2719] border-2 border-[#543924] cursor-pointer transition-all flex flex-col justify-between gap-2 shadow relative">
+        <!-- Cảnh 3: Kim Đan Kỳ -->
+        <div id="roadmapCard2" class="p-2.5 rounded-lg bg-[#281a11] border border-[#543924] opacity-80 flex flex-col justify-between gap-1.5 shadow transition-all relative">
           <div class="flex items-center justify-between">
-            <span class="px-2 py-0.5 bg-[#6d28d9] text-[#f3e8ff] font-retro-mono text-xs rounded font-bold">
-              BAND 7.0 - 7.5
-            </span>
-            <span class="text-xs font-classic-serif text-purple-300 font-bold">[ HƯ KHÔNG ]</span>
+            <span class="px-1.5 py-0.5 bg-[#6d28d9] text-[#f3e8ff] font-retro-mono text-[11px] rounded font-bold">CẢNH 3</span>
+            <span class="text-[11px] font-classic-serif text-purple-300 font-bold">[ HƯ KHÔNG ]</span>
           </div>
           <div>
-            <span class="font-classic-serif font-bold text-sm text-[#ffdf79] block">Kim Đan Thần Túc</span>
-            <span class="font-classic-serif text-xs text-[#d8ccb0] block mt-0.5">Từ vựng 8-9 ký tự • Tốc độ dồn dập</span>
+            <span class="font-classic-serif font-bold text-xs text-[#ffdf79] block">Kim Đan Kỳ</span>
+            <span class="font-classic-serif text-[11px] text-[#d8ccb0] block">Kim Đan Đại Sư • IELTS 7.0-7.5</span>
           </div>
-          <div class="text-[11px] text-purple-300 font-classic-serif italic">
-            Dị thạch Hắc Diệu xúc tu cuộn xoắn
+          <div class="text-[10px] text-purple-300 font-classic-serif italic">
+            Hư Không Ma Thạch • Kim Liên & Đài Sen
           </div>
         </div>
 
-        <!-- Band 4: IELTS 8.0+ -->
-        <div id="cardBand4" onclick="selectIeltsBand(3)" class="band-card p-3 rounded-lg bg-[#281a11] hover:bg-[#3b2719] border-2 border-[#543924] cursor-pointer transition-all flex flex-col justify-between gap-2 shadow relative">
+        <!-- Cảnh 4: Nguyên Anh Kỳ -->
+        <div id="roadmapCard3" class="p-2.5 rounded-lg bg-[#281a11] border border-[#543924] opacity-80 flex flex-col justify-between gap-1.5 shadow transition-all relative">
           <div class="flex items-center justify-between">
-            <span class="px-2 py-0.5 bg-[#991b1b] text-[#ffe4e6] font-retro-mono text-xs rounded font-bold">
-              BAND 8.0+
-            </span>
-            <span class="text-xs font-classic-serif text-rose-400 font-bold">[ HUYẾT LÔI ]</span>
+            <span class="px-1.5 py-0.5 bg-[#991b1b] text-[#ffe4e6] font-retro-mono text-[11px] rounded font-bold">CẢNH 4</span>
+            <span class="text-[11px] font-classic-serif text-rose-400 font-bold">[ HUYẾT LÔI ]</span>
           </div>
           <div>
-            <span class="font-classic-serif font-bold text-sm text-[#ffdf79] block">Nguyên Anh Tông Sư</span>
-            <span class="font-classic-serif text-xs text-[#d8ccb0] block mt-0.5">Cổ ngữ 10+ ký tự • Sấm giật cuồng phong</span>
+            <span class="font-classic-serif font-bold text-xs text-[#ffdf79] block">Nguyên Anh Kỳ</span>
+            <span class="font-classic-serif text-[11px] text-[#d8ccb0] block">Nguyên Anh Tiên Nhân • IELTS 8.0+</span>
           </div>
-          <div class="text-[11px] text-rose-300 font-classic-serif italic">
-            Ma quái tim đập phóng sét vạn kiếp
+          <div class="text-[10px] text-rose-300 font-classic-serif italic">
+            Huyết Lôi Ma Thạch • Chibi Anh Linh hộ thể
+          </div>
+        </div>
+
+        <!-- Cảnh 5: Hóa Thần Kỳ -->
+        <div id="roadmapCard4" class="p-2.5 rounded-lg bg-[#281a11] border border-[#543924] opacity-80 flex flex-col justify-between gap-1.5 shadow transition-all relative">
+          <div class="flex items-center justify-between">
+            <span class="px-1.5 py-0.5 bg-[#854D0E] text-[#FEF08A] font-retro-mono text-[11px] rounded font-bold">CẢNH 5</span>
+            <span class="text-[11px] font-classic-serif text-yellow-300 font-bold">[ THÁI SƠ ]</span>
+          </div>
+          <div>
+            <span class="font-classic-serif font-bold text-xs text-[#ffdf79] block">Hóa Thần Kỳ</span>
+            <span class="font-classic-serif text-[11px] text-[#d8ccb0] block">Hóa Thần Kiếm Tôn • Master C2</span>
+          </div>
+          <div class="text-[10px] text-yellow-300 font-classic-serif italic">
+            Thái Sơ Hỗn Độn Thạch • Cửu Thiên Chân Long
           </div>
         </div>
 
@@ -1012,7 +1028,7 @@
           <span class="font-classic-serif font-bold text-xs">3. Tạm Dừng & Lưu Game</span>
         </div>
         <p class="font-classic-serif text-xs text-[#d8ccb0]">
-          Nhấn phím [ESC] hoặc [P] trong trận để Tạm Dừng, Lưu Đạo Quả và Thoát Về Sảnh an toàn.
+          Nhấn phím [ESC] trong trận để Tạm Dừng, Lưu Đạo Quả và Thoát Về Sảnh an toàn.
         </p>
       </div>
 
@@ -1203,9 +1219,105 @@
     // 1. PROCEDURAL WEB AUDIO SYNTHESIZER
     // ==========================================
     let audioCtx = null;
+    let zenBgmTimer = null;
+    let zenDroneOsc1 = null;
+    let zenDroneOsc2 = null;
+    let zenDroneGain = null;
+
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    // KHỞI CHẠY BỘ TẠO NHẠC CỔ CẦM THIỀN TỊNH (NGŨ CUNG CHÂN THẬT)
+    function startZenGuqinEngine() {
+      initAudio();
+      if (!audioCtx) return;
+      if (zenBgmTimer) return;
+
+      const t = audioCtx.currentTime;
+      zenDroneGain = audioCtx.createGain();
+      zenDroneGain.gain.setValueAtTime(0.001, t);
+      zenDroneGain.gain.exponentialRampToValueAtTime(0.045, t + 2.0);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(260, t);
+
+      zenDroneOsc1 = audioCtx.createOscillator();
+      zenDroneOsc1.type = "sine";
+      zenDroneOsc1.frequency.setValueAtTime(108, t); // Khí rung chuông thiền trầm
+
+      zenDroneOsc2 = audioCtx.createOscillator();
+      zenDroneOsc2.type = "triangle";
+      zenDroneOsc2.frequency.setValueAtTime(162, t); // Quãng năm thư thái
+
+      zenDroneOsc1.connect(filter);
+      zenDroneOsc2.connect(filter);
+      filter.connect(zenDroneGain);
+      zenDroneGain.connect(audioCtx.destination);
+
+      zenDroneOsc1.start();
+      zenDroneOsc2.start();
+
+      // Thang ngũ âm Cổ Cầm Trung Hoa (D, F, G, A, C)
+      const guqinNotes = [146.83, 174.61, 196.00, 220.00, 261.63, 293.66, 329.63, 349.23, 440.00];
+
+      function playNextGuqinPluck() {
+        if (!isZenMusicPlaying || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const freq = guqinNotes[Math.floor(Math.random() * guqinNotes.length)];
+
+        const osc = audioCtx.createOscillator();
+        const pluckGain = audioCtx.createGain();
+        const pluckFilter = audioCtx.createBiquadFilter();
+
+        osc.type = Math.random() < 0.35 ? "triangle" : "sawtooth";
+        osc.frequency.setValueAtTime(freq, now);
+
+        pluckFilter.type = "lowpass";
+        pluckFilter.frequency.setValueAtTime(freq * 3.5, now);
+        pluckFilter.frequency.exponentialRampToValueAtTime(freq * 0.9, now + 2.2);
+
+        pluckGain.gain.setValueAtTime(0.0001, now);
+        pluckGain.gain.linearRampToValueAtTime(0.06, now + 0.035);
+        pluckGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
+
+        osc.connect(pluckFilter);
+        pluckFilter.connect(pluckGain);
+        pluckGain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 2.45);
+
+        const nextDelay = 2200 + Math.random() * 2000;
+        zenBgmTimer = setTimeout(playNextGuqinPluck, nextDelay);
+      }
+
+      playNextGuqinPluck();
+    }
+
+    function stopZenGuqinEngine() {
+      if (zenBgmTimer) {
+        clearTimeout(zenBgmTimer);
+        zenBgmTimer = null;
+      }
+      if (zenDroneGain && audioCtx) {
+        const t = audioCtx.currentTime;
+        zenDroneGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+        setTimeout(() => {
+          try {
+            if (zenDroneOsc1) zenDroneOsc1.stop();
+            if (zenDroneOsc2) zenDroneOsc2.stop();
+          } catch(e) {}
+          zenDroneOsc1 = null;
+          zenDroneOsc2 = null;
+          zenDroneGain = null;
+        }, 850);
       }
     }
 
@@ -1360,58 +1472,70 @@
       { name: "Độ Kiếp Kỳ", minScore: 2300, title: "Thái Thượng Kiếm Tôn", desc: "Long bào hoàng kim, vạn kiếm quy tông chân long xuất thế" }
     ];
 
-    // Kho từ vựng IELTS phong phú phân theo 4 Cấp Độ Pháp Trận (35+ từ B1-C2)
-    const masterVocabDeck = [
-      // BAND 4.0 - 5.0 (TÂN THỦ • BĂNG PHÁCH: 3-5 KÝ TỰ)
-      { word: "ALERT", ipa: "/əˈlɜːt/", type: "adj", meaning: "Cảnh giác, tỉnh táo, lanh lẹ" },
-      { word: "SWIFT", ipa: "/swɪft/", type: "adj", meaning: "Mau lẹ, nhanh như chớp" },
-      { word: "FOCUS", ipa: "/ˈfəʊ.kəs/", type: "verb", meaning: "Tập trung tinh thần, định tâm" },
-      { word: "CLIMB", ipa: "/klaɪm/", type: "verb", meaning: "Leo trèo, thăng tiến tu vi" },
-      { word: "BRAVE", ipa: "/breɪv/", type: "adj", meaning: "Dũng cảm, kiên định can trường" },
-      { word: "VIGOR", ipa: "/ˈvɪɡ.ər/", type: "noun", meaning: "Nguyên khí, sinh lực dồi dào" },
-      { word: "CLEAR", ipa: "/klɪər/", type: "adj", meaning: "Trong sáng, minh triết, rõ ràng" },
-      { word: "LUCID", ipa: "/ˈluː.sɪd/", type: "adj", meaning: "Minh bạch, rõ ràng, sáng suốt" },
+    // KHO TỪ VỰNG IELTS TIÊN ĐẠO PHÂN CHIA THEO 5 CẢNH GIỚI TU CHÂN
+    const REALM_DECKS = {
+      0: [ // CẢNH 1: LUYỆN KHÍ KỲ • BĂNG PHÁCH MA THẠCH (IELTS 4.0 - 5.0)
+        { word: "ALERT", ipa: "/əˈlɜːt/", type: "adj", meaning: "Cảnh giác, tỉnh táo, lanh lẹ" },
+        { word: "SWIFT", ipa: "/swɪft/", type: "adj", meaning: "Mau lẹ, nhanh như chớp" },
+        { word: "FOCUS", ipa: "/ˈfəʊ.kəs/", type: "verb", meaning: "Tập trung tinh thần, định tâm" },
+        { word: "CLIMB", ipa: "/klaɪm/", type: "verb", meaning: "Leo trèo, thăng tiến tu vi" },
+        { word: "BRAVE", ipa: "/breɪv/", type: "adj", meaning: "Dũng cảm, kiên định can trường" },
+        { word: "VIGOR", ipa: "/ˈvɪɡ.ər/", type: "noun", meaning: "Nguyên khí, sinh lực dồi dào" },
+        { word: "CLEAR", ipa: "/klɪər/", type: "adj", meaning: "Trong sáng, minh triết, rõ ràng" },
+        { word: "LUCID", ipa: "/ˈluː.sɪd/", type: "adj", meaning: "Minh bạch, rõ ràng, sáng suốt" },
+        { word: "PEACE", ipa: "/piːs/", type: "noun", meaning: "Thanh tịnh, an lạc, hòa khí" },
+        { word: "POWER", ipa: "/ˈpaʊ.ər/", type: "noun", meaning: "Uy lực kiếm đạo, thần lực" }
+      ],
+      1: [ // CẢNH 2: TRÚC CƠ KỲ • HỎA DIỄM MA THẠCH (IELTS 6.0 - 6.5)
+        { word: "NURTURE", ipa: "/ˈnɜː.tʃər/", type: "verb", meaning: "Bồi dưỡng, nuôi nấng đạo hạnh" },
+        { word: "ASPIRE", ipa: "/əˈspaɪər/", type: "verb", meaning: "Khao khát, hướng tới cảnh giới cao" },
+        { word: "THRIVE", ipa: "/θraɪv/", type: "verb", meaning: "Phát triển mạnh mẽ, hưng thịnh" },
+        { word: "ENDURE", ipa: "/ɪnˈdʒʊər/", type: "verb", meaning: "Chịu đựng, nhẫn nại vượt khổ ải" },
+        { word: "EXPAND", ipa: "/ɪkˈspænd/", type: "verb", meaning: "Khai mở, mở rộng đan điền" },
+        { word: "ZEALOUS", ipa: "/ˈzel.əs/", type: "adj", meaning: "Hăng hái, nhiệt huyết, tận tụy" },
+        { word: "ASCEND", ipa: "/əˈsend/", type: "verb", meaning: "Thăng hoa, phi thăng, độ kiếp" },
+        { word: "PURSUIT", ipa: "/pəˈsjuːt/", type: "noun", meaning: "Sự truy cầu, theo đuổi đại đạo" },
+        { word: "PROMISE", ipa: "/ˈprɒm.ɪs/", type: "noun", meaning: "Lời thề ước, hứa hẹn tương lai" }
+      ],
+      2: [ // CẢNH 3: KIM ĐAN KỲ • HƯ KHÔNG MA THẠCH (IELTS 7.0 - 7.5)
+        { word: "RESILIENT", ipa: "/rɪˈzɪl.i.ənt/", type: "adj", meaning: "Kiên cường, bền bỉ, hồi phục nhanh" },
+        { word: "PERSEVERE", ipa: "/ˌpɜː.sɪˈvɪər/", type: "verb", meaning: "Kiên trì, bền chí theo đuổi" },
+        { word: "DILIGENT", ipa: "/ˈdɪl.ɪ.dʒənt/", type: "adj", meaning: "Cần cù, siêng năng, chuyên tâm" },
+        { word: "ELOQUENT", ipa: "/ˈel.ə.kwənt/", type: "adj", meaning: "Hùng biện, lưu loát, truyền cảm" },
+        { word: "PROFOUND", ipa: "/prəˈfaʊnd/", type: "adj", meaning: "Sâu sắc, uyên thâm, thâm thúy" },
+        { word: "TRANQUIL", ipa: "/ˈtræŋ.kwɪl/", type: "adj", meaning: "Thanh tịnh, an tĩnh, bình yên" },
+        { word: "COGNITIVE", ipa: "/ˈkɒɡ.nə.tɪv/", type: "adj", meaning: "Thuộc về nhận thức, tư duy" },
+        { word: "TENACIOUS", ipa: "/təˈneɪ.ʃəs/", type: "adj", meaning: "Kiên quyết, kiên trì, gan lì" },
+        { word: "PRAGMATIC", ipa: "/præɡˈmæt.ɪk/", type: "adj", meaning: "Thực tế, thực dụng, trọng hiệu quả" },
+        { word: "AUTHENTIC", ipa: "/ɔːˈθen.tɪk/", type: "adj", meaning: "Đích thực, chân thật, nguyên bản" },
+        { word: "CULTIVATE", ipa: "/ˈkʌl.tɪ.veɪt/", type: "verb", meaning: "Tu dưỡng, trau dồi, bồi đắp" }
+      ],
+      3: [ // CẢNH 4: NGUYÊN ANH KỲ • HUYẾT LÔI MA THẠCH (IELTS 8.0+)
+        { word: "AMELIORATE", ipa: "/əˈmiː.li.ə.reɪt/", type: "verb", meaning: "Cải thiện, làm cho tốt đẹp hơn" },
+        { word: "SUBSTANTIAL", ipa: "/səbˈstæn.ʃəl/", type: "adj", meaning: "Đáng kể, trọng yếu, lớn lao" },
+        { word: "UBIQUITOUS", ipa: "/juːˈbɪk.wɪ.təs/", type: "adj", meaning: "Phổ biến, ở đâu cũng có mặt" },
+        { word: "COMPREHEND", ipa: "/ˌkɒm.prɪˈhend/", type: "verb", meaning: "Thấu hiểu trọn vẹn, lĩnh hội" },
+        { word: "METICULOUS", ipa: "/məˈtɪk.jə.ləs/", type: "adj", meaning: "Tỉ mỉ, cẩn trọng, kỹ lưỡng" },
+        { word: "SERENDIPITY", ipa: "/ˌser.ənˈdɪp.ə.ti/", type: "noun", meaning: "Cơ duyên may mắn bất ngờ" },
+        { word: "INNOVATIVE", ipa: "/ˈɪn.ə.və.tɪv/", type: "adj", meaning: "Sáng tạo, đổi mới, tiên phong" },
+        { word: "INEVITABLE", ipa: "/ɪnˈev.ɪ.tə.bəl/", type: "adj", meaning: "Tất yếu, không thể tránh khỏi" },
+        { word: "BENEVOLENT", ipa: "/bəˈnev.əl.ənt/", type: "adj", meaning: "Nhân từ, bác ái, rộng lượng" },
+        { word: "ENLIGHTEN", ipa: "/ɪnˈlaɪ.tən/", type: "verb", meaning: "Khai sáng, giác ngộ đạo lý" }
+      ],
+      4: [ // CẢNH 5: HÓA THẦN KỲ • THÁI SƠ HỖN ĐỘN THẠCH (MASTER AWL C2)
+        { word: "TRANSCENDENCE", ipa: "/trænˈsen.dəns/", type: "noun", meaning: "Sự siêu việt, vượt thoát cõi phàm" },
+        { word: "PARADIGMATIC", ipa: "/ˌpær.ə.dɪɡˈmæt.ɪk/", type: "adj", meaning: "Mang tính chuẩn mực, mẫu mực" },
+        { word: "QUINTESSENCE", ipa: "/kwɪnˈtes.əns/", type: "noun", meaning: "Tinh hoa, cốt tủy tinh túy nhất" },
+        { word: "CORROBORATE", ipa: "/kəˈrɒb.ə.reɪt/", type: "verb", meaning: "Chứng thực, củng cố tính xác thực" },
+        { word: "EXACERBATE", ipa: "/ɪɡˈzæs.ə.beɪt/", type: "verb", meaning: "Làm trầm trọng thêm, chấn động" },
+        { word: "RETROSPECTIVE", ipa: "/ˌret.rəˈspek.tɪv/", type: "adj", meaning: "Hồi tưởng, nhìn lại quá khứ" },
+        { word: "UNPRECEDENTED", ipa: "/ʌnˈpres.ɪ.den.tɪd/", type: "adj", meaning: "Chưa từng có tiền lệ, vô song" }
+      ]
+    };
 
-      // BAND 6.0 - 6.5 (TRUNG ĐẲNG • HỎA DIỄM: 6-7 KÝ TỰ)
-      { word: "NURTURE", ipa: "/ˈnɜː.tʃər/", type: "verb", meaning: "Bồi dưỡng, nuôi nấng đạo hạnh" },
-      { word: "ASPIRE", ipa: "/əˈspaɪər/", type: "verb", meaning: "Khao khát, hướng tới cảnh giới cao" },
-      { word: "THRIVE", ipa: "/θraɪv/", type: "verb", meaning: "Phát triển mạnh mẽ, hưng thịnh" },
-      { word: "ENDURE", ipa: "/ɪnˈdʒʊər/", type: "verb", meaning: "Chịu đựng, nhẫn nại vượt khổ ải" },
-      { word: "EXPAND", ipa: "/ɪkˈspænd/", type: "verb", meaning: "Khai mở, mở rộng đan điền" },
-      { word: "ZEALOUS", ipa: "/ˈzel.əs/", type: "adj", meaning: "Hăng hái, nhiệt huyết, tận tụy" },
-      { word: "ASCEND", ipa: "/əˈsend/", type: "verb", meaning: "Thăng hoa, phi thăng, độ kiếp" },
-
-      // BAND 7.0 - 7.5 (CAO CẤP • HƯ KHÔNG: 8-9 KÝ TỰ)
-      { word: "RESILIENT", ipa: "/rɪˈzɪl.i.ənt/", type: "adj", meaning: "Kiên cường, bền bỉ, hồi phục nhanh" },
-      { word: "PERSEVERE", ipa: "/ˌpɜː.sɪˈvɪər/", type: "verb", meaning: "Kiên trì, bền chí theo đuổi" },
-      { word: "DILIGENT", ipa: "/ˈdɪl.ɪ.dʒənt/", type: "adj", meaning: "Cần cù, siêng năng, chuyên tâm" },
-      { word: "ELOQUENT", ipa: "/ˈel.ə.kwənt/", type: "adj", meaning: "Hùng biện, lưu loát, truyền cảm" },
-      { word: "PROFOUND", ipa: "/prəˈfaʊnd/", type: "adj", meaning: "Sâu sắc, uyên thâm, thâm thúy" },
-      { word: "TRANQUIL", ipa: "/ˈtræŋ.kwɪl/", type: "adj", meaning: "Thanh tịnh, an tĩnh, bình yên" },
-      { word: "COGNITIVE", ipa: "/ˈkɒɡ.nə.tɪv/", type: "adj", meaning: "Thuộc về nhận thức, tư duy" },
-      { word: "TENACIOUS", ipa: "/təˈneɪ.ʃəs/", type: "adj", meaning: "Kiên quyết, kiên trì, gan lì" },
-      { word: "VERSATILE", ipa: "/ˈvɜː.sə.taɪl/", type: "adj", meaning: "Đa năng, linh hoạt, toàn diện" },
-      { word: "VINDICATE", ipa: "/ˈvɪn.dɪ.keɪt/", type: "verb", meaning: "Minh oan, chứng thực tính đúng" },
-      { word: "PRAGMATIC", ipa: "/præɡˈmæt.ɪk/", type: "adj", meaning: "Thực tế, thực dụng, trọng hiệu quả" },
-      { word: "AUTHENTIC", ipa: "/ɔːˈθen.tɪk/", type: "adj", meaning: "Đích thực, chân thật, nguyên bản" },
-      { word: "CULTIVATE", ipa: "/ˈkʌl.tɪ.veɪt/", type: "verb", meaning: "Tu dưỡng, trau dồi, bồi đắp" },
-
-      // BAND 8.0+ (TÔNG SƯ • HUYẾT LÔI: 10+ KÝ TỰ)
-      { word: "AMELIORATE", ipa: "/əˈmiː.li.ə.reɪt/", type: "verb", meaning: "Cải thiện, làm cho tốt đẹp hơn" },
-      { word: "SUBSTANTIAL", ipa: "/səbˈstæn.ʃəl/", type: "adj", meaning: "Đáng kể, trọng yếu, lớn lao" },
-      { word: "UBIQUITOUS", ipa: "/juːˈbɪk.wɪ.təs/", type: "adj", meaning: "Phổ biến, ở đâu cũng có mặt" },
-      { word: "COMPREHEND", ipa: "/ˌkɒm.prɪˈhend/", type: "verb", meaning: "Thấu hiểu trọn vẹn, lĩnh hội" },
-      { word: "METICULOUS", ipa: "/məˈtɪk.jə.ləs/", type: "adj", meaning: "Tỉ mỉ, cẩn trọng, kỹ lưỡng" },
-      { word: "SERENDIPITY", ipa: "/ˌser.ənˈdɪp.ə.ti/", type: "noun", meaning: "Cơ duyên may mắn bất ngờ" },
-      { word: "INNOVATIVE", ipa: "/ˈɪn.ə.və.tɪv/", type: "adj", meaning: "Sáng tạo, đổi mới, tiên phong" },
-      { word: "INEVITABLE", ipa: "/ɪnˈev.ɪ.tə.bəl/", type: "adj", meaning: "Tất yếu, không thể tránh khỏi" },
-      { word: "BENEVOLENT", ipa: "/bəˈnev.əl.ənt/", type: "adj", meaning: "Nhân từ, bác ái, rộng lượng" },
-      { word: "ENLIGHTEN", ipa: "/ɪnˈlaɪ.tən/", type: "verb", meaning: "Khai sáng, giác ngộ đạo lý" }
-    ];
-
-    let activeDeck = [...masterVocabDeck].sort(() => Math.random() - 0.5);
-    let deckIndex = 0;
+    const deckPointers = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
     let currentTarget = null;
+    let breakthroughPending = false;
 
     // Chỉ số & Nâng cấp Thần Thông (Roguelike Cultivation Stats)
     let playerMaxHP = 50;
@@ -1588,7 +1712,7 @@
             currentRealmIdx = i;
             currentRealm = CULTIVATION_REALMS[i].name;
             currentTitle = CULTIVATION_REALMS[i].title;
-            realmBadge.innerHTML = `🥋 <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
+            realmBadge.innerHTML = `[ 境 ] <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
             
             // TẠM DỪNG VÀ MỞ BẢNG LĨNH NGỘ THẦN THÔNG
             triggerBreakthroughTalents();
@@ -1628,7 +1752,7 @@
       cultivationScore = CULTIVATION_REALMS[idx].minScore;
       currentRealm = CULTIVATION_REALMS[idx].name;
       currentTitle = CULTIVATION_REALMS[idx].title;
-      realmBadge.innerHTML = `🥋 <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
+      realmBadge.innerHTML = `[ 境 ] <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
       playSound("breakthrough");
       setCatSpeech(`Thần thông biến hóa: ${currentTitle}!`, 2000);
       if (currentTarget) currentTarget.speedY = 0.38 * getSpeedMultiplier();
@@ -1653,43 +1777,53 @@
       setCatSpeech("Tiểu Miêu xuất trận! Kiếm chỉ ma thạch!", 2500);
     }
 
-    // Sinh từ mới từ kho từ vựng
+    // Sinh ma thạch tự động biến hóa theo Cảnh Giới Tu Tiên hiện tại
     function spawnNewWord() {
       if (playerHP <= 0) return;
 
-      if (deckIndex >= activeDeck.length) {
-        activeDeck = [...masterVocabDeck].sort(() => Math.random() - 0.5);
-        deckIndex = 0;
+      const rIdx = Math.min(4, Math.max(0, currentRealmIdx));
+      const realmDeck = REALM_DECKS[rIdx] || REALM_DECKS[0];
+
+      if (deckPointers[rIdx] >= realmDeck.length) {
+        realmDeck.sort(() => Math.random() - 0.5);
+        deckPointers[rIdx] = 0;
       }
 
-      const vocab = activeDeck[deckIndex];
-      deckIndex++;
+      const vocab = realmDeck[deckPointers[rIdx]];
+      deckPointers[rIdx]++;
 
       const padding = canvas.width * 0.20;
       const spawnX = padding + Math.random() * (canvas.width - padding * 2);
       const mult = getSpeedMultiplier();
+
+      const asteroidTypes = ["FROST", "INFERNO", "VOID", "BLOOD_THUNDER", "PRIMORDIAL"];
+      const aType = asteroidTypes[rIdx] || "FROST";
 
       currentTarget = {
         word: vocab.word,
         ipa: vocab.ipa,
         type: vocab.type,
         meaning: vocab.meaning,
+        asteroidType: aType,
+        realmIdx: rIdx,
         typedIndex: 0,
         baseX: spawnX,
         x: spawnX,
         y: 60,
-        speedY: 0.36 * mult,
+        speedY: (0.33 + rIdx * 0.05) * mult,
         width: 130,
         height: 120,
         floatSeed: Math.random() * 100,
-        swayAmp: 20 + Math.random() * 8,
+        swayAmp: 18 + Math.random() * 8,
         swaySpeed: 1.8 + Math.random() * 0.5,
         rotation: 0,
         pulseTime: 0,
         hitReaction: 0.0
       };
 
-      statusBar.innerHTML = `Mục tiêu: <strong style="color:#66FFB2;">${vocab.word}</strong> (${vocab.ipa}) - ${vocab.meaning} | ⚡ Tốc độ: <strong>x${mult.toFixed(1)}</strong>`;
+      const tagNames = ["[ BĂNG PHÁCH ]", "[ HỎA DIỄM ]", "[ HƯ KHÔNG ]", "[ HUYẾT LÔI ]", "[ THÁI SƠ ]"];
+      statusBar.innerHTML = `${tagNames[rIdx]} Cổ Ngữ: <strong style="color:#66FFB2;">${vocab.word}</strong> (${vocab.ipa}) - ${vocab.meaning} | [ 劫 ] Tốc độ: <strong>x${mult.toFixed(1)}</strong>`;
+      updateBattleHUD();
     }
 
     function setCatState(state, durationMs = 0) {
@@ -1710,27 +1844,35 @@
       showPantheon = false;
       setCatSpeech("Đan điền chấn động... nguyên khí cạn kiệt...", 3500);
       playSound("hurt");
+      // Tự động lưu tiến trình tu vi vào slot hiện tại
+      saveToSlot(activeSaveSlot, false);
+    }
+
+    function rebirthToLobby() {
+      // Lưu trữ toàn bộ thành tích vào ngọc giản
+      saveToSlot(activeSaveSlot, false);
+
+      // Phục hồi nguyên khí nhưng bảo toàn cảnh giới và điểm tu vi cao nhất
+      playerHP = playerMaxHP;
+      failedWords = [];
+      consecutiveKills = 0;
+      isPaused = false;
+      showGameOver = false;
+      showPantheon = false;
+      breakthroughPending = false;
+      currentTarget = null;
+
+      // Trở về Sảnh Chờ tịnh dưỡng
+      currentScene = "LOBBY";
+      setCatState("IDLE", 0);
+      updateSceneViews();
+      playSound("chime");
+      setCatSpeech("Hồi hương trà viện... Tịnh dưỡng đan điền chuẩn bị độ kiếp tiếp theo!", 3000);
+      statusBar.innerHTML = "[ TRÙNG SINH ] Đã hồi hương Sảnh Chờ! Toàn bộ Đạo Quả và Cảnh Giới đã được lưu giữ an toàn.";
     }
 
     function restartGame() {
-      playerHP = playerMaxHP;
-      cultivationScore = 0;
-      wordsSlainCount = 0;
-      currentRealmIdx = 0;
-      currentRealm = CULTIVATION_REALMS[0].name;
-      currentTitle = CULTIVATION_REALMS[0].title;
-      realmBadge.innerHTML = `🥋 <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
-      totalKeystrokes = 0;
-      correctKeystrokes = 0;
-      consecutiveKills = 0;
-      startTime = Date.now();
-      failedWords = [];
-      showGameOver = false;
-      showPantheon = false;
-      currentScene = "BATTLE";
-      setCatState("IDLE", 0);
-      setCatSpeech("Trùng sinh thành công! Tái ngộ phong vân!", 2500);
-      spawnNewWord();
+      rebirthToLobby();
     }
 
     function toggleMobileView() {
@@ -1761,12 +1903,21 @@
     function initVirtualKeyboard() {
       kbRows.forEach((row, rIdx) => {
         const rowEl = document.getElementById("kbRow" + (rIdx + 1));
+        if (!rowEl) return;
+        rowEl.innerHTML = "";
         row.forEach((key) => {
           const keyEl = document.createElement("div");
           keyEl.className = "kb-key";
           keyEl.id = "key_" + key;
           keyEl.innerText = key;
-          keyEl.addEventListener("click", (e) => {
+          // Gõ cảm ứng tức thì 0ms trên di động (không bị delay 300ms click)
+          keyEl.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleInputCharacter(key);
+          }, { passive: false });
+          keyEl.addEventListener("mousedown", (e) => {
+            e.preventDefault();
             e.stopPropagation();
             handleInputCharacter(key);
           });
@@ -1776,30 +1927,73 @@
     }
 
     // ==========================================
-    // 5. KEYBOARD & TOUCH INPUT CONTROLLER
+    // 5. KEYBOARD & TOUCH INPUT CONTROLLER (CHUẨN HÓA TOÀN DIỆN - KHÔNG XUNG ĐỘT PHÍM P)
     // ==========================================
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
-      if (e.key === "Tab" || e.key === "Escape") {
+
+      // Phím ESC: Tạm dừng trong trận hoặc đóng mở modal
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (showPantheon) {
+          togglePantheon();
+          return;
+        }
+        if (currentScene === "BATTLE") {
+          togglePauseGame();
+          return;
+        }
+        return;
+      }
+
+      if (e.key === "Tab") {
         e.preventDefault();
         togglePantheon();
         return;
       }
+
+      // Nếu đang tạm dừng trận đấu, bỏ qua phím gõ từ vựng
+      if (isPaused) return;
+
+      // Nếu đang trong thời gian đệm chờ xem từ vựng đột phá: Bấm Space/Enter để vào thẳng bảng chọn
+      if (breakthroughPending) {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          breakthroughPending = false;
+          triggerBreakthroughTalents();
+          return;
+        }
+      }
+
       if (currentScene === "BREAKTHROUGH") {
-        if (e.key === "1") selectTalent(0);
-        else if (e.key === "2") selectTalent(1);
-        else if (e.key === "3") selectTalent(2);
+        if (e.key === "1" || e.code === "Digit1" || e.code === "Numpad1") selectTalent(0);
+        else if (e.key === "2" || e.code === "Digit2" || e.code === "Numpad2") selectTalent(1);
+        else if (e.key === "3" || e.code === "Digit3" || e.code === "Numpad3") selectTalent(2);
         return;
       }
+
       if (currentScene === "LOBBY") {
-        if (e.key === "Enter" || e.key === " ") startBattleFromLobby();
+        if (e.key === "Enter" || e.code === "Space") {
+          e.preventDefault();
+          startBattleFromLobby();
+        }
         return;
       }
+
       if (showGameOver) {
-        if (e.key === "Enter" || e.key === " ") restartGame();
+        if (e.key === "Enter" || e.code === "Space") {
+          e.preventDefault();
+          rebirthToLobby();
+        }
         return;
       }
-      handleInputCharacter(e.key.toUpperCase());
+
+      // TRONG TRẬN ĐẤU: Nhập ký tự tiếng Anh A-Z (Bao gồm cả phím P/p mà không bị pause!)
+      if (currentScene === "BATTLE") {
+        if (e.key.length === 1 && /[a-zA-Z ]/.test(e.key)) {
+          handleInputCharacter(e.key.toUpperCase());
+        }
+      }
     });
 
     // XỬ LÝ CLICK MÀN HÌNH CANVAS
@@ -1814,9 +2008,16 @@
         const my = (canvas.height - modalH) / 2;
         const btnY = my + modalH - 58;
         if (clickY >= btnY && clickY <= btnY + 45) {
-          restartGame();
+          rebirthToLobby();
           return;
         }
+      }
+
+      // Nếu đang trong thời gian đệm chờ xem từ vựng đột phá: Click để vào thẳng bảng chọn
+      if (breakthroughPending) {
+        breakthroughPending = false;
+        triggerBreakthroughTalents();
+        return;
       }
 
       if (showPantheon) {
@@ -1929,9 +2130,9 @@
 
         // NẾU GÕ XONG HẾT TỪ: PHÁ VỠ MA THẠCH
         if (currentTarget.typedIndex >= currentTarget.word.length) {
-          destroyAsteroid(currentTarget);
+          const completedTarget = currentTarget;
           currentTarget = null;
-          setTimeout(() => spawnNewWord(), 850);
+          destroyAsteroid(completedTarget);
         }
       } else {
         // GÕ SAI: Deflect nhẹ, không trừ máu oan nếu có thần thông Thần Niệm
@@ -1963,8 +2164,8 @@
     function destroyAsteroid(target) {
       playSound("explosion");
       playSound("chime");
-      setCatState("ULTIMATE_BLAST", 500);
-      setCatSpeech("Vạn Kiếm Quy Tông! Phá!", 1800);
+      setCatState("ULTIMATE_BLAST", 600);
+      setCatSpeech("Vạn Kiếm Quy Tông! Phá!", 2000);
 
       // Điểm Tu Vi cộng thêm theo Thần Thông
       const gainedScore = Math.round(100 * playerTalents.scoreBonusMultiplier);
@@ -1977,28 +2178,25 @@
       if (isCrit) {
         damageFloats.push({
           text: "⚡ BẠO KÍCH CHÍ MẠNG! TRẢM KÉP CỔ NGỮ! ⚡",
-          x: canvas.width / 2,
-          y: canvas.height * 0.4,
+          x: Math.round(canvas.width / 2),
+          y: Math.round(canvas.height * 0.38),
           color: "#FFD700",
-          alpha: 1.2
+          alpha: 1.3
         });
-        cultivationScore += gainedScore; // Thưởng thêm 1 lần điểm
+        cultivationScore += gainedScore;
         wordsSlainCount++;
       }
 
       // KIỂM TRA VẠN KIẾM TỰ ĐỘNG TRẬN (COMBO x3)
       if (playerTalents.comboAutoKill && consecutiveKills % 3 === 0) {
         damageFloats.push({
-          text: "🌪️ VẠN KIẾM QUY TÔNG TRẬN KÍCH HOẠT! 🌪️",
-          x: canvas.width / 2,
-          y: canvas.height * 0.45,
+          text: "[ 劍 ] VẠN KIẾM TỰ ĐỘNG TRẬN KÍCH HOẠT!",
+          x: Math.round(canvas.width / 2),
+          y: Math.round(canvas.height * 0.44),
           color: "#00FFFF",
-          alpha: 1.2
+          alpha: 1.3
         });
       }
-
-      // Kiểm tra thăng cấp đột phá cảnh giới tu vi
-      checkCultivationProgress();
 
       // Số lượng phi kiếm phóng lên tăng theo cảnh giới
       const swordCount = 5 + currentRealmIdx * 2;
@@ -2018,20 +2216,69 @@
         x: target.x,
         y: target.y,
         life: 1.0,
-        radius: 45
+        radius: 48
       });
 
-      // Thần thức thấu thị (Floating IPA Card)
+      // KIỂM TRA ĐỘT PHÁ CẢNH GIỚI VÀ TÍNH TOÁN ĐỆM THỜI GIAN ĐỂ NGƯỜI CHƠI XEM TỪ VỰNG
+      let willBreakthrough = false;
+      let nextRealmIdx = currentRealmIdx;
+      for (let i = CULTIVATION_REALMS.length - 1; i >= 0; i--) {
+        if (cultivationScore >= CULTIVATION_REALMS[i].minScore) {
+          if (i > currentRealmIdx) {
+            willBreakthrough = true;
+            nextRealmIdx = i;
+          }
+          break;
+        }
+      }
+
+      // Thần thức thấu thị (Floating IPA Card) - HIỂN THỊ RÕ RÀNG
       ipaToasts.push({
         word: target.word,
         ipa: target.ipa,
         type: target.type,
         meaning: target.meaning,
         x: target.x,
-        y: target.y,
-        alpha: 1.0,
-        scale: 0.85
+        y: Math.max(90, target.y - 15),
+        alpha: 1.2,
+        scale: 0.9,
+        isBreakthrough: willBreakthrough
       });
+
+      if (willBreakthrough) {
+        // ĐÃ ĐẠT ĐIỂM ĐỘT PHÁ: BẬT THÔNG BÁO VÀ CHỜ 2.4 GIÂY ĐỂ NGƯỜI CHƠI XEM XONG TỪ VỰNG
+        currentRealmIdx = nextRealmIdx;
+        currentRealm = CULTIVATION_REALMS[nextRealmIdx].name;
+        currentTitle = CULTIVATION_REALMS[nextRealmIdx].title;
+        realmBadge.innerHTML = `[ 境 ] <strong>Cảnh Giới:</strong> ${currentRealm} (${currentTitle})`;
+        playSound("breakthrough");
+        setCatSpeech("Đột phá cảnh giới: " + currentRealm + "! Thấu triệt đạo nghĩa!", 3500);
+
+        damageFloats.push({
+          text: `⚡ ĐÃ ĐẠT ĐỘT PHÁ: [ ${currentRealm} ] ⚡`,
+          x: Math.round(canvas.width / 2),
+          y: Math.round(canvas.height * 0.32),
+          color: "#FFD700",
+          alpha: 1.6
+        });
+
+        breakthroughPending = true;
+        statusBar.innerHTML = `🌟 [ ĐỘT PHÁ ] Hoàn thành cổ ngữ! Đang thấu thị phiên âm... Sắp khai mở bảng Thần Thông!`;
+
+        setTimeout(() => {
+          if (breakthroughPending) {
+            breakthroughPending = false;
+            triggerBreakthroughTalents();
+          }
+        }, 2400);
+      } else {
+        // Không đột phá: Spawn từ tiếp theo sau 850ms
+        setTimeout(() => {
+          if (currentScene === "BATTLE" && !currentTarget && !breakthroughPending) {
+            spawnNewWord();
+          }
+        }, 850);
+      }
     }
 
     function handleAsteroidMissed(target) {
@@ -2224,17 +2471,9 @@
 
     function draw() {
       ctx.save();
-
-      // Screen shake
-      if (screenShake > 0) {
-        const sx = (Math.random() - 0.5) * screenShake;
-        const sy = (Math.random() - 0.5) * screenShake;
-        ctx.translate(sx, sy);
-      }
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Nền Trà Viện Tiên Cảnh
+      // 1. Nền Trà Viện Tiên Cảnh (Tĩnh, không rung)
       if (assets.bg.loaded) {
         ctx.drawImage(assets.bg.img, 0, 0, canvas.width, canvas.height);
       } else {
@@ -2246,20 +2485,76 @@
       if (currentScene === "LOBBY") {
         drawLobbyScene();
       } else if (currentScene === "BATTLE") {
-        drawBattleScene();
+        // LỚP 1 (RUNG CHIẾN TRƯỜNG): Chỉ rung ma thạch, kiếm khí bay, vụ nổ
+        ctx.save();
+        if (screenShake > 0) {
+          const sx = Math.round((Math.random() - 0.5) * screenShake);
+          const sy = Math.round((Math.random() - 0.5) * screenShake);
+          ctx.translate(sx, sy);
+        }
+        drawBattleDynamicEntities();
+        ctx.restore();
+
+        // LỚP 2 (TĨNH TUYỆT ĐỐI): Miêu Tiên, Hiệu ứng 2D Thần Thông, Thần Thức IPA, HUD & Chữ Sát Thương
+        drawBattleStaticLayers();
       } else if (currentScene === "BREAKTHROUGH") {
+        // Bảng Đột Phá Roguelike: Tuyệt đối tĩnh, chữ không rung giật
         drawBreakthroughTalentModal();
       }
 
-      // Modals phủ lên
-      if (showPantheon) {
-        drawPantheonModal();
-      }
-      if (showGameOver) {
-        drawGameOverModal();
-      }
+      // Modals phủ lên (Tĩnh, sắc nét)
+      if (showPantheon) drawPantheonModal();
+      if (showGameOver) drawGameOverModal();
 
       ctx.restore();
+    }
+
+    function drawBattleDynamicEntities() {
+      // Vành đai bảo vệ đan điền
+      ctx.save();
+      ctx.strokeStyle = "rgba(102, 255, 178, 0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height - 180);
+      ctx.lineTo(canvas.width, canvas.height - 180);
+      ctx.stroke();
+
+      ctx.font = "normal 10px sans-serif";
+      ctx.fillStyle = "rgba(102, 255, 178, 0.45)";
+      ctx.textAlign = "right";
+      ctx.fillText("[ 敕 ] VÀNH ĐAI BẢO VỆ ĐAN ĐIỀN", canvas.width - 15, canvas.height - 186);
+      ctx.restore();
+
+      // Ma Thạch Rơi
+      if (currentTarget) drawAsteroid(currentTarget);
+
+      // Đạn Kiếm Khí & Phi Kiếm Bay Lên
+      drawProjectiles();
+
+      // Vụ nổ & Tia lửa va chạm
+      drawExplosions();
+      drawHitSparks();
+    }
+
+    function drawBattleStaticLayers() {
+      // Hiệu ứng động 2D của 6 Thần Thông Đang Kích Hoạt
+      drawTalentActiveEffects();
+
+      // Miêu Kiếm Tôn (Biến hình theo cảnh giới)
+      drawCatCultivator();
+
+      // Thần Thức Thấu Thị (IPA Toast)
+      drawIPAToasts();
+
+      // Damage floats (Đã làm tròn tọa độ pixel để không bị rung)
+      drawDamageFloats();
+
+      // HUD Cảnh Giới Tu Tiên & Tốc Độ EXP
+      drawPlayerHUD();
+
+      // DÒNG XUẤT KIẾM (HIỆN CHỮ USER BẤM)
+      drawPlayerKeystrokeStream();
     }
 
     // ==========================================
@@ -2324,11 +2619,11 @@
       ctx.fillStyle = "#FFD700";
       ctx.fillText(`🥋 Cảnh Giới: ${currentRealm} (${currentTitle})`, cx + 20, cy + 28);
       ctx.fillStyle = "#66FFB2";
-      ctx.fillText(`❤️ Đan Điền Khí Huyết: ${playerHP} / ${playerMaxHP} HP`, cx + 20, cy + 52);
+      ctx.fillText(`[ 氣 ] Khí Huyết: ${playerHP} / ${playerMaxHP} HP`, cx + 20, cy + 52);
 
       ctx.fillStyle = "#ECD7B0";
-      ctx.fillText(`⭐ Tu Vi Hiện Có: ${cultivationScore} pts`, cx + cardW / 2 + 10, cy + 28);
-      ctx.fillText(`⚔️ Cổ Ngữ Đã Trảm: ${wordsSlainCount} từ`, cx + cardW / 2 + 10, cy + 52);
+      ctx.fillText(`[ 丹 ] Tu Vi Tích Lũy: ${cultivationScore} pts`, cx + cardW / 2 + 10, cy + 28);
+      ctx.fillText(`[ 斬 ] Cổ Ngữ Đã Trảm: ${wordsSlainCount} từ`, cx + cardW / 2 + 10, cy + 52);
 
       // 5. Nút Khởi Động Xuất Trận (Bắt đầu chơi)
       const btnW = 260;
@@ -2807,6 +3102,142 @@
     }
 
     // ==========================================
+        // ==========================================
+    // 9B. HIỆU ỨNG ĐỘNG 2D CỦA 6 THẦN THÔNG TIÊN ĐẠO (ACTIVE TALENT EFFECTS)
+    // ==========================================
+    function drawTalentActiveEffects() {
+      const time = performance.now() * 0.002;
+      const BASE_X = canvas.width / 2;
+      const BASE_Y = canvas.height - 15;
+
+      // 1. CỐ BẢN BỒI NGUYÊN (Linh Dược Trì / Bích Ngọc Hộ Thể)
+      if (playerTalents.hpBonus > 0) {
+        ctx.save();
+        const pulse = 1.0 + Math.sin(time * 3) * 0.1;
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#10B981";
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.ellipse(BASE_X, BASE_Y - 20, 58 * pulse, 22 * pulse, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 2. ĐỊNH THẦN THANH TÂM (Thời Gian Trận Pháp / Bát Quái Cực Quang)
+      if (playerTalents.slowFactor < 1.0) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.arc(BASE_X, canvas.height / 2, 180, -time * 0.5, -time * 0.5 + Math.PI * 2);
+        ctx.stroke();
+        ctx.font = "bold 11px serif";
+        ctx.fillStyle = "rgba(56, 189, 248, 0.6)";
+        ctx.fillText("遲", BASE_X - 160, canvas.height / 2);
+        ctx.fillText("定", BASE_X + 160, canvas.height / 2);
+        ctx.restore();
+      }
+
+      // 3. NHẤT KIẾM PHÂN THẦN (Song Phi Kiếm ảo ảnh xoay quanh thân)
+      if (playerTalents.critChance > 0) {
+        ctx.save();
+        for (let k = 0; k < 2; k++) {
+          const kAng = time * 2.5 + k * Math.PI;
+          const kx = BASE_X + Math.cos(kAng) * 65;
+          const ky = BASE_Y - 75 + Math.sin(kAng) * 22;
+          ctx.save();
+          ctx.translate(kx, ky);
+          ctx.rotate(kAng + Math.PI / 2);
+          ctx.fillStyle = "#FEF08A";
+          ctx.strokeStyle = "#F59E0B";
+          ctx.lineWidth = 1;
+          ctx.shadowColor = "#F59E0B";
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(0, -14); ctx.lineTo(3, 4); ctx.lineTo(-3, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      // 4. THẦN NIỆM TỎA ĐỊNH (Thiên Nhãn Phù Quang [ 念 ])
+      if (playerTalents.scoreBonusMultiplier > 1 && currentTarget) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 215, 0, 0.4)";
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(BASE_X, BASE_Y - 100);
+        ctx.lineTo(currentTarget.x, currentTarget.y);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(currentTarget.x, currentTarget.y);
+        ctx.rotate(time * 2);
+        ctx.strokeStyle = "#FFD700";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-25, -25, 50, 50);
+        ctx.restore();
+        ctx.restore();
+      }
+
+      // 5. KIM CHUNG TRÀO HỘ THỂ (Đại Kim Cương Chung Hoàng Kim)
+      if (playerTalents.shieldCharges > 0) {
+        ctx.save();
+        const bellPulse = 1.0 + Math.sin(time * 3.5) * 0.03;
+        ctx.strokeStyle = "rgba(251, 191, 36, 0.85)";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#F59E0B";
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(BASE_X, BASE_Y - 70, 72 * bellPulse, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const runes = ["敕", "令", "護", "體"];
+        for (let r = 0; r < 4; r++) {
+          const rAng = time * 1.5 + r * (Math.PI / 2);
+          const rx = BASE_X + Math.cos(rAng) * 72 * bellPulse;
+          const ry = BASE_Y - 70 + Math.sin(rAng) * 72 * bellPulse;
+          ctx.font = "bold 11px serif";
+          ctx.fillStyle = "#FFD700";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(runes[r], rx, ry);
+        }
+        ctx.restore();
+      }
+
+      // 6. VẠN KIẾM TỰ ĐỘNG TRẬN (Bắc Đẩu Thất Tinh Kiếm Trận)
+      if (playerTalents.comboAutoKill) {
+        ctx.save();
+        for (let s = 0; s < 5; s++) {
+          const sAng = -time * 1.8 + s * (Math.PI * 2 / 5);
+          const sx = BASE_X + Math.cos(sAng) * 85;
+          const sy = BASE_Y - 80 + Math.sin(sAng) * 35;
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(sAng + Math.PI / 2);
+          ctx.fillStyle = "#A7F3D0";
+          ctx.strokeStyle = "#34D399";
+          ctx.lineWidth = 1;
+          ctx.shadowColor = "#10B981";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(0, -12); ctx.lineTo(2.5, 3); ctx.lineTo(-2.5, 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+    }
+
     // 10. VẼ MIÊU KIẾM TÔN TIẾN HÓA & HIỆU ỨNG CHIÊU THỨC
     // ==========================================
     function drawCatCultivator() {
@@ -2818,24 +3249,23 @@
 
       let sprite = assets.cat_idle.img;
 
-      if (currentRealmIdx >= 4 && assets.cat_celestial_sovereign.loaded) {
+      // Ưu tiên hoạt ảnh trạng thái chiến đấu (HURT/DEFEATED) trước khi chọn trang phục cảnh giới
+      if (catState === "DEFEATED" && assets.cat_defeated.loaded) {
+        sprite = assets.cat_defeated.img;
+      } else if (catState === "HURT" && assets.cat_hurt.loaded) {
+        sprite = assets.cat_hurt.img;
+      } else if (currentRealmIdx >= 4 && assets.cat_celestial_sovereign.loaded) {
         sprite = assets.cat_celestial_sovereign.img;
       } else if (currentRealmIdx === 3 && assets.cat_nascent_soul.loaded) {
         sprite = assets.cat_nascent_soul.img;
       } else if (currentRealmIdx === 2 && assets.cat_golden_core.loaded) {
         sprite = assets.cat_golden_core.img;
+      } else if (catState === "ULTIMATE_BLAST" && assets.cat_ultimate_blast.loaded) {
+        sprite = assets.cat_ultimate_blast.img;
+      } else if (catState === "WEAK_ATTACK" && assets.cat_weak_attack.loaded) {
+        sprite = assets.cat_weak_attack.img;
       } else {
-        if (catState === "HURT" && assets.cat_hurt.loaded) {
-          sprite = assets.cat_hurt.img;
-        } else if (catState === "DEFEATED" && assets.cat_defeated.loaded) {
-          sprite = assets.cat_defeated.img;
-        } else if (catState === "ULTIMATE_BLAST" && assets.cat_ultimate_blast.loaded) {
-          sprite = assets.cat_ultimate_blast.img;
-        } else if (catState === "WEAK_ATTACK" && assets.cat_weak_attack.loaded) {
-          sprite = assets.cat_weak_attack.img;
-        } else {
-          sprite = assets.cat_idle.img;
-        }
+        sprite = assets.cat_idle.img;
       }
 
       if (!sprite) return;
@@ -3122,6 +3552,141 @@
         ctx.lineTo(BASE_X + 8, drawY + 75);
         ctx.lineTo(BASE_X + 20, drawY + 90);
         ctx.stroke();
+        ctx.restore();
+      }
+
+            // ==========================================
+      // HIỆU ỨNG CHOÁNG (STUN) ĐẶC TRƯNG RIÊNG BIỆT CHO TỪNG CẢNH GIỚI
+      // ==========================================
+      if (catState === "HURT") {
+        ctx.save();
+        if (currentRealmIdx === 0) {
+          // [CẢNH 1 - LUYỆN KHÍ]: Vết nứt tinh thể băng lam + sao hoa mắt quay tròn
+          ctx.strokeStyle = "#38BDF8";
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = "#38BDF8";
+          ctx.shadowBlur = 10;
+          for (let s = 0; s < 3; s++) {
+            const sAng = time * 4 + s * (Math.PI * 2 / 3);
+            const sx = BASE_X + Math.cos(sAng) * 28;
+            const sy = drawY + 35 + Math.sin(sAng) * 10;
+            ctx.fillStyle = "#E0F2FE";
+            ctx.beginPath();
+            ctx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentRealmIdx === 1) {
+          // [CẢNH 2 - TRÚC CƠ]: Tâm ma phản phệ, tàn lửa đỏ cam bốc lên từ đài thiền
+          for (let f = 0; f < 5; f++) {
+            const fx = BASE_X + Math.sin(time * 5 + f) * 32;
+            const fy = drawY + 80 - (f * 14 + (time * 40) % 25);
+            ctx.fillStyle = f % 2 === 0 ? "#F97316" : "#EF4444";
+            ctx.shadowColor = "#F97316";
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(fx, fy, 4 - f * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentRealmIdx === 2) {
+          // [CẢNH 3 - KIM ĐAN]: Kim Liên rạn nứt, Kim Đan mất ổn định rung lắc phát quang
+          const kx = BASE_X + (Math.random() - 0.5) * 8;
+          const ky = drawY + 98 + (Math.random() - 0.5) * 8;
+          ctx.strokeStyle = "#F59E0B";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#F59E0B";
+          ctx.shadowBlur = 16;
+          ctx.beginPath();
+          ctx.arc(kx, ky, 18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(kx - 12, ky - 6); ctx.lineTo(kx, ky + 4); ctx.lineTo(kx + 10, ky - 8);
+          ctx.stroke();
+        } else if (currentRealmIdx === 3) {
+          // [CẢNH 4 - NGUYÊN ANH]: Anh Linh ôm trán ngã quỵ, tia sét tím Cửu Thiên giật giật
+          const soulX = BASE_X + 15;
+          const soulY = drawY + 20;
+          ctx.strokeStyle = "#C084FC";
+          ctx.lineWidth = 2;
+          ctx.shadowColor = "#A855F7";
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.moveTo(BASE_X, drawY + 70);
+          ctx.lineTo(soulX, soulY);
+          ctx.stroke();
+        } else if (currentRealmIdx >= 4) {
+          // [CẢNH 5 - HÓA THẦN]: Chân Long gầm vang giương vảy che chắn, Bát Quái hộ thể rạn vỡ
+          ctx.strokeStyle = "#FFD700";
+          ctx.lineWidth = 3;
+          ctx.shadowColor = "#FFD700";
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.arc(BASE_X, drawY + 75, 62, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // ==========================================
+      // HIỆU ỨNG TỬ TRẬN (DEFEATED / TRÙNG SINH) RIÊNG BIỆT TỪNG CẢNH GIỚI
+      // ==========================================
+      if (catState === "DEFEATED") {
+        ctx.save();
+        if (currentRealmIdx === 0) {
+          // Luyện Khí: Kiếm trúc cắm đất, linh khí hóa bướm trà lục biếc tan biến
+          ctx.fillStyle = "rgba(102, 255, 178, 0.75)";
+          ctx.shadowColor = "#66FFB2";
+          ctx.shadowBlur = 12;
+          for (let b = 0; b < 6; b++) {
+            const bx = BASE_X + Math.sin(time * 3 + b) * (30 + b * 6);
+            const by = drawY + 90 - (time * 50 + b * 20) % 90;
+            ctx.beginPath();
+            ctx.ellipse(bx, by, 6, 3.5, time * 2 + b, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentRealmIdx === 1) {
+          // Trúc Cơ: Niết Bàn Chân Hỏa phượng hoàng bốc cháy cuồn cuộn
+          ctx.fillStyle = "rgba(249, 115, 22, 0.75)";
+          ctx.shadowColor = "#EF4444";
+          ctx.shadowBlur = 18;
+          for (let p = 0; p < 8; p++) {
+            const px = BASE_X + Math.cos(p) * (20 + p * 4);
+            const py = drawY + 110 - (time * 60 + p * 15) % 110;
+            ctx.beginPath();
+            ctx.arc(px, py, 6 - p * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentRealmIdx === 2) {
+          // Kim Đan: Kim Đan tự bạo vỡ tung 16 tia hoàng kim chói lòa
+          ctx.strokeStyle = "#FFD700";
+          ctx.lineWidth = 2;
+          ctx.shadowColor = "#FFD700";
+          ctx.shadowBlur = 24;
+          for (let r = 0; r < 16; r++) {
+            const ang = r * (Math.PI / 8) + time;
+            ctx.beginPath();
+            ctx.moveTo(BASE_X, drawY + 80);
+            ctx.lineTo(BASE_X + Math.cos(ang) * 70, drawY + 80 + Math.sin(ang) * 70);
+            ctx.stroke();
+          }
+        } else if (currentRealmIdx === 3) {
+          // Nguyên Anh: Nguyên Anh thoát xác bay vút lên trời để lại đạo bào tím
+          ctx.fillStyle = "rgba(192, 132, 252, 0.9)";
+          ctx.shadowColor = "#C084FC";
+          ctx.shadowBlur = 20;
+          const ascendY = drawY + 40 - (time * 70) % 120;
+          ctx.beginPath();
+          ctx.arc(BASE_X, ascendY, 14, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (currentRealmIdx >= 4) {
+          // Hóa Thần: Vũ Hóa Đăng Tiên, thiên môn mở ra rồng vàng nâng chân thân
+          ctx.strokeStyle = "#FFDF79";
+          ctx.lineWidth = 3;
+          ctx.shadowColor = "#FFD700";
+          ctx.shadowBlur = 25;
+          ctx.beginPath();
+          ctx.ellipse(BASE_X, drawY + 70, 75, 25, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
@@ -3751,10 +4316,11 @@
       for (const df of damageFloats) {
         ctx.save();
         ctx.globalAlpha = Math.max(0, df.alpha);
-        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.font = "bold 13px 'Palatino Linotype', 'Segoe UI', sans-serif";
         ctx.fillStyle = df.color;
         ctx.textAlign = "center";
-        ctx.fillText(df.text, df.x, df.y);
+        // Làm tròn pixel tuyệt đối để không bị jitter/rung chữ
+        ctx.fillText(df.text, Math.round(df.x), Math.round(df.y));
         ctx.restore();
       }
     }
@@ -3805,19 +4371,19 @@
       ctx.fillStyle = currentRealmIdx >= 2 ? "#FFD700" : "#A7D08C";
       ctx.shadowColor = currentRealmIdx >= 2 ? "#FFD700" : "transparent";
       ctx.shadowBlur = currentRealmIdx >= 2 ? 6 : 0;
-      ctx.fillText(`🥋 ${currentRealm} • ${currentTitle}`, hX + 34, hY + 24);
+      ctx.fillText(`[ 境 ] ${currentRealm} • ${currentTitle}`, hX + 34, hY + 24);
       ctx.shadowBlur = 0;
 
       // Tu Vi & Trảm Ma
       ctx.font = "normal 11px 'Palatino Linotype', serif";
       ctx.fillStyle = "#FFFDF5";
-      ctx.fillText(`⭐ Tu Vi: ${cultivationScore} pts • Trảm Ma: ${wordsSlainCount} từ`, hX + 12, hY + 44);
+      ctx.fillText(`[ 丹 ] Tu Vi: ${cultivationScore} pts • [ 斬 ] Trảm Ma: ${wordsSlainCount} từ`, hX + 12, hY + 44);
 
       // Thiên Kiếp & Thuẫn
       const mult = getSpeedMultiplier();
       ctx.font = "normal 11px serif";
       ctx.fillStyle = "#F59E0B";
-      ctx.fillText(`⚡ Thiên Kiếp: x${mult.toFixed(1)} | Kim Chung Thuẫn: ${playerTalents.shieldCharges} tầng`, hX + 12, hY + 60);
+      ctx.fillText(`[ 劫 ] Thiên Kiếp: x${mult.toFixed(1)} | [ 敕 ] Kim Chung Thuẫn: ${playerTalents.shieldCharges} tầng`, hX + 12, hY + 60);
 
       // 2. HỒ LÔ LINH DƯỢC / BÌNH ĐAN ĐIỀN (ELIXIR VESSEL HP CONTAINER)
       const vesselX = hX + 12;
@@ -4182,7 +4748,7 @@
 
       ctx.font = "normal 10px 'Segoe UI', sans-serif";
       ctx.fillStyle = "#047857";
-      ctx.fillText(`🥋 ${currentRealm}`, silkX + 68, myCardY + 36);
+      ctx.fillText(`[ 境 ] ${currentRealm}`, silkX + 68, myCardY + 36);
 
       ctx.font = "bold 11px 'Courier New', monospace";
       ctx.textAlign = "right";
@@ -4269,7 +4835,7 @@
       ctx.font = "bold 12.5px 'Segoe UI', sans-serif";
       ctx.fillStyle = "#FFFDF5";
       ctx.fillText(`⭐ Điểm Tu Vi: ${cultivationScore} pts`, mx + 35, statsBoxY + 25);
-      ctx.fillText(`⚔️ Cổ Ngữ Đã Trảm: ${wordsSlainCount} từ`, mx + 35, statsBoxY + 48);
+      ctx.fillText(`[ 斬 ] Cổ Ngữ Đã Trảm: ${wordsSlainCount} từ`, mx + 35, statsBoxY + 48);
       ctx.fillText(`🥋 Cảnh Giới Đạt Đến: ${currentRealm} (${currentTitle})`, mx + 35, statsBoxY + 70);
 
       ctx.fillText(`⚡ Tốc Độ: ${wpm} WPM`, mx + modalW / 2 + 15, statsBoxY + 25);
@@ -4318,7 +4884,7 @@
       ctx.font = "bold 13.5px 'Palatino Linotype', serif";
       ctx.fillStyle = "#FFFDF5";
       ctx.textAlign = "center";
-      ctx.fillText("🔄 TRÙNG SINH ĐỘ KIẾP LẠI", canvas.width / 2, btnY + 25);
+      ctx.fillText("[ 歸 ] TRÙNG SINH HỒI HƯƠNG SẢNH CHỜ", canvas.width / 2, btnY + 25);
 
       ctx.restore();
     }
@@ -4707,11 +5273,17 @@
     let isZenMusicPlaying = false;
     function toggleZenMusic() {
       isZenMusicPlaying = !isZenMusicPlaying;
-      playSound(isZenMusicPlaying ? "chime" : "slash");
+      if (isZenMusicPlaying) {
+        startZenGuqinEngine();
+        playSound("chime");
+      } else {
+        stopZenGuqinEngine();
+        playSound("slash");
+      }
       const label = document.getElementById("lobbyMusicLabel");
       if (label) label.innerText = isZenMusicPlaying ? "Nhạc: BẬT" : "Nhạc: TẮT";
       setCatSpeech(isZenMusicPlaying ? "Cổ Cầm thanh tịnh, tâm cảnh an yên..." : "Đã tạm dừng Trà Nhạc.", 2000);
-      statusBar.innerHTML = isZenMusicPlaying ? "[ TĨNH TÂM ] Cổ Cầm Trà Nhạc đang phát..." : "[ TĨNH TÂM ] Đã tắt Trà Nhạc.";
+      statusBar.innerHTML = isZenMusicPlaying ? "[ TĨNH TÂM ] Cổ Cầm Trà Nhạc ngũ cung đang phát..." : "[ TĨNH TÂM ] Đã tắt Trà Nhạc.";
     }
 
     function updateSceneViews() {
@@ -4754,24 +5326,7 @@
       playSound("chime");
     };
 
-    // Phím tắt bàn phím tiện lợi
-    window.addEventListener("keydown", (e) => {
-      // Trong sảnh chờ: Bấm Space hoặc Enter để vào trận ngay!
-      if (currentScene === "LOBBY") {
-        if (e.code === "Space" || e.code === "Enter") {
-          e.preventDefault();
-          startBattleFromLobby();
-          return;
-        }
-      }
-
-      // Trong trận đấu: Bấm Escape hoặc P để tạm dừng
-      if (currentScene === "BATTLE") {
-        if (e.key === "Escape" || e.code === "KeyP") {
-          togglePauseGame();
-        }
-      }
-    });
+// Bộ điều khiển bàn phím chuẩn được quản trị tại Mục 5 (Keyboard Controller)
 
     // Màn hình khởi tạo loading khi mở trang lần đầu
     window.addEventListener("DOMContentLoaded", () => {

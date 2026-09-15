@@ -552,7 +552,7 @@ export const MeowchaGame: React.FC = () => {
     if (gameMode !== "battle" || isPaused || isGameOver || showBreakthrough) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "p" || e.key === "P") {
+      if (e.key === "Escape") {
         e.preventDefault();
         setIsPaused(prev => !prev);
         return;
