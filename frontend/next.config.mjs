@@ -5,8 +5,12 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/meowcha/:path*',
+        destination: `${backendTarget}/api/meowcha/:path*`,
+      },
+      {
         source: '/api/:path*',
-        destination: `${backendTarget}/api/:path*`,
+        destination: `${backendTarget}/:path*`,
       },
       {
         source: '/static/:path*',

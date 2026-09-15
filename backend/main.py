@@ -126,6 +126,19 @@ from meowcha_routes import router as meowcha_router
 from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
+
+@app.middleware("http")
+async def normalize_api_path_middleware(request: Request, call_next):
+    """
+    Chuẩn hóa đường dẫn: Nếu request tới /api/* (ngoại trừ /api/meowcha),
+    tự động strip prefix /api để định tuyến chính xác vào các route gốc
+    như /vocabulary, /community/feed, /community/curated-vocab, /auth/me, v.v.
+    """
+    path = request.scope.get("path", "")
+    if path.startswith("/api/") and not path.startswith("/api/meowcha"):
+        request.scope["path"] = path[4:]
+    return await call_next(request)
+
 app.include_router(auth_router)
 app.include_router(meowcha_router)
 
