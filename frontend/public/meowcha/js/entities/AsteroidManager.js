@@ -66,7 +66,11 @@
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[realmIdx] || { speedMult: 1.0 };
-      const baseSpeed = (0.28 + realmIdx * 0.15) * (realmData.speedMult || 1.0) * slowFactor;
+      let baseSpeed = (0.28 + realmIdx * 0.15) * (realmData.speedMult || 1.0) * slowFactor;
+      if (realmIdx >= 4) {
+        // DẠNG THẦN CAO NHẤT: Ma thạch giáng lâm cực tốc hỗn độn
+        baseSpeed *= 1.35;
+      }
 
       // Góc nghiêng tự nhiên (-10° đến +10°)
       const lateralDrift = (Math.random() - 0.5) * 0.5;

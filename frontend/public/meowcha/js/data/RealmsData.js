@@ -76,7 +76,7 @@
       id: 4,
       name: "Độ Kiếp Kỳ",
       title: "Thái Thượng Kiếm Tôn",
-      band: "Master C2",
+      band: "Thần Cảnh Vô Cực (Random Toàn Bộ Oxford 5000)",
       minScore: 30000,
       minWords: 150,
       color: "#F43F5E",
@@ -85,9 +85,9 @@
       swordColor: "#FDE047",
       asteroidType: "PRIMORDIAL",
       elementName: "Thái Sơ Hỗn Độn Thạch",
-      desc: "Hoàng Kim Đế Tọa, Lục Kiếm Trận 3D xoay quanh, Chân Long xuất thế",
+      desc: "Thần Cảnh Vạn Pháp Quy Tông: Ngẫu nhiên toàn bộ từ vựng từ đầu tới cuối, tốc độ rơi cực hạn",
       auraColor: "#FCD34D",
-      speedMult: 2.85
+      speedMult: 3.20
     }
   ];
 

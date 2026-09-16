@@ -4,7 +4,7 @@
  */
 (function(root) {
   class TypingEngine {
-    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX) {
+    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null) {
       this.state = gameState;
       this.asteroids = asteroidManager;
       this.projectiles = projectileSystem;
@@ -12,6 +12,7 @@
       this.audio = audioManager;
       this.floatingText = floatingText;
       this.realmVFX = realmVFX;
+      this.unityBridge = unityBridge;
 
       this.currentTarget = null;
       this.onWordCompleted = null;
@@ -63,6 +64,9 @@
         this.state.correctKeystrokes++;
         this.state.catRecoveryPulse = 1.0;
         this.state.setCatState("WEAK_ATTACK", 160);
+        if (this.unityBridge) {
+          this.unityBridge.triggerWeakAttack(target.x, target.y);
+        }
 
         const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
         const catX = canvas.width / 2;
@@ -137,6 +141,9 @@
 
       // 2. Đại chiêu ULTIMATE_BLAST & Rung nhẹ màn hình (Screen Shake)
       this.state.setCatState("ULTIMATE_BLAST", 600);
+      if (this.unityBridge) {
+        this.unityBridge.triggerUltimateBlast();
+      }
       this.state.screenShake = this.state.realmIdx >= 3 ? 9 : 6;
       this.audio.play("explosion");
       this.audio.play("chime");

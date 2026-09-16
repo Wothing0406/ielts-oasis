@@ -225,9 +225,12 @@ export default function MeowchaGamePage() {
     setTimeout(() => setToastMsg(null), 2500);
   };
 
-    const handleLoadSlotIntoGame = (slot: SaveSlotItem) => {
+  const handleLoadSlotIntoGame = (slot: SaveSlotItem) => {
     setActiveLoadedSave(slot);
     setActiveTab("arena");
+    if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
+      gameIframeRef.current.contentWindow.postMessage({ type: "MEOWCHA_LOAD_SLOT", data: slot }, "*");
+    }
     setToastMsg(`Đang nạp Đạo Quả File ${slot.slot_id} (${slot.realm}) vào trận chiến...`);
     setTimeout(() => setToastMsg(null), 3000);
   };
@@ -235,6 +238,9 @@ export default function MeowchaGamePage() {
   const handleLaunchTargetWord = (word: string) => {
     setTargetWord(word.toUpperCase());
     setActiveTab("arena");
+    if (gameIframeRef.current && gameIframeRef.current.contentWindow) {
+      gameIframeRef.current.contentWindow.postMessage({ type: "MEOWCHA_SPAWN_WORD", word: word.toUpperCase() }, "*");
+    }
     setToastMsg(`Khởi tạo thiên thạch chứa cổ ngữ: "${word.toUpperCase()}"!`);
     setTimeout(() => setToastMsg(null), 3000);
   };
@@ -378,28 +384,17 @@ export default function MeowchaGamePage() {
       </header>
 
       {/* ===================================================================== */}
-      {/* 2. TAB 1: ĐỘ KIẾP ĐÀI (NATIVE REACT TSX + CANVAS GAME ENGINE) */}
+      {/* 2. TAB 1: ĐỘ KIẾP ĐÀI (FULL MEOWCHA XIANXIA AAA ENGINE + UNITY BRIDGE) */}
       {/* ===================================================================== */}
       {activeTab === "arena" && (
         <main className="flex-1 w-full h-[calc(100vh-44px)] bg-[#100804] flex flex-col items-center justify-center p-0 m-0 overflow-hidden relative" id="meowcha-frame-container">
-          <MeowchaGame
+          <iframe
+            ref={gameIframeRef}
             key={gameKey}
-            currentUser={currentUser}
-            onScoreSubmitted={() => fetchLeaderboard()}
-            targetInitialWord={targetWord}
-            loadedSave={activeLoadedSave}
-            onOpenLeaderboardTab={() => {
-              setActiveTab("leaderboard");
-              fetchLeaderboard();
-            }}
-            onOpenSavesTab={() => {
-              setActiveTab("saves");
-              fetchSaveSlots();
-            }}
-            onOpenVocabTab={() => {
-              setActiveTab("vocab");
-              fetchVocabList(1, selectedBand, debouncedSearch);
-            }}
+            src="/meowcha/index.html"
+            className="w-full h-full border-none block m-0 p-0"
+            title="Meowcha Xianxia Game Engine"
+            allow="autoplay"
           />
         </main>
       )}

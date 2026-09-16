@@ -46,7 +46,7 @@
       this.projectiles = new M.ProjectileSystem(this.assets);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
-      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX);
+      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge);
 
       this.ipaToast = null;
       this.vKeyboard = null;
@@ -165,6 +165,14 @@
             this.gameState.loadFromSlot(slot);
             this.startBattle();
           }
+        } else if (event.data.type === "MEOWCHA_SPAWN_WORD") {
+          const w = event.data.word;
+          if (w) {
+            if (this.gameState.currentScene !== "BATTLE") {
+              this.startBattle();
+            }
+            this.asteroids.spawn({ word: w, ipa: "/.../", meaning: "Chỉ định trảm ma", type: "cổ ngữ" }, this.canvas.width, this.gameState.realmIdx);
+          }
         } else if (event.data.type === "MEOWCHA_RELOAD") {
           window.location.reload();
         }
@@ -261,19 +269,44 @@
 
     spawnWord() {
       if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver) return;
-      const maxAsteroids = this.gameState.realmIdx >= 3 ? 4 : (this.gameState.realmIdx >= 1 ? 3 : 2);
+      const maxAsteroids = this.gameState.realmIdx >= 4 ? 4 : (this.gameState.realmIdx >= 3 ? 4 : (this.gameState.realmIdx >= 1 ? 3 : 2));
       if (this.asteroids.count >= maxAsteroids) return; // Cho phép nhiều ma thạch cùng xuất hiện ở cảnh giới cao
 
       const bandIdx = (this.gameState.selectedBandIdx !== undefined && this.gameState.selectedBandIdx !== null) ? this.gameState.selectedBandIdx : this.gameState.realmIdx;
       const realmDecks = M.REALM_DECKS || {};
-      const deck = realmDecks[bandIdx] || realmDecks[this.gameState.realmIdx] || realmDecks[0];
-      const wordItem = deck[Math.floor(Math.random() * deck.length)];
+      const deck = realmDecks[bandIdx] || realmDecks[this.gameState.realmIdx] || realmDecks[0] || [];
+
+      let wordItem;
+      let effectiveSpeedMult = 1.0;
+
+      // KHI TU TIÊN ĐẾN DẠNG THẦN CAO NHẤT (THÁI THƯỢNG KIẾM TÔN • REALM 4+):
+      // Chuyển sang dạng ngẫu nhiên toàn bộ từ vựng từ đầu tới cuối (toàn bộ các Band IELTS Oxford 5000),
+      // kèm tốc độ rơi cực hạn thử thách phản xạ thần cấp!
+      if (this.gameState.realmIdx >= 4) {
+        const allWords = [];
+        Object.keys(realmDecks).forEach(k => {
+          if (Array.isArray(realmDecks[k])) {
+            allWords.push(...realmDecks[k]);
+          }
+        });
+        if (allWords.length > 0) {
+          wordItem = allWords[Math.floor(Math.random() * allWords.length)];
+        } else {
+          wordItem = deck[Math.floor(Math.random() * deck.length)];
+        }
+        effectiveSpeedMult = 1.45; // Tăng thêm 45% tốc độ rơi ở dạng Thần
+      } else {
+        wordItem = deck[Math.floor(Math.random() * deck.length)];
+        effectiveSpeedMult = 1.0;
+      }
+
+      if (!wordItem) return;
 
       const ast = this.asteroids.spawn(
         wordItem,
         this.canvas.width,
         this.gameState.realmIdx,
-        (this.gameState.talents.slowFactor || 1.0) * (this.gameState.speedMultiplier || 1.0),
+        (this.gameState.talents.slowFactor || 1.0) * (this.gameState.speedMultiplier || 1.0) * effectiveSpeedMult,
         bandIdx
       );
     }
@@ -355,11 +388,17 @@
           this.floatingText.add(missedAst.x, bottomThreshold - 30, "🛡️ LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
         } else {
           this.audio.play("hurt");
+          if (this.unityBridge) {
+            this.unityBridge.triggerHurt();
+          }
           this.particles.createExplosion(missedAst.x, bottomThreshold, "#EF4444", 20);
           this.floatingText.add(missedAst.x, bottomThreshold - 30, "-15 HP ĐAN ĐIỀN", "#EF4444", 20);
         }
 
         if (this.gameState.isGameOver) {
+          if (this.unityBridge) {
+            this.unityBridge.triggerDefeated();
+          }
           if (!this.gameOverModalShown) {
             this.gameOverModalShown = true;
             this.ui.showGameOverModal();

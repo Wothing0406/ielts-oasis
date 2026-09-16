@@ -495,8 +495,12 @@ export const MeowchaGame: React.FC<{
         difficulty_score: forceWord.length * 5
       };
     } else if (vocabDeckRef.current.length > 0) {
-      // Pick word matching realm band level
-      const matching = vocabDeckRef.current.filter(w => w.band_level <= statsRef.current.realmIdx);
+      const isGodRealm = statsRef.current.realmIdx >= 4;
+      // DẠNG THẦN CAO NHẤT (THÁI THƯỢNG KIẾM TÔN):
+      // Ngẫu nhiên toàn bộ từ vựng từ đầu đến cuối (tất cả các Band 4.0 - 9.0 Oxford 5000), không giới hạn band
+      const matching = isGodRealm 
+        ? vocabDeckRef.current 
+        : vocabDeckRef.current.filter(w => w.band_level <= statsRef.current.realmIdx);
       const pool = matching.length > 0 ? matching : vocabDeckRef.current;
       const idx = Math.floor(Math.random() * pool.length);
       item = pool[idx];
@@ -538,7 +542,11 @@ export const MeowchaGame: React.FC<{
 
     const padding = Math.max(60, canvas.width * 0.15);
     const spawnX = Math.random() * (canvas.width - padding * 2) + padding;
-    const baseSpeed = (0.45 + rIdx * 0.12 + Math.min(0.8, statsRef.current.wordsSlain * 0.02)) * statsRef.current.slowFactor;
+    let baseSpeed = (0.45 + rIdx * 0.12 + Math.min(0.8, statsRef.current.wordsSlain * 0.02)) * statsRef.current.slowFactor;
+    if (rIdx >= 4) {
+      // DẠNG THẦN CAO NHẤT: Tốc độ rơi cực hạn
+      baseSpeed *= 1.65;
+    }
 
     asteroidsRef.current.push({
       id: Date.now() + Math.random(),
@@ -636,19 +644,28 @@ export const MeowchaGame: React.FC<{
     const asteroids = asteroidsRef.current;
     if (asteroids.length === 0) return;
 
-    // 1. Find asteroid already being typed
-    let target: Asteroid | null = null;
+    // 1. Kiểm tra xem có ma thạch nào đang gõ dở không (typedLen > 0)
+    let activeLockedTarget: Asteroid | null = null;
     for (const ast of asteroids) {
       if (ast.typedLen > 0 && ast.typedLen < ast.word.length) {
-        if (ast.word[ast.typedLen] === char) {
-          target = ast;
-          break;
-        }
+        activeLockedTarget = ast;
+        break;
       }
     }
 
-    // 2. Or lowest asteroid starting with char
-    if (!target) {
+    let target: Asteroid | null = null;
+    if (activeLockedTarget) {
+      // KHÓA CỐ ĐỊNH TARGET: Đang gõ dở từ này thì TUYỆT ĐỐI không nhảy sang từ khác!
+      if (activeLockedTarget.word[activeLockedTarget.typedLen] === char) {
+        target = activeLockedTarget;
+      } else {
+        // Gõ sai ký tự tiếp theo của từ hiện tại: Rung nhẹ báo hiệu, giữ nguyên mục tiêu
+        statsRef.current.screenShake = 3;
+        playSynthSound("hurt");
+        return;
+      }
+    } else {
+      // Chưa gõ dở từ nào: Tìm ma thạch ở vị trí thấp nhất bắt đầu bằng ký tự này
       let lowestY = -9999;
       for (const ast of asteroids) {
         if (ast.typedLen === 0 && ast.word[0] === char) {
@@ -1389,14 +1406,6 @@ export const MeowchaGame: React.FC<{
           </div>
         </div>
 
-        {/* Center: Current Target Word Meaning Toast */}
-        {activeWordCard && (
-          <div className="hidden lg:flex items-center gap-3 px-3 py-1 bg-[#2c1a0f]/90 rounded-lg border border-[#ca8a04] shadow text-xs">
-            <span className="font-bold text-[#ffdf79]">{activeWordCard.word}</span>
-            <span className="text-[#98b06f] font-mono italic">{activeWordCard.ipa}</span>
-            <span className="text-[#fbf8ea] truncate max-w-[200px]">{activeWordCard.meaning}</span>
-          </div>
-        )}
 
         {/* Right: Quick Controls & Fullscreen Leaderboard button */}
         <div className="flex items-center gap-2">
