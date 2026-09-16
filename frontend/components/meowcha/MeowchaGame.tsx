@@ -661,7 +661,7 @@ export const MeowchaGame: React.FC<{
       } else {
         // Gõ sai ký tự tiếp theo của từ hiện tại: Rung nhẹ báo hiệu, giữ nguyên mục tiêu
         statsRef.current.screenShake = 3;
-        playSynthSound("hurt");
+        playSound("hurt");
         return;
       }
     } else {
