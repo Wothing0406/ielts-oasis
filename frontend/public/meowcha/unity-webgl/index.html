@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Meowcha Unity Character</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #unity-loading {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; color: #FFD700;
+      font-family: serif; font-size: 12px;
+    }
+    #unity-container { width: 100%; height: 100%; position: relative; }
+    #unity-canvas { width: 100%; height: 100%; background: transparent; }
+  </style>
+</head>
+<body>
+  <div id="unity-container">
+    <div id="unity-loading">載入中...</div>
+    <!-- Unity WebGL canvas sẽ được inject vào đây sau khi build -->
+    <!-- File Build/ được tạo bởi Unity Editor khi chạy Build WebGL -->
+  </div>
+
+  <script>
+    // Nhận lệnh từ parent HTML game
+    window.addEventListener('message', function(e) {
+      if (!e.data || e.data.type !== 'MEOWCHA_CMD') return;
+      var method = e.data.method;
+      var args   = e.data.args || '';
+
+      // Kiểm tra Unity instance đã load chưa
+      if (typeof unityInstance === 'undefined') {
+        console.warn('[Unity Receiver] Unity not loaded yet, cmd:', method);
+        return;
+      }
+
+      // Gọi Unity method qua SendMessage
+      try {
+        // "WebGLBridge" là tên GameObject trong Unity scene
+        unityInstance.SendMessage('WebGLBridge', method, args);
+      } catch(err) {
+        console.error('[Unity Receiver] SendMessage error:', err);
+      }
+    });
+
+    // Thông báo parent khi Unity ready (sẽ được gọi từ Unity C# qua jslib)
+    window.MeowchaUnityReady = function() {
+      window.parent.postMessage({ type: 'UNITY_READY' }, '*');
+      document.getElementById('unity-loading').style.display = 'none';
+    };
+
+    // Particle event callback từ Unity
+    window.MeowchaOnParticleEvent = function(eventName) {
+      window.parent.postMessage({ type: 'UNITY_PARTICLE', event: eventName }, '*');
+    };
+
+    // Load Unity WebGL build khi file tồn tại
+    // Đường dẫn này sẽ có sau khi chạy Unity Build
+    var buildUrl = './Build';
+    var loaderUrl = buildUrl + '/Meowcha2D.loader.js';
+
+    if (window.hasMeowchaUnityBuild) {
+      loadUnityBuild(loaderUrl, buildUrl);
+    } else {
+      showPlaceholder();
+    }
+
+    function loadUnityBuild(loaderUrl, buildUrl) {
+      var script = document.createElement('script');
+      script.src = loaderUrl;
+      script.onload = function() {
+        createUnityInstance(document.getElementById('unity-canvas'), {
+          dataUrl:      buildUrl + '/Meowcha2D.data.br',
+          frameworkUrl: buildUrl + '/Meowcha2D.framework.js.br',
+          codeUrl:      buildUrl + '/Meowcha2D.wasm.br',
+          streamingAssetsUrl: 'StreamingAssets',
+          companyName:  'MeowchaStudios',
+          productName:  'Meowcha2D',
+          productVersion: '1.0.0',
+        }).then(function(instance) {
+          window.unityInstance = instance;
+          document.getElementById('unity-loading').style.display = 'none';
+          // Unity sẽ tự gọi MeowchaUnityReady() qua WebGLBridge.cs
+        }).catch(function(err) {
+          console.error('[Unity] Load error:', err);
+          showPlaceholder();
+        });
+      };
+      var container = document.getElementById('unity-container');
+      var canvas = document.createElement('canvas');
+      canvas.id = 'unity-canvas';
+      canvas.style.cssText = 'width:100%;height:100%;background:transparent;';
+      container.appendChild(canvas);
+      document.head.appendChild(script);
+    }
+
+    function showPlaceholder() {
+      // Unity build chưa có — hiện SVG animation placeholder
+      // (Game vẫn dùng canvas cat từ HTML5 như trước)
+      document.getElementById('unity-loading').innerHTML = '';
+      window.parent.postMessage({ type: 'UNITY_READY' }, '*'); // giả lập ready
+      // Thực tế: placeholder sẽ bị ẩn do game dùng canvas cat
+    }
+  </script>
+</body>
+</html>

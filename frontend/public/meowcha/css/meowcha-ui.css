@@ -1,0 +1,3027 @@
+/* meowcha-ui.css - Giao Diện Tiên Hiệp Huyền Huyễn AAA (Dark Xianxia Game UI) */
+
+/* ============================================================
+   1. SẢNH CHỜ TRÀ VIỆN (XIANXIA TEA SANCTUARY LOBBY)
+   ============================================================ */
+.lobby-top-bar {
+  width: min(98%, 980px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  z-index: 25;
+  background: linear-gradient(180deg, rgba(36, 20, 10, 0.95) 0%, rgba(20, 10, 5, 0.95) 100%);
+  border: 1.8px solid #D4AF37;
+  outline: 1px solid rgba(245, 158, 11, 0.35);
+  outline-offset: -3px;
+  border-radius: 10px;
+  padding: 4px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), inset 0 0 12px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.lobby-brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 2px 8px;
+  color: var(--color-gold-bright);
+}
+
+.brand-sword-icon {
+  filter: drop-shadow(0 0 6px #FDE047);
+  animation: swordGlowPulse 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes swordGlowPulse {
+  0% { filter: drop-shadow(0 0 4px #F59E0B); transform: scale(1); }
+  100% { filter: drop-shadow(0 0 10px #FDE047); transform: scale(1.08); }
+}
+
+.brand-text-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-family: var(--font-xianxia-title);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.2px;
+  color: #FDE047;
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgba(253, 224, 71, 0.5);
+}
+
+.brand-sub {
+  font-size: 10px;
+  color: #D1D5DB;
+  white-space: nowrap;
+}
+
+.lobby-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(15, 8, 4, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.nav-scroll-item {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(251, 191, 36, 0.3);
+  color: #FDE047;
+  padding: 7px 14px;
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-scroll-item:last-child {
+  border-right: none;
+}
+
+.nav-scroll-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(253, 224, 71, 0.35), transparent);
+  transition: left 0.4s ease;
+}
+
+.nav-scroll-item:hover::before {
+  left: 100%;
+}
+
+.nav-scroll-item:hover {
+  background: rgba(88, 48, 16, 0.7);
+  color: #FFFFFF;
+  text-shadow: 0 0 8px #FDE047;
+}
+
+.nav-scroll-item:hover .nav-icon-svg {
+  stroke: #FFFFFF;
+  filter: drop-shadow(0 0 6px #FDE047);
+  transform: scale(1.15);
+}
+
+.nav-icon-svg {
+  transition: all 0.2s ease;
+}
+
+/* ============================================================
+   ĐÀI THIỀN ĐỊNH MIÊU TIÊN TỌA TRẬN (CENTRAL HERO TEA CIRCLE)
+   ============================================================ */
+.lobby-hero-card {
+  width: min(94%, 580px);
+  background: radial-gradient(circle at 50% 25%, #28160B 0%, #180D06 65%, #0F0703 100%);
+  border: 2.5px solid var(--color-gold-ancient);
+  outline: 2px solid #854D0E;
+  outline-offset: -6px;
+  border-radius: 18px;
+  padding: 24px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 35px rgba(212, 175, 55, 0.35), inset 0 0 25px rgba(0, 0, 0, 0.85);
+  position: relative;
+  z-index: 15;
+  margin: 12px 0 8px;
+}
+
+/* Vòng Hào Quang Tiên Đạo Bát Quái */
+.tea-ceremony-circle {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  border: 3.5px solid #5A4010;
+  background: radial-gradient(circle, #2C1810 0%, #120A06 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.bagua-ring-spin {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(245, 158, 11, 0.45);
+  animation: baguaSpin 28s linear infinite;
+}
+
+@keyframes baguaSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.lobby-cat-avatar {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.95));
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: catFloatBreathe 4s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 2;
+}
+
+.lobby-cat-avatar:hover {
+  transform: scale(1.08) translateY(-4px);
+}
+
+@keyframes catFloatBreathe {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-6px); }
+}
+
+.floating-teacup {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(20, 12, 34, 0.9);
+  border: 1.5px solid #10B981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  animation: teaSteamWobble 3s ease-in-out infinite alternate;
+}
+
+@keyframes teaSteamWobble {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.floating-sword-trinket {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(20, 12, 34, 0.9);
+  border: 1.5px solid var(--color-gold-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+.lobby-cat-info {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.cat-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-name-gold {
+  font-family: var(--font-xianxia-title);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-gold-radiant);
+  letter-spacing: 0.5px;
+}
+
+.cat-level-badge {
+  background: #B91C1C;
+  color: #FFFBEB;
+  font-family: var(--font-ancient-num);
+  font-weight: 800;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #FEF08A;
+}
+
+.cat-poetic-quote {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-gold-subtle);
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   NÚT VÀO TRẬN ĐỘ KIẾP - LỆNH BÀI HOÀNG KIM (IMPERIAL GOLD TALISMAN)
+   ============================================================ */
+.btn-tablet-primary, .btn-cta-large {
+  margin-top: 14px;
+  width: 100%;
+  max-width: 450px;
+  padding: 13px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #B45309 0%, #78350F 50%, #451A03 100%);
+  border: 2px solid #FDE047;
+  outline: 2px solid #B45309;
+  outline-offset: -5px;
+  color: #FFFBEB;
+  font-family: var(--font-xianxia-title);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.45), 0 8px 25px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(254, 240, 138, 0.25);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn-cta-large:hover, .btn-tablet-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: #FEF08A;
+  outline-color: #F59E0B;
+  box-shadow: 0 0 35px rgba(251, 191, 36, 0.7), 0 12px 30px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(254, 240, 138, 0.45);
+}
+
+.btn-cta-large:active, .btn-tablet-primary:active {
+  transform: translateY(2px) scale(0.99);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+/* Hiệu Ứng Linh Khí Lướt Qua Lệnh Bài Hoàng Kim */
+.btn-cta-large::after, .btn-tablet-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  transform: rotate(25deg);
+  animation: lingQiPass 3.5s infinite;
+}
+
+.btn-cta-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.cta-title {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  color: #FEF08A;
+  text-shadow: 0 2px 4px #000, 0 0 12px rgba(254, 240, 138, 0.8);
+}
+
+.cta-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FDE68A;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px #000;
+  opacity: 0.95;
+}
+
+/* ============================================================
+   NÚT CHỨC NĂNG ĐỈNH SẢNH - NGỌC PHÙ BẢO ĐẠI (SECONDARY TALISMAN TABLETS)
+   ============================================================ */
+.lobby-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-tablet-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #251b36 0%, #130d1e 100%);
+  border: 1.5px solid var(--gold-border, #d97706);
+  outline: 1px solid rgba(251, 191, 36, 0.35);
+  outline-offset: -4px;
+  color: #fef08a;
+  font-family: var(--font-xianxia-title);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75), inset 0 0 8px rgba(251, 191, 36, 0.2);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.btn-tablet-secondary:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold-core, #fbbf24);
+  outline-color: #fef08a;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.5), inset 0 0 12px rgba(251, 191, 36, 0.35);
+  color: #ffffff;
+}
+
+.btn-tablet-secondary:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+}
+
+.talisman-seal-char {
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: 15px;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+}
+
+/* Thống Kê Nhanh Của Miêu Tiên */
+.lobby-quick-stats {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 440px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-box {
+  background: linear-gradient(180deg, #221208 0%, #140904 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  outline: 1px solid rgba(180, 83, 9, 0.35);
+  outline-offset: -3px;
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: center;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.85);
+}
+
+.stat-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  display: block;
+}
+
+.stat-val-gold {
+  font-family: var(--font-ancient-num);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-gold-radiant);
+}
+
+.stat-val-green {
+  font-family: var(--font-ancient-num);
+  font-weight: 700;
+  font-size: 15px;
+  color: #34D399;
+}
+
+.stat-val-cyan {
+  font-family: var(--font-ancient-num);
+  font-weight: 700;
+  font-size: 15px;
+  color: #38BDF8;
+}
+
+/* ============================================================
+   KHU VỰC 4 TRỤ KIẾM MA THẠCH (BAND SELECTOR)
+   ============================================================ */
+.lobby-monoliths-container {
+  width: min(94%, 900px);
+  z-index: 15;
+  margin-top: 4px;
+}
+
+.monolith-section-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-gold-bright);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  padding-bottom: 4px;
+}
+
+.lobby-monoliths-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.monolith-card {
+  position: relative;
+  background: radial-gradient(circle at 50% 15%, #24140A 0%, #160B04 65%, #0D0602 100%);
+  border: 2px solid #B45309;
+  outline: 1.5px solid #D4AF37;
+  outline-offset: -5px;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  padding: 14px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.monolith-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--monolith-accent, var(--color-gold-bright));
+  box-shadow: 0 0 12px var(--monolith-accent, var(--color-gold-bright));
+  opacity: 0.85;
+}
+
+.monolith-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: #FEF08A;
+  outline-color: var(--monolith-accent, #F59E0B);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.9), 0 0 25px var(--monolith-glow, rgba(245, 158, 11, 0.45));
+}
+
+.monolith-card.frost {
+  --monolith-accent: var(--color-ice-cyan);
+  --monolith-glow: var(--color-ice-glow);
+}
+
+.monolith-card.inferno {
+  --monolith-accent: var(--color-inferno-orange);
+  --monolith-glow: var(--color-inferno-glow);
+}
+
+.monolith-card.void {
+  --monolith-accent: var(--color-void-purple);
+  --monolith-glow: var(--color-void-glow);
+}
+
+.monolith-card.thunder {
+  --monolith-accent: var(--color-blood-thunder);
+  --monolith-glow: var(--color-thunder-glow);
+}
+
+.monolith-card.active-monolith {
+  background: radial-gradient(circle at 50% 15%, #351A0A 0%, #200E05 65%, #100602 100%);
+  border-color: #FEF08A;
+  outline-color: var(--monolith-accent, #FEF08A);
+  box-shadow: 0 0 30px var(--monolith-glow, rgba(212, 175, 55, 0.5)), inset 0 0 16px rgba(254, 240, 138, 0.25);
+  transform: translateY(-4px);
+}
+
+.monolith-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--monolith-accent, var(--color-gold-bright));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  color: var(--monolith-accent, var(--color-gold-radiant));
+  box-shadow: 0 0 12px var(--monolith-glow, transparent);
+}
+
+.monolith-title {
+  font-family: var(--font-xianxia-title);
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #FFFFFF;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+
+.monolith-element {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--monolith-accent, var(--color-gold-subtle));
+  margin-bottom: 4px;
+}
+
+.monolith-desc {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ============================================================
+   THẺ THIÊN PHÚ & NGỌC GIẢN BÁT QUÁI (PERKS MODAL SPEC)
+   ============================================================ */
+/* Khung Thẻ Ngọc Giản Thiên Phú */
+.perk-card {
+  background: radial-gradient(circle at center, #1b162b 0%, #0c0915 100%);
+  border: 2px solid #b45309;
+  outline: 2px solid #f59e0b;
+  outline-offset: -6px;
+  position: relative;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.8);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  padding: 18px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+}
+
+.perk-card:hover {
+  transform: translateY(-4px);
+  border-color: #fef08a;
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.45), inset 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+/* Vòng Trận Pháp Xoay Quanh Icon */
+.perk-icon-wrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.perk-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px dashed #f59e0b;
+  border-radius: 50%;
+  animation: rotateRunes 12s linear infinite;
+  box-shadow: 0 0 10px #f59e0b;
+}
+
+@keyframes rotateRunes {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.perk-icon-seal {
+  font-family: 'Cinzel', 'Playfair Display', 'Ma Shan Zheng', serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: #FDE047;
+  text-shadow: 0 0 14px rgba(245, 158, 11, 0.9), 0 2px 4px #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.perk-name {
+  font-family: var(--font-xianxia-title);
+  color: var(--color-gold-radiant);
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 4px #000;
+}
+
+.perk-type {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-ice-cyan);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.perk-desc {
+  font-size: 11.5px;
+  color: #E2D9C8;
+  line-height: 1.45;
+  margin-bottom: 14px;
+  flex: 1;
+}
+
+/* Nút Lĩnh Ngộ - Ngọc Bích Cổ Khảm Vàng */
+.btn-linh-ngo {
+  background: linear-gradient(180deg, #047857 0%, #064e3b 100%);
+  border: 1px solid #fde047;
+  color: #fef08a;
+  font-family: inherit;
+  font-weight: bold;
+  text-shadow: 0 1px 2px #000, 0 0 8px rgba(254, 240, 138, 0.6);
+  box-shadow: 0 4px 0 #022c22, 0 0 12px rgba(16, 185, 129, 0.4);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 10px 18px;
+  width: 100%;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hiệu Ứng Linh Khí Lướt Qua Nút (Shimmer) */
+.btn-linh-ngo::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  transform: rotate(25deg);
+  animation: lingQiPass 3.5s infinite;
+}
+
+.btn-linh-ngo:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #022c22;
+}
+
+/* ============================================================
+   THẺ NGỌC GIẢN LƯU TRỮ (SAVE SLOTS CARDS)
+   ============================================================ */
+.save-slots-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.save-slot-card {
+  background: rgba(24, 14, 40, 0.9);
+  border: 1.5px solid var(--color-gold-ancient);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.save-slot-card.occupied {
+  border-color: #10B981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}
+
+.slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slot-title {
+  font-family: var(--font-xianxia-title);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-gold-radiant);
+}
+
+.slot-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.slot-body {
+  font-size: 12px;
+  color: var(--text-parchment);
+}
+
+.slot-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-slot-save, .btn-slot-load, .btn-slot-del {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+
+.btn-slot-save {
+  background: #B45309;
+  border-color: #FDE047;
+  color: #FFFBEB;
+}
+
+.btn-slot-load {
+  background: #047857;
+  border-color: #34D399;
+  color: #ECFDF5;
+}
+
+.btn-slot-del {
+  background: #991B1B;
+  border-color: #F87171;
+  color: #FEF2F2;
+}
+
+
+/* ============================================================
+   3. BÀN PHÍM ẢO TRẬN PHÁP PHÙ THẠCH (ANCIENT RUNE STONE ARRAY)
+   ============================================================ */
+#virtualKeyboardContainer {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: min(98%, 640px);
+  display: none;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.meowcha-virtual-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: radial-gradient(circle at 50% 0%, #1e1330 0%, #100a1c 70%, #090510 100%);
+  border: 1.8px solid #b45309;
+  outline: 1px solid #f59e0b;
+  outline-offset: -4px;
+  padding: 8px 6px 10px;
+  border-radius: 12px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.9), 0 0 25px rgba(245, 158, 11, 0.25), inset 0 0 16px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header Trận Pháp Phù Thạch Bàn */
+.kb-seal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px 6px;
+  border-bottom: 1px solid rgba(217, 119, 6, 0.35);
+  margin-bottom: 3px;
+}
+
+.kb-seal-title {
+  font-family: var(--font-xianxia-title);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+}
+
+.kb-stun-badge {
+  font-family: var(--font-xianxia-title);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f87171;
+  background: rgba(185, 28, 28, 0.35);
+  border: 1px solid #ef4444;
+  padding: 1px 7px;
+  border-radius: 4px;
+  display: none;
+  text-shadow: 0 0 8px #ef4444;
+}
+
+/* Hàng phím & Phím Thạch Phù */
+.kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.kb-key, .xianxia-key {
+  position: relative;
+  background: linear-gradient(180deg, #2a1f3d 0%, #160f22 100%);
+  border: 1.4px solid #b45309;
+  border-top-color: #d97706;
+  border-bottom-color: #78350f;
+  color: #fef08a;
+  box-shadow: 0 3px 0 #07040c, inset 0 1px 1px rgba(254, 240, 138, 0.25), inset 0 0 6px rgba(0, 0, 0, 0.7);
+  border-radius: 5px;
+  font-family: var(--font-ancient-num);
+  font-weight: 800;
+  font-size: clamp(15px, 4vw, 19px);
+  padding: 10px 0;
+  flex: 1;
+  max-width: 54px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.06s ease, box-shadow 0.06s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.key-char {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.key-rune-corner {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: 8px;
+  color: rgba(245, 158, 11, 0.5);
+  pointer-events: none;
+}
+
+.kb-key:active, .kb-key.active, .xianxia-key:active, .xianxia-key.active {
+  background: linear-gradient(180deg, #4c326b 0%, #2e1a47 100%) !important;
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #07040c, 0 0 14px #fbbf24, inset 0 0 8px rgba(254, 240, 138, 0.8) !important;
+  color: #ffffff !important;
+  border-color: #fde047 !important;
+}
+
+/* Trạng thái Bị Choáng (Stun Lockout) */
+#virtualKeyboardContainer.stunned .meowcha-virtual-keyboard {
+  border-color: #dc2626;
+  outline-color: #ef4444;
+  box-shadow: 0 -8px 32px rgba(220, 38, 38, 0.5), 0 0 25px rgba(239, 68, 68, 0.35);
+  animation: stunTremble 0.15s ease-in-out infinite alternate;
+}
+
+#virtualKeyboardContainer.stunned .kb-stun-badge {
+  display: inline-block;
+  animation: pulseStunBadge 0.6s infinite alternate;
+}
+
+@keyframes pulseStunBadge {
+  0% { opacity: 0.7; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1.04); box-shadow: 0 0 10px #ef4444; }
+}
+
+@keyframes stunTremble {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-1px) rotate(0.15deg); }
+}
+
+#virtualKeyboardContainer.stunned .kb-key {
+  background: linear-gradient(180deg, #23141a 0%, #14090e 100%);
+  border-color: #991b1b;
+  color: rgba(248, 113, 113, 0.65);
+  box-shadow: 0 2px 0 #000, inset 0 0 8px rgba(220, 38, 38, 0.3);
+}
+
+.stun-reject {
+  animation: rejectShake 0.14s ease-in-out !important;
+  background: #7f1d1d !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+@keyframes rejectShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* ============================================================
+   THANH THÔNG BÁO KHẨU QUYẾT PHÙ VĂN (DAOIST DECREE STATUS BAR)
+   ============================================================ */
+#meowchaStatusBar {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 55;
+  background: linear-gradient(180deg, rgba(28, 16, 42, 0.96) 0%, rgba(14, 8, 22, 0.98) 100%);
+  border: 1.5px solid #d97706;
+  outline: 1px solid rgba(245, 158, 11, 0.4);
+  outline-offset: -3px;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  padding: 6px 18px;
+  color: #fef08a;
+  font-family: var(--font-xianxia-title);
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.65);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.9), 0 0 14px rgba(245, 158, 11, 0.25);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+#meowchaStatusBar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   4. MODALS & KHUNG PHÙ VĂN CỔ ĐẠI
+   ============================================================ */
+.meowcha-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 3, 12, 0.85);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 20px;
+}
+
+.modal-content-box {
+  background: radial-gradient(circle at 50% 12%, #2A170B 0%, #1A0D06 65%, #0F0703 100%);
+  border: 2.5px solid #D4AF37;
+  outline: 2px solid #854D0E;
+  outline-offset: -6px;
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  width: min(94%, 720px);
+  padding: 26px 24px 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(212, 175, 55, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.9);
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.35);
+  padding-bottom: 12px;
+}
+
+.modal-title {
+  font-family: var(--font-xianxia-title);
+  color: var(--color-gold-radiant);
+  font-size: 21px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-modal-close:hover {
+  color: #FFFFFF;
+}
+
+/* LƯỚI THIÊN PHÚ NGỌC GIẢN */
+.talents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* ------------------------------------------------------------
+   A. HỘP THOẠI TỬ TRẬN / TRỌNG SINH (#modalGameOver - BIA MỘ NIẾT BÀN)
+   ------------------------------------------------------------ */
+#modalGameOver .modal-content-box {
+  background: radial-gradient(ellipse at 50% 0%, #3B0A0A 0%, #1A0704 50%, #0A0202 100%);
+  border: 2px solid #991B1B;
+  outline: 1.5px solid rgba(212, 175, 55, 0.6);
+  outline-offset: -5px;
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.97),
+    0 0 60px rgba(185, 28, 28, 0.45),
+    inset 0 0 32px rgba(0, 0, 0, 0.9);
+}
+
+/* Blood-smoke animated background particles */
+.go-bg-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(185, 28, 28, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(127, 29, 29, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(68, 0, 0, 0.10) 0%, transparent 70%);
+  animation: goSmokeShift 6s ease-in-out infinite alternate;
+  border-radius: inherit;
+}
+
+@keyframes goSmokeShift {
+  0%   { opacity: 0.6; transform: scale(1);    }
+  100% { opacity: 1.0; transform: scale(1.04); }
+}
+
+/* SVG Sword icon */
+.go-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.go-sword-svg {
+  filter: drop-shadow(0 0 12px rgba(185, 28, 28, 0.8)) drop-shadow(0 0 24px rgba(212, 175, 55, 0.4));
+  animation: goSwordPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes goSwordPulse {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(185,28,28,0.7)) drop-shadow(0 0 22px rgba(212,175,55,0.35)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(239,68,68,0.95)) drop-shadow(0 0 38px rgba(212,175,55,0.65)); }
+}
+
+/* Title */
+.go-title {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif !important;
+  font-size: clamp(13px, 3vw, 19px) !important;
+  letter-spacing: 2.5px !important;
+  color: #FEF08A !important;
+  text-shadow: 0 0 20px rgba(220, 38, 38, 0.9), 0 2px 4px rgba(0,0,0,0.8) !important;
+  gap: 8px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.go-seal-glyph {
+  font-family: serif;
+  font-size: 13px;
+  color: rgba(212, 175, 55, 0.7);
+  font-style: italic;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.go-subtitle {
+  color: rgba(253, 230, 138, 0.7);
+  font-size: 12.5px;
+  margin-bottom: 20px;
+  margin-top: 4px;
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+/* 2×2 Stats Grid */
+.go-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.go-stat-cell {
+  background: linear-gradient(160deg, rgba(30, 10, 4, 0.9) 0%, rgba(15, 5, 2, 0.9) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  outline: 1px solid rgba(120, 53, 15, 0.4);
+  outline-offset: -3px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: inset 0 1px 6px rgba(0,0,0,0.8);
+}
+
+.go-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px;
+  color: rgba(212, 175, 55, 0.7);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.go-stat-val {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #FEF08A;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(254, 240, 138, 0.5);
+}
+
+.go-stat-gold  { color: #F59E0B !important; text-shadow: 0 0 10px rgba(245, 158, 11, 0.6) !important; }
+.go-stat-cyan  { color: #38BDF8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.6)  !important; }
+.go-stat-green { color: #34D399 !important; text-shadow: 0 0 10px rgba(52, 211, 153, 0.6)  !important; }
+
+/* Rebirth button */
+.btn-rebirth-seal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 40%, #B91C1C 60%, #7C2D12 100%);
+  border: 2px solid #FEF08A;
+  outline: 1.5px solid rgba(180, 83, 9, 0.7);
+  outline-offset: -5px;
+  border-radius: 6px;
+  color: #FFFBEB;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 4px 20px rgba(185, 28, 28, 0.55),
+    inset 0 1px 0 rgba(254, 240, 138, 0.3);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+}
+
+.btn-rebirth-seal:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow:
+    0 8px 32px rgba(220, 38, 38, 0.75),
+    0 0 18px rgba(254, 240, 138, 0.4),
+    inset 0 1px 0 rgba(254, 240, 138, 0.4);
+  border-color: #FFFBEB;
+}
+
+.btn-rebirth-seal:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+#btnRebirth:active {
+  transform: translateY(1px);
+}
+
+
+/* ------------------------------------------------------------
+   B. HỘP THOẠI TẠM DỪNG (#modalPause - TRÚC THƯ ĐỊNH THẦN CỔ PHONG)
+   ------------------------------------------------------------ */
+#modalPause .modal-content-box {
+  background: radial-gradient(circle at 50% 12%, #2A1509 0%, #170A04 65%, #0D0502 100%) !important;
+  border: 2px solid #D4AF37 !important;
+  outline: 1.5px solid #78350F !important;
+  outline-offset: -5px;
+  box-shadow: 
+    0 24px 70px rgba(0, 0, 0, 0.96),
+    0 0 35px rgba(212, 175, 55, 0.35),
+    inset 0 0 24px rgba(0, 0, 0, 0.95) !important;
+  position: relative;
+}
+
+#modalPause .modal-title {
+  color: #FEF08A !important;
+  text-shadow: 0 0 16px rgba(245, 158, 11, 0.8), 0 2px 4px #000 !important;
+  letter-spacing: 2px;
+  font-family: var(--font-xianxia-title) !important;
+}
+
+#modalPause p {
+  color: #FDE68A !important;
+  font-size: 13px;
+}
+
+#btnResumeGame {
+  background: linear-gradient(135deg, #B45309 0%, #78350F 50%, #451A03 100%) !important;
+  border: 2px solid #FDE047 !important;
+  outline: 1.5px solid #78350F !important;
+  outline-offset: -4px;
+  color: #FEF08A !important;
+  font-family: var(--font-xianxia-title) !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(254, 240, 138, 0.25) !important;
+  transition: all 0.2s ease;
+}
+
+#btnResumeGame:hover {
+  transform: translateY(-2px);
+  border-color: #FEF08A !important;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.75), inset 0 0 16px rgba(254, 240, 138, 0.45) !important;
+}
+
+#btnSaveGameInPause {
+  background: linear-gradient(180deg, #2A170B 0%, #1A0D06 100%) !important;
+  border: 1.5px solid #D4AF37 !important;
+  color: #FEF08A !important;
+  font-family: var(--font-xianxia-title) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 0 8px rgba(212, 175, 55, 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+#btnSaveGameInPause:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #3A200E 0%, #241208 100%) !important;
+  border-color: #FEF08A !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.6) !important;
+}
+
+#btnRestartInPause {
+  background: linear-gradient(180deg, #381212 0%, #200707 100%) !important;
+  border: 1.5px solid #DC2626 !important;
+  color: #FECACA !important;
+  font-family: var(--font-xianxia-title) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7) !important;
+  transition: all 0.2s ease;
+}
+
+#btnRestartInPause:hover {
+  transform: translateY(-2px);
+  border-color: #F87171 !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.6) !important;
+}
+
+#btnExitToLobby {
+  background: rgba(22, 11, 5, 0.85) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  color: #FDE68A !important;
+  font-family: var(--font-xianxia-title) !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnExitToLobby:hover {
+  background: rgba(45, 22, 10, 0.95) !important;
+  border-color: #F59E0B !important;
+  color: #FEF08A !important;
+}
+
+/* ------------------------------------------------------------
+   C. HỘP THOẠI PHONG THẦN BẢNG (#modalPantheon - BẢNG VÀNG TIÊN GIỚI)
+   ------------------------------------------------------------ */
+#modalPantheon .modal-content-box {
+  width: min(95%, 680px);
+}
+
+#pantheonRankList {
+  scrollbar-width: thin;
+  scrollbar-color: #b45309 #140b22;
+}
+
+#pantheonRankList::-webkit-scrollbar {
+  width: 6px;
+}
+
+#pantheonRankList::-webkit-scrollbar-track {
+  background: #140b22;
+}
+
+#pantheonRankList::-webkit-scrollbar-thumb {
+  background: #b45309;
+  border-radius: 3px;
+}
+
+.pantheon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: rgba(22, 14, 34, 0.8);
+  border: 1px solid rgba(217, 119, 6, 0.28);
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.pantheon-row:hover {
+  background: rgba(38, 24, 58, 0.95);
+  border-color: #f59e0b;
+  transform: translateX(3px);
+}
+
+.pantheon-row.gold {
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.35) 0%, rgba(26, 16, 40, 0.9) 100%);
+  border-color: #f59e0b;
+  box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.pantheon-row.gold .rank-col {
+  color: #fde047;
+  font-weight: 900;
+  text-shadow: 0 0 8px #f59e0b;
+}
+
+.pantheon-row.silver {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.25) 0%, rgba(26, 16, 40, 0.9) 100%);
+  border-color: #cbd5e1;
+}
+
+.pantheon-row.silver .rank-col {
+  color: #f1f5f9;
+  font-weight: 900;
+}
+
+.pantheon-row.bronze {
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.2) 0%, rgba(26, 16, 40, 0.9) 100%);
+  border-color: #b45309;
+}
+
+.pantheon-row.bronze .rank-col {
+  color: #fbbf24;
+  font-weight: 900;
+}
+
+.pantheon-row .rank-col {
+  width: 44px;
+  font-family: var(--font-ancient-num);
+  font-size: 15px;
+}
+
+.pantheon-row .name-col {
+  flex: 1;
+  font-family: var(--font-xianxia-title);
+  color: #f8fafc;
+  padding: 0 10px;
+}
+
+.pantheon-row .realm-col {
+  color: #38bdf8;
+  font-size: 12px;
+  margin-right: 14px;
+}
+
+.pantheon-row .score-col {
+  font-family: var(--font-ancient-num);
+  color: #34d399;
+  font-weight: 700;
+}
+
+/* ============================================================
+   5. BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG HUD (SECT SCROLL HUD)
+   ============================================================ */
+.sect-scroll-hud {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 25;
+  background: linear-gradient(135deg, rgba(28, 14, 7, 0.38) 0%, rgba(14, 7, 3, 0.42) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.55);
+  outline: 1px solid rgba(133, 77, 14, 0.35);
+  outline-offset: -4px;
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  padding: 10px 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 16px rgba(212, 175, 55, 0.2), inset 0 0 12px rgba(212, 175, 55, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  min-width: 250px;
+  pointer-events: none; /* Nhìn xuyên thấu và tương tác không bị che khuất */
+  transition: opacity 0.3s ease, background 0.3s ease;
+}
+
+.sect-row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.sect-row-title strong {
+  font-family: var(--font-xianxia-title);
+  font-size: 15px;
+  color: var(--color-gold-radiant);
+  letter-spacing: 0.5px;
+}
+
+.sect-seal-red {
+  color: #DC2626;
+  font-weight: 900;
+  font-family: 'Playfair Display', serif;
+  text-shadow: 0 0 8px rgba(220, 38, 38, 0.7);
+}
+
+.sect-seal-gold {
+  color: #F59E0B;
+  font-weight: 900;
+  font-family: 'Playfair Display', serif;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.sect-seal-green {
+  color: #10B981;
+  font-weight: 900;
+  font-family: 'Playfair Display', serif;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+
+.sect-seal-purple {
+  color: #C084FC;
+  font-weight: 900;
+  font-family: 'Playfair Display', serif;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.7);
+}
+
+.sect-row-stats, .sect-row-extras {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #E2E8F0;
+  margin-bottom: 4px;
+}
+
+.sect-divider {
+  color: rgba(212, 175, 55, 0.4);
+}
+
+.gold-num {
+  font-family: var(--font-ancient-num);
+  color: #FDE047;
+}
+
+.cyan-num {
+  font-family: var(--font-ancient-num);
+  color: #38BDF8;
+}
+
+.wpm-text {
+  margin-left: auto;
+  font-size: 11px;
+  color: #A7F3D0;
+  font-weight: 700;
+}
+
+.sect-hp-box {
+  margin-top: 8px;
+}
+
+.hp-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.hp-label {
+  color: var(--text-muted);
+}
+
+.hp-val {
+  font-family: var(--font-ancient-num);
+  color: #34D399;
+  font-weight: 700;
+}
+
+.hp-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(10, 5, 2, 0.9);
+  border: 1.5px solid #78350F;
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.95);
+}
+
+.hp-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #044E3A 0%, #059669 40%, #10B981 85%, #6EE7B7 100%);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  transition: width 0.3s ease-out;
+}
+
+/* ============================================================
+   CỤM NÚT ĐIỀU KHIỂN BÁT QUÁI ĐỒNG BÀI (TOP RIGHT CONTROLS)
+   ============================================================ */
+.battle-controls-right {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  display: flex;
+  gap: 12px;
+  z-index: 25;
+}
+
+.hud-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: radial-gradient(circle, #2C160B 0%, #140904 100%);
+  border: 1.8px solid var(--color-gold-ancient);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(212, 175, 55, 0.25);
+  color: #FDE047;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hud-btn:hover {
+  transform: scale(1.1);
+  border-color: var(--color-gold-radiant);
+  box-shadow: 0 0 20px #F59E0B, inset 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.hud-btn.muted {
+  color: #EF4444;
+  border-color: #DC2626;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
+}
+
+/* Ô KIẾM Ý CỔ PHONG GÓC DƯỚI BÊN PHẢI */
+.sword-intent-box {
+  position: absolute;
+  bottom: 18px;
+  right: 20px;
+  z-index: 25;
+  background: linear-gradient(135deg, rgba(34, 18, 10, 0.94) 0%, rgba(18, 9, 4, 0.98) 100%);
+  border: 1.8px solid var(--color-gold-ancient);
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.intent-seal {
+  color: #DC2626;
+  font-weight: 900;
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  text-shadow: 0 0 8px rgba(220, 38, 38, 0.7);
+}
+
+.intent-text {
+  font-family: var(--font-ancient-num);
+  font-size: 13px;
+  color: #FDE047;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   KHÓA PHONG ẤN PHÙ THẠCH (PROGRESSION LOCK FOR BANDS)
+   ============================================================ */
+.monolith-card.locked-monolith {
+  opacity: 0.72;
+  filter: grayscale(35%);
+  cursor: not-allowed;
+  border-color: rgba(120, 113, 108, 0.45);
+}
+
+.monolith-card.locked-monolith:hover {
+  transform: translateY(-2px);
+  border-color: #EF4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.monolith-lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 18, 0.88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 10;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+
+.lock-cinnabar-seal {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 60%, #7F1D1D 100%);
+  border: 1.8px solid #FEF08A;
+  outline: 1.5px solid #B45309;
+  outline-offset: -3.5px;
+  color: #FEF08A;
+  font-family: 'Cinzel', 'Playfair Display', 'Ma Shan Zheng', serif;
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px #000, 0 0 10px rgba(254, 240, 138, 0.9);
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.7), 0 4px 10px rgba(0, 0, 0, 0.9);
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+  animation: sealPulse 2.5s ease-in-out infinite alternate;
+  letter-spacing: 1.5px;
+  margin-bottom: 2px;
+}
+
+@keyframes sealPulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(220, 38, 38, 0.5); }
+  100% { transform: scale(1.08); box-shadow: 0 0 22px rgba(239, 68, 68, 0.9); }
+}
+
+.lock-seal-title {
+  font-family: var(--font-xianxia-title);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #FEF08A;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 3px #000;
+}
+
+.lock-seal-req {
+  font-size: 10px;
+  color: #CBD5E1;
+  text-align: center;
+  padding: 0 6px;
+  line-height: 1.3;
+}
+
+@keyframes lockShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake-locked {
+  animation: lockShake 0.4s ease;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS FOR MOBILE VIEWPORTS
+   ============================================================ */
+/* ============================================================
+   BỐ CỤC ĐẶC TRỊ MOBILE RESPONSIVE (CRITICAL 3-TIER MOBILE LAYOUT)
+   ============================================================ */
+@media (max-width: 768px), (orientation: portrait) {
+  /* 1. TẦNG HUD (TOP 12% - THANH NGỌC GIẢN NẰM NGANG DUY NHẤT) */
+  .sect-scroll-hud {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 16px);
+    max-width: 500px;
+    height: 44px;
+    padding: 2px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(18, 14, 28, 0.42);
+    border: 1.5px solid rgba(217, 119, 6, 0.5);
+    border-radius: 6px;
+    clip-path: none;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), inset 0 0 8px rgba(251, 191, 36, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .sect-row-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    color: #fbbf24;
+    font-weight: 700;
+  }
+
+  .sect-row-stats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    color: #fef08a;
+  }
+
+  .sect-row-extras {
+    display: none; /* Lược bỏ bớt thông số thừa trên mobile */
+  }
+
+  /* HP dạng thanh ngọc mỏng sát mép dưới Ngọc Giản */
+  .sect-hp-box {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.6);
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .hp-info {
+    display: none;
+  }
+
+  .hp-track {
+    height: 100%;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+    box-shadow: 0 0 6px #34d399;
+  }
+
+  /* 2 Viên ngọc bội khảm ở 2 góc / góc phải của thanh Ngọc Giản */
+  .battle-controls-right {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 55;
+    display: flex;
+    gap: 6px;
+  }
+
+  .hud-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold-border, #d97706);
+    background: radial-gradient(circle, #044e3a 0%, #062b21 100%);
+    color: #a7f3d0;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .hud-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 2. TẦNG BÀN PHÍM ẢO (BOTTOM 38% - TRẬN PHÁP PHÙ PHIẾN) */
+  #virtualKeyboardContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    height: 38dvh;
+    max-height: 285px;
+    z-index: 45;
+    transform: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 4px calc(env(safe-area-inset-bottom, 0px) + 4px);
+    background: linear-gradient(180deg, rgba(16, 10, 24, 0.97) 0%, rgba(8, 5, 13, 0.99) 100%);
+    border-top: 1.8px solid var(--gold-border, #d97706);
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(251, 191, 36, 0.35);
+  }
+
+  .meowcha-virtual-keyboard {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    backdrop-filter: none;
+  }
+
+  .kb-seal-header {
+    padding: 0 6px 2px;
+    margin-bottom: 0;
+  }
+
+  .kb-seal-title {
+    font-size: 9.5px;
+    letter-spacing: 1px;
+  }
+
+  .kb-row {
+    display: flex;
+    justify-content: center;
+    gap: 3.5px;
+    width: 100%;
+    flex: 1;
+  }
+
+  .xianxia-key, .kb-key {
+    flex: 1;
+    max-width: none;
+    min-height: auto;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-ancient-num);
+    font-size: clamp(14px, 4.2vw, 18px);
+    font-weight: 800;
+    background: linear-gradient(180deg, #2a1f3d 0%, #160f22 100%);
+    border: 1.2px solid #b45309;
+    border-top-color: #d97706;
+    color: #fef08a;
+    box-shadow: 0 2px 0 #000, inset 0 0 4px rgba(251, 191, 36, 0.3);
+    border-radius: 4px;
+    touch-action: manipulation;
+  }
+
+  .xianxia-key:active, .xianxia-key.active, .kb-key:active, .kb-key.active {
+    background: linear-gradient(180deg, #4c326b 0%, #2e1a47 100%) !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0 0 12px var(--gold-core, #fbbf24), inset 0 0 6px #fef08a !important;
+    color: #ffffff !important;
+    border-color: #fde047 !important;
+  }
+
+  /* Status bar trên mobile né thanh ngọc giản */
+  #meowchaStatusBar {
+    top: 52px;
+    font-size: 11px;
+    padding: 4px 12px;
+    max-width: 92vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  /* SẢNH CHỜ & CẢNH GIỚI RESPONSIVE MOBILE */
+  .lobby-monoliths-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .monolith-card {
+    padding: 10px 6px;
+  }
+
+  .monolith-desc {
+    display: none;
+  }
+
+  .btn-tablet-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+  }
+
+  .modal-content-box {
+    width: 95%;
+    max-height: 85vh;
+    padding: 16px 12px;
+    overflow-y: auto;
+  }
+
+  .vocab-vault-modal-box {
+    width: 96%;
+    padding: 12px 10px;
+    max-height: 92vh;
+  }
+
+  .vault-words-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pantheon-modal-box {
+    width: 96%;
+    padding: 12px 10px;
+    max-height: 92vh;
+  }
+
+  .pantheon-top-podium {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  .podium-card {
+    padding: 6px 4px;
+  }
+
+  .podium-avatar-wrap {
+    width: 40px;
+    height: 40px;
+  }
+
+  .podium-name {
+    font-size: 11px;
+  }
+
+  .podium-score {
+    font-size: 11.5px;
+  }
+
+  .talents-grid {
+    grid-template-columns: 1fr;
+    max-height: 380px;
+    overflow-y: auto;
+    gap: 12px;
+  }
+}
+
+/* ==========================================================================
+   CHIẾU THƯ TRUYỀN CÔNG / IPA TOAST - PHONG CÁCH NGỌC GIẢN CỔ PHONG
+   ========================================================================== */
+#ipaToastContainer {
+  position: fixed;
+  bottom: 28px;
+  right: 20px;
+  z-index: 9000;
+  pointer-events: auto;
+  max-width: calc(100vw - 40px);
+}
+
+.ipa-card-wrapper {
+  background: linear-gradient(145deg, rgba(28, 15, 7, 0.78) 0%, rgba(18, 9, 4, 0.78) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(212, 175, 55, 0.85);
+  outline: 1px solid rgba(120, 53, 15, 0.6);
+  outline-offset: -3px;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 210px;
+  max-width: 270px;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.82),
+    0 0 18px rgba(212, 175, 55, 0.22),
+    inset 0 0 12px rgba(180, 83, 9, 0.2);
+  position: relative;
+  font-family: var(--font-xianxia-body, 'Cinzel', serif);
+  transform-origin: top right;
+  animation: ipaScrollUnroll 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ipaScrollUnroll {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ipa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.ipa-band-tag {
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.9) 0%, rgba(127, 29, 29, 0.9) 100%);
+  border: 1px solid #F59E0B;
+  color: #FEF08A;
+  font-family: var(--font-xianxia-title, 'Cinzel', serif);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-shadow: 0 1px 2px #000;
+}
+
+.ipa-type-badge {
+  font-size: 10.5px;
+  font-style: italic;
+  color: #FBBF24;
+  letter-spacing: 0.5px;
+}
+
+.ipa-sound-btn {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid #D4AF37;
+  color: #FEF08A;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ipa-sound-btn:hover {
+  background: #D4AF37;
+  color: #120904;
+  box-shadow: 0 0 10px rgba(254, 240, 138, 0.8);
+  transform: scale(1.1);
+}
+
+.ipa-body {
+  margin-bottom: 8px;
+}
+
+.ipa-word {
+  font-family: var(--font-xianxia-title, 'Cinzel', serif);
+  font-size: 17px;
+  font-weight: 900;
+  color: #FEF08A;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 2px 4px #000;
+  margin-bottom: 2px;
+}
+
+.ipa-phonetic {
+  font-family: monospace;
+  font-size: 12px;
+  color: #38BDF8;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.ipa-meaning {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #FDE68A;
+  font-style: italic;
+  text-shadow: 0 1px 2px #000;
+}
+
+.ipa-progress-bar {
+  height: 2.5px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.ipa-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B, #FEF08A);
+  box-shadow: 0 0 8px #FBBF24;
+  animation: ipaProgress linear forwards;
+}
+
+@keyframes ipaProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* ============================================================
+   BỘ NÚT TIÊN HIỆP PHONG THẦN (XIANXIA TALISMAN HUD BUTTONS - NO EMOJIS)
+   ============================================================ */
+.hud-talisman-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-xianxia-title);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px #000;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+.hud-talisman-btn.gold {
+  background: linear-gradient(180deg, #382010 0%, #1A0D06 100%);
+  border: 1.5px solid #F59E0B;
+  color: #FEF08A;
+}
+
+.hud-talisman-btn.gold:hover {
+  background: linear-gradient(180deg, #4A2B16 0%, #251308 100%);
+  border-color: #FDE047;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.65), 0 4px 12px rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.hud-talisman-btn.crimson {
+  background: linear-gradient(180deg, #381010 0%, #1A0606 100%);
+  border: 1.5px solid #EF4444;
+  color: #FECACA;
+}
+
+.hud-talisman-btn.crimson:hover {
+  background: linear-gradient(180deg, #4A1616 0%, #250808 100%);
+  border-color: #F87171;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.65), 0 4px 12px rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.seal-box-talisman {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.seal-box-talisman.seal-gold {
+  color: #FBBF24;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+}
+
+.seal-box-talisman.seal-red {
+  color: #F87171;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+}
+
+.talisman-btn-label {
+  font-family: var(--font-xianxia-title);
+  font-size: 11px;
+}
+
+/* NÚT TIÊN HIỆP TRIỆN ẤN BẢNG MODAL (XIANXIA SEAL MODAL BUTTONS) */
+.btn-xianxia-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  font-family: var(--font-xianxia-title);
+  font-weight: 800;
+  font-size: 13.5px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.75);
+}
+
+.btn-xianxia-seal .seal-glyph {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 15px;
+  text-shadow: 0 0 10px currentColor;
+}
+
+.btn-xianxia-seal.primary {
+  background: linear-gradient(180deg, #105538 0%, #063422 100%);
+  border: 1.8px solid #10B981;
+  color: #ECFDF5;
+}
+.btn-xianxia-seal.primary:hover {
+  background: linear-gradient(180deg, #156E4A 0%, #0A452E 100%);
+  border-color: #34D399;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-xianxia-seal.gold {
+  background: linear-gradient(180deg, #3D2412 0%, #201007 100%);
+  border: 1.8px solid #F59E0B;
+  color: #FEF3C7;
+}
+.btn-xianxia-seal.gold:hover {
+  background: linear-gradient(180deg, #523119 0%, #2F170A 100%);
+  border-color: #FDE047;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-xianxia-seal.crimson {
+  background: linear-gradient(180deg, #3D1212 0%, #200707 100%);
+  border: 1.8px solid #EF4444;
+  color: #FEE2E2;
+}
+.btn-xianxia-seal.crimson:hover {
+  background: linear-gradient(180deg, #521919 0%, #2F0A0A 100%);
+  border-color: #F87171;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-xianxia-seal.secondary {
+  background: linear-gradient(180deg, #231B15 0%, #140E0A 100%);
+  border: 1.5px solid #78350F;
+  color: #D1D5DB;
+}
+.btn-xianxia-seal.secondary:hover {
+  background: linear-gradient(180deg, #31261D 0%, #1D1510 100%);
+  border-color: #B45309;
+  color: #F3F4F6;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   BẢNG HỒ SƠ TU CHÂN GIẢ KHI LƯU / NẠP (CULTIVATOR PROFILE MODAL)
+   ============================================================ */
+.profile-card-box {
+  background: radial-gradient(circle at 50% 15%, #2C160B 0%, #170B05 70%, #0B0502 100%) !important;
+  border: 2.5px solid #D4AF37 !important;
+  outline: 2px solid #854D0E !important;
+  outline-offset: -7px !important;
+  border-radius: 16px !important;
+  padding: 24px 22px 20px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(212, 175, 55, 0.35) !important;
+}
+
+.profile-header-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.profile-talisman-tag {
+  background: #7F1D1D;
+  border: 1px solid #F87171;
+  color: #FEF08A;
+  font-family: var(--font-xianxia-title);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 14px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  margin-bottom: 6px;
+}
+
+.profile-main-realm {
+  font-family: var(--font-xianxia-title);
+  font-size: 22px;
+  font-weight: 900;
+  color: #FDE047;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+  margin: 0;
+}
+
+.profile-sub-band {
+  font-size: 12.5px;
+  color: #93C5FD;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.profile-body-layout {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: center;
+  background: rgba(14, 7, 3, 0.75);
+  border: 1.5px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.profile-cat-stage {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid #D4AF37;
+  background: radial-gradient(circle, #2C160B 0%, #0F0703 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+  margin: 0 auto;
+}
+
+.profile-aura-halo {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(245, 158, 11, 0.5);
+  animation: baguaSpin 24s linear infinite;
+}
+
+.profile-cat-img {
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.9));
+  z-index: 2;
+}
+
+.profile-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.profile-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.18);
+  padding-bottom: 3px;
+}
+
+.stat-lbl {
+  color: #D1D5DB;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-seal {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 12px;
+}
+.stat-seal.green { color: #10B981; }
+.stat-seal.red { color: #EF4444; }
+.stat-seal.gold { color: #F59E0B; }
+.stat-seal.purple { color: #C084FC; }
+
+.stat-val {
+  font-family: var(--font-ancient-num);
+  font-size: 13.5px;
+}
+.stat-val.gold { color: #FDE047; }
+.stat-val.cyan { color: #38BDF8; }
+.stat-val.green { color: #34D399; }
+.stat-val.purple { color: #E879F9; }
+.stat-val.red { color: #F87171; }
+
+.profile-talents-section {
+  background: rgba(14, 7, 3, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.profile-sec-title {
+  font-family: var(--font-xianxia-title);
+  font-size: 11px;
+  color: #F59E0B;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.profile-talents-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.talent-tag-badge {
+  background: rgba(30, 16, 10, 0.85);
+  border: 1px solid #D4AF37;
+  color: #FEF08A;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.profile-actions-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .profile-body-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .hud-talisman-btn .talisman-btn-label {
+    display: none;
+  }
+  .hud-talisman-btn {
+    padding: 4px 8px;
+  }
+}
+
+/* ==========================================================================
+   NÚT QUAY VỀ TRANG CHỦ TIÊN GIỚI (PIXEL XIANXIA BACK BUTTON)
+   ========================================================================== */
+.btn-back-to-games {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #2D180C 0%, #170C06 100%);
+  border: 1.8px solid #D4AF37;
+  outline: 1px solid rgba(245, 158, 11, 0.4);
+  outline-offset: -3px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  color: #FDE047 !important;
+  text-decoration: none !important;
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), inset 0 0 8px rgba(0, 0, 0, 0.7);
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-back-to-games:hover {
+  background: linear-gradient(180deg, #3D2212 0%, #241208 100%);
+  border-color: #FDE047;
+  color: #FFFFFF !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4), inset 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-back-to-games:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* ==========================================================================
+   MODAL Tàng Thư Cốc (VOCAB VAULT MODAL)
+   ========================================================================== */
+.vocab-vault-modal-box {
+  width: min(96%, 880px);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 10%, #2A150A 0%, #170C06 70%, #0D0603 100%);
+  border: 2.5px solid #D4AF37;
+  outline: 2px solid #854D0E;
+  outline-offset: -6px;
+  border-radius: 14px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(212, 175, 55, 0.35);
+  padding: 16px 20px;
+  overflow: hidden;
+}
+
+.seal-glyph-gold {
+  color: #F59E0B;
+  font-family: serif;
+  font-weight: 900;
+  margin: 0 4px;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+.seal-glyph-red {
+  color: #EF4444;
+  font-family: serif;
+  font-weight: 900;
+  margin: 0 4px;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.vault-modal-top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.25);
+  padding-bottom: 12px;
+}
+
+.vault-modal-subtitle {
+  font-size: 11.5px;
+  color: #FDE68A;
+  opacity: 0.85;
+  text-align: center;
+  font-style: italic;
+}
+
+.vault-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.vault-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #F59E0B;
+  pointer-events: none;
+}
+
+.vault-search-input {
+  width: 100%;
+  background: rgba(14, 7, 3, 0.85);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  border-radius: 8px;
+  padding: 8px 36px 8px 36px;
+  color: #FEF08A;
+  font-family: var(--font-xianxia-body, 'Cinzel', serif);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.vault-search-input:focus {
+  border-color: #FDE047;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35), inset 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.vault-search-clear {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #FCA5A5;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.vault-tabs-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.vault-tab-btn {
+  background: linear-gradient(180deg, rgba(38, 20, 11, 0.9) 0%, rgba(20, 10, 5, 0.9) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  border-radius: 6px;
+  padding: 7px 6px;
+  color: #D1D5DB;
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.vault-tab-btn .tab-seal {
+  color: #F59E0B;
+  font-size: 11.5px;
+}
+
+.vault-tab-btn:hover {
+  border-color: #F59E0B;
+  color: #FEF08A;
+  background: linear-gradient(180deg, rgba(55, 30, 16, 0.95) 0%, rgba(30, 15, 8, 0.95) 100%);
+}
+
+.vault-tab-btn.active {
+  background: linear-gradient(180deg, #5A3510 0%, #2A150A 100%);
+  border-color: #FDE047;
+  color: #FFFBEB;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4), inset 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.vault-cards-grid-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 12px;
+  min-height: 280px;
+  max-height: 48vh;
+}
+
+.vault-cards-grid-container::-webkit-scrollbar {
+  width: 6px;
+}
+.vault-cards-grid-container::-webkit-scrollbar-thumb {
+  background: #854D0E;
+  border-radius: 3px;
+}
+.vault-cards-grid-container::-webkit-scrollbar-track {
+  background: rgba(14, 7, 3, 0.6);
+}
+
+.vault-words-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+/* Thẻ Đan Dược Từ Vựng */
+.vocab-card {
+  background: linear-gradient(145deg, rgba(28, 14, 7, 0.9) 0%, rgba(15, 7, 3, 0.95) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  outline: 1px solid rgba(120, 53, 15, 0.4);
+  outline-offset: -3px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), inset 0 0 8px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.vocab-card:hover {
+  transform: translateY(-2px);
+  border-color: #FDE047;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.9), 0 0 15px rgba(245, 158, 11, 0.25);
+}
+
+.vocab-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vocab-word-title {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.vocab-word-title.frost  { color: #38BDF8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.5); }
+.vocab-word-title.fire   { color: #FB923C; text-shadow: 0 0 8px rgba(251, 146, 60, 0.5); }
+.vocab-word-title.void   { color: #C084FC; text-shadow: 0 0 8px rgba(192, 132, 252, 0.5); }
+.vocab-word-title.thunder{ color: #FDE047; text-shadow: 0 0 8px rgba(253, 224, 71, 0.5); }
+
+.vocab-type-badge {
+  font-size: 10px;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: rgba(30, 16, 10, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #FEF08A;
+  font-family: monospace;
+  text-transform: lowercase;
+}
+
+.vocab-card-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vocab-ipa-text {
+  font-family: monospace;
+  font-size: 11.5px;
+  color: #93C5FD;
+}
+
+.btn-pronounce-speaker {
+  background: rgba(30, 16, 10, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+  padding: 3px 6px;
+  color: #FDE047;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-pronounce-speaker:hover {
+  background: #5A3510;
+  border-color: #FDE047;
+  transform: scale(1.1);
+}
+
+.vocab-meaning-text {
+  font-size: 12px;
+  color: #E5E7EB;
+  line-height: 1.35;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vault-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1.5px solid rgba(212, 175, 55, 0.25);
+  padding-top: 10px;
+}
+
+.vault-stats-counter {
+  font-size: 11.5px;
+  color: #FDE68A;
+  font-family: var(--font-ancient-num, monospace);
+}
+
+/* ==========================================================================
+   MODAL BẢNG PHONG THẦN (PANTHEON LEADERBOARD MODAL)
+   ========================================================================== */
+.pantheon-modal-box {
+  width: min(96%, 760px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 10%, #2A150A 0%, #170C06 70%, #0D0603 100%);
+  border: 2.5px solid #D4AF37;
+  outline: 2px solid #854D0E;
+  outline-offset: -6px;
+  border-radius: 14px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 40px rgba(239, 68, 68, 0.35);
+  padding: 16px 20px;
+  overflow: hidden;
+}
+
+/* Podium Top 3 */
+.pantheon-top-podium {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.25);
+}
+
+.podium-card {
+  background: linear-gradient(160deg, rgba(35, 18, 10, 0.9) 0%, rgba(18, 9, 4, 0.95) 100%);
+  border: 1.8px solid rgba(212, 175, 55, 0.4);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.85);
+  position: relative;
+}
+
+.podium-card.champion {
+  border-color: #FDE047;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4), inset 0 0 15px rgba(245, 158, 11, 0.2);
+  transform: translateY(-6px);
+}
+
+.podium-crown {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.gold-crown   { color: #FDE047; text-shadow: 0 0 10px rgba(253, 224, 71, 0.8); }
+.silver-crown { color: #E2E8F0; text-shadow: 0 0 8px rgba(226, 232, 240, 0.6); }
+.bronze-crown { color: #FDBA74; text-shadow: 0 0 8px rgba(253, 186, 116, 0.6); }
+
+.podium-avatar-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid #D4AF37;
+  overflow: hidden;
+  margin: 3px 0;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #241208 0%, #0D0603 100%);
+}
+
+.podium-empty-placeholder {
+  font-size: 22px;
+  opacity: 0.6;
+}
+
+.podium-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.podium-name {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #FEF08A;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-score {
+  font-family: var(--font-ancient-num, monospace);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #F59E0B;
+}
+
+.podium-realm {
+  font-size: 10.5px;
+  color: #93C5FD;
+}
+
+/* Leaderboard List Table */
+.pantheon-list-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 200px;
+  max-height: 38vh;
+  margin-bottom: 10px;
+}
+
+.pantheon-table-header {
+  display: grid;
+  grid-template-columns: 50px 1.5fr 1.2fr 1.2fr 70px 70px;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(14, 7, 3, 0.7);
+  border-radius: 6px 6px 0 0;
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11px;
+  font-weight: 800;
+  color: #F59E0B;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.pantheon-rank-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+}
+
+.pantheon-rank-list::-webkit-scrollbar {
+  width: 5px;
+}
+.pantheon-rank-list::-webkit-scrollbar-thumb {
+  background: #854D0E;
+  border-radius: 3px;
+}
+
+.pantheon-row {
+  display: grid;
+  grid-template-columns: 50px 1.5fr 1.2fr 1.2fr 70px 70px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  background: rgba(24, 12, 6, 0.75);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.pantheon-row:hover {
+  background: rgba(45, 24, 12, 0.9);
+  border-color: #FDE047;
+}
+
+.pantheon-row.gold   { border-color: #FDE047; background: rgba(55, 35, 10, 0.85); }
+.pantheon-row.silver { border-color: #CBD5E1; background: rgba(35, 30, 30, 0.85); }
+.pantheon-row.bronze { border-color: #FDBA74; background: rgba(45, 25, 15, 0.85); }
+
+.rank-col {
+  font-family: var(--font-ancient-num, monospace);
+  font-weight: 800;
+  color: #FEF08A;
+}
+
+.name-col {
+  font-weight: 700;
+  color: #FFFFFF;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.realm-col {
+  color: #93C5FD;
+  font-size: 11.5px;
+}
+
+.score-col {
+  font-family: var(--font-ancient-num, monospace);
+  color: #FDE047;
+  font-weight: 700;
+}
+
+.words-col, .wpm-col {
+  font-family: var(--font-ancient-num, monospace);
+  color: #34D399;
+}
+
+.pantheon-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1.5px solid rgba(212, 175, 55, 0.25);
+  padding-top: 10px;
+}
+
+.pantheon-player-badge {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-badge-label {
+  font-size: 10px;
+  color: #F59E0B;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.player-badge-stats {
+  font-size: 12px;
+  color: #FEF08A;
+  font-family: var(--font-ancient-num, monospace);
+}
+
+@media (max-width: 650px) {
+  .lobby-top-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vault-tabs-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pantheon-table-header, .pantheon-row {
+    grid-template-columns: 40px 1.2fr 1fr 1fr;
+  }
+  .col-words, .col-wpm, .words-col, .wpm-col {
+    display: none;
+  }
+}
+
+
