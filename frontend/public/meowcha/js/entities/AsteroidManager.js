@@ -387,6 +387,8 @@
           ctx.strokeStyle = ast.glowColor || ast.coreColor;
           ctx.lineWidth = 2.0;
           ctx.stroke();
+        }
+
         ctx.restore(); // Thoát khỏi phép xoay khối đá
 
         // ============================================================
