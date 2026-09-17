@@ -7,7 +7,7 @@
   const FETCH_STATE = {};
 
   const API_BASE = '/api/meowcha/vocab';
-  const WORDS_PER_BAND = 150;
+  const WORDS_PER_BAND = 250;
 
   async function _fetchBand(bandIdx) {
     const key = String(bandIdx);
@@ -17,7 +17,7 @@
     FETCH_STATE[key] = 'loading';
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4500);
+      const timer = setTimeout(() => controller.abort(), 6000);
       const resp = await fetch(API_BASE + '?band=' + bandIdx + '&limit=' + WORDS_PER_BAND, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
@@ -26,13 +26,16 @@
       clearTimeout(timer);
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const res = await resp.json();
-      const rawWords = res.data && res.data.words ? res.data.words : (res.data || res.words || res);
+      const rawWords = Array.isArray(res.data) ? res.data : (res.data && res.data.words ? res.data.words : (res.words || []));
       const words = Array.isArray(rawWords) ? rawWords.map(function(w) {
         return {
+          id:      w.id,
           word:    (w.word || '').toUpperCase(),
           ipa:     w.ipa || w.phonetic || w.default_ipa || '/.../',
           meaning: w.meaning || w.definition || w.vietnamese || '',
-          type:    w.type || w.pos || w.part_of_speech || 'vocab'
+          type:    w.type || w.pos || w.part_of_speech || 'vocab',
+          band_level: w.band_level !== undefined ? w.band_level : bandIdx,
+          asteroid_type: w.asteroid_type || 'FROST'
         };
       }).filter(function(w) { return w.word && w.word.length > 0; }) : [];
 
@@ -40,7 +43,9 @@
       CACHE[key] = words;
       FETCH_STATE[key] = 'done';
       var M = root.Meowcha || {};
-      if (M.REALM_DECKS) M.REALM_DECKS[bandIdx] = words;
+      if (M.REALM_DECKS) {
+        M.REALM_DECKS[bandIdx] = words;
+      }
       return words;
     } catch (err) {
       FETCH_STATE[key] = 'error';
@@ -64,7 +69,16 @@
     return await _fetchBand(band);
   }
 
-  async function searchVocab({ band = 0, search = '', page = 1, pageSize = 24 } = {}) {
+  async function preloadAllBands() {
+    try {
+      await Promise.all([0, 1, 2, 3].map(b => _fetchBand(b)));
+      console.log('[VocabLoader] Đã nạp thành công các cảnh giới từ vựng Oxford 5000 vào bộ nhớ game.');
+    } catch (e) {
+      console.warn('[VocabLoader] Preload thất bại, dùng fallback:', e);
+    }
+  }
+
+  async function searchVocab({ band = 0, search = '', page = 1, pageSize = 20 } = {}) {
     try {
       const params = new URLSearchParams();
       if (band !== null && band !== undefined) params.append('band', band);
@@ -79,11 +93,33 @@
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const res = await resp.json();
       if (res.success && res.data) {
+        const rawList = Array.isArray(res.data) ? res.data : (res.data.words || []);
+        const wordsList = rawList.map(function(w) {
+          return {
+            id:      w.id,
+            word:    (w.word || '').toUpperCase(),
+            ipa:     w.ipa || w.phonetic || w.default_ipa || '/.../',
+            meaning: w.meaning || w.definition || w.vietnamese || '',
+            type:    w.type || w.pos || w.part_of_speech || 'vocab',
+            band_level: w.band_level !== undefined ? w.band_level : band,
+            asteroid_type: w.asteroid_type || 'FROST'
+          };
+        }).filter(function(w) { return w.word && w.word.length > 0; });
+
+        const totalCount = (res.meta && res.meta.total !== undefined)
+          ? res.meta.total
+          : ((res.data && res.data.total_matches !== undefined) ? res.data.total_matches : wordsList.length);
+        const curPage = (res.meta && res.meta.page) || page;
+        const curPageSize = (res.meta && res.meta.page_size) || pageSize;
+        const hasMore = (res.meta && res.meta.has_more !== undefined)
+          ? res.meta.has_more
+          : (curPage * curPageSize < totalCount);
+
         return {
-          words: res.data.words || [],
-          total: res.data.total_matches || (res.data.words ? res.data.words.length : 0),
-          page: res.data.page || page,
-          hasMore: res.data.has_more || false
+          words: wordsList,
+          total: totalCount,
+          page: curPage,
+          hasMore: hasMore
         };
       }
     } catch (e) {
@@ -132,6 +168,7 @@
   root.Meowcha = root.Meowcha || {};
   root.Meowcha.VocabLoader = {
     loadForRealm: loadForRealm,
+    preloadAllBands: preloadAllBands,
     searchVocab: searchVocab,
     getRandomWords: getRandomWords,
     isReady: isReady

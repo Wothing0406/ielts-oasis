@@ -29,6 +29,7 @@
       this.lobbyLevelTag = document.getElementById("lobbyLevelTag");
 
       // HUD Elements
+      this.hudLevelBadge = document.getElementById("hudLevelBadge");
       this.hudHpBar = document.getElementById("hudHpBar");
       this.hudHpText = document.getElementById("hudHpText");
       this.hudScore = document.getElementById("hudScore");
@@ -161,12 +162,7 @@
         btnRestart.onclick = () => {
           this.showConfirm("ĐẠO HỮU TẨY TỦY TRỌNG SINH?", "Mọi điểm Tu Vi và cảnh giới sẽ bắt đầu lại từ Luyện Khí Kỳ.", () => {
             this.saveSystem.resetActiveSave();
-            this.state.revive();
-            this.state.score = 0;
-            this.state.wordsSlain = 0;
-            this.state.realmIdx = 0;
-            this.state.talents = { hpBonus: 0, slowFactor: 1.0, critChance: 0.0, scoreMultiplier: 1.0, shieldCharges: 0, autoKill: false, typoImmune: false };
-            this.saveSystem.saveGame(1, this.state);
+            this.state.reset();
             this.audio.play("chime");
             this.showStatus("✨ [TẨY TỦY TRỌNG SINH] Đã xóa tiến trình cũ, khởi đầu lại từ Luyện Khí Kỳ!");
             this.updateHUD();
@@ -294,7 +290,8 @@
       const btnRebirth = document.getElementById("btnRebirth");
       if (btnRebirth) {
         btnRebirth.onclick = () => {
-          this.state.revive();
+          this.saveSystem.resetActiveSave();
+          this.state.reset();
           this.hideGameOverModal();
           this.audio.play("chime");
           if (this.onReturnLobby) this.onReturnLobby();
@@ -407,7 +404,10 @@
       if (this.hudScore) this.hudScore.innerText = s.score.toLocaleString();
       if (this.hudWords) this.hudWords.innerText = s.wordsSlain;
 
-      // Danh hiệu Cảnh Giới
+      // Danh hiệu Cảnh Giới & Cấp Độ
+      if (this.hudLevelBadge) {
+        this.hudLevelBadge.innerText = `CẤP ${s.realmIdx}`;
+      }
       if (this.hudRealm) {
         this.hudRealm.innerText = realmData.title;
         this.hudRealm.style.color = realmData.color;
@@ -780,7 +780,8 @@
         this.renderVocabCards(this.currentVaultWords);
 
         if (this.vaultStatsCounter) {
-          this.vaultStatsCounter.innerText = `Đang hiển thị ${this.currentVaultWords.length} / ${res.total || this.currentVaultWords.length} Đan Dược`;
+          const totalStr = res.total ? Number(res.total).toLocaleString("vi-VN") : this.currentVaultWords.length;
+          this.vaultStatsCounter.innerText = `Đang hiển thị ${this.currentVaultWords.length} / ${totalStr} Đan Dược`;
         }
 
         if (this.btnVaultLoadMoreModal) {
@@ -957,8 +958,10 @@
 
       if (data.length === 0) {
         listContainer.innerHTML = `
-          <div style="text-align: center; padding: 25px; color: #FEF08A; opacity: 0.85;">
-            <div>Bảng Phong Thần đang trống trải. Hãy là đạo hữu đầu tiên bấm Khắc Danh để đưa tên vào Tiên Giới!</div>
+          <div style="text-align: center; padding: 30px 15px; color: #FEF08A; opacity: 0.9;">
+            <div style="font-size: 26px; margin-bottom: 8px;">📜</div>
+            <div style="font-family: var(--font-xianxia-title); font-size: 13.5px; font-weight: 700; color: #FDE047;">Tiên Giới thanh tịnh • Bảng Vàng đang đợi bậc Chí Tôn</div>
+            <div style="font-size: 11.5px; color: #D1D5DB; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm độ kiếp và bấm <strong>"Khắc Danh Chiến Tích"</strong> để vinh danh trên Bảng Phong Thần!</div>
           </div>
         `;
         return;
@@ -990,8 +993,21 @@
         return;
       }
 
-      const defaultName = localStorage.getItem("meowcha_player_name") || "Tiểu Miêu Kiếm Sĩ";
-      const playerName = prompt("Nhập Đạo Hiệu để khắc danh vào Bảng Phong Thần:", defaultName);
+      // 1. Tự động nhận diện Đạo Hiệu từ tài khoản đăng nhập trên IELTS Oasis
+      let loggedInName = "";
+      try {
+        const rawUser = localStorage.getItem("oasis_user") || (window.parent && window.parent.localStorage.getItem("oasis_user"));
+        if (rawUser) {
+          const userObj = JSON.parse(rawUser);
+          loggedInName = userObj.full_name || userObj.name || userObj.username || (userObj.email ? userObj.email.split("@")[0] : "");
+        }
+      } catch (_) {}
+
+      // Nếu người chơi đã đăng nhập tài khoản IELTS Oasis, lấy trực tiếp tên user login
+      let playerName = loggedInName || localStorage.getItem("meowcha_player_name") || "";
+      if (!playerName) {
+        playerName = prompt("Nhập Đạo Hiệu / Tên của bạn để khắc danh Bảng Phong Thần:", "Tiên Hữu");
+      }
       if (!playerName || !playerName.trim()) return;
 
       const cleanName = playerName.trim().slice(0, 30);

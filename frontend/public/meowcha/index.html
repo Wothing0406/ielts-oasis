@@ -5,12 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MEOW-CHA: VẠN KIẾM QUY TÔNG • IELTS TIÊN HIỆP</title>
   <meta name="description" content="Trò chơi luyện gõ từ vựng IELTS phong cách Tiên Hiệp cổ điển kết hợp mô hình Miêu Kiếm Tôn">
+  <!-- Google Fonts: Be Vietnam Pro (Chuẩn Tiếng Việt không lỗi dấu) & Cinzel (Cổ Tự Latin) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Cinzel:wght@600;700;900&display=swap" rel="stylesheet">
 
   <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-  <link rel="stylesheet" href="./css/meowcha-theme.css?v=4.5">
-  <link rel="stylesheet" href="./css/meowcha-layout.css?v=4.5">
-  <link rel="stylesheet" href="./css/meowcha-ui.css?v=4.5">
-  <link rel="stylesheet" href="./css/meowcha-animations.css?v=4.5">
+  <link rel="stylesheet" href="./css/meowcha-theme.css?v=4.7">
+  <link rel="stylesheet" href="./css/meowcha-layout.css?v=4.7">
+  <link rel="stylesheet" href="./css/meowcha-ui.css?v=4.7">
+  <link rel="stylesheet" href="./css/meowcha-animations.css?v=4.7">
 </head>
 <body>
   <div id="gameAppWrapper">
@@ -32,7 +36,7 @@
       <!-- DẢI TRÚC THƯ TIÊN ĐẠO (ANCIENT SCROLL TOP NAVIGATION BAR) -->
       <div class="lobby-top-bar">
         <!-- Nút Lệnh Bài Hồi Môn -->
-        <a href="/games" class="btn-back-to-games" id="btnBackToGames" title="Quay về Tiên Giới IELTS Oasis">
+        <a href="/games" class="btn-back-to-games" id="btnBackToGames" title="Quay về Tiên Giới IELTS Oasis" target="_top">
           <svg class="nav-icon-svg animated-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 19 2 12 11 5 11 19"></polygon>
             <path d="M22 19a7 7 0 0 0-7-7H2"></path>
@@ -57,27 +61,30 @@
         <!-- Cụm Thẻ Trúc Tiên Giới liền dải -->
         <div class="lobby-top-actions">
           <button class="nav-scroll-item" id="btnOpenVocabVault" title="Mở Tàng Thư Cốc Từ Vựng Oxford 5000">
-            <svg class="nav-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="nav-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
             </svg>
-            <span>TÀNG THƯ CỐC</span>
+            <span class="nav-txt-desktop">TÀNG THƯ CỐC</span>
+            <span class="nav-txt-mobile">TÀNG THƯ</span>
           </button>
 
           <button class="nav-scroll-item" id="btnOpenPantheon" title="Mở Bảng Phong Thần Tiên Giới">
-            <svg class="nav-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="nav-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6 9l6 6 6-6"></path>
               <path d="M12 3v12"></path>
               <circle cx="12" cy="19" r="2"></circle>
             </svg>
-            <span>PHONG THẦN BẢNG</span>
+            <span class="nav-txt-desktop">PHONG THẦN BẢNG</span>
+            <span class="nav-txt-mobile">PHONG THẦN</span>
           </button>
 
           <button class="nav-scroll-item" id="btnOpenSavesLobby" title="Mở Ngọc Giản Lưu Trữ">
-            <svg class="nav-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="nav-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-            <span>NGỌC GIẢN LƯU TRỮ</span>
+            <span class="nav-txt-desktop">NGỌC GIẢN LƯU TRỮ</span>
+            <span class="nav-txt-mobile">LƯU TRỮ</span>
           </button>
         </div>
       </div>
@@ -256,59 +263,55 @@
     <!-- 2. CHIẾN TRƯỜNG ĐỘ KIẾP (IN-GAME BATTLE VIEW) -->
     <!-- ========================================================= -->
     <div id="battleView">
-      <!-- BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG (GÓC TRÊN BÊN TRÁI) -->
+      <!-- BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG (THANH TRẠNG THÁI CHIẾN TRƯỜNG TOÀN DIỆN) -->
       <div class="sect-scroll-hud">
-        <div class="sect-row-title">
-          <span class="sect-seal-red">[ 宗 ]</span>
-          <span class="sect-seal-gold">[ 境 ]</span>
-          <strong id="hudRealm">Tiểu Miêu Kiếm Đồng</strong>
-        </div>
-        <div class="sect-row-stats">
-          <span><span class="sect-seal-green">[ 丹 ]</span> Tu Vi: <b id="hudScore" class="gold-num">0</b> pts</span>
-          <span class="sect-divider">•</span>
-          <span><span class="sect-seal-red">[ 斩 ]</span> Trảm: <b id="hudWords" class="cyan-num">0</b></span>
-          <span id="hudWpm" class="wpm-text">0 WPM</span>
-        </div>
-        <div class="sect-row-extras">
-          <span><span class="sect-seal-gold">[ 劫 ]</span> Thiên Kiếp: <b>x1.0</b></span>
-          <span class="sect-divider">|</span>
-          <span><span class="sect-seal-purple">[ 赦 ]</span> Kim Chung: <b id="hudCombo">0 tầng</b></span>
-        </div>
-        <div class="sect-hp-box">
-          <div class="hp-info">
-            <span class="hp-label">Khí Huyết:</span>
-            <span id="hudHpText" class="hp-val">50 / 50 HP</span>
+        <div class="sect-hud-top-row">
+          <div class="sect-row-title">
+            <span class="sect-level-tag" id="hudLevelBadge">CẤP 0</span>
+            <strong id="hudRealm">Tiểu Miêu Kiếm Đồng</strong>
           </div>
-          <div class="hp-track">
-            <div class="hp-fill" id="hudHpBar"></div>
+          <!-- Cụm nút điều khiển chiến trận (Tích hợp ngay ngắn, không đè chữ) -->
+          <div class="battle-controls-inline">
+            <button class="hud-talisman-btn gold" id="btnQuickSaveHUD" title="Lưu Tiên Cơ (Lưu Đạo Quả)">
+              <span class="seal-box-talisman seal-gold">[ 符 ]</span>
+              <span class="talisman-btn-label">LƯU TIÊN CƠ</span>
+            </button>
+            <button class="hud-talisman-btn crimson" id="btnQuickRestartHUD" title="Chơi Lại Từ Đầu (Tẩy Tủy)">
+              <span class="seal-box-talisman seal-red">[ 丹 ]</span>
+              <span class="talisman-btn-label">TẨY TỦY</span>
+            </button>
+            <button class="hud-btn" id="btnToggleSound" title="Bật/Tắt Tiên Nhạc">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+            </button>
+            <button class="hud-btn" id="btnPauseGame" title="Tạm Dừng [ESC]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- CÁC NÚT ĐIỀU KHIỂN CHIẾN TRẬN (GÓC TRÊN BÊN PHẢI) -->
-      <div class="battle-controls-right">
-        <!-- Nút Lưu Tiên Cơ Nhanh Không Dùng Emoji -->
-        <button class="hud-talisman-btn gold" id="btnQuickSaveHUD" title="Lưu Tiên Cơ (Lưu Đạo Quả)">
-          <span class="seal-box-talisman seal-gold">[ 符 ]</span>
-          <span class="talisman-btn-label">LƯU TIÊN CƠ</span>
-        </button>
-        <!-- Nút Tẩy Tủy Chơi Lại Nhanh Không Dùng Emoji -->
-        <button class="hud-talisman-btn crimson" id="btnQuickRestartHUD" title="Chơi Lại Từ Đầu (Tẩy Tủy)">
-          <span class="seal-box-talisman seal-red">[ 丹 ]</span>
-          <span class="talisman-btn-label">TẨY TỦY</span>
-        </button>
-        <button class="hud-btn" id="btnToggleSound" title="Bật/Tắt Tiên Nhạc">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-          </svg>
-        </button>
-        <button class="hud-btn" id="btnPauseGame" title="Tạm Dừng [ESC]">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="6" y="4" width="4" height="16"></rect>
-            <rect x="14" y="4" width="4" height="16"></rect>
-          </svg>
-        </button>
+        <div class="sect-hud-bottom-row">
+          <!-- Hiển thị đầy đủ Khí Huyết Máu & Thanh HP -->
+          <div class="sect-hp-container">
+            <span class="hp-icon">❤️</span>
+            <span class="hp-label-title">HP:</span>
+            <span id="hudHpText" class="hp-val-text">50 / 50</span>
+            <div class="hp-mini-track">
+              <div class="hp-fill" id="hudHpBar" style="width: 100%;"></div>
+            </div>
+          </div>
+          <!-- Hiển thị đầy đủ Tu Vi Điểm, Số Từ Trảm, Tốc Độ WPM -->
+          <div class="sect-stats-inline">
+            <span class="stat-mini gold">⭐ Tu Vi: <b id="hudScore" class="gold-num">0</b></span>
+            <span class="stat-mini cyan">🗡️ Trảm: <b id="hudWords" class="cyan-num">0</b></span>
+            <span class="stat-mini green" id="hudWpm">0 WPM</span>
+          </div>
+        </div>
       </div>
 
       <!-- Unity WebGL Character Overlay (Fallback mượt mà về Canvas) -->
@@ -549,7 +552,7 @@
           <div class="podium-card rank-2" id="podiumCard2">
             <div class="podium-crown silver-crown">🥈 NGÂN TIÊN</div>
             <div class="podium-avatar-wrap">
-              <img src="./sprites/cat_idle_solo.jpg" alt="Top 2" class="podium-avatar" id="podiumAvatar2" style="display: none;" />
+              <img src="./sprites/cat_idle.png" alt="Top 2" class="podium-avatar" id="podiumAvatar2" style="display: none;" />
               <div class="podium-empty-placeholder" id="podiumPlaceholder2">📜</div>
             </div>
             <div class="podium-name" id="podiumName2">Đang chờ vị thứ</div>
@@ -561,7 +564,7 @@
           <div class="podium-card rank-1 champion" id="podiumCard1">
             <div class="podium-crown gold-crown">👑 CHÍ TÔN KIM GIÁP</div>
             <div class="podium-avatar-wrap">
-              <img src="./sprites/cat_idle_solo.jpg" alt="Top 1" class="podium-avatar" id="podiumAvatar1" style="display: none;" />
+              <img src="./sprites/cat_idle.png" alt="Top 1" class="podium-avatar" id="podiumAvatar1" style="display: none;" />
               <div class="podium-empty-placeholder" id="podiumPlaceholder1">👑</div>
             </div>
             <div class="podium-name" id="podiumName1">Chưa có Chí Tôn</div>
@@ -573,7 +576,7 @@
           <div class="podium-card rank-3" id="podiumCard3">
             <div class="podium-crown bronze-crown">🥉 ĐỒNG TIÊN</div>
             <div class="podium-avatar-wrap">
-              <img src="./sprites/cat_idle_solo.jpg" alt="Top 3" class="podium-avatar" id="podiumAvatar3" style="display: none;" />
+              <img src="./sprites/cat_idle.png" alt="Top 3" class="podium-avatar" id="podiumAvatar3" style="display: none;" />
               <div class="podium-empty-placeholder" id="podiumPlaceholder3">🥉</div>
             </div>
             <div class="podium-name" id="podiumName3">Đang chờ vị thứ</div>
@@ -624,7 +627,7 @@
         <div class="profile-body-layout">
           <div class="profile-cat-stage">
             <div class="profile-aura-halo"></div>
-            <img src="./sprites/cat_celestial_sovereign.jpg" alt="Miêu Tôn" id="profileModalAvatar" class="profile-cat-img" />
+            <img src="./sprites/cat_celestial_sovereign.png" alt="Miêu Tôn" id="profileModalAvatar" class="profile-cat-img" />
           </div>
 
           <div class="profile-stats-panel">
@@ -690,16 +693,16 @@
   <script src="./js/entities/AsteroidManager.js?v=4.6"></script>
   <script src="./js/entities/ProjectileSystem.js?v=4.6"></script>
 
-  <script src="./js/combat/TypingEngine.js?v=4.6"></script>
-  <script src="./js/combat/BreakthroughFlow.js?v=4.6"></script>
+  <script src="./js/combat/TypingEngine.js?v=4.7"></script>
+  <script src="./js/combat/BreakthroughFlow.js?v=4.7"></script>
 
-  <script src="./js/ui/IPAToast.js?v=4.6"></script>
-  <script src="./js/ui/VirtualKeyboard.js?v=4.6"></script>
-  <script src="./js/ui/UnityBridge.js?v=4.6"></script>
-  <script src="./js/core/VocabLoader.js?v=4.6"></script>
-  <script src="./js/ui/UIManager.js?v=4.6"></script>
+  <script src="./js/ui/IPAToast.js?v=4.7"></script>
+  <script src="./js/ui/VirtualKeyboard.js?v=4.7"></script>
+  <script src="./js/ui/UnityBridge.js?v=4.7"></script>
+  <script src="./js/core/VocabLoader.js?v=4.7"></script>
+  <script src="./js/ui/UIManager.js?v=4.7"></script>
 
   <!-- Game Bootstrap -->
-  <script src="./js/main.js?v=4.6"></script>
+  <script src="./js/main.js?v=4.7"></script>
 </body>
 </html>

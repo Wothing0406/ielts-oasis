@@ -24,13 +24,16 @@ router = APIRouter(
     tags=["Meow-Cha Cultivation"]
 )
 
-def api_response(data: Any = None, success: bool = True, error: Optional[Dict[str, str]] = None):
+def api_response(data: Any = None, success: bool = True, error: Optional[Dict[str, str]] = None, meta: Optional[Dict[str, Any]] = None):
     """Chuẩn hóa cấu trúc trả về theo quy chuẩn hệ thống"""
-    return {
+    res = {
         "success": success,
         "data": data,
         "error": error
     }
+    if meta is not None:
+        res["meta"] = meta
+    return res
 
 
 # =========================================================================
@@ -359,6 +362,16 @@ def save_progress_to_slot(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"code": "DB_TRANSACTION_FAILED", "message": str(e)}
         )
+
+
+@router.post("/saves", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+def save_progress_generic(
+    payload: MeowchaSaveCreate,
+    db: Session = Depends(get_db)
+):
+    """Alias lưu tiến trình không cần chỉ định slot_id trên URL path"""
+    target_slot = payload.slot_id if payload.slot_id in (1, 2, 3) else 1
+    return save_progress_to_slot(slot_id=target_slot, payload=payload, db=db)
 
 
 @router.delete("/saves/{slot_id}", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)

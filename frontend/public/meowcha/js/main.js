@@ -63,6 +63,10 @@
       this.initCanvasSize();
       this.unityBridge.init();
 
+      if (M.VocabLoader && M.VocabLoader.preloadAllBands) {
+        M.VocabLoader.preloadAllBands();
+      }
+
       const ipaContainer = document.getElementById("ipaToastContainer");
       if (ipaContainer) {
         this.ipaToast = new M.IPAToast(ipaContainer);
@@ -99,10 +103,19 @@
 
       // Callback hiển thị bảng thiên phú đột phá
       this.breakthrough.onShowTalentModal = (talents, targetRealm) => {
+        // ĐÓNG BĂNG TRẬN CHIẾN & QUÉT SẠCH MA THẠCH ĐANG RƠI ĐỂ NGƯỜI CHƠI KHÔNG BỊ MẤT MÁU OAN
+        this.gameState.isPaused = true;
+        this.asteroids.clear();
+        this.typing.currentTarget = null;
+        if (this.floatingText) {
+          this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 40, "✨ TIÊN KHÍ BÙNG NỔ • QUÉT SẠCH MA THẠCH!", "#34D399", 22);
+        }
+
         this.ui.showTalentModal(talents, targetRealm, (chosenTalent) => {
           this.breakthrough.selectTalent(chosenTalent);
           this.saveSystem.saveGame(1, this.gameState);
           this.ui.updateHUD();
+          this.gameState.isPaused = false;
           setTimeout(() => this.spawnWord(), 600);
         });
       };
@@ -218,15 +231,25 @@
     }
 
     returnToLobby() {
-      this.saveSystem.saveGame(1, this.gameState);
+      if (this.gameState.isGameOver || this.gameState.hp <= 0) {
+        // Đạo tiêu thân vong: Tuyệt đối không lưu lại trạng thái đã chết!
+        this.saveSystem.resetActiveSave();
+        this.gameState.reset();
+      } else {
+        // Chỉ lưu khi người chơi còn sống chủ động dừng trận
+        this.saveSystem.saveGame(1, this.gameState);
+      }
       this.gameState.currentScene = "LOBBY";
-      this.gameState.revive(); // Phục hồi đan điền khi quay về sảnh thiền
+      this.gameState.revive(); // Phục hồi đan điền khi về sảnh thiền định
       this.gameOverModalShown = false;
       this.typing.currentTarget = null;
 
       this.asteroids.clear();
       this.projectiles.clear();
+      this.particles.clear();
+      this.floatingText.clear();
       this.ui.showScene("LOBBY");
+      this.ui.updateHUD();
       this.audio.stopZenGuqin();
 
       if (this.vKeyboard) {
@@ -235,7 +258,8 @@
     }
 
     restartBattle() {
-      // Tẩy Tủy: Khởi tạo lại trận đấu về trạng thái ban đầu
+      // Tẩy Tủy: Khởi tạo lại trận đấu về trạng thái ban đầu, xóa bỏ hoàn toàn save slot cũ
+      this.saveSystem.resetActiveSave();
       this.gameState.reset();
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;
@@ -248,9 +272,6 @@
       this.projectiles.clear();
       this.particles.clear();
       this.floatingText.clear();
-
-      this.saveSystem.resetActiveSave();
-      this.saveSystem.saveGame(1, this.gameState);
 
       this.ui.showScene("BATTLE");
       this.ui.updateHUD();
@@ -269,8 +290,9 @@
 
     spawnWord() {
       if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver) return;
-      const maxAsteroids = this.gameState.realmIdx >= 4 ? 4 : (this.gameState.realmIdx >= 3 ? 4 : (this.gameState.realmIdx >= 1 ? 3 : 2));
-      if (this.asteroids.count >= maxAsteroids) return; // Cho phép nhiều ma thạch cùng xuất hiện ở cảnh giới cao
+      // QUY CHUẨN ĐỘ KIẾP: TUYỆT ĐỐI CHỈ RƠI 1 QUẢ DUY NHẤT TẠI MỘT THỜI ĐIỂM!
+      // Không bao giờ rơi chồng chéo 2-3 quả. Trảm xong quả này thì quả mới mới xuất hiện!
+      if (this.asteroids.count >= 1) return;
 
       const bandIdx = (this.gameState.selectedBandIdx !== undefined && this.gameState.selectedBandIdx !== null) ? this.gameState.selectedBandIdx : this.gameState.realmIdx;
       const realmDecks = M.REALM_DECKS || {};
@@ -360,12 +382,15 @@
         }
       }
 
-      // 3. Nhịp Sinh Ma Thạch Liên Hoàn (Tạo áp lực dồn dập, tăng dần theo cảnh giới)
+      // 3. Nhịp Sinh Ma Thạch: Chỉ sinh từ mới khi trên màn hình ĐÃ TRẢM HẾT hoặc chạm đáy (count === 0)
       this.spawnTimer = (this.spawnTimer || 0) + dt;
-      const spawnInterval = Math.max(2.0, 5.2 - this.gameState.realmIdx * 0.80);
-      if (this.spawnTimer >= spawnInterval) {
-        this.spawnTimer = 0;
-        this.spawnWord();
+      if (this.asteroids.count === 0) {
+        if (this.spawnTimer >= 0.4) {
+          this.spawnTimer = 0;
+          this.spawnWord();
+        }
+      } else {
+        this.spawnTimer = 0; // Đang có ma thạch thì tuyệt đối không đếm timer spawn thêm
       }
 
       this.realmVFX.update(dt, this.gameState);
@@ -396,6 +421,10 @@
         }
 
         if (this.gameState.isGameOver) {
+          // Đạo tiêu thân vong: Xóa ngay lập tức save slot 1 để không lưu kiếp đã chết!
+          this.saveSystem.resetActiveSave();
+          this.asteroids.clear();
+          this.typing.currentTarget = null;
           if (this.unityBridge) {
             this.unityBridge.triggerDefeated();
           }
