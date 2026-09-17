@@ -1025,7 +1025,7 @@
         });
 
         if (resp.ok) {
-          console.log("[Meowcha] Đã tự động vinh danh chiến tích lên Bảng Phong Thần:", payload.player_name, payload.score);
+          // Ghi nhận thành công âm thầm, không in log console tránh hiểu lầm buff điểm
         }
         if (submitScore > (this.state.highScore || 0)) {
           this.state.highScore = submitScore;
@@ -1043,10 +1043,6 @@
       if (!this.modalPantheon) return;
       this.modalPantheon.style.display = "flex";
       this.updatePantheonSelfStats();
-      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-      if (bestScore > 0) {
-        this.autoSubmitScoreToPantheon(bestScore);
-      }
       this.loadLeaderboardFromAPI();
     }
 
@@ -1131,29 +1127,7 @@
             } catch (e) {}
             this.updatePantheonSelfStats();
             this.updateLobbyStats();
-          } else if (myBestScore > myRankEntry.score) {
-            // Kỷ lục trên máy cao hơn Tiên Giới -> Lập tức vinh danh lên bảng vàng!
-            console.log(`[Meowcha] Phát hiện kỷ lục cục bộ cao hơn bảng xếp hạng (${myBestScore} > ${myRankEntry.score}). Tự động đồng bộ lên Bảng Phong Thần!`);
-            myRankEntry.score = myBestScore;
-            if (user.avatar && !user.avatar.includes("cat_idle.png")) {
-              myRankEntry.avatar_url = user.avatar;
-            }
-            this.autoSubmitScoreToPantheon(myBestScore);
           }
-        } else if (myBestScore > 0) {
-          // Chưa có tên trên bảng nhưng đã có kỷ lục tu vi -> Ghi danh ngay
-          const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
-          const realmData = realms[this.state.realmIdx] || realms[0];
-          data.push({
-            player_name: user.name,
-            score: myBestScore,
-            words_slain: Math.max(1, this.state.wordsSlain),
-            realm: realmData.title || "Luyện Khí Kỳ",
-            accuracy: Math.round(this.state.accuracy || 100),
-            wpm: Math.round(this.state.wpm || 0),
-            avatar_url: user.avatar && !user.avatar.includes("cat_idle.png") ? user.avatar : ""
-          });
-          this.autoSubmitScoreToPantheon(myBestScore);
         }
 
         // Tái sắp xếp Bảng Phong Thần theo điểm số giảm dần
