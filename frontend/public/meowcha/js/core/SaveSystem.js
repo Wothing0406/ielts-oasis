@@ -65,7 +65,31 @@
       return this.slots;
     }
 
+    getAuthHeaders() {
+      let token = "";
+      try {
+        token = localStorage.getItem("oasis_token") || "";
+        if (!token && typeof window !== "undefined" && window.parent && window.parent !== window) {
+          try {
+            token = window.parent.localStorage.getItem("oasis_token") || "";
+          } catch (crossErr) {}
+        }
+      } catch (e) {}
+
+      const headers = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
     saveGame(slotId, gameState) {
+      if (!gameState || gameState.isGameOver || gameState.hp <= 0) {
+        // Đạo tiêu thân vong: Tuyệt đối không lưu lại kiếp đã chết!
+        this.deleteSlot(slotId);
+        return null;
+      }
+
       const now = new Date();
       const dateStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} • ${now.getDate()}/${now.getMonth() + 1}`;
       const realms = root.Meowcha.CULTIVATION_REALMS || [];
@@ -82,6 +106,7 @@
         hp: gameState.hp,
         maxHp: gameState.maxHp,
         score: gameState.score,
+        highScore: Math.max(gameState.highScore || 0, gameState.score || 0),
         words: gameState.wordsSlain,
         bandIdx: gameState.selectedBandIdx || 0,
         talents: JSON.parse(JSON.stringify(gameState.talents || {}))
@@ -90,11 +115,11 @@
       this.slots[slotId] = slotData;
       this.saveLocalSlots();
 
-      // Đồng bộ ngầm lên Backend SQL nếu có API
+      // Đồng bộ ngầm lên Backend SQL theo tài khoản người dùng
       if (typeof fetch !== "undefined") {
         fetch('/api/meowcha/saves', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
             slot_id: slotId,
             slot_name: slotData.slotName,
@@ -120,13 +145,16 @@
       this.saveLocalSlots();
 
       if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/saves/${slotId}`, { method: 'DELETE' }).catch(() => {});
+        fetch(`/api/meowcha/saves/${slotId}`, { 
+          method: 'DELETE',
+          headers: this.getAuthHeaders()
+        }).catch(() => {});
       }
     }
 
     hasActiveSave() {
       const slot1 = this.getSlot(1);
-      return slot1 && slot1.isOccupied && (slot1.score > 0 || slot1.realmIdx > 0 || slot1.words > 0);
+      return slot1 && slot1.isOccupied && (slot1.hp > 0) && (slot1.score > 0 || slot1.realmIdx > 0 || slot1.words > 0);
     }
 
     resetActiveSave() {
@@ -136,7 +164,9 @@
     syncWithBackend() {
       if (typeof fetch === "undefined") return Promise.resolve(this.slots);
 
-      return fetch('/api/meowcha/saves')
+      return fetch('/api/meowcha/saves', {
+        headers: this.getAuthHeaders()
+      })
         .then(r => {
           if (!r.ok) return null;
           return r.json().catch(() => null);

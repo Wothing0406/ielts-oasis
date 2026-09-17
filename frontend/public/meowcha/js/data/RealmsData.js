@@ -19,7 +19,7 @@
       elementName: "Băng Phách Ma Thạch",
       desc: "Nón lá mộc mạc, Bích Ngọc Trúc Kiếm, khí hải sơ khai",
       auraColor: "#34D399",
-      speedMult: 1.15
+      speedMult: 1.0
     },
     {
       id: 1,
@@ -36,7 +36,7 @@
       elementName: "Hỏa Diễm Ma Thạch",
       desc: "Đạo bào bích ngọc, song kiếm đan chéo, linh khí lượn lờ",
       auraColor: "#67E8F9",
-      speedMult: 1.45
+      speedMult: 1.15
     },
     {
       id: 2,
@@ -53,7 +53,7 @@
       elementName: "Hư Không Ma Thạch",
       desc: "Đạo quan hoàng kim, Kim Liên 8 cánh, Kim Đan lơ lửng tỏa nắng",
       auraColor: "#FDE047",
-      speedMult: 1.85
+      speedMult: 1.30
     },
     {
       id: 3,
@@ -70,7 +70,7 @@
       elementName: "Huyết Lôi Ma Thạch",
       desc: "Tử kim tiên bào, sương mây tím bồng bềnh, Chibi Anh Linh hộ đạo",
       auraColor: "#E879F9",
-      speedMult: 2.30
+      speedMult: 1.48
     },
     {
       id: 4,
@@ -87,7 +87,7 @@
       elementName: "Thái Sơ Hỗn Độn Thạch",
       desc: "Thần Cảnh Vạn Pháp Quy Tông: Ngẫu nhiên toàn bộ từ vựng từ đầu tới cuối, tốc độ rơi cực hạn",
       auraColor: "#FCD34D",
-      speedMult: 3.20
+      speedMult: 1.68
     }
   ];
 

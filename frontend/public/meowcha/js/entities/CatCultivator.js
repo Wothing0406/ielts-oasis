@@ -2,7 +2,7 @@
  * CatCultivator.js - Thực Thể Nhân Vật Miêu Kiếm Tôn Đa Cảnh Giới
  * Quản lý 5 cảnh giới nhân vật, 6 tư thế động (Poses), vật lý squash & stretch và pháp tướng độc quyền
  */
-(function(root) {
+(function (root) {
   class CatCultivator {
     constructor(assets, realmVFX) {
       this.assets = assets;
@@ -15,11 +15,17 @@
 
       // Hồi phục mượt mà sau khi bị choáng/đánh trúng
       if (gameState.catRecoveryPulse > 0) {
-        gameState.catRecoveryPulse = Math.max(0, gameState.catRecoveryPulse - dt * 2.5);
+        gameState.catRecoveryPulse = Math.max(
+          0,
+          gameState.catRecoveryPulse - dt * 2.5,
+        );
       }
 
       // Tự động chuyển về IDLE khi hết thời gian timer
-      if (gameState.catStateTimer > 0 && performance.now() >= gameState.catStateTimer) {
+      if (
+        gameState.catStateTimer > 0 &&
+        performance.now() >= gameState.catStateTimer
+      ) {
         if (gameState.catState !== "DEFEATED") {
           gameState.catState = "IDLE";
           gameState.catStateTimer = 0;
@@ -28,10 +34,10 @@
     }
 
     draw(ctx, canvas, gameState, currentTarget) {
-      const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
+      const isMobile = canvas.width <= 768 || canvas.height > canvas.width;
       const BASE_X = canvas.width / 2;
       // Trên mobile: Đẩy tọa độ Miêu Tôn lên ngay trên mép bàn phím ảo (~38-40% tính từ dưới lên = ~61% từ đỉnh xuống)
-      const BASE_Y = isMobile ? (canvas.height * 0.61) : (canvas.height - 35);
+      const BASE_Y = isMobile ? canvas.height * 0.61 : canvas.height - 35;
       const renderSize = isMobile ? 125 : 180;
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
       let drawX = BASE_X - renderSize / 2;
@@ -50,12 +56,17 @@
         if (realmIdx === 0) {
           sprite = this.assets.cat_hurt.img;
         } else if (realmIdx === 1) {
-          sprite = this.assets.cat_weak_attack?.loaded ? this.assets.cat_weak_attack.img : this.assets.cat_idle.img;
+          sprite = this.assets.cat_weak_attack?.loaded
+            ? this.assets.cat_weak_attack.img
+            : this.assets.cat_idle.img;
         } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
           sprite = this.assets.cat_golden_core.img;
         } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
           sprite = this.assets.cat_nascent_soul.img;
-        } else if (realmIdx >= 4 && this.assets.cat_celestial_sovereign?.loaded) {
+        } else if (
+          realmIdx >= 4 &&
+          this.assets.cat_celestial_sovereign?.loaded
+        ) {
           sprite = this.assets.cat_celestial_sovereign.img;
         }
       } else if (catState === "ULTIMATE_BLAST") {
@@ -65,10 +76,15 @@
           sprite = this.assets.cat_golden_core.img;
         } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
           sprite = this.assets.cat_nascent_soul.img;
-        } else if (realmIdx >= 4 && this.assets.cat_celestial_sovereign?.loaded) {
+        } else if (
+          realmIdx >= 4 &&
+          this.assets.cat_celestial_sovereign?.loaded
+        ) {
           sprite = this.assets.cat_celestial_sovereign.img;
         } else {
-          sprite = this.assets.cat_idle?.loaded ? this.assets.cat_idle.img : null;
+          sprite = this.assets.cat_idle?.loaded
+            ? this.assets.cat_idle.img
+            : null;
         }
       } else if (catState === "WEAK_ATTACK") {
         // TƯ THẾ XUẤT CHIÊU KHI GÕ PHÍM TRÚNG
@@ -78,23 +94,32 @@
           sprite = this.assets.cat_golden_core.img;
         } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
           sprite = this.assets.cat_nascent_soul.img;
-        } else if (realmIdx >= 4 && this.assets.cat_celestial_sovereign?.loaded) {
+        } else if (
+          realmIdx >= 4 &&
+          this.assets.cat_celestial_sovereign?.loaded
+        ) {
           sprite = this.assets.cat_celestial_sovereign.img;
         } else {
-          sprite = this.assets.cat_idle?.loaded ? this.assets.cat_idle.img : null;
+          sprite = this.assets.cat_idle?.loaded
+            ? this.assets.cat_idle.img
+            : null;
         }
       } else {
         // TƯ THẾ TĨNH TỌA THIỀN ĐỊNH (IDLE) CHUẨN CẢNH GIỚI
         if (realmIdx >= 4 && this.assets.cat_celestial_sovereign?.loaded) {
           sprite = this.assets.cat_celestial_sovereign.img; // Thái Thượng
         } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
-          sprite = this.assets.cat_nascent_soul.img;        // Nguyên Anh
+          sprite = this.assets.cat_nascent_soul.img; // Nguyên Anh
         } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
-          sprite = this.assets.cat_golden_core.img;        // Kim Đan
+          sprite = this.assets.cat_golden_core.img; // Kim Đan
         } else if (realmIdx === 1) {
-          sprite = this.assets.cat_idle?.loaded ? this.assets.cat_idle.img : null;
+          sprite = this.assets.cat_idle?.loaded
+            ? this.assets.cat_idle.img
+            : null;
         } else {
-          sprite = this.assets.cat_idle?.loaded ? this.assets.cat_idle.img : null;
+          sprite = this.assets.cat_idle?.loaded
+            ? this.assets.cat_idle.img
+            : null;
         }
       }
 
@@ -121,13 +146,21 @@
       const tailBaseX = BASE_X + 28;
       const tailBaseY = BASE_Y - 48;
       const tailSway = Math.sin(t * 1.8) * 16;
-      const tailLift = catState === "WEAK_ATTACK" ? -14 : (catState === "HURT" ? 10 : 0);
+      const tailLift =
+        catState === "WEAK_ATTACK" ? -14 : catState === "HURT" ? 10 : 0;
       ctx.strokeStyle = realmIdx >= 2 ? "#FEF08A" : "#FDE68A";
       ctx.lineWidth = 9;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(tailBaseX, tailBaseY);
-      ctx.bezierCurveTo(tailBaseX + 18, tailBaseY - 12 + tailLift, tailBaseX + 26 + tailSway, tailBaseY - 32 + tailLift, tailBaseX + 16 + tailSway, tailBaseY - 48 + tailLift);
+      ctx.bezierCurveTo(
+        tailBaseX + 18,
+        tailBaseY - 12 + tailLift,
+        tailBaseX + 26 + tailSway,
+        tailBaseY - 32 + tailLift,
+        tailBaseX + 16 + tailSway,
+        tailBaseY - 48 + tailLift,
+      );
       ctx.stroke();
 
       // Chóp đuôi trắng muốt
@@ -146,7 +179,16 @@
       let attackTilt = 0;
 
       if (catState === "WEAK_ATTACK") {
-        const prog = gameState.catStateTimer > 0 ? Math.max(0, Math.min(1, (gameState.catStateTimer - performance.now()) / 180)) : 0;
+        const prog =
+          gameState.catStateTimer > 0
+            ? Math.max(
+                0,
+                Math.min(
+                  1,
+                  (gameState.catStateTimer - performance.now()) / 180,
+                ),
+              )
+            : 0;
         const strikeWave = Math.sin(prog * Math.PI);
         attackOffsetY = -strikeWave * (isMobile ? 18 : 28);
         attackScaleX = 1.0 - strikeWave * 0.12;
@@ -157,7 +199,13 @@
         // 5 ĐẠI PHÁP ẤN XUẤT CHIÊU TU TIÊN THEO CẢNH GIỚI (CASTING SEALS & AURAS)
         // ============================================================
         ctx.save();
-        const shockColors = ["#22C55E", "#38BDF8", "#FBBF24", "#C084FC", "#F59E0B"];
+        const shockColors = [
+          "#22C55E",
+          "#38BDF8",
+          "#FBBF24",
+          "#C084FC",
+          "#F59E0B",
+        ];
         const curColor = shockColors[realmIdx] || "#22C55E";
         ctx.shadowColor = curColor;
 
@@ -167,7 +215,15 @@
           ctx.lineWidth = 2.5;
           ctx.shadowBlur = 18;
           ctx.beginPath();
-          ctx.ellipse(BASE_X, BASE_Y - 8, (1 - prog) * 55, (1 - prog) * 20, 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            BASE_X,
+            BASE_Y - 8,
+            (1 - prog) * 55,
+            (1 - prog) * 20,
+            0,
+            0,
+            Math.PI * 2,
+          );
           ctx.stroke();
 
           // Lá trúc bay
@@ -175,9 +231,13 @@
             const la = (t * 4 + l * (Math.PI / 2)) % (Math.PI * 2);
             const lr = 35 * (1 - prog);
             ctx.fillStyle = "#10B981";
-            ctx.fillRect(BASE_X + Math.cos(la) * lr - 3, BASE_Y - 10 + Math.sin(la) * (lr * 0.4) - 2, 6, 4);
+            ctx.fillRect(
+              BASE_X + Math.cos(la) * lr - 3,
+              BASE_Y - 10 + Math.sin(la) * (lr * 0.4) - 2,
+              6,
+              4,
+            );
           }
-
         } else if (realmIdx === 1) {
           // CẢNH 1 - ÂM DƯƠNG THÁI CỰC KIẾT ẤN (Vòng Thái Cực lam ngọc xoay trước ngực)
           ctx.save();
@@ -202,15 +262,29 @@
           ctx.strokeStyle = "rgba(56, 189, 248, 0.7)";
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.ellipse(BASE_X, BASE_Y - 10, (1 - prog) * 65, (1 - prog) * 24, 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            BASE_X,
+            BASE_Y - 10,
+            (1 - prog) * 65,
+            (1 - prog) * 24,
+            0,
+            0,
+            Math.PI * 2,
+          );
           ctx.stroke();
-
         } else if (realmIdx === 2) {
           // CẢNH 2 - KIM ĐAN KHAI QUANG • BÁT QUÁI HUY HOÀNG
           ctx.save();
           const coreY = BASE_Y - 82;
           // Kim Đan phát sáng chói lọi đỉnh đầu
-          const grad = ctx.createRadialGradient(BASE_X, coreY, 2, BASE_X, coreY, 28);
+          const grad = ctx.createRadialGradient(
+            BASE_X,
+            coreY,
+            2,
+            BASE_X,
+            coreY,
+            28,
+          );
           grad.addColorStop(0, "#FFFBEB");
           grad.addColorStop(0.4, "#FDE047");
           grad.addColorStop(1, "transparent");
@@ -227,7 +301,6 @@
           ctx.arc(BASE_X, BASE_Y - 30, (1 - prog) * 75, 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
-
         } else if (realmIdx === 3) {
           // CẢNH 3 - CỬU THIÊN THẦN LÔI • TỬ ĐIỆN QUANG TRỤ
           ctx.save();
@@ -251,10 +324,17 @@
           ctx.strokeStyle = "#C084FC";
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.ellipse(BASE_X, BASE_Y - 12, (1 - prog) * 85, (1 - prog) * 28, 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            BASE_X,
+            BASE_Y - 12,
+            (1 - prog) * 85,
+            (1 - prog) * 28,
+            0,
+            0,
+            Math.PI * 2,
+          );
           ctx.stroke();
           ctx.restore();
-
         } else if (realmIdx >= 4) {
           // CẢNH 4 - THÁI THƯỢNG ĐẾ QUANG • CHÂN LONG HÓA HÌNH
           ctx.save();
@@ -262,7 +342,14 @@
           ctx.shadowBlur = 32;
 
           // Vòng hào quang Thái Dương bừng sáng sau lưng
-          const sunGrad = ctx.createRadialGradient(BASE_X, BASE_Y - 55, 10, BASE_X, BASE_Y - 55, 68);
+          const sunGrad = ctx.createRadialGradient(
+            BASE_X,
+            BASE_Y - 55,
+            10,
+            BASE_X,
+            BASE_Y - 55,
+            68,
+          );
           sunGrad.addColorStop(0, "rgba(254, 240, 138, 0.85)");
           sunGrad.addColorStop(0.5, "rgba(245, 158, 11, 0.55)");
           sunGrad.addColorStop(1, "transparent");
@@ -279,16 +366,27 @@
             const kDist = (1 - prog) * 95;
             ctx.beginPath();
             ctx.moveTo(BASE_X, BASE_Y - 50);
-            ctx.lineTo(BASE_X + Math.cos(kang) * kDist, BASE_Y - 50 + Math.sin(kang) * kDist);
+            ctx.lineTo(
+              BASE_X + Math.cos(kang) * kDist,
+              BASE_Y - 50 + Math.sin(kang) * kDist,
+            );
             ctx.stroke();
           }
           ctx.restore();
         }
 
         ctx.restore();
-
       } else if (catState === "ULTIMATE_BLAST") {
-        const prog = gameState.catStateTimer > 0 ? Math.max(0, Math.min(1, (gameState.catStateTimer - performance.now()) / 600)) : 0;
+        const prog =
+          gameState.catStateTimer > 0
+            ? Math.max(
+                0,
+                Math.min(
+                  1,
+                  (gameState.catStateTimer - performance.now()) / 600,
+                ),
+              )
+            : 0;
         const blastWave = Math.sin(prog * Math.PI);
         attackOffsetY = -blastWave * 42;
         attackScaleX = 1.0 - blastWave * 0.12;
@@ -303,10 +401,19 @@
         ctx.arc(BASE_X, BASE_Y - 20, (1 - prog) * 88, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
-
       } else if (catState === "HURT") {
         // Tẩu hỏa nhập ma: Miêu Tôn giật lùi nhẹ (recoil) kèm thở dốc rồi nhanh chóng định thần
-        const recoilProg = gameState.catStateTimer > 0 ? Math.max(0, Math.min(1, (gameState.catStateTimer - performance.now()) / (gameState.isStunned ? 160 : 350))) : 0;
+        const recoilProg =
+          gameState.catStateTimer > 0
+            ? Math.max(
+                0,
+                Math.min(
+                  1,
+                  (gameState.catStateTimer - performance.now()) /
+                    (gameState.isStunned ? 160 : 350),
+                ),
+              )
+            : 0;
         const recoilWave = Math.sin(recoilProg * Math.PI);
         drawX += Math.sin(this.time * 24) * 4 * recoilWave;
         attackOffsetY = recoilWave * 10;
@@ -330,7 +437,12 @@
       } else if (catState === "ULTIMATE_BLAST") {
         ctx.filter = "drop-shadow(0 0 22px rgba(251, 191, 36, 0.95))";
       } else if (realmIdx >= 2) {
-        ctx.filter = realmIdx >= 4 ? "drop-shadow(0 0 18px rgba(251, 191, 36, 0.85))" : (realmIdx === 3 ? "drop-shadow(0 0 15px rgba(192, 132, 252, 0.8))" : "drop-shadow(0 0 12px rgba(245, 158, 11, 0.75))");
+        ctx.filter =
+          realmIdx >= 4
+            ? "drop-shadow(0 0 18px rgba(251, 191, 36, 0.85))"
+            : realmIdx === 3
+              ? "drop-shadow(0 0 15px rgba(192, 132, 252, 0.8))"
+              : "drop-shadow(0 0 12px rgba(245, 158, 11, 0.75))";
       }
 
       ctx.drawImage(sprite, drawX, drawY, renderSize, renderSize);
@@ -351,7 +463,9 @@
         ctx.arc(BASE_X + 16, drawY + 76, 5, 0, Math.PI * 2);
         ctx.stroke();
       } else {
-        const isBlinking = (Math.floor(this.time * 1.5) % 6 === 0) && (Math.sin(this.time * 15) > 0.6);
+        const isBlinking =
+          Math.floor(this.time * 1.5) % 6 === 0 &&
+          Math.sin(this.time * 15) > 0.6;
         if (isBlinking && catState === "IDLE") {
           ctx.strokeStyle = "#38240D";
           ctx.lineWidth = 2.5;
@@ -394,7 +508,14 @@
       // ============================================================
       // 8. PHI KIẾM TỎA KHÍ & SỢI TƠ KIẾM Ý KHÓA MỤC TIÊU (QI TETHER)
       // ============================================================
-      this.drawAimingSwordAndTether(ctx, BASE_X, BASE_Y, realmIdx, currentTarget, gameState);
+      this.drawAimingSwordAndTether(
+        ctx,
+        BASE_X,
+        BASE_Y,
+        realmIdx,
+        currentTarget,
+        gameState,
+      );
 
       // 9. VÒNG SAO HOA MẮT KHI BỊ CHOÁNG (STUN DIZZY RUNES)
       if (gameState.isStunned || gameState.catState === "HURT") {
@@ -418,10 +539,31 @@
       }
     }
 
-    drawAimingSwordAndTether(ctx, baseX, baseY, realmIdx, currentTarget, gameState) {
-      const isMobile = (ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768);
-      const swordColors = ["#22C55E", "#38BDF8", "#F59E0B", "#C084FC", "#F59E0B"];
-      const auraColors = ["rgba(34, 197, 94, 0.75)", "rgba(56, 189, 248, 0.8)", "rgba(245, 158, 11, 0.85)", "rgba(192, 132, 252, 0.9)", "rgba(251, 191, 36, 0.95)"];
+    drawAimingSwordAndTether(
+      ctx,
+      baseX,
+      baseY,
+      realmIdx,
+      currentTarget,
+      gameState,
+    ) {
+      const isMobile =
+        (ctx.canvas && ctx.canvas.width <= 768) ||
+        (typeof window !== "undefined" && window.innerWidth <= 768);
+      const swordColors = [
+        "#22C55E",
+        "#38BDF8",
+        "#F59E0B",
+        "#C084FC",
+        "#F59E0B",
+      ];
+      const auraColors = [
+        "rgba(34, 197, 94, 0.75)",
+        "rgba(56, 189, 248, 0.8)",
+        "rgba(245, 158, 11, 0.85)",
+        "rgba(192, 132, 252, 0.9)",
+        "rgba(251, 191, 36, 0.95)",
+      ];
       const curSwordColor = swordColors[realmIdx] || swordColors[0];
       const curAuraColor = auraColors[realmIdx] || auraColors[0];
 
@@ -433,7 +575,8 @@
       if (currentTarget && currentTarget.word) {
         // Có mục tiêu đang khóa: Kiếm ngự phong bay bổng lên cao chĩa thẳng vào mục tiêu
         swordBaseX = baseX + (isMobile ? 44 : 62);
-        swordBaseY = baseY - (isMobile ? 98 : 138) + Math.sin(this.time * 6) * 5;
+        swordBaseY =
+          baseY - (isMobile ? 98 : 138) + Math.sin(this.time * 6) * 5;
 
         const targetX = currentTarget.x;
         const targetY = currentTarget.y;
@@ -441,14 +584,25 @@
 
         // Xuất kiếm: Khi gõ trúng (WEAK_ATTACK), phi kiếm phóng vút tới trước theo góc ngắm
         if (gameState && gameState.catState === "WEAK_ATTACK") {
-          const prog = gameState.catStateTimer > 0 ? Math.max(0, Math.min(1, (gameState.catStateTimer - performance.now()) / 180)) : 0;
+          const prog =
+            gameState.catStateTimer > 0
+              ? Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    (gameState.catStateTimer - performance.now()) / 180,
+                  ),
+                )
+              : 0;
           const thrust = Math.sin(prog * Math.PI) * (isMobile ? 20 : 34);
           swordBaseX += Math.cos(swordAngle) * thrust;
           swordBaseY += Math.sin(swordAngle) * thrust;
         }
 
-        const swordTipX = swordBaseX + Math.cos(swordAngle) * (isMobile ? 28 : 42);
-        const swordTipY = swordBaseY + Math.sin(swordAngle) * (isMobile ? 28 : 42);
+        const swordTipX =
+          swordBaseX + Math.cos(swordAngle) * (isMobile ? 28 : 42);
+        const swordTipY =
+          swordBaseY + Math.sin(swordAngle) * (isMobile ? 28 : 42);
 
         // ============================================================
         // A. TIA BẮN KIẾM KHÍ ĐIỆN ẢNH CỔ PHONG (CINEMATIC XIANXIA QI BEAM)
@@ -461,10 +615,16 @@
         ctx.strokeStyle = curAuraColor;
         ctx.shadowColor = curSwordColor;
         ctx.shadowBlur = 24 + keyPulse * 20;
-        ctx.lineWidth = Math.max(3.2, (4.2 + keyPulse * 3.0) * (isMobile ? 0.8 : 1.0));
+        ctx.lineWidth = Math.max(
+          3.2,
+          (4.2 + keyPulse * 3.0) * (isMobile ? 0.8 : 1.0),
+        );
         ctx.beginPath();
         ctx.moveTo(swordTipX, swordTipY);
-        const distToTarget = Math.hypot(targetX - swordTipX, targetY - swordTipY);
+        const distToTarget = Math.hypot(
+          targetX - swordTipX,
+          targetY - swordTipY,
+        );
         const midWave = Math.sin(this.time * 16) * (isMobile ? 4.5 : 8.5);
         const perpX = -(targetY - swordTipY) / distToTarget;
         const perpY = (targetX - swordTipX) / distToTarget;
@@ -474,7 +634,10 @@
         ctx.stroke();
 
         // 2. Dải sóng kiếm ý đối xứng ngược chiều (Braided Counter Wave)
-        ctx.lineWidth = Math.max(1.8, (2.4 + keyPulse * 2.0) * (isMobile ? 0.75 : 0.95));
+        ctx.lineWidth = Math.max(
+          1.8,
+          (2.4 + keyPulse * 2.0) * (isMobile ? 0.75 : 0.95),
+        );
         ctx.beginPath();
         ctx.moveTo(swordTipX, swordTipY);
         const midX2 = (swordTipX + targetX) / 2 - perpX * midWave * 0.8;
@@ -503,16 +666,30 @@
           ctx.strokeStyle = prog < 0.5 ? curSwordColor : "#FEF08A";
           ctx.lineWidth = 1.4;
           ctx.beginPath();
-          ctx.ellipse(0, 0, isMobile ? 7 : 11, isMobile ? 3 : 5, 0, 0, Math.PI * 2);
+          ctx.ellipse(
+            0,
+            0,
+            isMobile ? 7 : 11,
+            isMobile ? 3 : 5,
+            0,
+            0,
+            Math.PI * 2,
+          );
           ctx.stroke();
           ctx.restore();
         }
 
         // 5. HẠT LINH KHÍ XUNG KÍCH CHẠY DỌC TIA KIẾM
         for (let sp = 0; sp < 4; sp++) {
-          const sProg = ((this.time * 4.5 + sp * 0.25) % 1.0);
-          const sx = swordTipX + (targetX - swordTipX) * sProg + (Math.random() - 0.5) * 6;
-          const sy = swordTipY + (targetY - swordTipY) * sProg + (Math.random() - 0.5) * 6;
+          const sProg = (this.time * 4.5 + sp * 0.25) % 1.0;
+          const sx =
+            swordTipX +
+            (targetX - swordTipX) * sProg +
+            (Math.random() - 0.5) * 6;
+          const sy =
+            swordTipY +
+            (targetY - swordTipY) * sProg +
+            (Math.random() - 0.5) * 6;
           ctx.fillStyle = "#FFFBEB";
           ctx.shadowColor = curSwordColor;
           ctx.shadowBlur = 12;
@@ -539,8 +716,11 @@
 
         // PHÁP TRẬN BÁT QUÁI KHÓA MỤC TIÊU CỔ TRANG TẠI THIÊN THẠCH
         ctx.translate(targetX, targetY);
-        const isMob = (ctx.canvas && ctx.canvas.width <= 600) || (typeof window !== "undefined" && window.innerWidth <= 600);
-        const reticleRadius = (currentTarget.radius || (isMob ? 38 : 46)) + (isMob ? 4 : 8);
+        const isMob =
+          (ctx.canvas && ctx.canvas.width <= 600) ||
+          (typeof window !== "undefined" && window.innerWidth <= 600);
+        const reticleRadius =
+          (currentTarget.radius || (isMob ? 38 : 46)) + (isMob ? 4 : 8);
         const rot = this.time * 1.6;
 
         // Vòng ngoài phong ấn đứt đoạn xoay chậm ôm sát ma thạch
@@ -554,7 +734,9 @@
 
         // 4 Chữ triện phong ấn 4 phương [ 乾 坤 坎 离 ]
         const seals = ["乾", "坤", "坎", "离"];
-        ctx.font = isMob ? "bold 9px 'Cinzel', serif" : "bold 10.5px 'Cinzel', serif";
+        ctx.font = isMob
+          ? "bold 9px 'Cinzel', serif"
+          : "bold 10.5px 'Cinzel', serif";
         ctx.fillStyle = "#FEF08A";
         ctx.shadowColor = "#F59E0B";
         ctx.shadowBlur = 8;
@@ -569,7 +751,6 @@
           ctx.restore();
         }
         ctx.restore();
-
       } else {
         // Không có mục tiêu: Kiếm hộ thân lơ lửng bồng bềnh bên vai phải
         swordBaseY += Math.sin(this.time * 3.5) * 8;
@@ -591,34 +772,74 @@
       let swordImg = null;
       if (realmIdx === 0) {
         // Cảnh 0 (Luyện Khí): Thanh Trúc Kiếm
-        swordImg = (this.assets?.prop_bamboo_sword?.loaded && this.assets.prop_bamboo_sword.img) ||
-                   (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
+        swordImg =
+          (this.assets?.prop_bamboo_sword?.loaded &&
+            this.assets.prop_bamboo_sword.img) ||
+          (this.assets?.prop_jade_sword?.loaded &&
+            this.assets.prop_jade_sword.img) ||
+          null;
       } else if (realmIdx === 1) {
         // Cảnh 1 (Trúc Cơ): Lam Ngọc Kiếm
-        swordImg = (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) ||
-                   (this.assets?.prop_bamboo_sword?.loaded && this.assets.prop_bamboo_sword.img) || null;
+        swordImg =
+          (this.assets?.prop_jade_sword?.loaded &&
+            this.assets.prop_jade_sword.img) ||
+          (this.assets?.prop_bamboo_sword?.loaded &&
+            this.assets.prop_bamboo_sword.img) ||
+          null;
       } else if (realmIdx === 2) {
         // Cảnh 2 (Kim Đan): Kim Đan Trảm Tiên Kiếm (Ngọc kiếm mạ hoàng kim)
-        swordImg = (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
+        swordImg =
+          (this.assets?.prop_jade_sword?.loaded &&
+            this.assets.prop_jade_sword.img) ||
+          null;
       } else if (realmIdx === 3) {
         // Cảnh 3 (Nguyên Anh): Cửu Thiên Thần Lôi Kiếm (Tử Điện Lôi Thần)
-        swordImg = (this.assets?.sword_realm3_thunder?.loaded && this.assets.sword_realm3_thunder.img) ||
-                   (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
+        swordImg =
+          (this.assets?.sword_realm3_thunder?.loaded &&
+            this.assets.sword_realm3_thunder.img) ||
+          (this.assets?.prop_jade_sword?.loaded &&
+            this.assets.prop_jade_sword.img) ||
+          null;
       } else if (realmIdx >= 4) {
         // Cảnh 4 (Hóa Thần / Thái Thượng Miêu Hoàng): Chân Long Hoàng Kim Kiếm
-        swordImg = (this.assets?.sword_realm4_dragon?.loaded && this.assets.sword_realm4_dragon.img) ||
-                   (this.assets?.sword_realm3_thunder?.loaded && this.assets.sword_realm3_thunder.img) ||
-                   (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
+        swordImg =
+          (this.assets?.sword_realm4_dragon?.loaded &&
+            this.assets.sword_realm4_dragon.img) ||
+          (this.assets?.sword_realm3_thunder?.loaded &&
+            this.assets.sword_realm3_thunder.img) ||
+          (this.assets?.prop_jade_sword?.loaded &&
+            this.assets.prop_jade_sword.img) ||
+          null;
       }
 
       if (swordImg) {
         ctx.imageSmoothingEnabled = false; // Chuẩn Retro Pixel Art
-        const swordLen = isMobile ? 48 : 64;
-        const swordW = isMobile ? 26 : 34;
+        const swordLen = isMobile ? 52 : 68;
         ctx.save();
-        // Cân chỉnh góc kiếm từ sprite gốc (chếch 45 độ) thành hướng ngang theo trục mũi kiếm
-        ctx.rotate(-Math.PI / 4);
-        ctx.drawImage(swordImg, -swordW / 2, -swordLen * 0.82, swordW, swordLen);
+        // Cân chỉnh góc xoay riêng từng loại kiếm để mũi kiếm chỉ thẳng trục +X (hướng tới mục tiêu)
+        if (realmIdx === 0) {
+          // Thanh Trúc Kiếm (185x280) nghiêng -75.7° -> xoay +1.322 rad
+          const drawH = swordLen;
+          const drawW = Math.round(185 * (drawH / 280));
+          ctx.rotate(1.322);
+          ctx.drawImage(swordImg, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
+        } else if (realmIdx === 1 || realmIdx === 2) {
+          // Lam Ngọc Kiếm / Kim Đan Kiếm (190x280) nghiêng -74.2° -> xoay +1.295 rad
+          const drawH = swordLen;
+          const drawW = Math.round(190 * (drawH / 280));
+          ctx.rotate(1.295);
+          ctx.drawImage(swordImg, -drawW / 2, -drawH / 2 + 10, drawW, drawH);
+        } else if (realmIdx === 3) {
+          // Cửu Thiên Thần Lôi Kiếm (256x256) nghiêng -50.1° -> xoay +0.875 rad
+          const drawSize = swordLen;
+          ctx.rotate(0.875);
+          ctx.drawImage(swordImg, -drawSize / 2, -drawSize / 2 + 1, drawSize, drawSize);
+        } else {
+          // Chân Long Thái Sơ Kiếm (256x256) nghiêng -52.1° -> xoay +0.909 rad
+          const drawSize = swordLen + 6;
+          ctx.rotate(0.909);
+          ctx.drawImage(swordImg, -drawSize / 2, -drawSize / 2 - 3, drawSize, drawSize);
+        }
         ctx.restore();
 
         // Hiệu ứng phụ riêng: Cảnh 2 có vòng Bát Quái, Cảnh 3 có tia sét, Cảnh 4 có rồng vàng lượn
@@ -660,4 +881,4 @@
 
   root.Meowcha = root.Meowcha || {};
   root.Meowcha.CatCultivator = CatCultivator;
-})(typeof window !== 'undefined' ? window : globalThis);
+})(typeof window !== "undefined" ? window : globalThis);

@@ -8,7 +8,7 @@ export default function MeowchaGamePage() {
   return (
     <main className="fixed inset-0 w-screen h-[100dvh] overflow-hidden bg-[#05040a] z-50 p-0 m-0 border-none select-none">
       <iframe
-        src="/meowcha/index.html?v=4.7"
+        src="/meowcha/index.html?v=7.0"
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
         title="Meowcha Xianxia Game Engine"
         allow="autoplay; fullscreen; clipboard-write"

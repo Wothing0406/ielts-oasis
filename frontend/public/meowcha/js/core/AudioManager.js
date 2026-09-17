@@ -29,6 +29,17 @@
       }
     }
 
+    // Mở khóa AudioContext ngay khi người chơi chạm hoặc bấm phím bất kỳ
+    unlockAudioContext() {
+      if (this.ctx && this.ctx.state === "suspended") {
+        this.ctx.resume().then(() => {
+          if (this.zenMusicPlaying && !this.zenTimer) {
+            this.startZenGuqin();
+          }
+        }).catch(() => {});
+      }
+    }
+
     toggleSound() {
       this.soundEnabled = !this.soundEnabled;
       if (!this.soundEnabled) {
@@ -42,75 +53,93 @@
     startZenGuqin() {
       if (!this.soundEnabled) return;
       this.init();
-      if (!this.ctx || this.zenTimer) return;
+      if (!this.ctx) return;
+
+      // Đảm bảo dừng phiên nhạc trước đó nếu còn
+      this.stopZenGuqin(false);
+
+      if (this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
 
       this.zenMusicPlaying = true;
       const t = this.ctx.currentTime;
 
-      // Âm rung nền (Drone)
-      this.droneGain = this.ctx.createGain();
-      this.droneGain.gain.setValueAtTime(0.001, t);
-      this.droneGain.gain.exponentialRampToValueAtTime(0.04, t + 2.5);
+      try {
+        // Âm rung nền (Drone) ngân vang thanh tịnh
+        this.droneGain = this.ctx.createGain();
+        this.droneGain.gain.setValueAtTime(0.0001, t);
+        this.droneGain.gain.exponentialRampToValueAtTime(0.055, t + 2.0);
 
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(280, t);
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(320, t);
 
-      this.droneOsc1 = this.ctx.createOscillator();
-      this.droneOsc1.type = "sine";
-      this.droneOsc1.frequency.setValueAtTime(108, t); // Khí rung chuông thiền
+        this.droneOsc1 = this.ctx.createOscillator();
+        this.droneOsc1.type = "sine";
+        this.droneOsc1.frequency.setValueAtTime(110, t); // Khí rung chuông thiền
 
-      this.droneOsc2 = this.ctx.createOscillator();
-      this.droneOsc2.type = "triangle";
-      this.droneOsc2.frequency.setValueAtTime(162, t); // Quãng năm thanh tịnh
+        this.droneOsc2 = this.ctx.createOscillator();
+        this.droneOsc2.type = "triangle";
+        this.droneOsc2.frequency.setValueAtTime(165, t); // Quãng năm thanh tịnh
 
-      this.droneOsc1.connect(filter);
-      this.droneOsc2.connect(filter);
-      filter.connect(this.droneGain);
-      this.droneGain.connect(this.ctx.destination);
+        this.droneOsc1.connect(filter);
+        this.droneOsc2.connect(filter);
+        filter.connect(this.droneGain);
+        this.droneGain.connect(this.ctx.destination);
 
-      this.droneOsc1.start();
-      this.droneOsc2.start();
+        this.droneOsc1.start(t);
+        this.droneOsc2.start(t);
+      } catch (err) {
+        console.warn("[AudioManager Drone]", err);
+      }
 
       const scheduleNextPluck = () => {
-        if (!this.zenMusicPlaying || !this.ctx) return;
+        if (!this.zenMusicPlaying || !this.ctx || !this.soundEnabled) return;
         this.playGuqinPluck();
-        const nextDelay = 1800 + Math.random() * 3200;
+        const nextDelay = 1400 + Math.random() * 2600;
         this.zenTimer = setTimeout(scheduleNextPluck, nextDelay);
       };
 
-      this.zenTimer = setTimeout(scheduleNextPluck, 1000);
+      this.zenTimer = setTimeout(scheduleNextPluck, 600);
     }
 
     playGuqinPluck() {
       if (!this.soundEnabled || !this.ctx) return;
+      if (this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
       const now = this.ctx.currentTime;
       const freq = this.guqinNotes[Math.floor(Math.random() * this.guqinNotes.length)];
 
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      const filter = this.ctx.createBiquadFilter();
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
 
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, now);
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, now);
 
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(freq * 3.2, now);
-      filter.frequency.exponentialRampToValueAtTime(freq * 0.9, now + 2.8);
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(freq * 3.5, now);
+        filter.frequency.exponentialRampToValueAtTime(freq * 0.9, now + 2.6);
 
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0005, now + 3.0);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 0.035);
+        gain.gain.exponentialRampToValueAtTime(0.0002, now + 2.8);
 
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.ctx.destination);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
 
-      osc.start(now);
-      osc.stop(now + 3.0);
+        osc.start(now);
+        osc.stop(now + 2.8);
+      } catch (err) {
+        console.warn("[AudioManager Pluck]", err);
+      }
     }
 
-    stopZenGuqin() {
+    stopZenGuqin(fade = true) {
       this.zenMusicPlaying = false;
       if (this.zenTimer) {
         clearTimeout(this.zenTimer);
@@ -119,21 +148,34 @@
       if (this.droneGain && this.ctx) {
         try {
           const t = this.ctx.currentTime;
-          this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, t);
-          this.droneGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-          setTimeout(() => {
-            if (this.droneOsc1) { this.droneOsc1.stop(); this.droneOsc1.disconnect(); this.droneOsc1 = null; }
-            if (this.droneOsc2) { this.droneOsc2.stop(); this.droneOsc2.disconnect(); this.droneOsc2 = null; }
-            if (this.droneGain) { this.droneGain.disconnect(); this.droneGain = null; }
-          }, 1300);
-        } catch (e) {}
+          if (fade) {
+            this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, t);
+            this.droneGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+            setTimeout(() => {
+              this._cleanDroneNodes();
+            }, 850);
+          } else {
+            this._cleanDroneNodes();
+          }
+        } catch (e) {
+          this._cleanDroneNodes();
+        }
       }
+    }
+
+    _cleanDroneNodes() {
+      if (this.droneOsc1) { try { this.droneOsc1.stop(); this.droneOsc1.disconnect(); } catch (_) {} this.droneOsc1 = null; }
+      if (this.droneOsc2) { try { this.droneOsc2.stop(); this.droneOsc2.disconnect(); } catch (_) {} this.droneOsc2 = null; }
+      if (this.droneGain) { try { this.droneGain.disconnect(); } catch (_) {} this.droneGain = null; }
     }
 
     play(type) {
       if (!this.soundEnabled) return;
       this.init();
       if (!this.ctx) return;
+      if (this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
 
       const t = this.ctx.currentTime;
 

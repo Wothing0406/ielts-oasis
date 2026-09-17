@@ -1,4 +1,5 @@
 node_modules/
+.vscode/   
 .next/
 out/
 build/
@@ -32,7 +33,13 @@ backend/yolov8n.pt
 backend/logs/
 backend/__pycache__/
 thuyet_minh.txt
-deploy.bat
-deploy_server.py
+deploy*
+check_*
+sync_*
+dedup_*
+create_*
+patch_*
+*.ps1
+*.bat
 *.db
 *.pdf

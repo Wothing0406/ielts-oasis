@@ -9,39 +9,51 @@
       this.time = 0;
       this.cloudAlpha = 0;
       this.cloudTimer = 0;
+      this.isPunishCloud = false;
+      this.nextPeriodicMistTime = performance.now() + 45000;
     }
 
-    triggerCloudHazard(duration = 3.5) {
+    triggerCloudHazard(duration = 3.0) {
       this.cloudTimer = performance.now() + duration * 1000;
+    }
+
+    triggerPunishCloud() {
+      this.isPunishCloud = true;
+      this.cloudAlpha = 0.85;
+      this.cloudTimer = performance.now() + 180000; // Giữ nguyên phạt cho tới khi được tha
+    }
+
+    clearClouds() {
+      this.isPunishCloud = false;
+      this.cloudAlpha = 0;
+      this.cloudTimer = 0;
     }
 
     update(dt = 0.016, gameState) {
       this.time += dt;
-
-      // Độ mờ chướng khí mây mù: Chướng khí thiên kiếp dày đặc thực thụ (0.82 - 0.96)
       const now = performance.now();
-      const realmIdx = gameState ? Math.min(4, Math.max(0, gameState.realmIdx)) : 0;
-      let targetMaxAlpha = 0.90;
-      let isPeriodicCloud = false;
 
-      if (realmIdx === 0) {
-        targetMaxAlpha = 0.82;
-        isPeriodicCloud = (Math.sin(this.time * 0.25) > 0.72); // Chu kỳ ~25s
-      } else if (realmIdx === 1) {
-        targetMaxAlpha = 0.88;
-        isPeriodicCloud = (Math.sin(this.time * 0.28) > 0.65); // Chu kỳ ~22s
-      } else if (realmIdx === 2) {
-        targetMaxAlpha = 0.92;
-        isPeriodicCloud = (Math.sin(this.time * 0.32) > 0.58); // Chu kỳ ~18s
-      } else {
-        targetMaxAlpha = 0.96;
-        isPeriodicCloud = (Math.sin(this.time * 0.36) > 0.50); // Chu kỳ ~14s
+      // Nếu đang trong trạng thái Phạt Thiên Đạo: Giữ mây che phủ dày đặc
+      if (this.isPunishCloud) {
+        this.cloudAlpha = Math.min(0.88, this.cloudAlpha + dt * 2.0);
+        return;
       }
 
-      if (now < this.cloudTimer || isPeriodicCloud) {
-        this.cloudAlpha = Math.min(targetMaxAlpha, this.cloudAlpha + dt * 2.2);
+      // Cảnh giới cấp cao (Kim Đan, Nguyên Anh, Hóa Thần, realmIdx >= 2):
+      // Thỉnh thoảng có làn tiên khí / chướng khí mờ ảo lướt qua (chu kỳ ~45-55s một lần, chỉ kéo dài 3.5s)
+      const realmIdx = gameState ? (gameState.realmIdx || 0) : 0;
+      if (realmIdx >= 2 && now > this.nextPeriodicMistTime) {
+        this.triggerCloudHazard(3.5);
+        this.nextPeriodicMistTime = now + (45000 + Math.random() * 20000);
+      }
+
+      // Mây mờ mộng ảo khi không bị phạt
+      const targetMaxAlpha = 0.30;
+
+      if (now < this.cloudTimer) {
+        this.cloudAlpha = Math.min(targetMaxAlpha, this.cloudAlpha + dt * 1.2);
       } else {
-        this.cloudAlpha = Math.max(0, this.cloudAlpha - dt * 0.65);
+        this.cloudAlpha = Math.max(0, this.cloudAlpha - dt * 0.7);
       }
     }
 
@@ -304,88 +316,72 @@
     // 6. THIÊN KIẾP HIỂM CẢNH: MÂY MÙ U ÁM TRÔI NGANG (MYSTIC MIST HAZARD)
     // ============================================================
     // 6. THIÊN KIẾP HIỂM CẢNH: CHƯỚNG KHÍ U MINH MA VỤ DÀY ĐẶC
-    // Thực sự che khuất từ vựng ở tầng giữa, thử thách phản xạ & trí nhớ
     // ============================================================
-    drawMysticClouds(ctx, width, height, activeAsteroids = []) {
+    // 6. THIÊN KIẾP HIỂM CẢNH: TIÊN KHÍ SƯƠNG MỜ QUẤY RỐI TẦM NHÌN
+    // Khi bình thường: Sương khói nhẹ bay lượn ở 2 rìa màn hình
+    // Khi bị phạt Ma Vân Tụ Khí: 4 cụm sương ma tím lượn sóng trôi ngang qua lại quấy nhiễu tầm nhìn
+    // ============================================================
+    drawMysticClouds(ctx, width, height, isPunishMode = false) {
       if (this.cloudAlpha <= 0.01) return;
       ctx.save();
 
       const isMobile = width <= 768;
-      const t = this.time * 24;
-
-      // 1. DẢI SƯƠNG MÙ CUỘN SÓNG TOÀN CHIỀU NGANG (DENSE ATMOSPHERIC FOG STRIP)
-      // Che phủ vùng y từ 16% đến 48% chiều cao màn hình - nơi ma thạch và chữ đang rơi
-      const fogY1 = height * 0.16;
-      const fogH = height * 0.32;
-      const fogGrad = ctx.createLinearGradient(0, fogY1, 0, fogY1 + fogH);
-      fogGrad.addColorStop(0, "transparent");
-      fogGrad.addColorStop(0.2, `rgba(18, 10, 32, ${this.cloudAlpha * 0.88})`);
-      fogGrad.addColorStop(0.5, `rgba(28, 14, 48, ${this.cloudAlpha * 0.96})`);
-      fogGrad.addColorStop(0.8, `rgba(22, 12, 38, ${this.cloudAlpha * 0.90})`);
-      fogGrad.addColorStop(1, "transparent");
-
-      ctx.fillStyle = fogGrad;
-      ctx.fillRect(0, fogY1, width, fogH);
-
-      // 2. CÁC CỤM MÂY MA VẬT PIXEL TO DÀY TRÔI NGANG (OVERLAPPING BILLOWING CLUSTERS)
-      const cloudCount = isMobile ? 5 : 6;
+      const t = this.time * (isPunishMode ? 28 : 18);
+      // Trên PC màn ngang: cần nhiều đám mây hơn để che khuất tầm nhìn
+      const cloudCount = isPunishMode ? (isMobile ? 4 : 8) : (isMobile ? 2 : 3);
       const cloudImg = this.assets?.prop_mystic_cloud?.loaded ? this.assets.prop_mystic_cloud.img : null;
-      const totalW = width + 480;
+      const totalW = width + 500;
 
       for (let i = 0; i < cloudCount; i++) {
-        const speedFactor = 0.5 + (i % 3) * 0.28;
-        const cx = ((t * speedFactor + i * (totalW / cloudCount)) % totalW) - 240;
-        const cy = height * (0.22 + (i % 3) * 0.08) + Math.sin(this.time * 1.5 + i * 1.8) * 16;
-        const cSize = (isMobile ? 220 : 340) * (0.9 + (i % 2) * 0.3);
+        const speedFactor = 0.4 + i * 0.22;
+        // Trôi ngang lượn sóng
+        const cx = ((t * speedFactor + i * (totalW / cloudCount)) % totalW) - 250;
+        // Vị trí độ cao: Phạt thì trôi rải đều từ 15% đến 80% màn hình để che khuất mạnh hơn
+        const baseY = isPunishMode 
+          ? height * (0.15 + (i % 5) * 0.14) 
+          : height * (0.18 + (i % 2) * 0.14);
+        const cy = baseY + Math.sin(this.time * 1.5 + i * 1.8) * 20;
+        // Kích thước mây lớn hơn trên PC để che khuất đủ
+        const cSize = isPunishMode 
+          ? (isMobile ? 200 : 320)
+          : (isMobile ? 110 : 180);
 
         ctx.save();
-        ctx.globalAlpha = Math.min(1.0, this.cloudAlpha * 0.95);
+        ctx.globalAlpha = isPunishMode 
+          ? Math.min(0.72, this.cloudAlpha * 1.3) 
+          : Math.min(0.25, this.cloudAlpha);
         ctx.translate(cx, cy);
-        ctx.rotate(Math.sin(this.time * 0.4 + i) * 0.1);
+        ctx.rotate(Math.sin(this.time * 0.4 + i) * 0.12);
 
         if (cloudImg) {
           ctx.imageSmoothingEnabled = false;
-          ctx.shadowColor = "#7E22CE";
-          ctx.shadowBlur = 24;
-          // Vẽ đệm khối mây đen đặc bên dưới trước khi vẽ texture
-          ctx.fillStyle = "rgba(14, 8, 24, 0.94)";
-          ctx.beginPath();
-          ctx.ellipse(0, 0, cSize * 0.45, cSize * 0.28, 0, 0, Math.PI * 2);
-          ctx.fill();
-
+          ctx.shadowColor = isPunishMode ? "#7E22CE" : "#A855F7";
+          ctx.shadowBlur = isPunishMode ? 32 : 16;
           ctx.drawImage(cloudImg, -cSize / 2, -cSize / 2, cSize, cSize);
         } else {
-          // Fallback mây bồng bềnh đặc quánh
-          const baseR = isMobile ? 58 : 88;
-          ctx.fillStyle = i % 2 === 0 ? "rgba(18, 10, 32, 0.92)" : "rgba(32, 16, 52, 0.95)";
-          ctx.shadowColor = "#A855F7";
-          ctx.shadowBlur = 22;
+          // Fallback sương khói ma mị
+          const baseR = cSize * 0.38;
+          ctx.fillStyle = isPunishMode ? "rgba(88, 28, 135, 0.70)" : "rgba(147, 51, 234, 0.35)";
+          ctx.shadowColor = isPunishMode ? "#9333EA" : "#C084FC";
+          ctx.shadowBlur = isPunishMode ? 30 : 18;
           ctx.beginPath();
           ctx.arc(0, 0, baseR, 0, Math.PI * 2);
-          ctx.arc(-baseR * 0.75, 6, baseR * 0.7, 0, Math.PI * 2);
-          ctx.arc(baseR * 0.75, 4, baseR * 0.72, 0, Math.PI * 2);
+          ctx.arc(-baseR * 0.6, 6, baseR * 0.65, 0, Math.PI * 2);
+          ctx.arc(baseR * 0.6, 4, baseR * 0.7, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.restore();
-      }
 
-      // 3. KIẾM Ý XÉ TOẠC SƯƠNG MÙ (DISPEL HOLE CHO TỪ ĐANG GÕ ĐÚNG)
-      if (activeAsteroids && activeAsteroids.length > 0) {
-        for (const ast of activeAsteroids) {
-          if (ast.typedLen > 0) {
-            ctx.save();
-            ctx.globalCompositeOperation = "destination-out";
-            const dispelGrad = ctx.createRadialGradient(ast.x, ast.y, 10, ast.x, ast.y, ast.radius + 50);
-            dispelGrad.addColorStop(0, "rgba(0, 0, 0, 0.85)");
-            dispelGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.5)");
-            dispelGrad.addColorStop(1, "transparent");
-            ctx.fillStyle = dispelGrad;
-            ctx.beginPath();
-            ctx.arc(ast.x, ast.y, ast.radius + 50, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          }
+        // Khi bị phạt: Thêm vài tia điện tím tí tách lướt trong mây ma
+        if (isPunishMode && Math.random() < 0.28) {
+          ctx.strokeStyle = "#E9D5FF";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo((Math.random() - 0.5) * cSize * 0.5, (Math.random() - 0.5) * cSize * 0.3);
+          ctx.lineTo((Math.random() - 0.5) * cSize * 0.5, (Math.random() - 0.5) * cSize * 0.3);
+          ctx.stroke();
         }
+
+        ctx.restore();
       }
 
       ctx.restore();

@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /blog/create
+Disallow: /test/create
+Disallow: /quiz/create
+Disallow: /api/auth/signup
+Disallow: /api/auth/signin
+Disallow: /auth/*
 
 Sitemap: https://ieltsoasis.site/sitemap.xml

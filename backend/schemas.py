@@ -144,3 +144,51 @@ class MeowchaLeaderboardResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class MeowchaUserProfileResponse(BaseModel):
+    user_id: int
+    player_name: str
+    avatar_url: Optional[str] = None
+    total_score: int
+    highest_realm: str
+    highest_realm_idx: int
+    total_words_slain: int
+    highest_wpm: int
+    games_played: int
+    spirit_stones: int
+    unlocked_titles: List[str] = []
+    unlocked_talents: Dict[str, Any] = {}
+    active_slot_id: int
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MeowchaUserProfileSync(BaseModel):
+    score_earned: int = 0
+    words_slain: int = 0
+    realm: Optional[str] = "Luyện Khí Kỳ"
+    realm_idx: Optional[int] = 0
+    wpm: Optional[int] = 0
+    accuracy: Optional[float] = 100.0
+    is_victory: Optional[bool] = False
+    talents: Optional[Dict[str, Any]] = None
+    slot_id: Optional[int] = 1
+
+
+class MeowchaBattleLogResponse(BaseModel):
+    id: int
+    score: int
+    words_slain: int
+    realm: str
+    accuracy: float
+    wpm: int
+    band_level: int
+    is_victory: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+

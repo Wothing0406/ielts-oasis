@@ -25,6 +25,7 @@
         prop_asteroid_ice: { src: "./sprites/prop_asteroid_ice.png", img: new Image(), loaded: false },
         prop_asteroid_fire: { src: "./sprites/prop_asteroid_fire.png", img: new Image(), loaded: false },
         prop_asteroid_void: { src: "./sprites/prop_asteroid_void.png", img: new Image(), loaded: false },
+        prop_asteroid_thunder: { src: "./sprites/prop_asteroid_thunder.png", img: new Image(), loaded: false },
         prop_bamboo_sword: { src: "./sprites/prop_bamboo_sword.png", img: new Image(), loaded: false },
         prop_jade_sword: { src: "./sprites/prop_jade_sword.png", img: new Image(), loaded: false },
         sword_realm3_thunder: { src: "./sprites/sword_realm3_thunder.png", img: new Image(), loaded: false },
@@ -108,7 +109,7 @@
         this.asteroids.clear();
         this.typing.currentTarget = null;
         if (this.floatingText) {
-          this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 40, "✨ TIÊN KHÍ BÙNG NỔ • QUÉT SẠCH MA THẠCH!", "#34D399", 22);
+          this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 40, "[ 灵 ] TIÊN KHÍ BÙNG NỔ • QUÉT SẠCH MA THẠCH!", "#34D399", 22);
         }
 
         this.ui.showTalentModal(talents, targetRealm, (chosenTalent) => {
@@ -121,6 +122,16 @@
       };
 
       this.bindWindowEvents();
+
+      // Lắng nghe thay đổi HP và Game Over để lập tức xử lý và lưu chuẩn xác
+      this.gameState.addListener((changeKey) => {
+        if (changeKey === "gameOver" || (changeKey === "hp" && this.gameState.hp <= 0)) {
+          this.handleGameOver();
+        } else if (changeKey === "hp" && this.gameState.hp > 0 && this.gameState.currentScene === "BATTLE") {
+          // Lưu ngay lượng máu còn lại vào slot 1 để khi F5 không bị hồi full máu
+          this.saveSystem.saveGame(1, this.gameState);
+        }
+      });
 
       // Nạp tự động tiến trình đã lưu nếu có
       if (this.saveSystem.hasActiveSave()) {
@@ -139,6 +150,33 @@
       requestAnimationFrame((t) => this.gameLoop(t));
 
       console.log("[Meowcha] Động cơ Meowcha IELTS đã khởi tạo hoàn tất!");
+    }
+
+    handleGameOver() {
+      if (this.gameOverModalShown) return;
+      this.gameOverModalShown = true;
+      this.gameState.isGameOver = true;
+      this.gameState.hp = 0;
+
+      // ĐẠO TIÊU THÂN VONG: Xóa ngay lập tức save slot 1 trên LocalStorage & Backend SQL
+      this.saveSystem.resetActiveSave();
+
+      this.asteroids.clear();
+      this.typing.currentTarget = null;
+      if (this.typing) {
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+      }
+      if (this.realmVFX) {
+        this.realmVFX.clearClouds();
+      }
+      if (this.unityBridge) {
+        this.unityBridge.triggerDefeated();
+      }
+      this.audio.play("hurt");
+      this.ui.updateHUD();
+      this.ui.showGameOverModal();
     }
 
     loadAllAssets() {
@@ -190,6 +228,17 @@
           window.location.reload();
         }
       });
+
+      // Tự động mở khóa âm thanh khi người dùng tương tác lần đầu
+      const unlockAudio = () => {
+        if (this.audio) {
+          this.audio.unlockAudioContext();
+        }
+      };
+      window.addEventListener("pointerdown", unlockAudio, { once: true });
+      window.addEventListener("keydown", unlockAudio, { once: true });
+      window.addEventListener("touchstart", unlockAudio, { once: true });
+
       // Tự động co giãn canvas và chuyển đổi bàn phím ảo khi thay đổi kích thước màn hình
       window.addEventListener("resize", () => {
         this.initCanvasSize();
@@ -206,10 +255,27 @@
     startBattle() {
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;
-      this.gameState.revive(); // Phục hồi sinh lực và trạng thái sống sót
+      this.gameState.isGameOver = false;
+      this.gameState.isStunned = false;
+      this.gameState.stunTimer = 0;
+      this.gameState.speedMultiplier = 1.0;
+      this.gameState.screenShake = 0;
+      this.gameState.screenFlash = 0;
+      this.gameState.combo = 0;
+      this.gameState.setCatState("IDLE");
+
+      // NẾU LÀ TRẬN ĐẤU MỚI HOẶC CHƯA CÓ HP, MỚI CẤP FULL HP. NẾU ĐANG TIẾP TỤC SAVE GAME, GIỮ NGUYÊN LƯỢNG MÁU ĐÃ LƯU!
+      if (typeof this.gameState.hp !== "number" || this.gameState.hp <= 0) {
+        this.gameState.hp = this.gameState.maxHp || 50;
+      }
       this.gameState.startTime = Date.now();
       this.gameOverModalShown = false;
       this.typing.currentTarget = null;
+      if (this.typing) {
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+      }
 
       this.asteroids.clear();
       this.projectiles.clear();
@@ -217,6 +283,8 @@
       this.floatingText.clear();
 
       this.ui.showScene("BATTLE");
+      this.ui.updateHUD();
+      this.audio.init();
       this.audio.startZenGuqin();
 
       // Tự động hiển thị bàn phím ảo trên thiết bị di động / cảm ứng
@@ -240,9 +308,17 @@
         this.saveSystem.saveGame(1, this.gameState);
       }
       this.gameState.currentScene = "LOBBY";
-      this.gameState.revive(); // Phục hồi đan điền khi về sảnh thiền định
+      this.gameState.isPaused = false;
+      this.gameState.isGameOver = false;
+      this.gameState.isStunned = false;
+      this.gameState.setCatState("IDLE");
       this.gameOverModalShown = false;
       this.typing.currentTarget = null;
+      if (this.typing) {
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+      }
 
       this.asteroids.clear();
       this.projectiles.clear();
@@ -258,7 +334,18 @@
     }
 
     restartBattle() {
-      // Tẩy Tủy: Khởi tạo lại trận đấu về trạng thái ban đầu, xóa bỏ hoàn toàn save slot cũ
+      // Tẩy Tủy: Khắc bia kỷ lục cao nhất lên Bảng Phong Thần trước khi trùng tu
+      const best = Math.max(this.gameState.score || 0, this.gameState.highScore || 0);
+      if (best > (this.gameState.highScore || 0)) {
+        this.gameState.highScore = best;
+        try {
+          localStorage.setItem("meowcha_high_score", String(best));
+        } catch (e) {}
+      }
+      if (best > 0 && this.ui) {
+        this.ui.autoSubmitScoreToPantheon(best);
+      }
+
       this.saveSystem.resetActiveSave();
       this.gameState.reset();
       this.gameState.currentScene = "BATTLE";
@@ -267,6 +354,11 @@
       this.gameState.startTime = Date.now();
       this.gameOverModalShown = false;
       this.typing.currentTarget = null;
+      if (this.typing) {
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+      }
 
       this.asteroids.clear();
       this.projectiles.clear();
@@ -283,7 +375,7 @@
       }
 
       this.gameState.setSpeech("Tẩy Tủy Hoàn Tất! Trùng Tu Kiếm Đạo!", 3500);
-      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "🔄 TẨY TỦY TRỌNG SINH!", "#38BDF8", 30);
+      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "[ 丹 ] TẨY TỦY TRỌNG SINH!", "#38BDF8", 30);
 
       setTimeout(() => this.spawnWord(), 500);
     }
@@ -294,42 +386,127 @@
       // Không bao giờ rơi chồng chéo 2-3 quả. Trảm xong quả này thì quả mới mới xuất hiện!
       if (this.asteroids.count >= 1) return;
 
-      const bandIdx = (this.gameState.selectedBandIdx !== undefined && this.gameState.selectedBandIdx !== null) ? this.gameState.selectedBandIdx : this.gameState.realmIdx;
+      const rIdx = Math.max(0, this.gameState.realmIdx || 0);
       const realmDecks = M.REALM_DECKS || {};
-      const deck = realmDecks[bandIdx] || realmDecks[this.gameState.realmIdx] || realmDecks[0] || [];
 
-      let wordItem;
       let effectiveSpeedMult = 1.0;
 
-      // KHI TU TIÊN ĐẾN DẠNG THẦN CAO NHẤT (THÁI THƯỢNG KIẾM TÔN • REALM 4+):
-      // Chuyển sang dạng ngẫu nhiên toàn bộ từ vựng từ đầu tới cuối (toàn bộ các Band IELTS Oxford 5000),
-      // kèm tốc độ rơi cực hạn thử thách phản xạ thần cấp!
-      if (this.gameState.realmIdx >= 4) {
-        const allWords = [];
-        Object.keys(realmDecks).forEach(k => {
-          if (Array.isArray(realmDecks[k])) {
-            allWords.push(...realmDecks[k]);
-          }
-        });
-        if (allWords.length > 0) {
-          wordItem = allWords[Math.floor(Math.random() * allWords.length)];
-        } else {
-          wordItem = deck[Math.floor(Math.random() * deck.length)];
-        }
-        effectiveSpeedMult = 1.45; // Tăng thêm 45% tốc độ rơi ở dạng Thần
-      } else {
-        wordItem = deck[Math.floor(Math.random() * deck.length)];
-        effectiveSpeedMult = 1.0;
+      // TĂNG DẦN TỐC ĐỘ RƠI & ĐỘ KHÓ THEO CẢNH GIỚI VÀ TIẾN TRÌNH TU VI
+      const scoreSpeedBonus = Math.min(0.25, (this.gameState.score / 2000) * 0.05);
+      const slainBonus = Math.min(0.20, this.gameState.wordsSlain * 0.005);
+      // Cân bằng tốc độ tu tiên chuẩn xác cho tốc độ gõ phím của người bình thường
+      const realmSpeedMultipliers = [1.0, 1.15, 1.30, 1.48, 1.68];
+      const realmBaseMult = realmSpeedMultipliers[Math.min(4, rIdx)] || 1.0;
+      effectiveSpeedMult = realmBaseMult * (1.0 + scoreSpeedBonus + slainBonus);
+
+      // TRONG 10S THIÊN KIẾP SẤM SÉT: Tốc độ rơi tăng 1.35x (kịch tính nhưng người chơi vẫn theo kịp)
+      if (this.typing && this.typing.isLightningHazard) {
+        effectiveSpeedMult *= 1.35;
       }
 
+      // =========================================================================
+      // TIẾN TRÌNH MA THẠCH THEO CẢNH GIỚI (PROGRESSION POOL):
+      // Cấp 0 (Luyện Khí Kỳ): 100% Băng (ice)
+      // Cấp 1 (Trúc Cơ Kỳ):   65% Băng (ice), 35% Hỏa (fire)
+      // Cấp 2 (Kim Đan Kỳ):   25% Băng (ice), 45% Hỏa (fire), 30% Hư Không (void)
+      // Cấp 3 (Nguyên Anh Kỳ): 10% Băng (ice), 25% Hỏa (fire), 40% Hư Không (void), 25% Huyết Lôi (thunder)
+      // Cấp 4+ (Thần Cấp/Độ Kiếp): 5% Băng (ice), 20% Hỏa (fire), 35% Hư Không (void), 40% Huyết Lôi (thunder)
+      // =========================================================================
+      let chosenType = "ice";
+      const rand = Math.random();
+      if (rIdx === 0) {
+        chosenType = "ice";
+      } else if (rIdx === 1) {
+        chosenType = rand < 0.65 ? "ice" : "fire";
+      } else if (rIdx === 2) {
+        if (rand < 0.25) chosenType = "ice";
+        else if (rand < 0.70) chosenType = "fire";
+        else chosenType = "void";
+      } else if (rIdx === 3) {
+        if (rand < 0.10) chosenType = "ice";
+        else if (rand < 0.35) chosenType = "fire";
+        else if (rand < 0.75) chosenType = "void";
+        else chosenType = "thunder";
+      } else {
+        if (rand < 0.05) chosenType = "ice";
+        else if (rand < 0.25) chosenType = "fire";
+        else if (rand < 0.60) chosenType = "void";
+        else chosenType = "thunder";
+      }
+
+      // ice (Băng): 3 - 6 ký tự (bao gồm các từ căn bản A1-A2)
+      // fire (Hỏa): 6 - 8 ký tự
+      // void (Hư Không): 8 - 11 ký tự
+      // thunder (Huyết Lôi): 10 - 16 ký tự
+      let targetMinLen = 3, targetMaxLen = 6;
+      let targetDeckIdx = 0;
+      if (chosenType === "fire") {
+        targetMinLen = 6; targetMaxLen = 8; targetDeckIdx = 1;
+      } else if (chosenType === "void") {
+        targetMinLen = 8; targetMaxLen = 11; targetDeckIdx = 2;
+      } else if (chosenType === "thunder") {
+        targetMinLen = 10; targetMaxLen = 16; targetDeckIdx = 3;
+      }
+
+      // Lấy từ vựng phù hợp từ kho
+      let sourceList = realmDecks[targetDeckIdx] || realmDecks[rIdx] || realmDecks[0] || [];
+      if (rIdx >= 4) {
+        // Cảnh 4: Thần Cảnh Vô Cực - Ngẫu nhiên toàn bộ kho từ điển Oxford 5000
+        const combined = [];
+        Object.keys(realmDecks).forEach(k => {
+          if (Array.isArray(realmDecks[k])) combined.push(...realmDecks[k]);
+        });
+        if (combined.length > 0) sourceList = combined;
+      } else if (rIdx === 3 || chosenType === "thunder") {
+        const combinedHigh = [];
+        [2, 3].forEach(k => {
+          if (Array.isArray(realmDecks[k])) combinedHigh.push(...realmDecks[k]);
+        });
+        if (combinedHigh.length > 0) sourceList = combinedHigh;
+      }
+
+      // Lọc danh sách theo chuẩn độ dài
+      let matchedList = sourceList.filter(w => w && w.word && w.word.length >= targetMinLen && w.word.length <= targetMaxLen);
+      if (matchedList.length === 0) {
+        matchedList = sourceList.filter(w => w && w.word && w.word.length >= Math.max(3, targetMinLen - 2));
+      }
+      if (matchedList.length === 0) {
+        matchedList = sourceList;
+      }
+
+      // THUẬT TOÁN CHỐNG LẶP TỪ THÔNG MINH (ANTI-REPETITION RING BUFFER):
+      // 1. Loại bỏ các từ hiện đang rơi trên chiến trường
+      const activeWords = new Set(this.asteroids.asteroids.map(a => a.word));
+
+      // 2. Loại bỏ các từ đã xuất hiện gần đây trong bộ nhớ tạm (60 từ gần nhất)
+      if (!this.recentWordHistory) this.recentWordHistory = [];
+      const recentSet = new Set(this.recentWordHistory);
+
+      let candidatePool = matchedList.filter(w => !activeWords.has(w.word) && !recentSet.has(w.word));
+      if (candidatePool.length === 0) {
+        // Nếu đã quay hết kho từ thỏa mãn độ dài, reset bớt lịch sử và chỉ lọc các từ đang bay trên màn hình
+        candidatePool = matchedList.filter(w => !activeWords.has(w.word));
+      }
+      if (candidatePool.length === 0) {
+        candidatePool = matchedList;
+      }
+
+      const wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
       if (!wordItem) return;
+
+      // Đưa vào hàng đợi lịch sử để không lặp lại trong ít nhất 60 từ tiếp theo
+      this.recentWordHistory.push(wordItem.word);
+      if (this.recentWordHistory.length > 60) {
+        this.recentWordHistory.shift();
+      }
 
       const ast = this.asteroids.spawn(
         wordItem,
         this.canvas.width,
-        this.gameState.realmIdx,
+        rIdx,
         (this.gameState.talents.slowFactor || 1.0) * (this.gameState.speedMultiplier || 1.0) * effectiveSpeedMult,
-        bandIdx
+        targetDeckIdx,
+        chosenType
       );
     }
 
@@ -369,28 +546,28 @@
         this.vKeyboard.setStunned(this.gameState.isStunned);
       }
 
-      // 2. Thiên Kiếp Ngẫu Nhiên (Hiểm cảnh Lôi Đình giáng thế làm rung và chớp màn hình, làm mờ cổ ngữ)
-      if (this.gameState.realmIdx >= 1) {
-        const lightningChance = 0.0012 + this.gameState.realmIdx * 0.0018;
-        if (Math.random() < lightningChance) {
-          const shakeAmt = 15 + this.gameState.realmIdx * 4;
-          this.gameState.triggerLightning(shakeAmt);
-          this.audio.play("lightning");
-          if (Math.random() < 0.4) {
-            this.floatingText.add(this.canvas.width / 2, 110, "⚡ THIÊN KIẾP LÔI ĐÌNH!", "#FDE047", 22);
-          }
-        }
-      }
-
-      // 3. Nhịp Sinh Ma Thạch: Chỉ sinh từ mới khi trên màn hình ĐÃ TRẢM HẾT hoặc chạm đáy (count === 0)
+      // 2. Nhịp Sinh Ma Thạch: Trong 10s thiên kiếp hồi từ mới cực nhanh (0.04s), bình thường theo điểm số
       this.spawnTimer = (this.spawnTimer || 0) + dt;
       if (this.asteroids.count === 0) {
-        if (this.spawnTimer >= 0.4) {
+        const isHazard = this.typing && this.typing.isLightningHazard;
+        const minSpawnDelay = isHazard ? 0.04 : Math.max(0.12, 0.38 - Math.min(0.22, (this.gameState.score / 2500) * 0.15));
+        if (this.spawnTimer >= minSpawnDelay) {
           this.spawnTimer = 0;
           this.spawnWord();
         }
       } else {
         this.spawnTimer = 0; // Đang có ma thạch thì tuyệt đối không đếm timer spawn thêm
+      }
+
+      // Cập nhật 10s thiên kiếp sấm sét liên tục
+      if (this.typing) {
+        this.typing.updateHazard(dt, this.canvas);
+      }
+
+      // NẾU HẾT MÁU DO SÉT ĐÁNH / THIÊN KIẾP / THIÊN THẠCH: LẬP TỨC TRIGGER GAME OVER & XÓA SAVE
+      if (this.gameState.isGameOver || this.gameState.hp <= 0) {
+        this.handleGameOver();
+        return;
       }
 
       this.realmVFX.update(dt, this.gameState);
@@ -404,39 +581,42 @@
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên đỉnh bàn phím ảo)
       const bottomThreshold = isMobile ? (this.canvas.height * 0.61 - 15) : (this.canvas.height - 120);
+      const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
-        // Ma thạch đập vào đan điền
-        const res = this.gameState.takeDamage(15);
+        // Ma thạch đập vào đan điền: Sát thương phân cấp theo loại ma thạch
+        const baseDmg = missedAst.damage || (missedAst.asteroidType === 'thunder' ? 22 : missedAst.asteroidType === 'void' ? 16 : missedAst.asteroidType === 'fire' ? 12 : 8);
+        const damage = Math.max(5, baseDmg);
+
+        const res = this.gameState.takeDamage(damage);
         if (res.absorbed) {
           this.audio.play("shatter");
           this.particles.createShieldShards(missedAst.x, bottomThreshold, "#EAB308", 18);
-          this.floatingText.add(missedAst.x, bottomThreshold - 30, "🛡️ LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
+          this.floatingText.add(missedAst.x, bottomThreshold - 30, "[ 盾 ] LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
         } else {
           this.audio.play("hurt");
           if (this.unityBridge) {
             this.unityBridge.triggerHurt();
           }
-          this.particles.createExplosion(missedAst.x, bottomThreshold, "#EF4444", 20);
-          this.floatingText.add(missedAst.x, bottomThreshold - 30, "-15 HP ĐAN ĐIỀN", "#EF4444", 20);
+          this.particles.createExplosion(missedAst.x, bottomThreshold, missedAst.coreColor || "#EF4444", 24);
+          this.floatingText.add(missedAst.x, bottomThreshold - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
+
+          // Rung chấn màn hình theo độ lớn của sát thương
+          this.gameState.screenShake = Math.min(26, 10 + damage * 0.6);
+
+          // Bị ma thạch chạm đáy tổn thất đan điền: Kích hoạt cảnh báo Ma Vân Tụ Khí
+          if (this.typing && !this.gameState.isGameOver) {
+            this.typing.triggerDemonHazardFromFall(this.canvas.width / 2, catTargetY, isMobile, this.canvas.width);
+          }
         }
 
-        if (this.gameState.isGameOver) {
-          // Đạo tiêu thân vong: Xóa ngay lập tức save slot 1 để không lưu kiếp đã chết!
-          this.saveSystem.resetActiveSave();
-          this.asteroids.clear();
-          this.typing.currentTarget = null;
-          if (this.unityBridge) {
-            this.unityBridge.triggerDefeated();
-          }
-          if (!this.gameOverModalShown) {
-            this.gameOverModalShown = true;
-            this.ui.showGameOverModal();
-          }
+        if (this.gameState.isGameOver || this.gameState.hp <= 0) {
+          this.handleGameOver();
         } else {
-          // Sinh từ mới tiếp tục
-          setTimeout(() => this.spawnWord(), 800);
+          // Sinh từ mới tiếp tục (nhanh hơn theo điểm số)
+          const respawnDelay = Math.max(350, 750 - Math.min(350, (this.gameState.score / 1500) * 150));
+          setTimeout(() => this.spawnWord(), respawnDelay);
         }
-      }, this.canvas.width);
+      }, this.canvas.width, isLightningHazardNow);
 
       // Cập nhật phi kiếm
       this.projectiles.update(dt, (hitProj) => {
@@ -450,6 +630,20 @@
 
       // Cập nhật thanh HUD
       this.ui.updateHUD();
+
+      // Tự động làm trong suốt thanh HUD nếu có thiên thạch đang rơi vào khu vực này để không che khuất chữ
+      const hudEl = document.querySelector(".sect-scroll-hud");
+      if (hudEl) {
+        const isMob = this.canvas.width <= 768;
+        const hudW = isMob ? this.canvas.width : 520;
+        const hudH = 115;
+        const hasAsteroidNearHUD = this.asteroids.asteroids.some(a => a && a.y < hudH + 20 && a.x < hudW + 30);
+        if (hasAsteroidNearHUD) {
+          hudEl.classList.add("hud-dimmed");
+        } else {
+          hudEl.classList.remove("hud-dimmed");
+        }
+      }
     }
 
     draw() {
@@ -501,14 +695,19 @@
       this.realmVFX.drawRetroPixelVignette(ctx, w, h);
 
       if (this.gameState.currentScene === "BATTLE") {
-        // 2. Vẽ Phi Kiếm
+        // 2. Mây mù cổ phong ở tầng nền xa (Không bao giờ che khuất ma thạch và từ vựng)
+        this.realmVFX.drawMysticClouds(ctx, w, h);
+
+        // 3. Vẽ Phi Kiếm
         this.projectiles.draw(ctx);
 
-        // 3. Vẽ Ma Thạch (kèm biến dạng điện giật khi Lôi Kiếp bùng nổ)
+        // 4. Vẽ Ma Thạch & Cổ Phù Từ Vựng
         this.asteroids.draw(ctx, this.gameState.screenFlash);
 
-        // 4. MÂY MÙ CỔ PHONG TRÔI NGANG (CHƯỚNG KHÍ CHE KHUẤT TỪ VỰNG & PHÁ VỤ)
-        this.realmVFX.drawMysticClouds(ctx, w, h, this.asteroids.asteroids);
+        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Khi bị phạt Ma Vân Tụ Khí, dải sương mù lượn lờ trôi ngang quấy nhiễu tầm nhìn)
+        if (this.realmVFX && this.realmVFX.isPunishCloud) {
+          this.realmVFX.drawMysticClouds(ctx, w, h, true);
+        }
 
         // 5. Vẽ Hạt hiệu ứng
         this.particles.draw(ctx);

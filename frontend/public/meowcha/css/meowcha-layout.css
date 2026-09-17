@@ -144,10 +144,16 @@
   background: radial-gradient(circle at 50% 35%, rgba(14, 20, 30, 0.42) 0%, rgba(8, 11, 18, 0.78) 90%);
   backdrop-filter: blur(2px);
   overflow-x: hidden !important;
-  overflow-y: auto;
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(212, 175, 55, 0.4) transparent;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#lobbyView::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ============================================================

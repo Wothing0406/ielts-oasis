@@ -25,6 +25,8 @@
       this.lobbyScoreText = document.getElementById("lobbyScoreText");
       this.lobbyWordsText = document.getElementById("lobbyWordsText");
       this.lobbyHpText = document.getElementById("lobbyHpText");
+      this.lobbyHpBar = document.getElementById("lobbyHpBar");
+      this.lobbyWpmText = document.getElementById("lobbyWpmText");
       this.lobbyCatTitle = document.getElementById("lobbyCatTitle");
       this.lobbyLevelTag = document.getElementById("lobbyLevelTag");
 
@@ -151,21 +153,20 @@
           this.state.loadFromSlot(slot1);
           this.audio.play("chime");
           this.updateHUD();
-          this.showStatus(`✨ [TIẾP TỤC TU LUYỆN] Đã nạp lại ${slot1.title} (${slot1.score.toLocaleString()} Tu Vi)!`);
+          this.showStatus(`[ 仙 ] [TIẾP TỤC TU LUYỆN] Đã nạp lại ${slot1.title} (${slot1.score.toLocaleString()} Tu Vi)!`);
           this.showProfileModal("TIẾN TRÌNH TU LUYỆN ĐÃ NẠP");
         };
       }
 
-      // Nút Chơi Lại Từ Đầu ở Lobby
+      // Nút Chơi Lại Từ Đầu ở Lobby (Tẩy Tủy Trọng Sinh)
       const btnRestart = document.getElementById("btnRestartGame");
       if (btnRestart) {
         btnRestart.onclick = () => {
-          this.showConfirm("ĐẠO HỮU TẨY TỦY TRỌNG SINH?", "Mọi điểm Tu Vi và cảnh giới sẽ bắt đầu lại từ Luyện Khí Kỳ.", () => {
-            this.saveSystem.resetActiveSave();
-            this.state.reset();
-            this.audio.play("chime");
-            this.showStatus("✨ [TẨY TỦY TRỌNG SINH] Đã xóa tiến trình cũ, khởi đầu lại từ Luyện Khí Kỳ!");
-            this.updateHUD();
+          this.showConfirm("ĐẠO HỮU TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Mọi điểm Tu Vi và cảnh giới sẽ bắt đầu lại từ Luyện Khí Kỳ.", () => {
+            this.performPurificationRebirth(() => {
+              this.audio.play("chime");
+              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã được bảo lưu & vinh danh Bảng Phong Thần! Khởi đầu lại từ Luyện Khí Kỳ.");
+            });
           });
         };
       }
@@ -175,25 +176,19 @@
         this.btnQuickSaveHUD.onclick = () => {
           this.saveSystem.saveGame(1, this.state);
           this.audio.play("chime");
-          this.showStatus("✨ [LƯU TIÊN CƠ] Đã lưu đạo quả tu vi vào Ngọc Giản 1!");
+          this.showStatus("[ 符 ] [LƯU TIÊN CƠ] Đã lưu đạo quả tu vi vào Ngọc Giản 1!");
         };
       }
 
       // NÚT TẨY TỦY CHƠI LẠI NHANH TRÊN HUD [ 丹 ]
       if (this.btnQuickRestartHUD) {
         this.btnQuickRestartHUD.onclick = () => {
-          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Toàn bộ ma thạch sẽ tan biến và bắt đầu lại từ Luyện Khí Kỳ. Đạo hữu chắc chắn?", () => {
-            this.saveSystem.resetActiveSave();
-            this.state.revive();
-            this.state.score = 0;
-            this.state.wordsSlain = 0;
-            this.state.realmIdx = 0;
-            this.state.talents = { hpBonus: 0, slowFactor: 1.0, critChance: 0.0, scoreMultiplier: 1.0, shieldCharges: 0, autoKill: false, typoImmune: false };
-            this.saveSystem.saveGame(1, this.state);
-            this.audio.play("chime");
-            this.updateHUD();
-            this.showStatus("✨ [TẨY TỦY TRỌNG SINH] Khởi tạo lại trận đấu thành công!");
-            if (this.onRestartBattle) this.onRestartBattle();
+          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Toàn bộ ma thạch sẽ tan biến và bắt đầu lại từ Luyện Khí Kỳ. Đạo hữu chắc chắn?", () => {
+            this.performPurificationRebirth(() => {
+              this.audio.play("chime");
+              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã vinh danh Bảng Phong Thần! Khởi tạo lại trận đấu thành công!");
+              if (this.onRestartBattle) this.onRestartBattle();
+            });
           });
         };
       }
@@ -204,7 +199,7 @@
         btnSavePause.onclick = () => {
           this.saveSystem.saveGame(1, this.state);
           this.audio.play("chime");
-          this.showStatus("✨ [LƯU TIÊN CƠ] Đã khắc ghi đạo quả tu vi vào Ngọc Giản 1!");
+          this.showStatus("[ 符 ] [LƯU TIÊN CƠ] Đã khắc ghi đạo quả tu vi vào Ngọc Giản 1!");
         };
       }
 
@@ -212,18 +207,13 @@
       const btnRestartPause = document.getElementById("btnRestartInPause");
       if (btnRestartPause) {
         btnRestartPause.onclick = () => {
-          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Tiến trình tu luyện hiện tại sẽ bị xóa hoàn toàn. Đạo hữu có chắc chắn?", () => {
-            this.saveSystem.resetActiveSave();
-            this.state.revive();
-            this.state.score = 0;
-            this.state.wordsSlain = 0;
-            this.state.realmIdx = 0;
-            this.state.talents = { hpBonus: 0, slowFactor: 1.0, critChance: 0.0, scoreMultiplier: 1.0, shieldCharges: 0, autoKill: false, typoImmune: false };
-            this.saveSystem.saveGame(1, this.state);
-            this.hidePauseModal();
-            this.updateHUD();
-            this.showStatus("✨ [TẨY TỦY TRỌNG SINH] Đã khởi tạo lại đạo quả!");
-            if (this.onReturnLobby) this.onReturnLobby();
+          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Tiến trình tu luyện hiện tại sẽ bắt đầu lại từ đầu. Đạo hữu có chắc chắn?", () => {
+            this.performPurificationRebirth(() => {
+              this.hidePauseModal();
+              this.audio.play("chime");
+              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã vinh danh Bảng Phong Thần! Đã khởi tạo lại đạo quả!");
+              if (this.onReturnLobby) this.onReturnLobby();
+            });
           });
         };
       }
@@ -358,7 +348,7 @@
           setTimeout(() => card.classList.remove("shake-locked"), 500);
         }
         this.audio.play("hurt");
-        this.showStatus(`⚠️ [PHONG ẤN THẦN XÍCH] Đạo hữu chưa độ kiếp cảnh giới này! Hãy tu luyện từ Luyện Khí Kỳ để rèn căn cơ.`);
+        this.showStatus(`[ 封 ] [PHONG ẤN THẦN XÍCH] Đạo hữu chưa độ kiếp cảnh giới này! Hãy tu luyện từ Luyện Khí Kỳ để rèn căn cơ.`);
         return;
       }
 
@@ -423,10 +413,20 @@
         this.hudWpm.innerText = `${s.wpm} WPM`;
       }
 
-      // Cập nhật thông số Sảnh Thiền Định
+      // Cập nhật thông số Sảnh Thiền Định (Tầng 2: Mini Jade HP Bar, Tu Vi, Cổ Ngữ, WPM)
       if (this.lobbyScoreText) this.lobbyScoreText.innerText = s.score.toLocaleString();
+      const lobbyHighScoreEl = document.getElementById("lobbyHighScoreText");
+      if (lobbyHighScoreEl) {
+        const best = Math.max(s.highScore || 0, s.score || 0);
+        lobbyHighScoreEl.innerText = `Kỷ Lục: ${best.toLocaleString()} pts`;
+      }
       if (this.lobbyWordsText) this.lobbyWordsText.innerText = `${s.wordsSlain} Từ`;
       if (this.lobbyHpText) this.lobbyHpText.innerText = `${s.hp} / ${s.maxHp}`;
+      if (this.lobbyHpBar) {
+        const hpPct = Math.max(0, Math.min(100, (s.hp / (s.maxHp || 50)) * 100));
+        this.lobbyHpBar.style.width = `${hpPct}%`;
+      }
+      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} WPM`;
       if (this.lobbyCatTitle) this.lobbyCatTitle.innerText = realmData.title;
       if (this.lobbyLevelTag) this.lobbyLevelTag.innerText = `CẤP ${s.realmIdx}`;
 
@@ -540,7 +540,10 @@
               <div class="slot-empty-desc">Cuộn trục trống trải, sẵn sàng lưu lại linh khí đạo quả</div>
             </div>
             <div class="slot-actions">
-              <button class="btn-slot-save" data-slot="${i}">💾 KHẮC GHI</button>
+              <button class="btn-slot-save" data-slot="${i}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 4px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                KHẮC GHI
+              </button>
             </div>
           `;
         }
@@ -664,6 +667,7 @@
     showGameOverModal() {
       if (!this.modalGameOver) return;
       const finalScoreEl = document.getElementById("gameOverFinalScore");
+      const finalHighScoreEl = document.getElementById("gameOverHighScore");
       const finalWordsEl = document.getElementById("gameOverFinalWords");
       const finalRealmEl = document.getElementById("gameOverFinalRealm");
       const finalWpmEl   = document.getElementById("gameOverFinalWpm");
@@ -671,7 +675,9 @@
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[this.state.realmIdx] || realms[0];
 
+      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
       if (finalScoreEl) finalScoreEl.innerText = this.state.score.toLocaleString();
+      if (finalHighScoreEl) finalHighScoreEl.innerText = bestScore.toLocaleString();
       if (finalWordsEl) finalWordsEl.innerText = this.state.wordsSlain;
       if (finalRealmEl) finalRealmEl.innerText = realmData ? realmData.title : "Luyện Khí Kỳ";
       if (finalWpmEl)   finalWpmEl.innerText   = Math.round(this.state.wpm || 0);
@@ -770,7 +776,12 @@
         this.currentVaultWords = [];
         this.vaultWordsGrid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #FDE68A;">
-            <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
+            <div style="margin-bottom: 8px;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2" style="animation: baguaSpin 3s linear infinite;">
+                <circle cx="12" cy="12" r="10" stroke-dasharray="4 2"></circle>
+                <path d="M12 2v20M2 12h20"></path>
+              </svg>
+            </div>
             <div style="font-family: var(--font-xianxia-title); font-size: 13px;">Đang triệu hồi đan dược từ kho Oxford 5000...</div>
           </div>
         `;
@@ -808,7 +819,7 @@
         if (reset) {
           this.vaultWordsGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #FCA5A5;">
-              <div>⚠️ Không thể tải từ vựng từ tiên giới. Đang dùng kho dự phòng.</div>
+              <div>[ 警 ] Không thể tải từ vựng từ tiên giới. Đang kích hoạt đan dược dự phòng.</div>
             </div>
           `;
         }
@@ -820,7 +831,12 @@
       if (!words || words.length === 0) {
         this.vaultWordsGrid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #FDE68A; opacity: 0.8;">
-            <div style="font-size: 20px; margin-bottom: 6px;">📜</div>
+            <div style="margin-bottom: 6px;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8">
+                <path d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
+                <path d="M9 7h6M9 11h6M9 15h4"></path>
+              </svg>
+            </div>
             <div>Không tìm thấy đan dược nào phù hợp với từ khóa!</div>
           </div>
         `;
@@ -879,8 +895,12 @@
     getLoggedInUser() {
       try {
         let rawUser = localStorage.getItem("oasis_user");
+        let token = localStorage.getItem("oasis_token");
         if (!rawUser && typeof window !== "undefined" && window.parent && window.parent !== window) {
-          rawUser = window.parent.localStorage.getItem("oasis_user");
+          try {
+            rawUser = window.parent.localStorage.getItem("oasis_user");
+            token = window.parent.localStorage.getItem("oasis_token");
+          } catch (crossErr) {}
         }
         if (rawUser) {
           const u = JSON.parse(rawUser);
@@ -889,23 +909,74 @@
           return {
             name: name || "Tiểu Miêu Kiếm Sĩ",
             avatar: avatar || "./sprites/cat_idle.png",
+            token: token || "",
             isLoggedIn: true
           };
         }
       } catch (e) {}
 
       const localName = localStorage.getItem("meowcha_player_name") || "Tiểu Miêu Kiếm Sĩ";
+      let fallbackToken = localStorage.getItem("oasis_token") || "";
       return {
         name: localName,
         avatar: "./sprites/cat_idle.png",
+        token: fallbackToken,
         isLoggedIn: false
       };
     }
 
-    async autoSubmitScoreToPantheon() {
-      if (this.state.score <= 0) return;
+    /**
+     * Tẩy Tủy Trọng Sinh: Bảo lưu điểm cao nhất & tự động vinh danh Bảng Phong Thần
+     * trước khi xóa bỏ tiến trình trận đấu cũ để bắt đầu kiếp tu luyện mới.
+     */
+    performPurificationRebirth(onComplete) {
+      const currentRunScore = Number(this.state.score || 0);
+      const currentHighScore = Number(this.state.highScore || 0);
+      const bestScore = Math.max(currentRunScore, currentHighScore);
+
+      if (bestScore > currentHighScore) {
+        this.state.highScore = bestScore;
+        try {
+          localStorage.setItem("meowcha_high_score", String(bestScore));
+        } catch (e) {}
+      }
+
+      // Khắc bia lên Bảng Phong Thần ngay lập tức
+      if (bestScore > 0) {
+        this.autoSubmitScoreToPantheon(bestScore);
+      }
+
+      // Đặt lại các chỉ số ván đấu về Luyện Khí Kỳ, giữ vĩnh viễn High Score
+      this.saveSystem.resetActiveSave();
+      this.state.revive();
+      this.state.score = 0;
+      this.state.wordsSlain = 0;
+      this.state.realmIdx = 0;
+      this.state.combo = 0;
+      this.state.maxCombo = 0;
+      this.state.talents = { hpBonus: 0, slowFactor: 1.0, critChance: 0.0, scoreMultiplier: 1.0, shieldCharges: 0, autoKill: false, typoImmune: false };
+      this.state.highScore = bestScore;
+      try {
+        localStorage.setItem("meowcha_high_score", String(bestScore));
+      } catch (e) {}
+
+      this.saveSystem.saveGame(1, this.state);
+      this.updateHUD();
+      this.updateLobbyStats();
+      this.updatePantheonSelfStats();
+
+      if (typeof onComplete === "function") {
+        onComplete();
+      }
+    }
+
+    async autoSubmitScoreToPantheon(forcedScore = null) {
+      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+      const submitScore = forcedScore !== null ? Number(forcedScore) : (this.state.score > 0 ? this.state.score : bestScore);
+      if (!submitScore || submitScore <= 0) return;
+
       // Tránh gửi trùng lặp điểm số cùng một phiên kết thúc
-      const sessionKey = `${this.state.score}_${this.state.wordsSlain}_${this.state.realmIdx}`;
+      const sessionKey = `${submitScore}_${this.state.wordsSlain}_${this.state.realmIdx}`;
       if (this.lastSubmittedSessionKey === sessionKey) {
         return;
       }
@@ -919,21 +990,49 @@
         const payload = {
           player_name: user.name.slice(0, 40),
           avatar_url: user.avatar && !user.avatar.includes("cat_idle.png") ? user.avatar : "",
-          score: this.state.score,
-          words_slain: this.state.wordsSlain,
+          score: submitScore,
+          words_slain: Math.max(1, this.state.wordsSlain),
           realm: realmData.title || "Luyện Khí Kỳ",
           accuracy: Math.round(this.state.accuracy || 100),
           wpm: Math.round(this.state.wpm || 0)
         };
 
+        const headers = { "Content-Type": "application/json" };
+        if (user.token) {
+          headers["Authorization"] = `Bearer ${user.token}`;
+        }
+
+        // 1. Đồng bộ vào Hồ Sơ Tu Chân Giả & Lịch Sử Trận Đấu
+        fetch("/api/meowcha/profile/sync", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            score_earned: submitScore,
+            words_slain: Math.max(1, this.state.wordsSlain),
+            realm: realmData.title || "Luyện Khí Kỳ",
+            realm_idx: this.state.realmIdx || 0,
+            wpm: Math.round(this.state.wpm || 0),
+            accuracy: Math.round(this.state.accuracy || 100),
+            is_victory: (this.state.hp > 0)
+          })
+        }).catch(() => {});
+
+        // 2. Ghi danh Bảng Phong Thần
         const resp = await fetch("/api/meowcha/leaderboard", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: headers,
           body: JSON.stringify(payload)
         });
 
         if (resp.ok) {
           console.log("[Meowcha] Đã tự động vinh danh chiến tích lên Bảng Phong Thần:", payload.player_name, payload.score);
+        }
+        if (submitScore > (this.state.highScore || 0)) {
+          this.state.highScore = submitScore;
+          try {
+            localStorage.setItem("meowcha_high_score", String(this.state.highScore));
+          } catch (err) {}
+          this.updateLobbyStats();
         }
       } catch (e) {
         console.warn("[Meowcha] Lỗi tự động ghi danh Bảng Phong Thần:", e);
@@ -944,6 +1043,10 @@
       if (!this.modalPantheon) return;
       this.modalPantheon.style.display = "flex";
       this.updatePantheonSelfStats();
+      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+      if (bestScore > 0) {
+        this.autoSubmitScoreToPantheon(bestScore);
+      }
       this.loadLeaderboardFromAPI();
     }
 
@@ -961,7 +1064,8 @@
       if (this.pantheonPlayerSelfStats) {
         const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
         const realmData = realms[this.state.realmIdx] || realms[0];
-        this.pantheonPlayerSelfStats.innerText = `Tu Vi: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • WPM: ${Math.round(this.state.wpm || 0)}`;
+        const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} pts • Hiện tại: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • WPM: ${Math.round(this.state.wpm || 0)}`;
       }
     }
 
@@ -994,6 +1098,68 @@
     renderPantheonLeaderboard(data) {
       const listContainer = document.getElementById("pantheonRankList");
       if (!listContainer) return;
+
+      // Mỗi user chỉ có mặt trên 1 Top duy nhất (lấy điểm cao nhất)
+      const seenNames = new Set();
+      const uniqueData = [];
+      for (const item of (data || [])) {
+        const key = String(item.player_name || "").trim().toLowerCase();
+        if (key && !seenNames.has(key)) {
+          seenNames.add(key);
+          uniqueData.push(item);
+        }
+      }
+      data = uniqueData;
+
+      // Tự động đồng bộ High Score 2 CHIỀU giữa Bảng Phong Thần và GameState
+      const user = this.getLoggedInUser();
+      const userNameLower = (user.name || "").trim().toLowerCase();
+      const myBestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+
+      if (userNameLower) {
+        const myRankEntry = data.find(item => {
+          const pName = (item.player_name || "").trim().toLowerCase();
+          return pName && pName === userNameLower;
+        });
+
+        if (myRankEntry && typeof myRankEntry.score === 'number') {
+          if (myRankEntry.score > (this.state.highScore || 0)) {
+            // Kỷ lục trên Tiên Giới cao hơn thiết bị hiện tại -> Cập nhật vào máy
+            this.state.highScore = myRankEntry.score;
+            try {
+              localStorage.setItem("meowcha_high_score", String(this.state.highScore));
+            } catch (e) {}
+            this.updatePantheonSelfStats();
+            this.updateLobbyStats();
+          } else if (myBestScore > myRankEntry.score) {
+            // Kỷ lục trên máy cao hơn Tiên Giới -> Lập tức vinh danh lên bảng vàng!
+            console.log(`[Meowcha] Phát hiện kỷ lục cục bộ cao hơn bảng xếp hạng (${myBestScore} > ${myRankEntry.score}). Tự động đồng bộ lên Bảng Phong Thần!`);
+            myRankEntry.score = myBestScore;
+            if (user.avatar && !user.avatar.includes("cat_idle.png")) {
+              myRankEntry.avatar_url = user.avatar;
+            }
+            this.autoSubmitScoreToPantheon(myBestScore);
+          }
+        } else if (myBestScore > 0) {
+          // Chưa có tên trên bảng nhưng đã có kỷ lục tu vi -> Ghi danh ngay
+          const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
+          const realmData = realms[this.state.realmIdx] || realms[0];
+          data.push({
+            player_name: user.name,
+            score: myBestScore,
+            words_slain: Math.max(1, this.state.wordsSlain),
+            realm: realmData.title || "Luyện Khí Kỳ",
+            accuracy: Math.round(this.state.accuracy || 100),
+            wpm: Math.round(this.state.wpm || 0),
+            avatar_url: user.avatar && !user.avatar.includes("cat_idle.png") ? user.avatar : ""
+          });
+          this.autoSubmitScoreToPantheon(myBestScore);
+        }
+
+        // Tái sắp xếp Bảng Phong Thần theo điểm số giảm dần
+        data.sort((a, b) => (b.score || 0) - (a.score || 0));
+        this.updatePantheonSelfStats();
+      }
 
       const getAvatarByRealm = (realmName, score) => {
         const avatars = [
@@ -1051,8 +1217,13 @@
       if (data.length === 0) {
         listContainer.innerHTML = `
           <div style="text-align: center; padding: 30px 15px; color: #FEF08A; opacity: 0.9;">
-            <div style="font-size: 26px; margin-bottom: 8px;">📜</div>
-            <div style="font-family: var(--font-xianxia-title); font-size: 13.5px; font-weight: 700; color: #FDE047;">Tiên Giới thanh tịnh • Bảng Vàng đang đợi bậc Chí Tôn</div>
+            <div class="empty-pantheon-icon" style="margin-bottom: 8px;">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8">
+                <path d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
+                <path d="M9 7h6M9 11h6M9 15h4"></path>
+              </svg>
+            </div>
+            <div style="font-family: var(--font-xianxia-title); font-size: 14px; font-weight: 700; color: #FDE047;">Tiên Giới thanh tịnh • Bảng Vàng đang đợi bậc Chí Tôn</div>
             <div style="font-size: 11.5px; color: #D1D5DB; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm diệt ma thạch — điểm số sẽ tự động vinh danh trên Bảng Phong Thần!</div>
           </div>
         `;
@@ -1061,10 +1232,32 @@
 
       listContainer.innerHTML = data.map((item, idx) => {
         let rowClass = "";
-        let badgeIcon = `#${idx + 1}`;
-        if (idx === 0) { rowClass = "gold"; badgeIcon = "👑 #1"; }
-        else if (idx === 1) { rowClass = "silver"; badgeIcon = "🥈 #2"; }
-        else if (idx === 2) { rowClass = "bronze"; badgeIcon = "🥉 #3"; }
+        let badgeHtml = `<span class="seal-rank-badge rank-other">[ #${idx + 1} ]</span>`;
+        if (idx === 0) {
+          rowClass = "gold";
+          badgeHtml = `
+            <span class="seal-rank-badge rank-gold" title="Chí Tôn Kim Giáp">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#FDE047"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              #1
+            </span>
+          `;
+        } else if (idx === 1) {
+          rowClass = "silver";
+          badgeHtml = `
+            <span class="seal-rank-badge rank-silver" title="Bạch Ngân Tiên Quân">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#E2E8F0"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              #2
+            </span>
+          `;
+        } else if (idx === 2) {
+          rowClass = "bronze";
+          badgeHtml = `
+            <span class="seal-rank-badge rank-bronze" title="Thanh Đồng Tiên Khách">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#F97316"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              #3
+            </span>
+          `;
+        }
 
         const avatarSrc = (item.avatar_url && item.avatar_url.trim()) 
           ? item.avatar_url 
@@ -1072,7 +1265,7 @@
 
         return `
           <div class="pantheon-row ${rowClass}">
-            <span class="rank-col">${badgeIcon}</span>
+            <span class="rank-col">${badgeHtml}</span>
             <span class="name-col" title="${item.player_name}">
               <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" onerror="this.src='./sprites/cat_idle.png'" />
               <span class="name-text">${item.player_name || 'Vô Danh Tiên Khách'}</span>
@@ -1120,6 +1313,12 @@
 
       const scoreEl = document.getElementById("profileModalScore");
       if (scoreEl) scoreEl.innerText = `${this.state.score.toLocaleString()} pts`;
+
+      const highScoreEl = document.getElementById("profileModalHighScore");
+      if (highScoreEl) {
+        const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+        highScoreEl.innerText = `${bestScore.toLocaleString()} pts`;
+      }
 
       const wordsEl = document.getElementById("profileModalWords");
       if (wordsEl) wordsEl.innerText = `${this.state.wordsSlain} từ`;

@@ -1,3 +1,4 @@
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey, JSON
 from datetime import datetime
 from database import Base
@@ -199,6 +200,49 @@ class MeowchaLeaderboard(Base):
     wpm = Column(Integer, default=0)
     avatar_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MeowchaUserProfile(Base):
+    """
+    Hồ Sơ Tu Chân Giả gắn liền với từng User đăng nhập.
+    Quản lý tổng điểm tu vi tích lũy, cảnh giới cao nhất, số từ vựng đã trảm, linh thạch, danh hiệu và slot lưu trữ.
+    """
+    __tablename__ = "meowcha_user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    total_score = Column(Integer, default=0)
+    highest_realm = Column(String(50), default="Luyện Khí Kỳ")
+    highest_realm_idx = Column(Integer, default=0)
+    total_words_slain = Column(Integer, default=0)
+    highest_wpm = Column(Integer, default=0)
+    games_played = Column(Integer, default=0)
+    spirit_stones = Column(Integer, default=0)
+    unlocked_titles = Column(JSON, default=list)
+    unlocked_talents = Column(JSON, default=dict)
+    active_slot_id = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class MeowchaBattleLog(Base):
+    """
+    Lịch sử Độ Kiếp / Trảm Ma theo từng ván đấu của người chơi.
+    """
+    __tablename__ = "meowcha_battle_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    guest_token = Column(String(64), nullable=True, index=True)
+    score = Column(Integer, default=0)
+    words_slain = Column(Integer, default=0)
+    realm = Column(String(50), default="Luyện Khí Kỳ")
+    accuracy = Column(Float, default=100.0)
+    wpm = Column(Integer, default=0)
+    band_level = Column(Integer, default=0)
+    is_victory = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 
 

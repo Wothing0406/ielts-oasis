@@ -19,38 +19,78 @@
       return this.asteroids.length;
     }
 
-    spawn(wordItem, canvasWidth, realmIdx = 0, slowFactor = 1.0, bandIdx = 0) {
+    spawn(wordItem, canvasWidth, realmIdx = 0, slowFactor = 1.0, bandIdx = 0, explicitType = null, explicitDamage = null) {
       if (!wordItem || !wordItem.word) return null;
       const wordUpper = wordItem.word.toUpperCase();
       if (this.asteroids.some(a => a.word === wordUpper)) {
         return null; // Skip duplicate word spawn
       }
-      const bIdx = Math.max(0, Math.min(3, bandIdx !== undefined && bandIdx !== null ? bandIdx : realmIdx));
-      let asteroidType = "ice";
+      const rIdx = Math.max(0, realmIdx);
+      
+      // =========================================================================
+      // TIẾN TRÌNH MA THẠCH THEO CẢNH GIỚI (PROGRESSION POOL):
+      // Cấp 0 (Luyện Khí Kỳ): 100% Băng (ice)
+      // Cấp 1 (Trúc Cơ Kỳ):   65% Băng (ice), 35% Hỏa (fire)
+      // Cấp 2 (Kim Đan Kỳ):   25% Băng (ice), 45% Hỏa (fire), 30% Hư Không (void)
+      // Cấp 3 (Nguyên Anh Kỳ): 10% Băng (ice), 25% Hỏa (fire), 40% Hư Không (void), 25% Huyết Lôi (thunder)
+      // Cấp 4+ (Thần Cấp/Độ Kiếp): 5% Băng (ice), 20% Hỏa (fire), 35% Hư Không (void), 40% Huyết Lôi (thunder)
+      // =========================================================================
+      let asteroidType = explicitType;
+      if (!asteroidType) {
+        const rand = Math.random();
+        if (rIdx === 0) {
+          asteroidType = "ice";
+        } else if (rIdx === 1) {
+          asteroidType = rand < 0.65 ? "ice" : "fire";
+        } else if (rIdx === 2) {
+          if (rand < 0.25) asteroidType = "ice";
+          else if (rand < 0.70) asteroidType = "fire";
+          else asteroidType = "void";
+        } else if (rIdx === 3) {
+          if (rand < 0.10) asteroidType = "ice";
+          else if (rand < 0.35) asteroidType = "fire";
+          else if (rand < 0.75) asteroidType = "void";
+          else asteroidType = "thunder";
+        } else {
+          if (rand < 0.05) asteroidType = "ice";
+          else if (rand < 0.25) asteroidType = "fire";
+          else if (rand < 0.60) asteroidType = "void";
+          else asteroidType = "thunder";
+        }
+      }
+
       let coreColor = "#38BDF8";
       let glowColor = "#0284C7";
       let runeColor = "#E0F2FE";
       let trailColors = ["#38BDF8", "#7DD3FC", "#BAE6FD", "#FFFFFF", "#0284C7"];
+      let baseDamage = 8;
+      let typeSpeedMultiplier = 1.0;
 
-      if (bIdx === 1) {
-        asteroidType = "fire";
+      if (asteroidType === "fire") {
         coreColor = "#F97316";
         glowColor = "#EF4444";
         runeColor = "#FEF08A";
         trailColors = ["#F97316", "#EF4444", "#FEF08A", "#991B1B", "#292524"];
-      } else if (bIdx === 2) {
-        asteroidType = "void";
+        baseDamage = 12;
+        typeSpeedMultiplier = 1.05;
+      } else if (asteroidType === "void") {
         coreColor = "#A855F7";
         glowColor = "#7E22CE";
         runeColor = "#F3E8FF";
         trailColors = ["#A855F7", "#C084FC", "#E9D5FF", "#581C87", "#1E1B4B"];
-      } else if (bIdx >= 3) {
-        asteroidType = "chaos";
-        coreColor = "#F59E0B";
-        glowColor = "#D97706";
+        baseDamage = 16;
+        typeSpeedMultiplier = 1.10;
+      } else if (asteroidType === "thunder" || asteroidType === "chaos") {
+        asteroidType = "thunder";
+        coreColor = "#FDE047";
+        glowColor = "#DC2626";
         runeColor = "#FFFBEB";
-        trailColors = ["#F59E0B", "#FDE047", "#FEF08A", "#78350F", "#451A03"];
+        trailColors = ["#FDE047", "#F59E0B", "#DC2626", "#991B1B", "#18181B"];
+        baseDamage = 22;
+        typeSpeedMultiplier = 1.15;
       }
+
+      const totalDamage = explicitDamage || (baseDamage + rIdx * 2);
 
       const word = wordItem.word.toUpperCase();
       this.canvasWidth = canvasWidth;
@@ -58,22 +98,22 @@
       const charW = isMobile ? 15 : 20;
       const totalWordW = word.length * charW;
       const halfWordW = totalWordW / 2;
-      const baseRadius = isMobile ? Math.max(38, word.length * 5.8) : Math.max(46, word.length * 8.2);
+      const baseRadius = isMobile ? Math.max(38, word.length * 6.0) : Math.max(46, word.length * 8.2);
       const safeMargin = Math.max(baseRadius + 24, halfWordW + 36);
-      const minX = safeMargin;
-      const maxX = Math.max(minX + 20, canvasWidth - safeMargin);
+      // Trên màn hình PC rộng: Thanh ngọc giản HUD ở góc trên bên trái (chiếm ~500px).
+      // Để thiên thạch không bị che khuất khi rơi, ưu tiên phân bổ từ x=490px trở sang phải
+      const minX = isMobile ? safeMargin : Math.max(safeMargin, Math.min(canvasWidth * 0.38, 490));
+      const maxX = Math.max(minX + 40, canvasWidth - safeMargin);
       const spawnX = minX + Math.random() * (maxX - minX);
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[realmIdx] || { speedMult: 1.0 };
-      let baseSpeed = (0.28 + realmIdx * 0.15) * (realmData.speedMult || 1.0) * slowFactor;
-      if (realmIdx >= 4) {
-        // DẠNG THẦN CAO NHẤT: Ma thạch giáng lâm cực tốc hỗn độn
-        baseSpeed *= 1.35;
-      }
+      // Tốc độ điều chỉnh êm dịu, phù hợp tốc độ gõ của người chơi thực tế
+      const realmSpeedBase = [0.22, 0.26, 0.31, 0.37, 0.44];
+      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.22) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
 
-      // Góc nghiêng tự nhiên (-10° đến +10°)
-      const lateralDrift = (Math.random() - 0.5) * 0.5;
+      // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
+      const lateralDrift = (Math.random() - 0.5) * 0.18;
       const vy = baseSpeed;
       const vx = lateralDrift;
       const fallAngle = Math.atan2(vy, vx);
@@ -98,36 +138,26 @@
         const r1 = baseRadius * (0.3 + Math.random() * 0.4);
         const r2 = baseRadius * (0.6 + Math.random() * 0.35);
         veins.push({
-          x1: Math.cos(a1) * r1,
-          y1: Math.sin(a1) * r1,
-          midX: (Math.cos(a1) * r1 + Math.cos(a2) * r2) / 2 + (Math.random() - 0.5) * 10,
-          midY: (Math.sin(a1) * r1 + Math.sin(a2) * r2) / 2 + (Math.random() - 0.5) * 10,
-          x2: Math.cos(a2) * r2,
-          y2: Math.sin(a2) * r2
+          angle1: a1,
+          r1: r1,
+          angle2: a2,
+          r2: r2
         });
       }
 
-      let hudBottom = 95;
-      if (typeof document !== "undefined") {
-        const hudEl = document.querySelector(".sect-scroll-hud");
-        if (hudEl) {
-          const rect = hudEl.getBoundingClientRect();
-          if (rect && rect.bottom > 0) {
-            hudBottom = rect.bottom;
-          }
-        }
-      }
-      // Đảm bảo toàn bộ thiên thạch và từ vựng luôn xuất hiện hoàn toàn bên dưới thanh HUD
-      const spawnY = Math.max(isMobile ? 115 : 145, hudBottom + baseRadius + 18);
+      // RƠI TỪ ĐỈNH TRỜI: Xuất phát từ phía trên mép màn hình và trôi êm ái xuống đan điền
+      const spawnY = -baseRadius - 15;
 
       const asteroid = {
         id: Date.now() + Math.random(),
         word: word,
         ipa: wordItem.ipa || "/.../",
         meaning: wordItem.meaning || "",
+        audio_url: wordItem.audio_url || "",
         archetype: asteroidType,
         asteroidType: asteroidType,
-        bandIdx: bIdx,
+        damage: totalDamage,
+        bandIdx: bandIdx,
         trailColors: trailColors,
         x: spawnX,
         y: spawnY,
@@ -143,8 +173,10 @@
         typedLen: 0,
         wobbleSeed: Math.random() * 100,
         wobbleSpeed: 1.2 + Math.random() * 0.6,
-        rot: 0,
-        rotSpeed: (Math.random() - 0.5) * 0.4,
+        // Ice và Void có mũi nhọn chĩa về góc -45° (top-right), xoay fallAngle + PI/4 (135°) để đầu nhọn cắm thẳng đứng xuống.
+        // Fire và Thunder có mũi nhọn ở góc +45°, xoay fallAngle - PI/4 (45°) để mũi lửa cắm thẳng xuống đất.
+        rot: (asteroidType === "ice" || asteroidType === "void") ? (fallAngle + Math.PI / 4) : (fallAngle - Math.PI / 4),
+        rotSpeed: (Math.random() - 0.5) * 0.08,
         hitReaction: 0,
         trail: [] // Hạt đuôi bụi linh khí pixel
       };
@@ -153,16 +185,25 @@
       return asteroid;
     }
 
-    update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth) {
+    update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth, isLightningHazard = false) {
       this.time += dt;
       const cWidth = canvasWidth || this.canvasWidth || (typeof window !== "undefined" ? window.innerWidth : 800);
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
         ast.x += ast.vx * 60 * dt;
-        ast.y += ast.vy * 60 * dt;
-        ast.vy += dt * 0.04; // Trọng lực ma giới kéo ma thạch tăng tốc dần khi rơi
-        ast.rot += ast.rotSpeed * dt;
+        // Trong thiên kiếp sét: Tăng tốc vừa phải (1.25x) để người chơi bình thường vẫn theo kịp
+        const gravMult = isLightningHazard ? 1.25 : 1.0;
+        ast.y += ast.vy * 60 * dt * gravMult;
+        ast.vy += dt * 0.005 * gravMult; // Gia tốc vi mô nhẹ nhàng
+        // Cập nhật fallAngle và góc xoay chuẩn xác (đầu đá cắm xuống, đuôi lửa bốc lên trên)
+        ast.fallAngle = Math.atan2(ast.vy, ast.vx);
+        const wobble = Math.sin(this.time * 2.5 + ast.wobbleSeed) * 0.04;
+        if (ast.asteroidType === "ice" || ast.asteroidType === "void") {
+          ast.rot = ast.fallAngle + Math.PI / 4 + wobble;
+        } else {
+          ast.rot = ast.fallAngle - Math.PI / 4 + wobble;
+        }
 
         // Giữ ma thạch và toàn bộ từ vựng luôn nằm trọn trong chiến trường, không bao giờ bay tràn mép
         const isMobileScreen = cWidth <= 600;
@@ -314,9 +355,13 @@
         } else if (ast.asteroidType === "void") {
           spriteImg = (this.assets?.prop_asteroid_void?.loaded && this.assets.prop_asteroid_void.img) ||
                       (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
+        } else if (ast.asteroidType === "thunder" || ast.asteroidType === "chaos") {
+          spriteImg = (this.assets?.prop_asteroid_thunder?.loaded && this.assets.prop_asteroid_thunder.img) ||
+                      (this.assets?.prop_asteroid_fire?.loaded && this.assets.prop_asteroid_fire.img) ||
+                      (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
         } else {
           spriteImg = (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) ||
-                      (this.assets?.prop_asteroid_fire?.loaded && this.assets.prop_asteroid_fire.img) || null;
+                      (this.assets?.prop_asteroid_ice?.loaded && this.assets.prop_asteroid_ice.img) || null;
         }
 
         if (spriteImg) {
@@ -373,70 +418,56 @@
           const cx = startCharX + c * charSpacing;
 
           if (c < ast.typedLen) {
-            // ĐÃ GÕ ĐÚNG: Kiếm khí Bích Ngọc xé toạc, bốc cháy ngọc quang
+            // ĐÃ GÕ ĐÚNG: Kiếm khí Bích Ngọc rực sáng, sắc nét hoàn hảo (Không có vệt gạch làm mờ)
             ctx.save();
-            ctx.fillStyle = "#10B981";
-            ctx.shadowColor = "#34D399";
-            ctx.shadowBlur = 14;
+            ctx.fillStyle = "#34D399";
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = 12;
+            // Viền tối nhẹ để chữ nổi bật trên mọi hiệu ứng
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "rgba(4, 30, 20, 0.85)";
+            ctx.strokeText(letter, cx, runeY);
             ctx.fillText(letter, cx, runeY);
-
-            // Vết kiếm chém xé toạc ký tự
-            ctx.strokeStyle = "#ECFDF5";
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.moveTo(cx - 9, runeY + 8);
-            ctx.lineTo(cx + 9, runeY - 8);
-            ctx.stroke();
             ctx.restore();
 
           } else if (c === ast.typedLen) {
             // KÝ TỰ MỤC TIÊU ĐANG GÕ: Rực lửa chu sa bừng sáng dữ dội
             ctx.save();
-            const pulse = 1.0 + Math.sin(this.time * 12) * 0.14;
+            const pulse = 1.0 + Math.sin(this.time * 12) * 0.12;
             ctx.translate(cx, runeY);
             ctx.scale(pulse, pulse);
+
+            // Viền tương phản
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(10, 5, 2, 0.9)";
+            ctx.strokeText(letter, 0, 0);
 
             // Hào quang rực lửa
             ctx.fillStyle = "#FDE047";
             ctx.shadowColor = "#EF4444";
-            ctx.shadowBlur = 24;
+            ctx.shadowBlur = 20;
             ctx.fillText(letter, 0, 0);
 
             // Vòng phù ấn bao quanh ký tự đang gõ
-            ctx.strokeStyle = "rgba(245, 158, 11, 0.85)";
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "rgba(245, 158, 11, 0.9)";
+            ctx.lineWidth = 1.6;
             ctx.beginPath();
             ctx.arc(0, 0, 13, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Tia lôi điện nhỏ bốc lên
-            if (Math.sin(this.time * 20) > 0.4) {
-              ctx.strokeStyle = "#FEF08A";
-              ctx.lineWidth = 1.2;
-              ctx.beginPath();
-              ctx.moveTo(-6, -11);
-              ctx.lineTo(0, -18);
-              ctx.lineTo(6, -12);
-              ctx.stroke();
-            }
-
             ctx.restore();
 
           } else {
-            // KÝ TỰ CHƯA GÕ: Cổ phù huyền thạch mạ vàng (Bị làm mờ nhiễu khi Lôi Kiếp giáng thế)
+            // KÝ TỰ CHƯA GÕ: Cổ phù hoàng kim sáng bóng, viền đen sắc nét
             ctx.save();
-            if (screenFlash > 0.1) {
-              const runeJitter = (Math.random() - 0.5) * 3;
-              ctx.fillStyle = Math.random() < 0.3 ? "#C084FC" : "rgba(254, 243, 199, 0.4)";
-              ctx.shadowColor = "#A855F7";
-              ctx.shadowBlur = 18;
-              ctx.fillText(letter, cx + runeJitter, runeY + runeJitter);
-            } else {
-              ctx.fillStyle = "#FEF3C7";
-              ctx.shadowColor = "rgba(245, 158, 11, 0.6)";
-              ctx.shadowBlur = 8;
-              ctx.fillText(letter, cx, runeY);
-            }
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "rgba(10, 5, 2, 0.85)";
+            ctx.strokeText(letter, cx, runeY);
+
+            ctx.fillStyle = "#FEF3C7";
+            ctx.shadowColor = "rgba(245, 158, 11, 0.65)";
+            ctx.shadowBlur = 6;
+            ctx.fillText(letter, cx, runeY);
             ctx.restore();
           }
         }

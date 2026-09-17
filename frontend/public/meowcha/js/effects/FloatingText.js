@@ -8,13 +8,33 @@
       this.texts = [];
       this.bursts = []; // Vòng sáng nổ từ vựng tại chỗ (In-situ bursts)
       this.expOrbs = []; // Hạt tinh hoa tu vi bay hút về Mèo Tôn
+      this.celestialBanner = null; // Biểu tượng Chiếu Chỉ Thiên Đình rơi từ đỉnh trời
     }
 
     clear() {
       this.texts = [];
       this.bursts = [];
       this.expOrbs = [];
+      this.celestialBanner = null;
     }
+    // CHIẾU CHỈ THIÊN ĐÌNH / THIÊN LÔI MẬT CHỈ RƠI TỪ ĐỈNH TRỜI (CELESTIAL EDICT)
+    addCelestialEdict(canvasW, title, content, type = 'warning') {
+      const isMobile = canvasW <= 768;
+      this.celestialBanner = {
+        title: title,
+        content: content,
+        type: type, // 'warning' (vàng cam) | 'lightning' (tím sấm sét) | 'purified' (ngọc bích)
+        y: -120, // Bắt đầu rơi từ tít trên đỉnh trời
+        targetY: isMobile ? 85 : 70, // Dừng lại ở vị trí trang trọng giữa trời
+        vy: 18,
+        alpha: 0,
+        life: 3.2, // Tồn tại 3.2s
+        maxLife: 3.2,
+        unrollW: 0.1, // Hoạt ảnh cuộn mở thánh chỉ
+        sparkTimer: 0
+      };
+    }
+
 
     // Chữ nổi thông thường (Bạo kích, sát thương)
     add(x, y, text, color = "#FDE047", size = 18, vy = -1.6) {
@@ -32,9 +52,11 @@
 
     // HIỆN PHÙ CHÚ BÁT QUÁI & PHIÊN ÂM IPA NGAY TẠI TÂM NỔ (IN-SITU BURST)
     addInSituBurst(x, y, wordItem) {
+      // Đảm bảo tọa độ nổ luôn nằm bên dưới thanh HUD (y >= 125) để người chơi nhìn thấy rõ ràng phiên âm IPA kể cả khi gõ từ trên đỉnh
+      const safeY = Math.max(125, y);
       this.bursts.push({
         x: x,
-        y: y,
+        y: safeY,
         word: wordItem.word,
         ipa: wordItem.ipa || "",
         meaning: wordItem.meaning || "",
@@ -43,8 +65,8 @@
         maxScale: 1.0,
         rot: 0,
         alpha: 1.0,
-        life: 1.0, // Thời lượng 1.0s thanh thoát, không che khuất màn hình
-        maxLife: 1.0
+        life: 1.2, // Thời lượng 1.2s rõ ràng
+        maxLife: 1.2
       });
     }
 
@@ -65,6 +87,31 @@
     }
 
     update(dt = 0.016, onExpArrived) {
+      // 0. Cập nhật Chiếu Chỉ Thiên Đình rơi từ trời xuống
+      if (this.celestialBanner) {
+        const cb = this.celestialBanner;
+        cb.life -= dt;
+
+        // Rơi từ trời xuống vị trí targetY với quán tính nảy nhẹ
+        if (cb.y < cb.targetY) {
+          cb.y += (cb.targetY - cb.y) * Math.min(1.0, dt * 8.5);
+          cb.alpha = Math.min(1.0, cb.alpha + dt * 4.0);
+        }
+
+        // Mở rộng chiếu chỉ
+        if (cb.unrollW < 1.0) {
+          cb.unrollW = Math.min(1.0, cb.unrollW + dt * 4.0);
+        }
+
+        // Mờ dần khi hết thời gian
+        if (cb.life < 0.6) {
+          cb.alpha = Math.max(0, cb.life / 0.6);
+        }
+
+        if (cb.life <= 0) {
+          this.celestialBanner = null;
+        }
+      }
       // 1. Cập nhật chữ nổi
       for (let i = this.texts.length - 1; i >= 0; i--) {
         const item = this.texts[i];
@@ -118,6 +165,146 @@
     }
 
     draw(ctx) {
+      // 0. Vẽ Chiếu Chỉ Thiên Đình Rơi Từ Trời Xuống (Celestial Edict Scroll)
+      if (this.celestialBanner && this.celestialBanner.alpha > 0) {
+        const cb = this.celestialBanner;
+        ctx.save();
+        // 0. VẼ CHIẾU CHỈ TIÊN ĐÌNH CỔ PHONG TRONG SUỐT (SEMI-TRANSPARENT XIANXIA SCROLL)
+        ctx.globalAlpha = Math.max(0, Math.min(1.0, cb.alpha));
+        const canvasW = ctx.canvas.width;
+        const isMobile = canvasW <= 768;
+
+        const maxW = isMobile ? Math.min(canvasW - 24, 330) : 450;
+        const w = maxW * cb.unrollW;
+        const h = isMobile ? 52 : 60;
+        const cx = canvasW / 2;
+        const cy = cb.y;
+        const halfW = w / 2;
+        const halfH = h / 2;
+
+        // Bối cảnh ánh sáng / sấm sét / mây mù huyền ảo xung quanh chiếu chỉ
+        if (cb.type === 'lightning') {
+          ctx.shadowColor = 'rgba(192, 132, 252, 0.85)';
+          ctx.shadowBlur = 24;
+        } else if (cb.type === 'cloud') {
+          ctx.shadowColor = 'rgba(168, 85, 247, 0.7)';
+          ctx.shadowBlur = 20;
+        } else if (cb.type === 'purified') {
+          ctx.shadowColor = 'rgba(52, 211, 153, 0.8)';
+          ctx.shadowBlur = 20;
+        } else {
+          ctx.shadowColor = 'rgba(245, 158, 11, 0.7)';
+          ctx.shadowBlur = 20;
+        }
+
+        // Thân chiếu chỉ: THIẾT KẾ TRONG SUỐT CỔ TRANG (TRANSPARENT GLASSMORPHISM CỔ PHONG)
+        // Tuyệt đối không nhựa / hiện đại, sử dụng gradient bán trong suốt mờ ảo như ngọc lụa tiên giới
+        const bgGrad = ctx.createLinearGradient(cx - halfW, cy - halfH, cx + halfW, cy + halfH);
+        if (cb.type === 'lightning') {
+          // MẬT LỆNH THIÊN LÔI: Sắc tử lôi huyền bí bán trong suốt
+          bgGrad.addColorStop(0, 'rgba(35, 12, 58, 0.42)');
+          bgGrad.addColorStop(0.5, 'rgba(22, 6, 40, 0.48)');
+          bgGrad.addColorStop(1, 'rgba(45, 15, 75, 0.42)');
+        } else if (cb.type === 'cloud') {
+          // MẬT LỆNH MA VÂN: Sương khói tím sẫm bán trong suốt
+          bgGrad.addColorStop(0, 'rgba(28, 15, 45, 0.38)');
+          bgGrad.addColorStop(0.5, 'rgba(18, 8, 30, 0.44)');
+          bgGrad.addColorStop(1, 'rgba(32, 16, 52, 0.38)');
+        } else if (cb.type === 'purified') {
+          // THIÊN ÂN XÁ TỘI: Bích ngọc thanh tịnh trong suốt
+          bgGrad.addColorStop(0, 'rgba(6, 42, 32, 0.38)');
+          bgGrad.addColorStop(0.5, 'rgba(3, 28, 20, 0.45)');
+          bgGrad.addColorStop(1, 'rgba(6, 46, 34, 0.38)');
+        } else {
+          // HOÀNG KIM CHIẾU CHỈ: Hổ phách trong suốt
+          bgGrad.addColorStop(0, 'rgba(46, 26, 10, 0.40)');
+          bgGrad.addColorStop(0.5, 'rgba(26, 14, 5, 0.46)');
+          bgGrad.addColorStop(1, 'rgba(52, 30, 12, 0.40)');
+        }
+
+        ctx.fillStyle = bgGrad;
+        ctx.beginPath();
+        ctx.roundRect(cx - halfW, cy - halfH, w, h, 6);
+        ctx.fill();
+
+        // Viền chiếu chỉ cổ phong ngọc giản
+        ctx.lineWidth = 1.4;
+        if (cb.type === 'lightning') {
+          ctx.strokeStyle = 'rgba(192, 132, 252, 0.65)';
+        } else if (cb.type === 'cloud') {
+          ctx.strokeStyle = 'rgba(216, 180, 254, 0.55)';
+        } else if (cb.type === 'purified') {
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.65)';
+        } else {
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.60)';
+        }
+        ctx.stroke();
+
+        // Hoa văn góc cổ trang (Ancient corner accents)
+        const cornerLen = isMobile ? 6 : 8;
+        ctx.lineWidth = 1.6;
+        // Góc trên trái & dưới phải
+        ctx.beginPath();
+        ctx.moveTo(cx - halfW, cy - halfH + cornerLen);
+        ctx.lineTo(cx - halfW, cy - halfH);
+        ctx.lineTo(cx - halfW + cornerLen, cy - halfH);
+
+        ctx.moveTo(cx + halfW - cornerLen, cy + halfH);
+        ctx.lineTo(cx + halfW, cy + halfH);
+        ctx.lineTo(cx + halfW, cy + halfH - cornerLen);
+        ctx.stroke();
+
+        // Hai trục ngọc cổ quyển ở 2 đầu chiếu chỉ
+        const rollerW = isMobile ? 4 : 5;
+        const rollerH = h + 8;
+        if (cb.type === 'lightning') {
+          ctx.fillStyle = '#C084FC';
+        } else if (cb.type === 'cloud') {
+          ctx.fillStyle = '#D8B4FE';
+        } else if (cb.type === 'purified') {
+          ctx.fillStyle = '#34D399';
+        } else {
+          ctx.fillStyle = '#F59E0B';
+        }
+        ctx.fillRect(cx - halfW - rollerW, cy - rollerH / 2, rollerW, rollerH);
+        ctx.fillRect(cx + halfW, cy - rollerH / 2, rollerW, rollerH);
+
+        // Nội dung chiếu chỉ (chỉ hiển thị khi đã mở cuộn đủ rộng)
+        if (cb.unrollW > 0.55) {
+          ctx.shadowBlur = 0;
+          ctx.textAlign = 'center';
+
+          // Tiêu đề Thiên Đình Cổ Trang
+          ctx.font = `900 ${isMobile ? 12 : 13.5}px 'Cinzel', 'Be Vietnam Pro', serif`;
+          if (cb.type === 'lightning') {
+            ctx.fillStyle = '#F3E8FF';
+            ctx.shadowColor = '#A855F7';
+            ctx.shadowBlur = 8;
+          } else if (cb.type === 'cloud') {
+            ctx.fillStyle = '#E9D5FF';
+            ctx.shadowColor = '#9333EA';
+            ctx.shadowBlur = 7;
+          } else if (cb.type === 'purified') {
+            ctx.fillStyle = '#D1FAE5';
+            ctx.shadowColor = '#10B981';
+            ctx.shadowBlur = 8;
+          } else {
+            ctx.fillStyle = '#FEF08A';
+            ctx.shadowColor = '#EAB308';
+            ctx.shadowBlur = 8;
+          }
+          ctx.fillText(cb.title, cx, cy - (isMobile ? 8 : 9));
+
+          // Nội dung thánh chỉ
+          ctx.font = `500 ${isMobile ? 10 : 11.5}px 'Be Vietnam Pro', sans-serif`;
+          ctx.fillStyle = 'rgba(248, 250, 252, 0.92)';
+          ctx.shadowBlur = 0;
+          ctx.fillText(cb.content, cx, cy + (isMobile ? 11 : 12));
+        }
+
+        ctx.restore();
+      }
+
       // 1. Vẽ Vòng Sáng Nổ Tại Chỗ (In-situ Bursts)
       if (this.bursts.length > 0) {
         ctx.save();
@@ -135,10 +322,12 @@
         for (const b of this.bursts) {
           ctx.save();
 
-          // CĂN GIỮA HOÀN MỸ THEO TRỤC NGANG: Tuyệt đối không bị lệch sang mép trái hay phải
-          const safeX = canvasW / 2;
-          // Căn trục dọc ở tầm nhìn thoáng đãng, không đè mèo, không đè HUD
-          const safeY = Math.max(105, Math.min(canvasH * 0.40, b.y));
+          // NỔ NGAY TẠI TÂM MA THẠCH BỊ BẮN (BẢO TOÀN TỌA ĐỘ VAI CHẠM CHÍNH XÁC, LUÔN DƯỚI THANH HUD)
+          const halfW = pw / 2;
+          const halfH = ph / 2;
+          const safeX = Math.max(halfW + 10, Math.min(canvasW - halfW - 10, b.x));
+          const minY = isMobile ? 100 : 125;
+          const safeY = Math.max(minY, Math.min(canvasH - halfH - 20, b.y));
 
           ctx.translate(safeX, safeY);
           ctx.scale(b.scale, b.scale);

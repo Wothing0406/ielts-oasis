@@ -5,11 +5,22 @@
 (function(root) {
   class GameState {
     constructor() {
+      this.highScore = 0;
+      try {
+        this.highScore = parseInt(localStorage.getItem("meowcha_high_score") || "0", 10) || 0;
+      } catch (e) {}
       this.reset();
       this.listeners = [];
     }
 
     reset() {
+      const prevHighScore = Math.max(this.highScore || 0, this.score || 0);
+      if (prevHighScore > (this.highScore || 0)) {
+        this.highScore = prevHighScore;
+        try {
+          localStorage.setItem("meowcha_high_score", String(this.highScore));
+        } catch (e) {}
+      }
       this.currentScene = "LOBBY"; // LOBBY | BATTLE
       this.isPaused = false;
       this.isGameOver = false;
@@ -20,6 +31,7 @@
       this.maxHp = 50;
       this.shieldCharges = 0;
       this.score = 0;
+      this.highScore = prevHighScore; // Kỷ lục cao nhất Bảng Phong Thần được bảo lưu vĩnh viễn
       this.wordsSlain = 0;
       this.realmIdx = 0;
 
@@ -142,6 +154,13 @@
     addScore(points) {
       const bonus = Math.round(points * (1 + this.combo * 0.08) * (this.talents.scoreMultiplier || 1.0));
       this.score += bonus;
+      if (this.score > this.highScore) {
+        this.highScore = this.score;
+        try {
+          localStorage.setItem("meowcha_high_score", String(this.highScore));
+        } catch (e) {}
+        this.notify("highScore");
+      }
       this.notify("score");
       return bonus;
     }
@@ -162,6 +181,7 @@
       this.notify("hp");
 
       if (this.hp <= 0) {
+        this.hp = 0;
         this.isGameOver = true;
         this.setCatState("DEFEATED");
         this.notify("gameOver");
@@ -182,13 +202,28 @@
 
     loadFromSlot(slot) {
       if (!slot) return;
-      this.hp = slot.hp || 50;
       this.maxHp = slot.maxHp || 50;
+      if (typeof slot.hp === 'number' && slot.hp > 0) {
+        this.hp = Math.min(this.maxHp, slot.hp);
+      } else {
+        this.hp = this.maxHp;
+      }
       this.score = slot.score || 0;
+      if (slot.highScore && slot.highScore > this.highScore) {
+        this.highScore = slot.highScore;
+        try {
+          localStorage.setItem("meowcha_high_score", String(this.highScore));
+        } catch (e) {}
+      }
       this.wordsSlain = slot.words || 0;
       this.realmIdx = slot.realmIdx || 0;
       this.selectedBandIdx = slot.bandIdx || 0;
       this.activeSlotId = slot.slotId || 1;
+      this.isGameOver = false;
+      this.isPaused = false;
+      this.isStunned = false;
+      this.stunTimer = 0;
+      this.setCatState("IDLE");
       this.talents = Object.assign({
         hpBonus: 0,
         slowFactor: 1.0,
@@ -199,8 +234,10 @@
         typoImmune: false
       }, slot.talents || {});
       this.shieldCharges = this.talents.shieldCharges || 0;
-      this.isGameOver = false;
-      this.isPaused = false;
+      this.notify("hp");
+      this.notify("score");
+      this.notify("highScore");
+      this.notify("realm");
       this.notify("load");
     }
   }

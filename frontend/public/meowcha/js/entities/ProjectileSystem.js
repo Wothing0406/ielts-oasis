@@ -128,19 +128,20 @@
     }
 
     draw(ctx) {
-      // 1. VẼ ĐÒN THIÊN GIÁNG TỐI THƯỢNG (SẤM SÉT CỬU THIÊN HOẶC LONG KIẾM)
+      // 1. VẼ ĐÒN THIÊN GIÁNG TỐI THƯỢNG (SẤM SÉT CỬU THIÊN / LÔI ĐÌNH GIÁNG THẾ)
       if (this.skyStrikes.length > 0) {
         ctx.save();
         for (const s of this.skyStrikes) {
           const alpha = s.life / s.maxLife;
           ctx.globalAlpha = alpha;
 
-          if (s.realmIdx === 3) {
-            // CỬU THIÊN THẦN LÔI GIÁNG THẾ (Cột sét tím từ đỉnh trời xé rách mây)
-            ctx.strokeStyle = "#F3E8FF";
-            ctx.lineWidth = 6;
-            ctx.shadowColor = "#C084FC";
-            ctx.shadowBlur = 35;
+          // Luôn vẽ Cột Lôi Điện Thiên Giáng (Electric Lightning Bolt) xé toạc bầu trời
+          if (s.boltPath && s.boltPath.length > 1) {
+            // Lớp hào quang điện giật bên ngoài
+            ctx.strokeStyle = s.realmIdx >= 3 ? "#A855F7" : (s.realmIdx === 1 ? "#38BDF8" : "#F59E0B");
+            ctx.lineWidth = 10;
+            ctx.shadowColor = ctx.strokeStyle;
+            ctx.shadowBlur = 28;
             ctx.beginPath();
             for (let idx = 0; idx < s.boltPath.length; idx++) {
               const pt = s.boltPath[idx];
@@ -149,12 +150,27 @@
             }
             ctx.stroke();
 
-            // Vỏ lôi quang bên ngoài
-            ctx.strokeStyle = "#A855F7";
-            ctx.lineWidth = 14;
+            // Lõi điện trắng sáng rực
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.lineWidth = 4;
             ctx.stroke();
 
-          } else if (s.realmIdx >= 4) {
+            // Nhánh điện giật phụ phân nhánh
+            if (s.life > s.maxLife * 0.3) {
+              ctx.strokeStyle = "#FEF08A";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              const midIdx = Math.floor(s.boltPath.length / 2);
+              const mPt = s.boltPath[midIdx];
+              ctx.moveTo(mPt.x, mPt.y);
+              ctx.lineTo(mPt.x + 35, mPt.y + 25);
+              ctx.moveTo(mPt.x, mPt.y);
+              ctx.lineTo(mPt.x - 30, mPt.y + 30);
+              ctx.stroke();
+            }
+          }
+
+          if (s.realmIdx >= 4) {
             // CHÂN LONG GIÁNG LÂM (Cột kiếm quang hoàng kim khổng lồ)
             const grad = ctx.createLinearGradient(s.x, 0, s.x, s.y);
             grad.addColorStop(0, "rgba(254, 240, 138, 0.9)");
@@ -294,12 +310,12 @@
             ctx.imageSmoothingEnabled = false;
             ctx.shadowColor = "#22C55E";
             ctx.shadowBlur = 18;
-            const sLen = 42;
-            const sW = 24;
+            const drawH = 48;
+            const drawW = Math.round(185 * (drawH / 280)); // 32px
             ctx.save();
-            // Xoay -45 độ do sprite gốc vẽ kiếm chéo góc 45 độ
-            ctx.rotate(-Math.PI / 4);
-            ctx.drawImage(bambooImg, -sW / 2, -sLen * 0.8, sW, sLen);
+            // Trục chuôi -> mũi kiếm trong sprite nghiêng -75.7°. Xoay +1.322 rad để mũi kiếm chỉ thẳng trục +X
+            ctx.rotate(1.322);
+            ctx.drawImage(bambooImg, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
             ctx.restore();
           } else {
             // Fallback nếu ảnh chưa nạp xong
@@ -333,16 +349,17 @@
 
           if (jadeImg) {
             ctx.imageSmoothingEnabled = false;
-            const sLen = 38;
-            const sW = 20;
+            const drawH = 38;
+            const drawW = Math.round(190 * (drawH / 280)); // 26px
 
             // Kiếm Dương (Lam Ngọc bay bên trên)
             ctx.save();
             ctx.translate(0, orbitOffset);
             ctx.shadowColor = "#38BDF8";
             ctx.shadowBlur = 18;
-            ctx.rotate(-Math.PI / 4);
-            ctx.drawImage(jadeImg, -sW / 2, -sLen * 0.8, sW, sLen);
+            // Trục chuôi -> mũi ngọc kiếm nghiêng -74.2°. Xoay +1.295 rad để mũi chỉ thẳng +X
+            ctx.rotate(1.295);
+            ctx.drawImage(jadeImg, -drawW / 2, -drawH / 2 + 7, drawW, drawH);
             ctx.restore();
 
             // Kiếm Âm (Thanh Ngọc bay đối xứng bên dưới)
@@ -350,8 +367,8 @@
             ctx.translate(0, -orbitOffset);
             ctx.shadowColor = "#67E8F9";
             ctx.shadowBlur = 18;
-            ctx.rotate(-Math.PI / 4);
-            ctx.drawImage(jadeImg, -sW / 2, -sLen * 0.8, sW, sLen);
+            ctx.rotate(1.295);
+            ctx.drawImage(jadeImg, -drawW / 2, -drawH / 2 + 7, drawW, drawH);
             ctx.restore();
 
             // Dải lụa kiếm khí xoắn ốc liên kết 2 kiếm
@@ -398,11 +415,11 @@
           const jadeImg = this.assets?.prop_jade_sword?.loaded ? this.assets.prop_jade_sword.img : null;
           if (jadeImg) {
             ctx.imageSmoothingEnabled = false;
-            const sLen = 50;
-            const sW = 28;
+            const drawH = 52;
+            const drawW = Math.round(190 * (drawH / 280)); // 35px
             ctx.save();
-            ctx.rotate(-Math.PI / 4);
-            ctx.drawImage(jadeImg, -sW / 2, -sLen * 0.8, sW, sLen);
+            ctx.rotate(1.295);
+            ctx.drawImage(jadeImg, -drawW / 2, -drawH / 2 + 10, drawW, drawH);
             ctx.restore();
           } else {
             ctx.fillStyle = "rgba(120, 53, 15, 0.95)";
@@ -465,11 +482,11 @@
                              (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
           if (thunderImg) {
             ctx.imageSmoothingEnabled = false;
-            const sLen = 48;
-            const sW = 26;
+            const drawSize = 54;
             ctx.save();
-            ctx.rotate(-Math.PI / 4);
-            ctx.drawImage(thunderImg, -sW / 2, -sLen * 0.8, sW, sLen);
+            // Lôi Kiếm sprite (256x256) nghiêng -50.1°. Xoay +0.875 rad để mũi chỉ thẳng +X
+            ctx.rotate(0.875);
+            ctx.drawImage(thunderImg, -drawSize / 2, -drawSize / 2 + 1, drawSize, drawSize);
             ctx.restore();
           } else {
             ctx.fillStyle = "rgba(59, 7, 100, 0.9)";
@@ -565,8 +582,9 @@
               ctx.imageSmoothingEnabled = false;
               ctx.shadowColor = "#FDE047";
               ctx.shadowBlur = 16;
-              ctx.rotate(-Math.PI / 4);
-              ctx.drawImage(dragonImg, -8, -15, 16, 28);
+              const kLen = 34;
+              ctx.rotate(0.909);
+              ctx.drawImage(dragonImg, -kLen / 2, -kLen / 2 - 2, kLen, kLen);
             } else {
               ctx.fillStyle = "#FDE047";
               ctx.strokeStyle = "#B45309";

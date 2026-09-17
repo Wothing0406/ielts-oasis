@@ -7,7 +7,7 @@
   const FETCH_STATE = {};
 
   const API_BASE = '/api/meowcha/vocab';
-  const WORDS_PER_BAND = 250;
+  const WORDS_PER_BAND = 2500;
 
   async function _fetchBand(bandIdx) {
     const key = String(bandIdx);
@@ -17,7 +17,7 @@
     FETCH_STATE[key] = 'loading';
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6000);
+      const timer = setTimeout(() => controller.abort(), 10000);
       const resp = await fetch(API_BASE + '?band=' + bandIdx + '&limit=' + WORDS_PER_BAND, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
@@ -27,17 +27,29 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const res = await resp.json();
       const rawWords = Array.isArray(res.data) ? res.data : (res.data && res.data.words ? res.data.words : (res.words || []));
-      const words = Array.isArray(rawWords) ? rawWords.map(function(w) {
-        return {
-          id:      w.id,
-          word:    (w.word || '').toUpperCase(),
-          ipa:     w.ipa || w.phonetic || w.default_ipa || '/.../',
-          meaning: w.meaning || w.definition || w.vietnamese || '',
-          type:    w.type || w.pos || w.part_of_speech || 'vocab',
-          band_level: w.band_level !== undefined ? w.band_level : bandIdx,
-          asteroid_type: w.asteroid_type || 'FROST'
-        };
-      }).filter(function(w) { return w.word && w.word.length > 0; }) : [];
+      
+      // Khử triệt để trùng lặp từ vựng
+      const seenMap = new Map();
+      if (Array.isArray(rawWords)) {
+        for (let i = 0; i < rawWords.length; i++) {
+          const w = rawWords[i];
+          const wText = (w.word || '').trim().toUpperCase();
+          if (!wText || wText.length < 3) continue;
+          if (!seenMap.has(wText)) {
+            seenMap.set(wText, {
+              id: w.id || (bandIdx * 10000 + i),
+              word: wText,
+              ipa: w.ipa || w.phonetic || w.default_ipa || '/.../',
+              meaning: w.meaning || w.definition || w.vietnamese || '',
+              type: w.type || w.pos || w.part_of_speech || 'vocab',
+              audio_url: w.audio_url || '',
+              band_level: w.band_level !== undefined ? w.band_level : bandIdx,
+              asteroid_type: w.asteroid_type || 'FROST'
+            });
+          }
+        }
+      }
+      const words = Array.from(seenMap.values());
 
       if (words.length === 0) throw new Error('Empty response');
       CACHE[key] = words;
