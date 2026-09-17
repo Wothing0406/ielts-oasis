@@ -539,13 +539,14 @@
 
         // PHÁP TRẬN BÁT QUÁI KHÓA MỤC TIÊU CỔ TRANG TẠI THIÊN THẠCH
         ctx.translate(targetX, targetY);
-        const reticleRadius = (currentTarget.radius || 48) + 16;
+        const isMob = (ctx.canvas && ctx.canvas.width <= 600) || (typeof window !== "undefined" && window.innerWidth <= 600);
+        const reticleRadius = (currentTarget.radius || (isMob ? 38 : 46)) + (isMob ? 4 : 8);
         const rot = this.time * 1.6;
 
-        // Vòng ngoài phong ấn đứt đoạn xoay chậm
+        // Vòng ngoài phong ấn đứt đoạn xoay chậm ôm sát ma thạch
         ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
-        ctx.lineWidth = 1.8;
-        ctx.setLineDash([8, 6]);
+        ctx.lineWidth = isMob ? 1.2 : 1.6;
+        ctx.setLineDash([6, 5]);
         ctx.beginPath();
         ctx.arc(0, 0, reticleRadius, rot, rot + Math.PI * 2);
         ctx.stroke();
@@ -553,17 +554,17 @@
 
         // 4 Chữ triện phong ấn 4 phương [ 乾 坤 坎 离 ]
         const seals = ["乾", "坤", "坎", "离"];
-        ctx.font = "bold 11px 'Cinzel', serif";
+        ctx.font = isMob ? "bold 9px 'Cinzel', serif" : "bold 10.5px 'Cinzel', serif";
         ctx.fillStyle = "#FEF08A";
         ctx.shadowColor = "#F59E0B";
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 8;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         for (let b = 0; b < 4; b++) {
           ctx.save();
           const ang = rot + b * (Math.PI / 2);
-          const tx = Math.cos(ang) * (reticleRadius + 4);
-          const ty = Math.sin(ang) * (reticleRadius + 4);
+          const tx = Math.cos(ang) * (reticleRadius + (isMob ? 2 : 3));
+          const ty = Math.sin(ang) * (reticleRadius + (isMob ? 2 : 3));
           ctx.fillText(seals[b], tx, ty);
           ctx.restore();
         }

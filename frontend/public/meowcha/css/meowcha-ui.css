@@ -1574,31 +1574,60 @@
 .sect-hp-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   font-size: 12px;
   color: #E2E8F0;
 }
 
-.hp-icon {
-  font-size: 13px;
+.sect-glyph {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', 'Cinzel', serif);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glyph-red {
+  color: #EF4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+}
+
+.glyph-gold {
+  color: #F59E0B;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.glyph-cyan {
+  color: #38BDF8;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+}
+
+.glyph-green {
+  color: #10B981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
 }
 
 .hp-label-title {
-  color: #94A3B8;
-  font-weight: 600;
+  color: #D4AF37;
+  font-weight: 700;
   font-size: 11px;
+  font-family: var(--font-xianxia-title, serif);
+  letter-spacing: 0.5px;
 }
 
 .hp-val-text {
-  font-family: var(--font-ancient-num);
+  font-family: var(--font-ancient-num, monospace);
   color: #34D399;
-  font-weight: 700;
-  font-size: 12px;
-  min-width: 65px;
+  font-weight: 800;
+  font-size: 12.5px;
+  min-width: 60px;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
 }
 
 .hp-mini-track {
-  width: 120px;
+  width: 110px;
   height: 8px;
   background: rgba(10, 5, 2, 0.95);
   border: 1.2px solid #78350F;
@@ -1626,32 +1655,35 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 11.5px;
+  letter-spacing: 0.3px;
 }
 
-.stat-mini.gold {
-  color: #FEF08A;
+.stat-mini .stat-txt {
+  color: rgba(226, 232, 240, 0.8);
+  font-weight: 600;
 }
 
 .stat-mini.gold .gold-num {
   color: #FDE047;
   font-weight: 800;
-  font-family: var(--font-ancient-num);
-}
-
-.stat-mini.cyan {
-  color: #BAE6FD;
+  font-family: var(--font-ancient-num, monospace);
+  text-shadow: 0 0 6px rgba(253, 224, 71, 0.5);
 }
 
 .stat-mini.cyan .cyan-num {
   color: #38BDF8;
   font-weight: 800;
-  font-family: var(--font-ancient-num);
+  font-family: var(--font-ancient-num, monospace);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
 }
 
 .stat-mini.green {
   color: #6EE7B7;
-  font-weight: 700;
-  font-family: var(--font-ancient-num);
+  font-weight: 800;
+  font-family: var(--font-ancient-num, monospace);
+  text-shadow: 0 0 6px rgba(110, 231, 183, 0.5);
 }
 
 /* Ô KIẾM Ý CỔ PHONG GÓC DƯỚI BÊN PHẢI */
@@ -1885,13 +1917,13 @@
   .sect-hp-container {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     flex-shrink: 0;
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
-  .hp-icon {
-    font-size: 11px;
+  .sect-hp-container .sect-glyph {
+    font-size: 10px;
   }
 
   .hp-label-title {
@@ -1899,15 +1931,15 @@
   }
 
   .hp-val-text {
-    font-size: 10.5px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 800;
     color: #34D399;
-    min-width: 48px;
+    min-width: 44px;
     white-space: nowrap;
   }
 
   .hp-mini-track {
-    width: 45px;
+    width: 40px;
     height: 6px;
     border-radius: 3px;
     background: rgba(10, 5, 2, 0.95);
@@ -1923,14 +1955,23 @@
   .sect-stats-inline {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 10.5px;
+    gap: 5px;
+    font-size: 10px;
     overflow: hidden;
   }
 
   .stat-mini {
-    font-size: 10px;
+    font-size: 9.5px;
     white-space: nowrap;
+    gap: 2px;
+  }
+
+  .stat-mini .stat-txt {
+    display: none; /* Ẩn chữ "Tu Vi:", "Trảm:" trên màn hình nhỏ để tránh tràn dòng */
+  }
+
+  .stat-mini .sect-glyph {
+    font-size: 9.5px;
   }
 
   /* 2. TẦNG BÀN PHÍM ẢO (BOTTOM 38% - TRẬN PHÁP PHÙ PHIẾN) */
@@ -3276,6 +3317,269 @@
     bottom: 38dvh;
     width: 170px;
     height: 170px;
+  }
+}
+
+/* ==========================================================================
+   HỘP THOẠI XÁC NHẬN TIÊN ĐẠO CỔ PHONG (#exitConfirmModal)
+   ========================================================================== */
+.confirm-xianxia-box {
+  background: radial-gradient(circle at 50% 12%, #2A1509 0%, #170A04 65%, #0D0502 100%) !important;
+  border: 2px solid #D4AF37 !important;
+  outline: 1.5px solid #78350F !important;
+  outline-offset: -5px;
+  box-shadow: 
+    0 24px 70px rgba(0, 0, 0, 0.96),
+    0 0 35px rgba(212, 175, 55, 0.35),
+    inset 0 0 24px rgba(0, 0, 0, 0.95) !important;
+  padding: 24px 20px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-cinnabar-seal {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 11px;
+  font-weight: 800;
+  color: #EF4444;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  margin-bottom: 8px;
+}
+
+.confirm-title {
+  font-family: var(--font-xianxia-title, 'Cinzel Decorative', serif);
+  font-size: 16px;
+  color: #FEF08A;
+  margin-bottom: 8px;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
+  letter-spacing: 1px;
+}
+
+.confirm-msg {
+  color: #FDE68A;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  opacity: 0.9;
+}
+
+.confirm-actions-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-confirm-accept {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+  color: #FFFBEB;
+  border: 1.5px solid #F87171;
+  border-radius: 6px;
+  font-family: var(--font-xianxia-title, 'Cinzel', serif);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.btn-confirm-accept:hover {
+  background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.7);
+}
+
+.btn-confirm-cancel {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(30, 15, 8, 0.9) 0%, rgba(15, 7, 3, 0.95) 100%);
+  color: #D4AF37;
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  border-radius: 6px;
+  font-family: var(--font-xianxia-title, 'Cinzel', serif);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+}
+
+.btn-confirm-cancel:hover {
+  background: rgba(45, 22, 11, 0.95);
+  border-color: #FEF08A;
+  color: #FEF08A;
+}
+
+.confirm-seal-glyph {
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   BẢNG PHONG THẦN - AVATAR NGƯỜI CHƠI & GIAO DIỆN TỰ ĐỘNG ĐỒNG BỘ
+   ========================================================================== */
+.user-row-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.2px solid #D4AF37;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #1C0F08;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.pantheon-row .name-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.pantheon-row .name-col .name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #FEF3C7;
+}
+
+/* Podium Avatar Enhanced */
+.podium-avatar-wrap {
+  position: relative;
+}
+
+.podium-avatar-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px dashed rgba(212, 175, 55, 0.5);
+  animation: spinSlow 16s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Footer Player Self Badge */
+.logged-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.user-badge-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.8px solid #F59E0B;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #241208;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.user-badge-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-badge-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-badge-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.player-badge-name {
+  font-family: var(--font-xianxia-title, 'Cinzel', serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #FDE047;
+  letter-spacing: 0.5px;
+}
+
+.pantheon-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10B981;
+  border-radius: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #34D399;
+  letter-spacing: 0.5px;
+}
+
+/* Sửa lỗi hiển thị Bảng Phong Thần trên điện thoại */
+@media (max-width: 768px) {
+  .pantheon-modal-box {
+    width: 96%;
+    padding: 10px 8px;
+    max-height: 94vh;
+  }
+
+  .pantheon-table-header {
+    font-size: 10px;
+    padding: 5px 6px;
+    grid-template-columns: 32px 1.4fr 1fr 65px;
+  }
+
+  .pantheon-row {
+    font-size: 11px;
+    padding: 6px;
+    grid-template-columns: 32px 1.4fr 1fr 65px;
+    gap: 4px;
+  }
+
+  .user-row-avatar {
+    width: 18px;
+    height: 18px;
+  }
+
+  .pantheon-row .rank-col {
+    font-size: 10px;
+  }
+
+  .logged-user-badge {
+    gap: 8px;
+  }
+
+  .user-badge-avatar-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .player-badge-name {
+    font-size: 11.5px;
+  }
+
+  .pantheon-player-badge .player-badge-stats {
+    font-size: 10px;
   }
 }
 

@@ -578,11 +578,17 @@
       container.querySelectorAll(".btn-slot-del").forEach(btn => {
         btn.onclick = (e) => {
           const slotId = parseInt(btn.getAttribute("data-slot"), 10);
-          if (confirm(`Đạo hữu có chắc chắn muốn giải trừ Ngọc Giản ${slotId}?`)) {
-            this.saveSystem.deleteSlot(slotId);
-            this.renderSaveSlotsUI();
-            this.showStatus(`[ GIẢI TRỪ ] Đã xóa dữ liệu Ngọc Giản ${slotId}`);
-          }
+          this.showConfirm(
+            "GIẢI TRỪ TIÊN CƠ?",
+            `Đạo hữu có chắc chắn muốn giải trừ dữ liệu lưu trữ tại Ngọc Giản ${slotId}?`,
+            () => {
+              this.saveSystem.deleteSlot(slotId);
+              this.renderSaveSlotsUI();
+              this.showStatus(`[ GIẢI TRỪ ] Đã xóa dữ liệu Ngọc Giản ${slotId}`);
+            },
+            "GIỮ LẠI",
+            "GIẢI TRỪ"
+          );
         };
       });
     }
@@ -662,7 +668,7 @@
       const finalRealmEl = document.getElementById("gameOverFinalRealm");
       const finalWpmEl   = document.getElementById("gameOverFinalWpm");
 
-      const realms = root.Meowcha.CULTIVATION_REALMS || [];
+      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[this.state.realmIdx] || realms[0];
 
       if (finalScoreEl) finalScoreEl.innerText = this.state.score.toLocaleString();
@@ -671,6 +677,10 @@
       if (finalWpmEl)   finalWpmEl.innerText   = Math.round(this.state.wpm || 0);
 
       this.modalGameOver.style.display = "flex";
+
+      // Tự động truyền chiến tích của user login lên Bảng Phong Thần
+      this.autoSubmitScoreToPantheon();
+
       // Trigger entrance animation
       const box = this.modalGameOver.querySelector(".modal-content-box");
       if (box) {
@@ -685,39 +695,45 @@
       if (this.modalGameOver) this.modalGameOver.style.display = "none";
     }
 
-    showConfirm(title, message, onConfirm) {
+    showConfirm(title, message, onConfirm, cancelText = "TĨNH TÂM TIẾP TỤC", acceptText = "CHẤP THUẬN QUYẾT ĐỊNH") {
       const modal = document.getElementById("exitConfirmModal");
       if (!modal) {
-        if (confirm(`${title}\n${message}`)) {
-          onConfirm();
-        }
+        if (typeof onConfirm === "function") onConfirm();
         return;
       }
 
-      const titleEl = modal.querySelector("h3");
-      const msgEl = modal.querySelector("p");
+      const titleEl = document.getElementById("confirmModalTitle");
+      const msgEl = document.getElementById("confirmModalMsg");
+      const btnAccept = document.getElementById("btnConfirmAccept");
+      const btnCancel = document.getElementById("btnConfirmCancel");
+      const acceptTextEl = document.getElementById("confirmAcceptText");
+      const cancelTextEl = document.getElementById("confirmCancelText");
+
       if (titleEl) titleEl.innerText = title;
       if (msgEl) msgEl.innerText = message;
+      if (acceptTextEl) acceptTextEl.innerText = acceptText;
+      if (cancelTextEl) cancelTextEl.innerText = cancelText;
 
       modal.style.display = "flex";
-
-      const btnCancel = modal.querySelector("button:first-of-type");
-      const btnOk = modal.querySelector("button:last-of-type");
 
       const cleanup = () => {
         modal.style.display = "none";
         if (btnCancel) btnCancel.onclick = null;
-        if (btnOk) btnOk.onclick = null;
+        if (btnAccept) btnAccept.onclick = null;
       };
 
       if (btnCancel) {
-        btnCancel.onclick = () => cleanup();
+        btnCancel.onclick = (e) => {
+          e.stopPropagation();
+          cleanup();
+        };
       }
 
-      if (btnOk) {
-        btnOk.onclick = () => {
+      if (btnAccept) {
+        btnAccept.onclick = (e) => {
+          e.stopPropagation();
           cleanup();
-          onConfirm();
+          if (typeof onConfirm === "function") onConfirm();
         };
       }
     }
@@ -858,8 +874,72 @@
     }
 
     /* =========================================================================
-       BẢNG PHONG THẦN TIÊN GIỚI (PANTHEON LEADERBOARD LOGIC)
+       BẢNG PHONG THẦN TIÊN GIỚI (PANTHEON LEADERBOARD LOGIC & AUTO SYNC)
        ========================================================================= */
+    getLoggedInUser() {
+      try {
+        let rawUser = localStorage.getItem("oasis_user");
+        if (!rawUser && typeof window !== "undefined" && window.parent && window.parent !== window) {
+          rawUser = window.parent.localStorage.getItem("oasis_user");
+        }
+        if (rawUser) {
+          const u = JSON.parse(rawUser);
+          const name = u.full_name || u.name || u.username || (u.email ? u.email.split("@")[0] : "");
+          let avatar = u.discord_avatar || u.avatar_url || u.avatar || u.image || "";
+          return {
+            name: name || "Tiểu Miêu Kiếm Sĩ",
+            avatar: avatar || "./sprites/cat_idle.png",
+            isLoggedIn: true
+          };
+        }
+      } catch (e) {}
+
+      const localName = localStorage.getItem("meowcha_player_name") || "Tiểu Miêu Kiếm Sĩ";
+      return {
+        name: localName,
+        avatar: "./sprites/cat_idle.png",
+        isLoggedIn: false
+      };
+    }
+
+    async autoSubmitScoreToPantheon() {
+      if (this.state.score <= 0) return;
+      // Tránh gửi trùng lặp điểm số cùng một phiên kết thúc
+      const sessionKey = `${this.state.score}_${this.state.wordsSlain}_${this.state.realmIdx}`;
+      if (this.lastSubmittedSessionKey === sessionKey) {
+        return;
+      }
+      this.lastSubmittedSessionKey = sessionKey;
+
+      const user = this.getLoggedInUser();
+      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
+      const realmData = realms[this.state.realmIdx] || realms[0];
+
+      try {
+        const payload = {
+          player_name: user.name.slice(0, 40),
+          avatar_url: user.avatar && !user.avatar.includes("cat_idle.png") ? user.avatar : "",
+          score: this.state.score,
+          words_slain: this.state.wordsSlain,
+          realm: realmData.title || "Luyện Khí Kỳ",
+          accuracy: Math.round(this.state.accuracy || 100),
+          wpm: Math.round(this.state.wpm || 0)
+        };
+
+        const resp = await fetch("/api/meowcha/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+          console.log("[Meowcha] Đã tự động vinh danh chiến tích lên Bảng Phong Thần:", payload.player_name, payload.score);
+        }
+      } catch (e) {
+        console.warn("[Meowcha] Lỗi tự động ghi danh Bảng Phong Thần:", e);
+      }
+    }
+
     showPantheonModal() {
       if (!this.modalPantheon) return;
       this.modalPantheon.style.display = "flex";
@@ -872,10 +952,17 @@
     }
 
     updatePantheonSelfStats() {
-      if (!this.pantheonPlayerSelfStats) return;
-      const realms = root.Meowcha.CULTIVATION_REALMS || [];
-      const realmData = realms[this.state.realmIdx] || realms[0];
-      this.pantheonPlayerSelfStats.innerText = `Tu Vi: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • WPM: ${Math.round(this.state.wpm || 0)}`;
+      const user = this.getLoggedInUser();
+      const selfAvatarEl = document.getElementById("pantheonSelfAvatar");
+      const selfNameEl = document.getElementById("pantheonSelfName");
+      if (selfAvatarEl) selfAvatarEl.src = user.avatar || "./sprites/cat_idle.png";
+      if (selfNameEl) selfNameEl.innerText = user.name;
+
+      if (this.pantheonPlayerSelfStats) {
+        const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
+        const realmData = realms[this.state.realmIdx] || realms[0];
+        this.pantheonPlayerSelfStats.innerText = `Tu Vi: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • WPM: ${Math.round(this.state.wpm || 0)}`;
+      }
     }
 
     loadLeaderboardFromAPI() {
@@ -889,7 +976,7 @@
       `;
 
       if (typeof fetch !== "undefined") {
-        fetch("/api/meowcha/leaderboard?limit=20")
+        fetch("/api/meowcha/leaderboard?limit=25")
           .then(r => r.json())
           .then(res => {
             if (res.success && Array.isArray(res.data)) {
@@ -925,7 +1012,7 @@
         return avatars[0];
       };
 
-      // Helper function to update each podium slot (1, 2, 3)
+      // Cập nhật từng vị trí bục vinh danh Podium (Top 1, 2, 3)
       const updatePodiumSlot = (rankIdx, itemData, defaultTitle) => {
         const nameEl = document.getElementById(`podiumName${rankIdx}`);
         const scoreEl = document.getElementById(`podiumScore${rankIdx}`);
@@ -938,7 +1025,12 @@
           if (scoreEl) scoreEl.innerText = `${(itemData.score || 0).toLocaleString()} Tu Vi`;
           if (realmEl) realmEl.innerText = itemData.realm || "Luyện Khí Kỳ";
           if (avatarEl) {
-            avatarEl.src = getAvatarByRealm(itemData.realm, itemData.score || 0);
+            // Ưu tiên hiển thị Avatar thực tế của User (Discord / Web Avatar)
+            if (itemData.avatar_url && itemData.avatar_url.trim()) {
+              avatarEl.src = itemData.avatar_url;
+            } else {
+              avatarEl.src = getAvatarByRealm(itemData.realm, itemData.score || 0);
+            }
             avatarEl.style.display = "block";
           }
           if (placeholderEl) placeholderEl.style.display = "none";
@@ -951,7 +1043,7 @@
         }
       };
 
-      // Render Podium Top 1, Top 2, Top 3 strictly based on real Database entries
+      // Render Top 1, Top 2, Top 3
       updatePodiumSlot(1, data[0], "Chưa có Chí Tôn");
       updatePodiumSlot(2, data[1], "Đang chờ vị thứ");
       updatePodiumSlot(3, data[2], "Đang chờ vị thứ");
@@ -961,7 +1053,7 @@
           <div style="text-align: center; padding: 30px 15px; color: #FEF08A; opacity: 0.9;">
             <div style="font-size: 26px; margin-bottom: 8px;">📜</div>
             <div style="font-family: var(--font-xianxia-title); font-size: 13.5px; font-weight: 700; color: #FDE047;">Tiên Giới thanh tịnh • Bảng Vàng đang đợi bậc Chí Tôn</div>
-            <div style="font-size: 11.5px; color: #D1D5DB; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm độ kiếp và bấm <strong>"Khắc Danh Chiến Tích"</strong> để vinh danh trên Bảng Phong Thần!</div>
+            <div style="font-size: 11.5px; color: #D1D5DB; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm diệt ma thạch — điểm số sẽ tự động vinh danh trên Bảng Phong Thần!</div>
           </div>
         `;
         return;
@@ -974,10 +1066,17 @@
         else if (idx === 1) { rowClass = "silver"; badgeIcon = "🥈 #2"; }
         else if (idx === 2) { rowClass = "bronze"; badgeIcon = "🥉 #3"; }
 
+        const avatarSrc = (item.avatar_url && item.avatar_url.trim()) 
+          ? item.avatar_url 
+          : getAvatarByRealm(item.realm, item.score || 0);
+
         return `
           <div class="pantheon-row ${rowClass}">
             <span class="rank-col">${badgeIcon}</span>
-            <span class="name-col" title="${item.player_name}">${item.player_name || 'Vô Danh Tiên Khách'}</span>
+            <span class="name-col" title="${item.player_name}">
+              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" onerror="this.src='./sprites/cat_idle.png'" />
+              <span class="name-text">${item.player_name || 'Vô Danh Tiên Khách'}</span>
+            </span>
             <span class="realm-col">${item.realm || 'Luyện Khí Kỳ'}</span>
             <span class="score-col">${(item.score || 0).toLocaleString()} pts</span>
             <span class="words-col">${item.words_slain || 0} từ</span>
@@ -988,59 +1087,9 @@
     }
 
     async submitScoreToPantheon() {
-      if (this.state.score <= 0) {
-        this.showStatus("⚠️ Đạo hữu cần tích lũy ít nhất 1 Tu Vi để ghi danh!");
-        return;
-      }
-
-      // 1. Tự động nhận diện Đạo Hiệu từ tài khoản đăng nhập trên IELTS Oasis
-      let loggedInName = "";
-      try {
-        const rawUser = localStorage.getItem("oasis_user") || (window.parent && window.parent.localStorage.getItem("oasis_user"));
-        if (rawUser) {
-          const userObj = JSON.parse(rawUser);
-          loggedInName = userObj.full_name || userObj.name || userObj.username || (userObj.email ? userObj.email.split("@")[0] : "");
-        }
-      } catch (_) {}
-
-      // Nếu người chơi đã đăng nhập tài khoản IELTS Oasis, lấy trực tiếp tên user login
-      let playerName = loggedInName || localStorage.getItem("meowcha_player_name") || "";
-      if (!playerName) {
-        playerName = prompt("Nhập Đạo Hiệu / Tên của bạn để khắc danh Bảng Phong Thần:", "Tiên Hữu");
-      }
-      if (!playerName || !playerName.trim()) return;
-
-      const cleanName = playerName.trim().slice(0, 30);
-      localStorage.setItem("meowcha_player_name", cleanName);
-
-      const realms = root.Meowcha.CULTIVATION_REALMS || [];
-      const realmData = realms[this.state.realmIdx] || realms[0];
-
-      try {
-        const resp = await fetch("/api/meowcha/leaderboard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            player_name: cleanName,
-            score: this.state.score,
-            words_slain: this.state.wordsSlain,
-            realm: realmData.title || "Luyện Khí Kỳ",
-            accuracy: this.state.accuracy || 100,
-            wpm: Math.round(this.state.wpm || 0)
-          })
-        });
-
-        if (resp.ok) {
-          this.audio.play("breakthrough");
-          this.showStatus(`✨ [PHONG THẦN] Đã khắc danh ${cleanName} vào Bảng Phong Thần!`);
-          this.loadLeaderboardFromAPI();
-        } else {
-          this.showStatus("⚠️ Không thể gửi điểm lên máy chủ tiên giới lúc này.");
-        }
-      } catch (err) {
-        console.warn("[UIManager] submitScore error:", err);
-        this.showStatus("⚠️ Lỗi kết nối khi khắc danh Bảng Phong Thần.");
-      }
+      // Tự động chuyển hướng về autoSubmitScoreToPantheon
+      await this.autoSubmitScoreToPantheon();
+      this.loadLeaderboardFromAPI();
     }
 
     showProfileModal(bannerText = "TIÊN ĐẠO NGỌC GIẢN") {

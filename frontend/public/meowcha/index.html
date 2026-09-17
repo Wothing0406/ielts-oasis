@@ -296,20 +296,31 @@
         </div>
 
         <div class="sect-hud-bottom-row">
-          <!-- Hiển thị đầy đủ Khí Huyết Máu & Thanh HP -->
+          <!-- Hiển thị Khí Huyết Mệnh Đan & Mini HP Bar Ngọc Bích -->
           <div class="sect-hp-container">
-            <span class="hp-icon">❤️</span>
-            <span class="hp-label-title">HP:</span>
+            <span class="sect-glyph glyph-red" title="Khí Huyết Mệnh Thể">[ 命 ]</span>
+            <span class="hp-label-title">MỆNH:</span>
             <span id="hudHpText" class="hp-val-text">50 / 50</span>
             <div class="hp-mini-track">
               <div class="hp-fill" id="hudHpBar" style="width: 100%;"></div>
             </div>
           </div>
-          <!-- Hiển thị đầy đủ Tu Vi Điểm, Số Từ Trảm, Tốc Độ WPM -->
+          <!-- Hiển thị Tu Vi Điểm, Cổ Ngữ Trảm Ma, Tốc Độ WPM Cổ Phong -->
           <div class="sect-stats-inline">
-            <span class="stat-mini gold">⭐ Tu Vi: <b id="hudScore" class="gold-num">0</b></span>
-            <span class="stat-mini cyan">🗡️ Trảm: <b id="hudWords" class="cyan-num">0</b></span>
-            <span class="stat-mini green" id="hudWpm">0 WPM</span>
+            <span class="stat-mini gold">
+              <span class="sect-glyph glyph-gold" title="Kim Đan Tu Vi">[ 丹 ]</span>
+              <span class="stat-txt">Tu Vi:</span>
+              <b id="hudScore" class="gold-num">0</b>
+            </span>
+            <span class="stat-mini cyan">
+              <span class="sect-glyph glyph-cyan" title="Cổ Ngữ Trảm Ma">[ 斩 ]</span>
+              <span class="stat-txt">Trảm:</span>
+              <b id="hudWords" class="cyan-num">0</b>
+            </span>
+            <span class="stat-mini green" id="hudWpmWrap">
+              <span class="sect-glyph glyph-green" title="Thần Hành Phong Độn">[ 遁 ]</span>
+              <b id="hudWpm">0 WPM</b>
+            </span>
           </div>
         </div>
       </div>
@@ -600,15 +611,20 @@
           </div>
         </div>
 
-        <!-- Live Player Self Rank Footer -->
+        <!-- Live Player Self Rank Footer (Tự Động Vinh Danh Tài Khoản Đăng Nhập) -->
         <div class="pantheon-footer-bar">
-          <div class="pantheon-player-badge">
-            <span class="player-badge-label">CHIẾN TÍCH CỦA ĐẠO HỮU:</span>
-            <span class="player-badge-stats" id="pantheonPlayerSelfStats">Tu Vi: 0 pts • 0 từ • Luyện Khí Kỳ</span>
+          <div class="pantheon-player-badge logged-user-badge">
+            <div class="user-badge-avatar-wrap">
+              <img src="./sprites/cat_idle.png" class="user-badge-avatar" id="pantheonSelfAvatar" alt="User Avatar" onerror="this.src='./sprites/cat_idle.png'" />
+            </div>
+            <div class="user-badge-meta">
+              <div class="user-badge-name-row">
+                <span class="player-badge-name" id="pantheonSelfName">Tiểu Miêu Kiếm Sĩ</span>
+                <span class="pantheon-auto-badge">✓ TỰ ĐỘNG KHẮC BẢNG VÀNG</span>
+              </div>
+              <span class="player-badge-stats" id="pantheonPlayerSelfStats">Tu Vi: 0 pts • 0 từ • Luyện Khí Kỳ</span>
+            </div>
           </div>
-          <button class="btn-xianxia-seal gold" id="btnSubmitScorePantheon">
-            <span class="seal-glyph">[ 铭 ]</span> KHẮC DANH CHIẾN TÍCH
-          </button>
         </div>
       </div>
     </div>
@@ -668,6 +684,27 @@
           </button>
           <button class="btn-xianxia-seal secondary" id="btnProfileCloseModal" style="padding: 12px 18px;">
             <span class="seal-glyph">[ 归 ]</span> ĐÓNG
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 9. HỘP THOẠI XÁC NHẬN TIÊN ĐẠO CỔ PHONG (#exitConfirmModal) -->
+    <!-- ========================================================= -->
+    <div class="meowcha-modal-overlay" id="exitConfirmModal" style="display: none;">
+      <div class="modal-content-box confirm-xianxia-box animate-golden-ray" style="width: min(90%, 420px); text-align: center;">
+        <div class="confirm-cinnabar-seal">❖ TIÊN ĐẠO QUYẾT NGHỊ ❖</div>
+        <h3 class="confirm-title" id="confirmModalTitle">ĐẠO HỮU TẨY TỦY TRỌNG SINH?</h3>
+        <p class="confirm-msg" id="confirmModalMsg">Mọi điểm Tu Vi và cảnh giới sẽ bắt đầu lại từ Luyện Khí Kỳ.</p>
+        <div class="confirm-actions-row">
+          <button class="btn-confirm-accept" id="btnConfirmAccept">
+            <span class="confirm-seal-glyph">[ 斩 ]</span>
+            <span id="confirmAcceptText">CHẤP THUẬN QUYẾT ĐỊNH</span>
+          </button>
+          <button class="btn-confirm-cancel" id="btnConfirmCancel">
+            <span class="confirm-seal-glyph">[ 归 ]</span>
+            <span id="confirmCancelText">TĨNH TÂM TIẾP TỤC</span>
           </button>
         </div>
       </div>

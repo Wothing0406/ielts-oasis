@@ -197,6 +197,7 @@ class MeowchaLeaderboard(Base):
     realm = Column(String(50), default="Luyện Khí Kỳ")
     accuracy = Column(Float, default=100.0)
     wpm = Column(Integer, default=0)
+    avatar_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

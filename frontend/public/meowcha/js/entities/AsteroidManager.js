@@ -107,6 +107,19 @@
         });
       }
 
+      let hudBottom = 95;
+      if (typeof document !== "undefined") {
+        const hudEl = document.querySelector(".sect-scroll-hud");
+        if (hudEl) {
+          const rect = hudEl.getBoundingClientRect();
+          if (rect && rect.bottom > 0) {
+            hudBottom = rect.bottom;
+          }
+        }
+      }
+      // Đảm bảo toàn bộ thiên thạch và từ vựng luôn xuất hiện hoàn toàn bên dưới thanh HUD
+      const spawnY = Math.max(isMobile ? 115 : 145, hudBottom + baseRadius + 18);
+
       const asteroid = {
         id: Date.now() + Math.random(),
         word: word,
@@ -117,7 +130,7 @@
         bandIdx: bIdx,
         trailColors: trailColors,
         x: spawnX,
-        y: -70,
+        y: spawnY,
         vx: vx,
         vy: vy,
         fallAngle: fallAngle,

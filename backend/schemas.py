@@ -127,6 +127,7 @@ class MeowchaLeaderboardCreate(BaseModel):
     realm: str
     accuracy: float
     wpm: int
+    avatar_url: Optional[str] = None
 
 
 class MeowchaLeaderboardResponse(BaseModel):
@@ -137,6 +138,7 @@ class MeowchaLeaderboardResponse(BaseModel):
     realm: str
     accuracy: float
     wpm: int
+    avatar_url: Optional[str] = None
     created_at: datetime
 
     class Config:

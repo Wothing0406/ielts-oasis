@@ -10,6 +10,8 @@ base_local = os.path.dirname(os.path.abspath(__file__))
 # Danh sách toàn bộ các file code trọng yếu của game Meowcha & backend
 files_to_sync = [
     # 1. Backend API & Dataset
+    ("backend/models.py", "/home/quang/Downloads/ielts-oasis/backend/models.py"),
+    ("backend/schemas.py", "/home/quang/Downloads/ielts-oasis/backend/schemas.py"),
     ("backend/meowcha_routes.py", "/home/quang/Downloads/ielts-oasis/backend/meowcha_routes.py"),
     ("backend/services/oxford_dataset_service.py", "/home/quang/Downloads/ielts-oasis/backend/services/oxford_dataset_service.py"),
     ("backend/seed_oxford_5000.py", "/home/quang/Downloads/ielts-oasis/backend/seed_oxford_5000.py"),
@@ -89,13 +91,11 @@ remote_cmds = """
 cd /home/quang/Downloads/ielts-oasis
 docker compose restart backend web
 sleep 2
-echo "--- KIỂM TRA maxAsteroids TRÊN MÁY CHỦ ---"
-grep -n "count >= 1" /home/quang/Downloads/ielts-oasis/frontend/public/meowcha/js/main.js
-echo "--- KIỂM TRA safeX TRÊN MÁY CHỦ ---"
-grep -n "safeX = canvasW / 2" /home/quang/Downloads/ielts-oasis/frontend/public/meowcha/js/effects/FloatingText.js
+echo "--- DB MIGRATION: THÊM CỘT avatar_url VÀO meowcha_leaderboard ---"
+docker compose exec -T db mysql -u root -ppassword ielts_oasis -e "ALTER TABLE meowcha_leaderboard ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) NULL;" || true
+docker compose exec -T db mysql -u root -p123456 ielts_oasis_db -e "ALTER TABLE meowcha_leaderboard ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) NULL;" || true
 echo "--- KIỂM TRA LEADERBOARD COUNT ---"
-docker compose exec -T db mysql -u root -ppassword ielts_oasis -e "SELECT count(*) as total_records FROM meowcha_leaderboard;"
-
+docker compose exec -T db mysql -u root -ppassword ielts_oasis -e "SELECT count(*) as total_records FROM meowcha_leaderboard;" || true
 """
 
 stdin, stdout, stderr = ssh.exec_command(remote_cmds)

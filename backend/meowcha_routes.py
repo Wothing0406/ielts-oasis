@@ -449,6 +449,7 @@ def get_leaderboard(
                 "realm": e.realm,
                 "accuracy": round(e.accuracy, 1),
                 "wpm": e.wpm,
+                "avatar_url": e.avatar_url or "",
                 "created_at": e.created_at.strftime("%d/%m/%Y") if e.created_at else ""
             }
             for idx, e in enumerate(entries)
@@ -479,6 +480,7 @@ def submit_score_to_leaderboard(
             realm=payload.realm or "Luyện Khí Kỳ",
             accuracy=min(100.0, max(0.0, payload.accuracy)),
             wpm=max(0, payload.wpm),
+            avatar_url=(payload.avatar_url.strip() if payload.avatar_url else None),
             created_at=datetime.utcnow()
         )
         db.add(new_entry)
@@ -495,7 +497,8 @@ def submit_score_to_leaderboard(
                 "rank": current_rank,
                 "player_name": new_entry.player_name,
                 "score": new_entry.score,
-                "realm": new_entry.realm
+                "realm": new_entry.realm,
+                "avatar_url": new_entry.avatar_url or ""
             },
             success=True
         )
