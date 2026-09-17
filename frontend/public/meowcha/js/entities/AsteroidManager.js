@@ -109,9 +109,9 @@
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[realmIdx] || { speedMult: 1.0 };
-      // Tốc độ điều chỉnh êm dịu, tăng dần từ từ, phù hợp hoàn toàn cho người chơi gõ phím bình thường
-      const realmSpeedBase = [0.20, 0.23, 0.26, 0.30, 0.35];
-      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.20) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
+      // Tốc độ tăng dần ổn định từ sơ cơ đến siêu khó ở các cảnh giới cao
+      const realmSpeedBase = [0.22, 0.26, 0.31, 0.38, 0.48];
+      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.22) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
 
       // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
       const lateralDrift = (Math.random() - 0.5) * 0.18;
@@ -189,13 +189,14 @@
 
     update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth, isLightningHazard = false) {
       this.time += dt;
+      this.isLightningHazard = isLightningHazard;
       const cWidth = canvasWidth || this.canvasWidth || (typeof window !== "undefined" ? window.innerWidth : 800);
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
         ast.x += ast.vx * 60 * dt;
-        // Trong thiên kiếp sét: Tốc độ rơi giữ mức bình thường (1.0x) để người chơi kịp gõ
-        const gravMult = 1.0;
+        // Khi bị sấm đánh (thiên kiếp sét): Ma thạch bị lôi đình thúc đẩy, tốc độ rơi tăng vọt (+45%) tạo áp lực thử thách
+        const gravMult = isLightningHazard ? 1.45 : 1.0;
         ast.y += ast.vy * 60 * dt * gravMult;
         ast.vy += dt * 0.002; // Gia tốc vi mô cực êm
         // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
@@ -386,9 +387,32 @@
           ctx.strokeStyle = ast.glowColor || ast.coreColor;
           ctx.lineWidth = 2.0;
           ctx.stroke();
-        }
-
         ctx.restore(); // Thoát khỏi phép xoay khối đá
+
+        // ============================================================
+        // 4.5 TỬ ĐIỆN LÔI KIẾP QUANH MA THẠCH (LIGHTNING HAZARD CORONA)
+        // Khi bị sét đánh: Tia điện chớp giật quanh khối đá, báo hiệu ma thạch gia tốc rơi nhanh
+        // ============================================================
+        if (this.isLightningHazard) {
+          ctx.save();
+          ctx.strokeStyle = Math.random() < 0.6 ? "#FDE047" : "#38BDF8";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#FDE047";
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          const arcR = ast.radius * 1.32;
+          const arcSteps = 7;
+          for (let s = 0; s <= arcSteps; s++) {
+            const a = (s / arcSteps) * Math.PI * 2;
+            const jx = posX + Math.cos(a) * (arcR + (Math.random() - 0.5) * 15);
+            const jy = posY + Math.sin(a) * (arcR + (Math.random() - 0.5) * 15);
+            if (s === 0) ctx.moveTo(jx, jy);
+            else ctx.lineTo(jx, jy);
+          }
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        }
 
         // ============================================================
         // 5. CỔ PHÙ KHẮC KIM (CARVED SACRED RUNES - KHÔNG CÓ KHUNG GIẤY THẺ)

@@ -391,17 +391,17 @@
 
       let effectiveSpeedMult = 1.0;
 
-      // TĂNG DẦN TỐC ĐỘ RƠI & ĐỘ KHÓ THEO CẢNH GIỚI VÀ TIẾN TRÌNH TU VI
-      const scoreSpeedBonus = Math.min(0.25, (this.gameState.score / 2000) * 0.05);
-      const slainBonus = Math.min(0.20, this.gameState.wordsSlain * 0.005);
-      // Cân bằng tốc độ tu tiên êm dịu, tăng dần từ từ theo tốc độ gõ của người bình thường
-      const realmSpeedMultipliers = [1.0, 1.08, 1.16, 1.25, 1.35];
+      // TĂNG DẦN TỐC ĐỘ RƠI & ĐỘ KHÓ ỔN ĐỊNH THEO CẢNH GIỚI VÀ TIẾN TRÌNH TU VI ĐẾN SIÊU KHÓ
+      const scoreSpeedBonus = Math.min(0.55, (this.gameState.score / 4000) * 0.08);
+      const slainBonus = Math.min(0.25, this.gameState.wordsSlain * 0.003);
+      // Bậc tốc độ tăng dần ổn định từ sơ cơ đến siêu khó ở các cảnh giới cao
+      const realmSpeedMultipliers = [1.0, 1.15, 1.35, 1.65, 2.05];
       const realmBaseMult = realmSpeedMultipliers[Math.min(4, rIdx)] || 1.0;
       effectiveSpeedMult = realmBaseMult * (1.0 + scoreSpeedBonus + slainBonus);
 
-      // TRONG THIÊN KIẾP SẤM SÉT: Không tăng tốc rơi ma thạch (0.95x) để người chơi có đủ thời gian gõ từ giải kiếp!
+      // KHI BỊ SẤM ĐÁNH (THIÊN KIẾP SẤM SÉT): Tăng tốc độ sinh ma thạch (+25%) và rơi cực nhanh để tăng độ khó
       if (this.typing && this.typing.isLightningHazard) {
-        effectiveSpeedMult *= 0.95;
+        effectiveSpeedMult *= 1.25;
       }
 
       // =========================================================================
