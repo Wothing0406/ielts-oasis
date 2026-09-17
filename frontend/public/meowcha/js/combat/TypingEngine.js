@@ -141,14 +141,14 @@
             this.floatingText.add(catX, catY - 65, `[ 警 ] MA CHƯỚNG NHIỄU TÂM! (${this.cloudMistakeCount}/3)`, "#F97316", isMobile ? 12 : 15);
           }
         } else if (this.isLightningHazard) {
-          // ĐANG TRONG 10S THIÊN KIẾP SẤM SÉT MÀ TIẾP TỤC GÕ SAI: Sét giáng chấn động trừ 5 HP
-          this.state.triggerLightning(28);
+          // ĐANG TRONG THIÊN KIẾP SẤM SÉT MÀ TIẾP TỤC GÕ SAI: Trừ nhẹ 2 HP nhắc nhở
+          this.state.triggerLightning(20);
           this.audio.play("lightning");
-          this.state.takeDamage(5);
-          this.state.screenShake = 14;
+          this.state.takeDamage(2);
+          this.state.screenShake = 8;
 
-          const timeLeft = Math.max(1, Math.ceil(this.hazardTimer || 10));
-          this.floatingText.add(catX, catY - 65, `[ 敕 ] THIÊN LÔI PHẠT! (-5 HP) Còn ${timeLeft}s • Cần ${this.hazardReqWords || 2} đan dược mới mua chuộc được!`, "#EF4444", isMobile ? 12 : 15);
+          const timeLeft = Math.max(1, Math.ceil(this.hazardTimer || 14));
+          this.floatingText.add(catX, catY - 65, `[ 敕 ] THIÊN LÔI NHẮC NHỞ! (-2 HP) Còn ${timeLeft}s • Cần ${this.hazardReqWords || 2} từ để phá kiếp!`, "#FDE047", isMobile ? 12 : 15);
         }
 
         // Rung haptic xúc giác 35ms trên điện thoại
@@ -163,20 +163,20 @@
     triggerLightningHazard(canvas) {
       if (this.isLightningHazard) return;
       this.isLightningHazard = true;
-      this.hazardTimer = 10.0;
+      this.hazardTimer = 14.0;
       this.hazardLightningTimer = 0;
       this.purifiedWordsStreak = 0;
-      this.hazardReqWords = Math.min(4, 2 + Math.floor(this.state.realmIdx / 2));
+      this.hazardReqWords = 2; // Chỉ cần trảm 2 từ thong thả là phá giải thiên kiếp thành công
 
-      this.state.triggerLightning(28);
+      this.state.triggerLightning(22);
       this.audio.play("lightning");
-      this.state.screenShake = 14;
+      this.state.screenShake = 10;
 
       const canvasW = (canvas && canvas.width) || (typeof window !== "undefined" ? window.innerWidth : 800);
       this.floatingText.addCelestialEdict(
         canvasW,
-        "[ 敕 • CỬU THIÊN LÔI LỆNH ] 10S THIÊN KIẾP",
-        `Tử điện lôi kiếp giáng thế 10s! Mau trảm đúng ${this.hazardReqWords} từ trước khi sét giáng trừ 10 HP!`,
+        "[ 敕 • CỬU THIÊN LÔI LỆNH ] 14S THIÊN KIẾP",
+        `Tử điện lôi kiếp giáng thế 14s! Trảm đúng 2 từ để hóa giải thiên kiếp!`,
         "lightning"
       );
     }
@@ -186,21 +186,21 @@
 
       this.hazardTimer -= dt;
 
-      // Rung giật màn hình liên tục trong 10s thiên kiếp
-      this.state.screenShake = Math.max(this.state.screenShake, 5);
+      // Rung giật màn hình nhẹ nhàng trong thiên kiếp
+      this.state.screenShake = Math.max(this.state.screenShake, 3);
 
-      // Định kỳ mỗi 0.65s chớp sét và âm thanh sấm rền
+      // Định kỳ mỗi 1.5s chớp sét lãng đãng (không giật đùng đùng gây hoa mắt)
       this.hazardLightningTimer = (this.hazardLightningTimer || 0) + dt;
-      if (this.hazardLightningTimer >= 0.65) {
+      if (this.hazardLightningTimer >= 1.5) {
         this.hazardLightningTimer = 0;
-        this.state.triggerLightning(16);
+        this.state.triggerLightning(12);
         this.audio.play("lightning");
         if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(40); } catch (_) {}
+          try { navigator.vibrate(25); } catch (_) {}
         }
       }
 
-      // HẾT 10S MÀ CHƯA GIẢI ĐỦ SỐ TỪ: ĐÒN SẤM CUỐI CÙNG TRỪ 10 HP!
+      // HẾT 14S MÀ CHƯA GIẢI ĐỦ SỐ TỪ: ĐÒN SẤM KẾT THÚC CHỈ TRỪ 5 HP
       if (this.hazardTimer <= 0) {
         this.isLightningHazard = false;
         this.isCloudHazard = false;
@@ -209,18 +209,18 @@
         this.cloudMistakeCount = 0;
         this.purifiedWordsStreak = 0;
 
-        // Đòn sét lôi đình cuối cùng
-        this.state.triggerLightning(38);
-        this.state.screenShake = 24;
+        // Đòn sét nhẹ nhàng kết thúc thiên kiếp
+        this.state.triggerLightning(24);
+        this.state.screenShake = 12;
         this.audio.play("lightning");
         this.audio.play("hurt");
-        this.state.takeDamage(10); // Trừ 10 HP đan điền
+        this.state.takeDamage(5); // Chỉ trừ 5 HP nhẹ nhàng
 
         const canvasW = (canvas && canvas.width) || (typeof window !== "undefined" ? window.innerWidth : 800);
         this.floatingText.addCelestialEdict(
           canvasW,
-          "[ 罚 • THIÊN LÔI PHẠT ĐAN ĐIỀN ] HẾT 10S THIÊN KIẾP",
-          "Quá 10s không kịp hóa giải • Tử điện lôi đình giáng phạt tổn thất 10 HP Khí Huyết!",
+          "[ 罚 • THIÊN LÔI TIÊU TÁN ]",
+          "Hết thời gian thiên kiếp • Tử điện tiêu tán, đạo hữu tổn thất 5 HP Khí Huyết!",
           "lightning"
         );
 

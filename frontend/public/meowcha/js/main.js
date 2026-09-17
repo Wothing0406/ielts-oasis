@@ -394,14 +394,14 @@
       // TĂNG DẦN TỐC ĐỘ RƠI & ĐỘ KHÓ THEO CẢNH GIỚI VÀ TIẾN TRÌNH TU VI
       const scoreSpeedBonus = Math.min(0.25, (this.gameState.score / 2000) * 0.05);
       const slainBonus = Math.min(0.20, this.gameState.wordsSlain * 0.005);
-      // Cân bằng tốc độ tu tiên chuẩn xác cho tốc độ gõ phím của người bình thường
-      const realmSpeedMultipliers = [1.0, 1.15, 1.30, 1.48, 1.68];
+      // Cân bằng tốc độ tu tiên êm dịu, tăng dần từ từ theo tốc độ gõ của người bình thường
+      const realmSpeedMultipliers = [1.0, 1.08, 1.16, 1.25, 1.35];
       const realmBaseMult = realmSpeedMultipliers[Math.min(4, rIdx)] || 1.0;
       effectiveSpeedMult = realmBaseMult * (1.0 + scoreSpeedBonus + slainBonus);
 
-      // TRONG 10S THIÊN KIẾP SẤM SÉT: Tốc độ rơi tăng 1.35x (kịch tính nhưng người chơi vẫn theo kịp)
+      // TRONG THIÊN KIẾP SẤM SÉT: Không tăng tốc rơi ma thạch (0.95x) để người chơi có đủ thời gian gõ từ giải kiếp!
       if (this.typing && this.typing.isLightningHazard) {
-        effectiveSpeedMult *= 1.35;
+        effectiveSpeedMult *= 0.95;
       }
 
       // =========================================================================

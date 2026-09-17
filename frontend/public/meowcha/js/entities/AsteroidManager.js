@@ -79,7 +79,8 @@
         runeColor = "#F3E8FF";
         trailColors = ["#A855F7", "#C084FC", "#E9D5FF", "#581C87", "#1E1B4B"];
         baseDamage = 16;
-        typeSpeedMultiplier = 1.10;
+        // Thiên thạch đen rơi êm dịu, tăng dần từ từ theo yêu cầu người chơi
+        typeSpeedMultiplier = 0.82;
       } else if (asteroidType === "thunder" || asteroidType === "chaos") {
         asteroidType = "thunder";
         coreColor = "#FDE047";
@@ -87,7 +88,7 @@
         runeColor = "#FFFBEB";
         trailColors = ["#FDE047", "#F59E0B", "#DC2626", "#991B1B", "#18181B"];
         baseDamage = 22;
-        typeSpeedMultiplier = 1.15;
+        typeSpeedMultiplier = 0.90;
       }
 
       const totalDamage = explicitDamage || (baseDamage + rIdx * 2);
@@ -108,9 +109,9 @@
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[realmIdx] || { speedMult: 1.0 };
-      // Tốc độ điều chỉnh êm dịu, phù hợp tốc độ gõ của người chơi thực tế
-      const realmSpeedBase = [0.22, 0.26, 0.31, 0.37, 0.44];
-      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.22) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
+      // Tốc độ điều chỉnh êm dịu, tăng dần từ từ, phù hợp hoàn toàn cho người chơi gõ phím bình thường
+      const realmSpeedBase = [0.20, 0.23, 0.26, 0.30, 0.35];
+      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.20) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
 
       // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
       const lateralDrift = (Math.random() - 0.5) * 0.18;
@@ -173,9 +174,10 @@
         typedLen: 0,
         wobbleSeed: Math.random() * 100,
         wobbleSpeed: 1.2 + Math.random() * 0.6,
-        // Ice và Void có mũi nhọn chĩa về góc -45° (top-right), xoay fallAngle + PI/4 (135°) để đầu nhọn cắm thẳng đứng xuống.
-        // Fire và Thunder có mũi nhọn ở góc +45°, xoay fallAngle - PI/4 (45°) để mũi lửa cắm thẳng xuống đất.
-        rot: (asteroidType === "ice" || asteroidType === "void") ? (fallAngle + Math.PI / 4) : (fallAngle - Math.PI / 4),
+        // Chuẩn xác góc xoay dọc thẳng đứng theo đúng mẫu đạo hữu đã duyệt:
+        // Ice và Void: xoay fallAngle - 3*PI/4 (tương đương -45° khi rơi thẳng 90°)
+        // Fire và Thunder: xoay fallAngle - PI/4
+        rot: (asteroidType === "ice" || asteroidType === "void") ? (fallAngle - (3 * Math.PI) / 4) : (fallAngle - Math.PI / 4),
         rotSpeed: (Math.random() - 0.5) * 0.08,
         hitReaction: 0,
         trail: [] // Hạt đuôi bụi linh khí pixel
@@ -192,15 +194,15 @@
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
         ast.x += ast.vx * 60 * dt;
-        // Trong thiên kiếp sét: Tăng tốc vừa phải (1.25x) để người chơi bình thường vẫn theo kịp
-        const gravMult = isLightningHazard ? 1.25 : 1.0;
+        // Trong thiên kiếp sét: Tốc độ rơi giữ mức bình thường (1.0x) để người chơi kịp gõ
+        const gravMult = 1.0;
         ast.y += ast.vy * 60 * dt * gravMult;
-        ast.vy += dt * 0.005 * gravMult; // Gia tốc vi mô nhẹ nhàng
-        // Cập nhật fallAngle và góc xoay chuẩn xác (đầu đá cắm xuống, đuôi lửa bốc lên trên)
+        ast.vy += dt * 0.002; // Gia tốc vi mô cực êm
+        // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
         ast.fallAngle = Math.atan2(ast.vy, ast.vx);
-        const wobble = Math.sin(this.time * 2.5 + ast.wobbleSeed) * 0.04;
+        const wobble = Math.sin(this.time * 2.5 + ast.wobbleSeed) * 0.03;
         if (ast.asteroidType === "ice" || ast.asteroidType === "void") {
-          ast.rot = ast.fallAngle + Math.PI / 4 + wobble;
+          ast.rot = ast.fallAngle - (3 * Math.PI) / 4 + wobble;
         } else {
           ast.rot = ast.fallAngle - Math.PI / 4 + wobble;
         }
