@@ -71,7 +71,7 @@
       };
 
       this.selectedBandIdx = 0;
-      this.activeSlotId = 1;
+      this.activeSlotId = this.activeSlotId || 1;
       this.pendingBreakthrough = false;
     }
 

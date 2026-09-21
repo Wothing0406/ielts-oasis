@@ -91,8 +91,9 @@
 
       // Kết nối callback khi trảm từ hoàn tất
       this.typing.onWordCompleted = (slainWord) => {
-        // Tự động ghi lại tiến trình vào ngọc giản slot 1
-        this.saveSystem.saveGame(1, this.gameState);
+        // Tự động ghi lại tiến trình vào ngọc giản slot hiện tại
+        const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+        this.saveSystem.saveGame(currentSlot, this.gameState);
 
         // Kiểm tra điều kiện đột phá
         const triggered = this.breakthrough.checkProgress();
@@ -114,7 +115,8 @@
 
         this.ui.showTalentModal(talents, targetRealm, (chosenTalent) => {
           this.breakthrough.selectTalent(chosenTalent);
-          this.saveSystem.saveGame(1, this.gameState);
+          const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+          this.saveSystem.saveGame(currentSlot, this.gameState);
           this.ui.updateHUD();
           this.gameState.isPaused = false;
           setTimeout(() => this.spawnWord(), 600);
@@ -128,15 +130,17 @@
         if (changeKey === "gameOver" || (changeKey === "hp" && this.gameState.hp <= 0)) {
           this.handleGameOver();
         } else if (changeKey === "hp" && this.gameState.hp > 0 && this.gameState.currentScene === "BATTLE") {
-          // Lưu ngay lượng máu còn lại vào slot 1 để khi F5 không bị hồi full máu
-          this.saveSystem.saveGame(1, this.gameState);
+          // Lưu ngay lượng máu còn lại vào slot hiện tại để khi F5 không bị hồi full máu
+          const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+          this.saveSystem.saveGame(currentSlot, this.gameState);
         }
       });
 
-      // Nạp tự động tiến trình đã lưu nếu có
-      if (this.saveSystem.hasActiveSave()) {
-        const slot1 = this.saveSystem.getSlot(1);
-        this.gameState.loadFromSlot(slot1);
+      // Nạp tự động tiến trình đã lưu nếu có (theo slot đang hoạt động)
+      const activeSave = this.saveSystem.hasActiveSave();
+      if (activeSave) {
+        this.gameState.loadFromSlot(activeSave);
+        this.saveSystem.setActiveSlotId(activeSave.slotId || 1);
       }
       this.ui.updateHUD();
 
@@ -158,8 +162,9 @@
       this.gameState.isGameOver = true;
       this.gameState.hp = 0;
 
-      // ĐẠO TIÊU THÂN VONG: Xóa ngay lập tức save slot 1 trên LocalStorage & Backend SQL
-      this.saveSystem.resetActiveSave();
+      // ĐẠO TIÊU THÂN VONG: Xóa ngay lập tức save slot hiện tại trên LocalStorage & Backend SQL
+      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      this.saveSystem.resetActiveSave(activeSlot);
 
       this.asteroids.clear();
       this.typing.currentTarget = null;
@@ -299,13 +304,14 @@
     }
 
     returnToLobby() {
+      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
       if (this.gameState.isGameOver || this.gameState.hp <= 0) {
         // Đạo tiêu thân vong: Tuyệt đối không lưu lại trạng thái đã chết!
-        this.saveSystem.resetActiveSave();
+        this.saveSystem.resetActiveSave(activeSlot);
         this.gameState.reset();
       } else {
-        // Chỉ lưu khi người chơi còn sống chủ động dừng trận
-        this.saveSystem.saveGame(1, this.gameState);
+        // Chỉ lưu khi người chơi còn sống chủ động dừng trận vào đúng ngọc giản đang trảm ma
+        this.saveSystem.saveGame(activeSlot, this.gameState);
       }
       this.gameState.currentScene = "LOBBY";
       this.gameState.isPaused = false;
@@ -346,7 +352,8 @@
         this.ui.autoSubmitScoreToPantheon(best);
       }
 
-      this.saveSystem.resetActiveSave();
+      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      this.saveSystem.resetActiveSave(activeSlot);
       this.gameState.reset();
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;

@@ -149,12 +149,24 @@
       const btnContinue = document.getElementById("btnContinueBattle");
       if (btnContinue) {
         btnContinue.onclick = () => {
-          const slot1 = this.saveSystem.getSlot(1);
-          this.state.loadFromSlot(slot1);
+          const activeSave = this.saveSystem.hasActiveSave();
+          if (!activeSave) {
+            this.showStatus("[ 仙 ] Chưa có đạo quả nào được lưu trữ!");
+            return;
+          }
+          const targetSlot = activeSave.slotId || 1;
+          const slotData = this.saveSystem.getSlot(targetSlot);
+          this.state.loadFromSlot(slotData);
+          this.state.activeSlotId = targetSlot;
+          this.saveSystem.setActiveSlotId(targetSlot);
           this.audio.play("chime");
           this.updateHUD();
-          this.showStatus(`[ 仙 ] [TIẾP TỤC TU LUYỆN] Đã nạp lại ${slot1.title} (${slot1.score.toLocaleString()} Tu Vi)!`);
-          this.showProfileModal("TIẾN TRÌNH TU LUYỆN ĐÃ NẠP");
+          this.showStatus(`[ 仙 ] [TIẾP TỤC TU LUYỆN] Đã nạp Cuộn Trục ${targetSlot}: ${slotData.title || slotData.realm} (${(slotData.score || 0).toLocaleString()} Tu Vi)!`);
+          if (this.onStartBattle) {
+            this.onStartBattle();
+          } else {
+            this.showProfileModal(`TIẾN TRÌNH TU LUYỆN • NGỌC GIẢN ${targetSlot}`);
+          }
         };
       }
 
@@ -174,9 +186,10 @@
       // NÚT LƯU TIÊN CƠ NHANH TRÊN HUD [ 符 ]
       if (this.btnQuickSaveHUD) {
         this.btnQuickSaveHUD.onclick = () => {
-          this.saveSystem.saveGame(1, this.state);
+          const activeSlot = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+          this.saveSystem.saveGame(activeSlot, this.state);
           this.audio.play("chime");
-          this.showStatus("[ 符 ] [LƯU TIÊN CƠ] Đã lưu đạo quả tu vi vào Ngọc Giản 1!");
+          this.showStatus(`[ 符 ] [LƯU TIÊN CƠ] Đã lưu đạo quả tu vi vào Ngọc Giản ${activeSlot}!`);
         };
       }
 
@@ -197,9 +210,10 @@
       const btnSavePause = document.getElementById("btnSaveGameInPause");
       if (btnSavePause) {
         btnSavePause.onclick = () => {
-          this.saveSystem.saveGame(1, this.state);
+          const activeSlot = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+          this.saveSystem.saveGame(activeSlot, this.state);
           this.audio.play("chime");
-          this.showStatus("[ 符 ] [LƯU TIÊN CƠ] Đã khắc ghi đạo quả tu vi vào Ngọc Giản 1!");
+          this.showStatus(`[ 符 ] [LƯU TIÊN CƠ] Đã khắc ghi đạo quả tu vi vào Ngọc Giản ${activeSlot}!`);
         };
       }
 
@@ -452,13 +466,13 @@
       const btnRestart = document.getElementById("btnRestartGame");
       const continueSub = document.getElementById("continueBattleSub");
 
-      const hasSave = this.saveSystem && this.saveSystem.hasActiveSave && this.saveSystem.hasActiveSave();
-      if (hasSave) {
-        const slot1 = this.saveSystem.getSlot(1);
+      const activeSave = this.saveSystem && this.saveSystem.hasActiveSave && this.saveSystem.hasActiveSave();
+      if (activeSave) {
+        const slotData = this.saveSystem.getSlot(activeSave.slotId || 1);
         if (btnContinue) {
           btnContinue.style.display = "flex";
           if (continueSub) {
-            continueSub.innerText = `[ ${slot1.title || slot1.realm} • ${slot1.score.toLocaleString()} Tu Vi ]`;
+            continueSub.innerText = `[ Cuộn ${activeSave.slotId}: ${slotData.title || slotData.realm || 'Luyện Khí Kỳ'} • ${(slotData.score || 0).toLocaleString()} Tu Vi ]`;
           }
         }
         if (btnRestart) btnRestart.style.display = "inline-flex";
@@ -499,19 +513,55 @@
       if (!container) return;
 
       const slots = this.saveSystem.getAllSlots();
+      const currentActiveSlot = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      const inBattle = this.state.currentScene === "BATTLE";
       container.innerHTML = "";
 
       for (let i = 1; i <= 3; i++) {
         const slot = slots[i];
+        const isActive = (i === currentActiveSlot);
         const card = document.createElement("div");
-        card.className = `save-slot-card ${slot.isOccupied ? "occupied" : "empty"}`;
+        card.className = `save-slot-card ${slot.isOccupied ? "occupied" : "empty"} ${isActive ? "active-slot-selected" : ""}`;
 
         if (slot.isOccupied) {
           const realmLabel = slot.title || slot.realm || slot.realmTitle || 'Luyện Khí Kỳ';
           const wordsLabel = slot.words !== undefined ? slot.words : (slot.wordsSlain || 0);
+          const badgeHtml = isActive
+            ? `<span class="slot-badge slot-badge-active">★ ĐANG CHỌN</span>`
+            : `<span class="slot-badge slot-badge-idle">ĐÃ LƯU</span>`;
+
+          let actionButtons = "";
+          if (isActive) {
+            if (inBattle) {
+              actionButtons = `
+                <button class="btn-slot-save" data-slot="${i}" title="Lưu lại tiến trình hiện tại vào cuộn trục này">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  LƯU TIẾN TRÌNH
+                </button>
+                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+              `;
+            } else {
+              actionButtons = `
+                <button class="btn-slot-load" data-slot="${i}" title="Tiếp tục tu luyện với cuộn trục này">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  TIẾP TỤC
+                </button>
+                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+              `;
+            }
+          } else {
+            actionButtons = `
+              <button class="btn-slot-load" data-slot="${i}" title="Chuyển sang cuộn trục này để tu luyện">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                CHỌN & NẠP LẠI
+              </button>
+              <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+            `;
+          }
+
           card.innerHTML = `
             <div class="slot-header">
-              <span class="slot-title">${slot.slotName}</span>
+              <span class="slot-title">${slot.slotName} ${badgeHtml}</span>
               <span class="slot-date">${slot.dateStr}</span>
             </div>
             <div class="slot-body">
@@ -519,31 +569,37 @@
               <div class="slot-stats">Tu vi: <b>${(slot.score || 0).toLocaleString()}</b> • Trảm: <b>${wordsLabel}</b> từ</div>
             </div>
             <div class="slot-actions">
-              <button class="btn-slot-save" data-slot="${i}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                GHI ĐÈ
-              </button>
-              <button class="btn-slot-load" data-slot="${i}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                NẠP LẠI
-              </button>
-              <button class="btn-slot-del" data-slot="${i}">✕</button>
+              ${actionButtons}
             </div>
           `;
         } else {
+          // Slot trống
+          const badgeHtml = isActive
+            ? `<span class="slot-badge slot-badge-selected">★ ĐANG CHỌN</span>`
+            : `<span class="slot-badge slot-badge-empty">TRỐNG</span>`;
+
+          let actionButtons = "";
+          if (inBattle) {
+            actionButtons = `<span class="slot-empty-notice" style="font-size: 11px; color: #94A3B8;">(Đang trong trận đấu của cuộn trục khác)</span>`;
+          } else {
+            actionButtons = `
+              <button class="btn-slot-new" data-slot="${i}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                KHỞI ĐẦU MỚI TẠI ĐÂY
+              </button>
+            `;
+          }
+
           card.innerHTML = `
             <div class="slot-header">
-              <span class="slot-title">${slot.slotName}</span>
+              <span class="slot-title">${slot.slotName} ${badgeHtml}</span>
               <span class="slot-date">Chưa ghi chép</span>
             </div>
             <div class="slot-body">
-              <div class="slot-empty-desc">Cuộn trục trống trải, sẵn sàng lưu lại linh khí đạo quả</div>
+              <div class="slot-empty-desc">Cuộn trục trống trải, sẵn sàng khai tông lập phái độc lập</div>
             </div>
             <div class="slot-actions">
-              <button class="btn-slot-save" data-slot="${i}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 4px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                KHẮC GHI
-              </button>
+              ${actionButtons}
             </div>
           `;
         }
@@ -555,8 +611,12 @@
       container.querySelectorAll(".btn-slot-save").forEach(btn => {
         btn.onclick = (e) => {
           const slotId = parseInt(btn.getAttribute("data-slot"), 10);
+          this.state.activeSlotId = slotId;
+          this.saveSystem.setActiveSlotId(slotId);
           this.saveSystem.saveGame(slotId, this.state);
           this.renderSaveSlotsUI();
+          this.updateHUD();
+          this.updateLobbyButtons();
           this.audio.play("chime");
           this.showStatus(`[ NGỌC GIẢN ] Đã khắc ghi thành công vào Cuộn Trục ${slotId}`);
           this.showProfileModal(`ĐÃ LƯU ĐẠO QUẢ VÀO NGỌC GIẢN ${slotId}`);
@@ -568,13 +628,36 @@
           const slotId = parseInt(btn.getAttribute("data-slot"), 10);
           const slot = this.saveSystem.getSlot(slotId);
           if (slot && slot.isOccupied) {
+            // Nếu đang trong trận đấu khác mà còn sống, lưu lại slot cũ trước
+            if (this.state.currentScene === "BATTLE" && this.state.hp > 0 && !this.state.isGameOver) {
+              const prevActive = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+              this.saveSystem.saveGame(prevActive, this.state);
+            }
             this.state.loadFromSlot(slot);
+            this.state.activeSlotId = slotId;
+            this.saveSystem.setActiveSlotId(slotId);
             this.hideSavesModal();
             this.updateHUD();
+            this.updateLobbyButtons();
             this.audio.play("chime");
             this.showStatus(`[ NGỌC GIẢN ] Đã phục hồi Đạo QuẢ từ Cuộn Trục ${slotId}`);
             this.showProfileModal(`ĐẠO QUẢ NGỌC GIẢN ${slotId}`);
           }
+        };
+      });
+
+      container.querySelectorAll(".btn-slot-new").forEach(btn => {
+        btn.onclick = (e) => {
+          const slotId = parseInt(btn.getAttribute("data-slot"), 10);
+          this.state.reset();
+          this.state.activeSlotId = slotId;
+          this.saveSystem.setActiveSlotId(slotId);
+          this.saveSystem.saveGame(slotId, this.state);
+          this.renderSaveSlotsUI();
+          this.updateHUD();
+          this.updateLobbyButtons();
+          this.audio.play("chime");
+          this.showStatus(`[ NGỌC GIẢN ] Đã khởi tạo hành trình mới độc lập tại Ngọc Giản ${slotId}!`);
         };
       });
 
@@ -586,7 +669,21 @@
             `Đạo hữu có chắc chắn muốn giải trừ dữ liệu lưu trữ tại Ngọc Giản ${slotId}?`,
             () => {
               this.saveSystem.deleteSlot(slotId);
+              const currentActive = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+              if (currentActive === slotId) {
+                this.state.reset();
+                const nextActive = this.saveSystem.hasActiveSave();
+                if (nextActive) {
+                  this.saveSystem.setActiveSlotId(nextActive.slotId);
+                  this.state.loadFromSlot(nextActive);
+                } else {
+                  this.saveSystem.setActiveSlotId(1);
+                  this.state.activeSlotId = 1;
+                }
+              }
               this.renderSaveSlotsUI();
+              this.updateHUD();
+              this.updateLobbyButtons();
               this.showStatus(`[ GIẢI TRỪ ] Đã xóa dữ liệu Ngọc Giản ${slotId}`);
             },
             "GIỮ LẠI",
@@ -947,7 +1044,8 @@
       }
 
       // Đặt lại các chỉ số ván đấu về Luyện Khí Kỳ, giữ vĩnh viễn High Score
-      this.saveSystem.resetActiveSave();
+      const activeSlot = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      this.saveSystem.resetActiveSave(activeSlot);
       this.state.revive();
       this.state.score = 0;
       this.state.wordsSlain = 0;
@@ -956,11 +1054,12 @@
       this.state.maxCombo = 0;
       this.state.talents = { hpBonus: 0, slowFactor: 1.0, critChance: 0.0, scoreMultiplier: 1.0, shieldCharges: 0, autoKill: false, typoImmune: false };
       this.state.highScore = bestScore;
+      this.state.activeSlotId = activeSlot;
       try {
         localStorage.setItem("meowcha_high_score", String(bestScore));
       } catch (e) {}
 
-      this.saveSystem.saveGame(1, this.state);
+      this.saveSystem.saveGame(activeSlot, this.state);
       this.updateHUD();
       this.updateLobbyStats();
       this.updatePantheonSelfStats();

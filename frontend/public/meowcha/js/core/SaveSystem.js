@@ -83,10 +83,31 @@
       return headers;
     }
 
+    getActiveSlotId() {
+      let saved = 1;
+      try {
+        const val = parseInt(localStorage.getItem("meowcha_active_slot_id"), 10);
+        if (val === 1 || val === 2 || val === 3) saved = val;
+      } catch (e) {}
+      return saved;
+    }
+
+    setActiveSlotId(slotId) {
+      const id = (slotId === 2 || slotId === 3) ? slotId : 1;
+      try {
+        localStorage.setItem("meowcha_active_slot_id", String(id));
+      } catch (e) {}
+      return id;
+    }
+
     saveGame(slotId, gameState) {
+      const targetSlot = (slotId === 1 || slotId === 2 || slotId === 3)
+        ? slotId
+        : ((gameState && gameState.activeSlotId) || this.getActiveSlotId());
+
       if (!gameState || gameState.isGameOver || gameState.hp <= 0) {
         // Đạo tiêu thân vong: Tuyệt đối không lưu lại kiếp đã chết!
-        this.deleteSlot(slotId);
+        this.deleteSlot(targetSlot);
         return null;
       }
 
@@ -96,7 +117,7 @@
       const realmData = realms[gameState.realmIdx] || realms[0];
 
       const slotData = {
-        slotId: slotId,
+        slotId: targetSlot,
         slotName: `Đạo Quả [${realmData.title}]`,
         isOccupied: true,
         dateStr: dateStr,
@@ -112,16 +133,18 @@
         talents: JSON.parse(JSON.stringify(gameState.talents || {}))
       };
 
-      this.slots[slotId] = slotData;
+      this.slots[targetSlot] = slotData;
       this.saveLocalSlots();
+      this.setActiveSlotId(targetSlot);
+      if (gameState) gameState.activeSlotId = targetSlot;
 
       // Đồng bộ ngầm lên Backend SQL theo tài khoản người dùng
       if (typeof fetch !== "undefined") {
-        fetch('/api/meowcha/saves', {
+        fetch(`/api/meowcha/saves/${targetSlot}`, {
           method: 'POST',
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
-            slot_id: slotId,
+            slot_id: targetSlot,
             slot_name: slotData.slotName,
             is_occupied: true,
             realm: slotData.realm,
@@ -141,24 +164,47 @@
     }
 
     deleteSlot(slotId) {
-      this.slots[slotId] = this.getDefaultSlot(slotId);
+      const targetSlot = (slotId === 1 || slotId === 2 || slotId === 3) ? slotId : 1;
+      this.slots[targetSlot] = this.getDefaultSlot(targetSlot);
       this.saveLocalSlots();
 
       if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/saves/${slotId}`, { 
+        fetch(`/api/meowcha/saves/${targetSlot}`, { 
           method: 'DELETE',
           headers: this.getAuthHeaders()
         }).catch(() => {});
       }
     }
 
-    hasActiveSave() {
-      const slot1 = this.getSlot(1);
-      return slot1 && slot1.isOccupied && (slot1.hp > 0) && (slot1.score > 0 || slot1.realmIdx > 0 || slot1.words > 0);
+    hasActiveSave(preferredSlotId = null) {
+      // 1. Kiểm tra preferredSlotId nếu có
+      if (preferredSlotId && (preferredSlotId === 1 || preferredSlotId === 2 || preferredSlotId === 3)) {
+        const pSlot = this.getSlot(preferredSlotId);
+        if (pSlot && pSlot.isOccupied && (pSlot.hp > 0) && (pSlot.score > 0 || pSlot.realmIdx > 0 || pSlot.words > 0)) {
+          return pSlot;
+        }
+      }
+
+      // 2. Kiểm tra slot active đã lưu
+      const activeId = this.getActiveSlotId();
+      const activeSlot = this.getSlot(activeId);
+      if (activeSlot && activeSlot.isOccupied && (activeSlot.hp > 0) && (activeSlot.score > 0 || activeSlot.realmIdx > 0 || activeSlot.words > 0)) {
+        return activeSlot;
+      }
+
+      // 3. Fallback tìm bất kỳ slot nào có tiến trình hợp lệ
+      for (let s = 1; s <= 3; s++) {
+        const otherSlot = this.getSlot(s);
+        if (otherSlot && otherSlot.isOccupied && (otherSlot.hp > 0) && (otherSlot.score > 0 || otherSlot.realmIdx > 0 || otherSlot.words > 0)) {
+          return otherSlot;
+        }
+      }
+      return null;
     }
 
-    resetActiveSave() {
-      this.deleteSlot(1);
+    resetActiveSave(slotId = null) {
+      const targetId = (slotId === 1 || slotId === 2 || slotId === 3) ? slotId : this.getActiveSlotId();
+      this.deleteSlot(targetId);
     }
 
     syncWithBackend() {
