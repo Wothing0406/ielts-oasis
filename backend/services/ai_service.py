@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 import json
@@ -358,18 +359,30 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
           }}
         ]
         """
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.primary_text_model,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=60.0
-            )
-            content = response.choices[0].message.content
-            cleaned = self._clean_json(content, expect_list=True)
-            items = json.loads(cleaned)
-            return self._normalize_extracted_vocab_list(items)
-        except Exception as e:
-            print(f"extract_scroll_vocabulary_from_text failed: {e}")
+        models_to_try = [self.primary_text_model, "gemini-3.1-flash-lite", "gemini-1.5-flash", "gemini-2.0-flash"]
+        seen_models = []
+        for m in models_to_try:
+            if m and m not in seen_models:
+                seen_models.append(m)
+
+        for model_name in seen_models:
+            for key in self.api_keys:
+                try:
+                    client = self._get_client_for_key(key)
+                    response = await client.chat.completions.create(
+                        model=model_name,
+                        messages=[{"role": "user", "content": prompt}],
+                        timeout=45.0
+                    )
+                    content = response.choices[0].message.content
+                    cleaned = self._clean_json(content, expect_list=True)
+                    items = json.loads(cleaned)
+                    result = self._normalize_extracted_vocab_list(items)
+                    if result:
+                        return result
+                except Exception as e:
+                    print(f"extract_scroll_vocabulary_from_text failed with model {model_name} and key {key[:8]}...: {e}")
+                    continue
         return []
 
     async def extract_scroll_vocabulary_from_image(self, image: Image.Image):
@@ -400,26 +413,38 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
         image.save(buffered, format="JPEG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
             
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.primary_vision_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
-                        ]
-                    }
-                ],
-                timeout=60.0
-            )
-            content = response.choices[0].message.content
-            cleaned = self._clean_json(content, expect_list=True)
-            items = json.loads(cleaned)
-            return self._normalize_extracted_vocab_list(items)
-        except Exception as e:
-            print(f"extract_scroll_vocabulary_from_image failed: {e}")
+        models_to_try = [self.primary_vision_model, "gemini-3.1-flash-lite", "gemini-1.5-flash", "gemini-2.0-flash"]
+        seen_models = []
+        for m in models_to_try:
+            if m and m not in seen_models:
+                seen_models.append(m)
+
+        for model_name in seen_models:
+            for key in self.api_keys:
+                try:
+                    client = self._get_client_for_key(key)
+                    response = await client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
+                                ]
+                            }
+                        ],
+                        timeout=45.0
+                    )
+                    content = response.choices[0].message.content
+                    cleaned = self._clean_json(content, expect_list=True)
+                    items = json.loads(cleaned)
+                    result = self._normalize_extracted_vocab_list(items)
+                    if result:
+                        return result
+                except Exception as e:
+                    print(f"extract_scroll_vocabulary_from_image failed with model {model_name} and key {key[:8]}...: {e}")
+                    continue
         return []
 
     async def correct_writing_and_grammar(self, text: str, task_type: str = "sentence", target_band: float = 8.0):
@@ -664,13 +689,13 @@ Do not include any markdown format blocks, explanations, or notes outside the JS
 
         master_system_instruction = f"""
 Bạn là Mát Cha AI Eo (Mascot chú gấu học thuật) - Huấn luyện viên & Gia sư IELTS thân thiện, tận tâm tại IELTS Oasis.
-Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ phong thái nhẹ nhàng, tích cực, vui vẻ, lịch sự và truyền cảm hứng học tập 😊.
+Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ phong thái nhẹ nhàng, tích cực, vui vẻ, lịch sự và truyền cảm hứng học tập \U0001f60a.
 
 [QUY TẮC BẮT BUỘC 1: TỰ ĐỘNG HIỂU NGỮ CẢNH KHI HỌC VIÊN CHÀO HỎI / MỞ ĐẦU HỘI THOẠI]:
 - Hãy tự động nhận diện theo ngữ cảnh tự nhiên: Bất cứ khi nào tin nhắn cuối cùng của học viên là lời chào hỏi hoặc mở đầu (ví dụ: Chào bạn, Chào cậu, Hi, Hello, Alo, Good morning, Chào thầy...):
   + Hãy xem đây là một lượt chào đón mở đầu buổi gặp gỡ.
   + Chào lại thật thân thiện, ấm áp, ngắn gọn (đúng 1 đến 2 câu).
-  + Câu chào mẫu chuẩn: "Chào bạn! Rất vui được gặp lại bạn. Mình là IELTS Oasis (Mát Cha AI Eo) đây. Hôm nay mình có thể giúp gì cho quá trình luyện thi IELTS của bạn không? 😊"
+  + Câu chào mẫu chuẩn: "Chào bạn! Rất vui được gặp lại bạn. Mình là IELTS Oasis (Mát Cha AI Eo) đây. Hôm nay mình có thể giúp gì cho quá trình luyện thi IELTS của bạn không? \U0001f60a"
   + BẤT KỂ trong lịch sử trò chuyện phía trước có nội dung gì, TUYỆT ĐỐI KHÔNG lôi các tranh luận cũ, lỗi sai hay câu chuyện dở dang trước đó ra nói tiếp nếu học viên chưa nhắc đến.
   + TUYỆT ĐỐI KHÔNG tự động nói ra ngày tháng hay giờ giấc.
   + TUYỆT ĐỐI KHÔNG lên lớp, không bắt bẻ, không cằn nhằn "không lãng phí thời gian", không tự tiện giao bài tập hay bắt ép học viên học bài ngay khi họ chỉ vừa mới chào hỏi.
@@ -1899,10 +1924,16 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
         Từ vựng cần củng cố: [{words_str}]
         Điểm ngữ pháp cần rèn luyện: [{grammar_str}]
 
-        CÁC DẠNG CÂU HỎI CẦN CÓ:
-        1. 'collocation_cloze': Câu chứa chỗ trống kiểm tra Collocation học thuật (4 lựa chọn).
-        2. 'error_identification': Câu chứa 1 lỗi sai điển hình của người Việt, chọn phần bị sai.
-        3. 'definition_match': Chọn từ phù hợp nhất với định nghĩa ngữ cảnh học thuật.
+        CÁC DẠNG CÂU HỎI BẮT BUỘC TUÂN THỦ:
+        1. 'collocation_cloze': Câu học thuật có CHỖ TRỐNG '________' để điền cụm từ (Collocation) chuẩn xác:
+           - "question": BẮT BUỘC là câu văn học thuật IELTS hoàn chỉnh có chỗ trống '________' (ví dụ: "Researchers decided to ________ extensive clinical trials to identify effective treatments.").
+           - "options": 4 lựa chọn PHẢI CÙNG TỪ LOẠI VÀ DẠNG NGỮ PHÁP (nếu đáp án là Phrasal Verb/Verb thì cả 4 đáp án đều phải là Verbs/Phrasal Verbs có nghĩa gần gũi, ví dụ: ["carry out", "conduct", "implement", "undergo"]). TUYỆT ĐỐI KHÔNG ghép các từ không liên quan như danh từ "touchscreen", "bond", "affection" vào câu hỏi cần động từ!
+           - "correct_answer": Từ/cụm từ điền vào chỗ trống tự nhiên và chuẩn xác nhất theo collocation học thuật.
+        2. 'error_identification': Tìm lỗi sai ngữ pháp trong câu theo format chuẩn đề thi:
+           - "question": Câu văn tiếng Anh chứa lỗi sai, trong đó 4 vị trí kiểm tra BẮT BUỘC được đánh dấu rõ bằng [A], [B], [C], [D] ngay trước hoặc quanh từ đó. Ví dụ: "Despite [A] he worked [B] diligently, he failed [C] to achieve [D] his target score."
+           - "options": Mảng 4 phần cần kiểm tra tương ứng với [A], [B], [C], [D] kèm cụm từ thực tế (ví dụ: ["[A] Despite", "[B] he worked", "[C] failed", "[D] his target score"]). TUYỆT ĐỐI KHÔNG chỉ trả về ["A", "B", "C", "D"] rỗng mà phải chứa cụm từ bị kiểm tra!
+           - "correct_answer": Phần bị sai ngữ pháp (ví dụ: "[A] Despite").
+        3. 'definition_match': Cho định nghĩa học thuật rõ ràng và 4 từ vựng CÙNG TỪ LOẠI để người học chọn từ đúng.
 
         Trả về DUY NHẤT định dạng JSON:
         {{
@@ -1910,7 +1941,6 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
                 {{
                     "id": "item_1",
                     "type": "collocation_cloze",
-                    "prompt": "Governments must implement comprehensive measures to [...] the detrimental impacts of urbanization.",
                     "question": "Governments must implement comprehensive measures to ________ the detrimental impacts of urbanization.",
                     "options": ["mitigate", "deteriorate", "accelerate", "resemble"],
                     "correct_answer": "mitigate",
@@ -1918,6 +1948,17 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
                     "cambridge_explanation": "'Mitigate the impacts' là collocation C1 chuẩn xác mang nghĩa giảm nhẹ tác động tiêu cực.",
                     "target_word": "mitigate",
                     "target_concept": "mitigate"
+                }},
+                {{
+                    "id": "item_2",
+                    "type": "error_identification",
+                    "question": "Despite [A] he worked [B] diligently, he failed [C] to achieve [D] his target band score.",
+                    "options": ["[A] Despite", "[B] worked", "[C] failed", "[D] to achieve"],
+                    "correct_answer": "[A] Despite",
+                    "explanation": "Sau 'Despite' là N/V-ing, không dùng mệnh đề. Cần sửa thành 'Although' hoặc 'Despite working'.",
+                    "cambridge_explanation": "Sau 'Despite' là N/V-ing, không dùng mệnh đề. Cần sửa thành 'Although' hoặc 'Despite working'.",
+                    "target_word": "despite",
+                    "target_concept": "Conjunction vs Preposition"
                 }}
             ]
         }}
@@ -1934,7 +1975,21 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
             normalized_items = []
             for idx, it in enumerate(raw_items, 1):
                 if isinstance(it, dict):
-                    q_text = it.get("prompt") or it.get("question") or ""
+                    # Prioritize question over generic instruction prompt
+                    q_text = it.get("question") or it.get("sentence") or it.get("prompt") or ""
+                    # If question is just a generic instruction like "Complete the sentence...", use prompt if prompt has the actual sentence
+                    if q_text.lower().startswith("complete the sentence") and it.get("prompt") and not it.get("prompt").lower().startswith("complete the sentence"):
+                        q_text = it.get("prompt")
+                    
+                    # Ensure collocation_cloze has a visible blank ________
+                    if it.get("type") == "collocation_cloze" and "_" not in q_text and "[...]" not in q_text and "[___]" not in q_text:
+                        ans = it.get("correct_answer") or it.get("target_word")
+                        if ans and ans.lower() in q_text.lower():
+                            import re
+                            q_text = re.sub(rf'\b{re.escape(ans)}\b', '________', q_text, count=1, flags=re.IGNORECASE)
+                        elif not q_text.strip().endswith("________"):
+                            q_text = f"{q_text.rstrip('.')} ________."
+
                     exp = it.get("cambridge_explanation") or it.get("explanation") or ""
                     tgt = it.get("target_word") or it.get("target_concept") or ""
                     it["prompt"] = q_text

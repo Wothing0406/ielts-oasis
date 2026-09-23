@@ -11,6 +11,8 @@ import time
 import uuid
 import json
 import base64
+from io import BytesIO
+from PIL import Image
 from datetime import datetime, timedelta
 try:
     from ultralytics import YOLO
@@ -262,6 +264,31 @@ async def startup_event():
     asyncio.create_task(backfill_vocabularies())
     asyncio.create_task(cleanup_static_files_loop())
 
+def detect_audio_mime_type(content: bytes, default_mime: str = "audio/webm") -> str:
+    """Sniff real audio format by magic bytes to ensure Google Gemini API receives correct MIME on all platforms (iOS Safari, Android Chrome, Desktop)"""
+    if len(content) >= 12:
+        # MP4 / M4A container (Apple iOS Safari MediaRecorder)
+        if content[4:8] in [b'ftyp', b'moov', b'mdat'] or content[4:12] in [b'ftypisom', b'ftypmp42', b'ftypM4A ', b'ftypqt  ']:
+            return "audio/mp4"
+        # RIFF WAVE
+        if content[:4] == b'RIFF' and content[8:12] == b'WAVE':
+            return "audio/wav"
+        # WebM / Matroska
+        if content[:4] == b'\x1aE\xdf\xa3':
+            return "audio/webm"
+        # MP3 ID3 or sync frame
+        if content[:3] == b'ID3' or (len(content) > 2 and content[0] == 0xFF and (content[1] & 0xE0) == 0xE0):
+            return "audio/mpeg"
+        # Ogg Vorbis / Opus
+        if content[:4] == b'OggS':
+            return "audio/ogg"
+    clean_mime = default_mime.split(';')[0].strip().lower() if default_mime else ""
+    if clean_mime in ["video/mp4", "audio/x-m4a", "audio/m4a", "audio/mp4", "audio/aac"]:
+        return "audio/mp4"
+    if clean_mime in ["video/webm", "audio/webm"]:
+        return "audio/webm"
+    return clean_mime if clean_mime else "audio/webm"
+
 def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: list):
     content_type = file.content_type if file.content_type else ""
     # Check if content type contains any of allowed mimes
@@ -274,8 +301,8 @@ def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: 
         for m in allowed_mimes:
             if "image/" in m:
                 allowed_exts.extend([".jpg", ".jpeg", ".png", ".webp"])
-            elif "audio/" in m:
-                allowed_exts.extend([".webm", ".wav", ".mp3", ".ogg", ".m4a"])
+            elif "audio/" in m or "video/" in m:
+                allowed_exts.extend([".webm", ".wav", ".mp3", ".ogg", ".m4a", ".mp4", ".aac"])
             elif "pdf" in m:
                 allowed_exts.append(".pdf")
             elif "document" in m:
@@ -301,8 +328,9 @@ def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: 
                 status_code=400,
                 detail=f"File too large: {size / (1024 * 1024):.2f}MB. Max allowed size is {max_size_mb}MB."
             )
-    except Exception as e:
-        # Avoid failing if seek/tell fails on empty/stream files
+    except HTTPException:
+        raise
+    except Exception:
         pass
 
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "*")
@@ -346,13 +374,34 @@ async def get_vocabulary(user: dict = Depends(get_current_user), db: Session = D
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem từ vựng.")
     query = db.query(Vocabulary).filter(Vocabulary.user_id == user["user_id"])
     vocabs = query.order_by(desc(Vocabulary.id)).all()
-    return vocabs
+    # Deduplicate by lowercase word to ensure clean list
+    unique_vocabs = []
+    seen = set()
+    for v in vocabs:
+        w = (v.word or "").strip().lower()
+        if w and w not in seen:
+            seen.add(w)
+            unique_vocabs.append(v)
+    return unique_vocabs
 
 @app.post("/vocabulary")
 async def add_vocabulary(vocab_in: VocabIn, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để lưu từ vựng")
     user_id = user["user_id"]
+
+    # Pre-clean word & meaning from any POS tags like (n), (v), (adj)
+    import re
+    pos_clean_regex = r'\s*\((?:n|v|adj|adv|prep|conj|pron|phr|idiom|slang)[^)]*\)\s*'
+    clean_input_word = re.sub(pos_clean_regex, '', str(vocab_in.word), flags=re.IGNORECASE).strip()
+    clean_input_word = re.sub(r'[\/\\()\[\]]', '', clean_input_word).strip()
+    vocab_in.word = clean_input_word
+
+    if vocab_in.meaning:
+        clean_input_meaning = re.sub(pos_clean_regex, '', str(vocab_in.meaning), flags=re.IGNORECASE).strip()
+        clean_input_meaning = re.sub(r'^(?:n|v|adj|adv|prep|conj|pron)\s*[:.\-]\s*', '', clean_input_meaning, flags=re.IGNORECASE).strip()
+        vocab_in.meaning = clean_input_meaning.strip(" -:;,")
+
     existing = db.query(Vocabulary).filter(
         func.lower(Vocabulary.word) == func.lower(vocab_in.word),
         Vocabulary.user_id == user_id
@@ -567,7 +616,7 @@ async def extract_scroll(file: UploadFile = File(...)):
     layout_type = "plain_text"
 
     try:
-        if filename.endswith((".png", ".jpg", ".jpeg")):
+        if filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
             contents = await file.read()
             img = Image.open(BytesIO(contents)).convert("RGB")
             extracted_words = await ai_service.extract_scroll_vocabulary_from_image(img)
@@ -587,7 +636,7 @@ async def extract_scroll(file: UploadFile = File(...)):
             
             text_content = "\n".join(pages_text)
             if not text_content.strip():
-                raise HTTPException(status_code=400, detail="Không thể trích xuất văn bản từ PDF này. File có thể bị quét dưới dạng ảnh.")
+                raise HTTPException(status_code=400, detail="Không thể trích xuất văn bản từ PDF này. Tài liệu có thể là dạng scan/ảnh (không có lớp text). Vui lòng chụp ảnh màn hình trang tài liệu và tải lên dưới dạng hình ảnh (.png, .jpg).")
             
             extracted_words = await ai_service.extract_scroll_vocabulary_from_text(text_content)
         elif filename.endswith(".docx"):
@@ -815,7 +864,9 @@ async def delete_vocab(id: int, user: dict = Depends(get_current_user), db: Sess
     
     for v in user_vocabs:
         if v.is_global:
-            # Preserve word in Oasis Community, just decouple from user's personal vault
+            # Preserve word in Oasis Community, preserve creator_username, decouple from personal vault
+            if not v.creator_username and user.get("username"):
+                v.creator_username = user["username"]
             v.user_id = None
         else:
             db.delete(v)
@@ -1096,9 +1147,11 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
 
     # Batch query users, likes, and comments for vocabs (3 queries total instead of 3 * N)
     vocab_user_ids = {v.user_id for v in filtered_vocabs if v.user_id}
+    vocab_usernames = {v.creator_username for v in filtered_vocabs if v.creator_username}
     vocab_ids = [v.id for v in filtered_vocabs]
 
-    vocab_users = {u.id: u for u in db.query(User).filter(User.id.in_(vocab_user_ids)).all()} if vocab_user_ids else {}
+    vocab_users_by_id = {u.id: u for u in db.query(User).filter(User.id.in_(vocab_user_ids)).all()} if vocab_user_ids else {}
+    vocab_users_by_name = {u.username.lower(): u for u in db.query(User).filter(func.lower(User.username).in_([name.lower() for name in vocab_usernames])).all()} if vocab_usernames else {}
 
     vocab_likes = {}
     if vocab_ids:
@@ -1118,9 +1171,18 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
 
     vocab_list = []
     for v in filtered_vocabs:
-        user_obj = vocab_users.get(v.user_id)
+        user_obj = None
+        if v.user_id:
+            user_obj = vocab_users_by_id.get(v.user_id)
+        if not user_obj and v.creator_username:
+            user_obj = vocab_users_by_name.get(v.creator_username.lower())
+
         likes_count = vocab_likes.get(v.id, 0)
         comments_count = vocab_comments.get(v.id, 0)
+        
+        display_username = v.creator_username or (user_obj.username if user_obj else "Anonymous")
+        display_avatar = user_obj.avatar_url if user_obj and user_obj.avatar_url else None
+        
         vocab_list.append({
             "id": v.id,
             "word": v.word,
@@ -1128,8 +1190,8 @@ async def get_community_feed(sort_by: Optional[str] = "new", filter_mine: Option
             "phonetic": v.phonetic,
             "topic": v.topic or "Chung",
             "user_id": v.user_id,
-            "username": v.creator_username or (user_obj.username if user_obj else "Anonymous"),
-            "avatar_url": user_obj.avatar_url if user_obj else None,
+            "username": display_username,
+            "avatar_url": display_avatar,
             "image_url": v.image_url,
             "likes": likes_count,
             "comments": comments_count,
@@ -2250,11 +2312,12 @@ async def speaking_shadowing(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    validate_uploaded_file(file, 5.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
+    validate_uploaded_file(file, 10.0, ["audio/", "video/mp4", "video/webm", "application/octet-stream"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")
-        mime_type = file.content_type if file.content_type else "audio/webm"
+        raw_mime = file.content_type if file.content_type else "audio/webm"
+        mime_type = detect_audio_mime_type(content, raw_mime)
         result = await ai_service.evaluate_pronunciation(audio_base64, mime_type, reference_text)
         return result
     except Exception as e:
@@ -2270,11 +2333,12 @@ async def speaking_sandbox(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    validate_uploaded_file(file, 10.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
+    validate_uploaded_file(file, 10.0, ["audio/", "video/mp4", "video/webm", "application/octet-stream"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")
-        mime_type = file.content_type if file.content_type else "audio/webm"
+        raw_mime = file.content_type if file.content_type else "audio/webm"
+        mime_type = detect_audio_mime_type(content, raw_mime)
         result = await ai_service.evaluate_speaking_sandbox(audio_base64, mime_type, cue_card_prompt)
         return result
     except Exception as e:
@@ -2290,11 +2354,12 @@ async def speaking_reflex(
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    validate_uploaded_file(file, 5.0, ["audio/webm", "audio/wav", "audio/mpeg", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/x-wav", "audio/vnd.wav", "audio/wave"])
+    validate_uploaded_file(file, 10.0, ["audio/", "video/mp4", "video/webm", "application/octet-stream"])
     try:
         content = await file.read()
         audio_base64 = base64.b64encode(content).decode("utf-8")
-        mime_type = file.content_type if file.content_type else "audio/webm"
+        raw_mime = file.content_type if file.content_type else "audio/webm"
+        mime_type = detect_audio_mime_type(content, raw_mime)
         result = await ai_service.evaluate_speaking_reflex(audio_base64, mime_type, question)
         return result
     except Exception as e:

@@ -71,6 +71,31 @@ export default function SpeakingReflexGame() {
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const silenceTimerRef = useRef<any>(null);
   const hasSpokenRef = useRef<boolean>(false);
+  const consecutiveVoiceRef = useRef<number>(0);
+  const activeSpeechIdRef = useRef<number>(0);
+  const speechWatchdogRef = useRef<any>(null);
+
+  // Pre-unlock mobile audio on user gesture
+  const primeMobileAudio = () => {
+    if (!currentAudioRef.current && typeof window !== 'undefined') {
+      try {
+        const audio = new Audio();
+        audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        audio.volume = 0.01;
+        audio.play().then(() => {
+          audio.pause();
+        }).catch(() => {});
+        currentAudioRef.current = audio;
+      } catch (e) {}
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        const dummyUtterance = new SpeechSynthesisUtterance(' ');
+        dummyUtterance.volume = 0.01;
+        window.speechSynthesis.speak(dummyUtterance);
+      } catch (e) {}
+    }
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
@@ -89,6 +114,12 @@ export default function SpeakingReflexGame() {
 
   // Universal Audio Player (Neural Edge-TTS via /api/tts with SpeechSynthesis fallback)
   const playSpeech = (text: string, onEnd?: () => void) => {
+    const currentSpeechId = ++activeSpeechIdRef.current;
+    if (speechWatchdogRef.current) {
+      clearTimeout(speechWatchdogRef.current);
+      speechWatchdogRef.current = null;
+    }
+
     // Clean text for speech synthesis (remove markdown and emojis)
     const cleanText = text
       .replace(/[\u{1F600}-\u{1F6FF}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
@@ -100,10 +131,32 @@ export default function SpeakingReflexGame() {
       return;
     }
 
+    // Single-fire callback protector
+    let hasEnded = false;
+    const safeOnEnd = () => {
+      if (hasEnded) return;
+      hasEnded = true;
+      if (speechWatchdogRef.current) {
+        clearTimeout(speechWatchdogRef.current);
+        speechWatchdogRef.current = null;
+      }
+      if (activeSpeechIdRef.current === currentSpeechId) {
+        if (onEnd) onEnd();
+      }
+    };
+
+    // Watchdog timer to prevent deadlocks (max duration based on word count + safety buffer)
+    const estimatedSecs = Math.max(4, Math.ceil(cleanText.split(/\s+/).length / 2.2) + 3);
+    speechWatchdogRef.current = setTimeout(() => {
+      if (!hasEnded && activeSpeechIdRef.current === currentSpeechId) {
+        console.warn("Speech playback watchdog expired, auto-resolving speech sequence");
+        safeOnEnd();
+      }
+    }, estimatedSecs * 1000);
+
     // Stop current audio if any
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
-      currentAudioRef.current = null;
     }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -119,36 +172,48 @@ export default function SpeakingReflexGame() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ word: cleanText })
         });
+        if (activeSpeechIdRef.current !== currentSpeechId) return;
+
         if (res.ok) {
           const data = await res.json();
+          if (activeSpeechIdRef.current !== currentSpeechId) return;
+
           if (data.audio_url) {
             isHandled = true;
-            const audio = new Audio(data.audio_url);
-            currentAudioRef.current = audio;
+            let audio = currentAudioRef.current;
+            if (!audio) {
+              audio = new Audio();
+              currentAudioRef.current = audio;
+            }
+            audio.src = data.audio_url;
+            audio.volume = 1.0;
             audio.onended = () => {
-              currentAudioRef.current = null;
-              if (onEnd) onEnd();
+              safeOnEnd();
             };
             audio.onerror = () => {
               console.warn("Edge-TTS playback error, falling back to Web Speech Synthesis");
-              fallbackWebSpeech(cleanText, onEnd);
+              fallbackWebSpeech(cleanText, safeOnEnd);
             };
-            audio.play().catch(e => {
-              console.warn("Autoplay prevented, fallback to Web Speech:", e);
-              fallbackWebSpeech(cleanText, onEnd);
-            });
+            const p = audio.play();
+            if (p !== undefined) {
+              p.catch(e => {
+                console.warn("Autoplay prevented, fallback to Web Speech:", e);
+                fallbackWebSpeech(cleanText, safeOnEnd);
+              });
+            }
             return;
           }
         }
       } catch (err) {
         console.warn("Network error calling /api/tts, using fallback:", err);
       }
-      if (!isHandled) {
-        fallbackWebSpeech(cleanText, onEnd);
+      if (!isHandled && activeSpeechIdRef.current === currentSpeechId) {
+        fallbackWebSpeech(cleanText, safeOnEnd);
       }
     };
 
     const fallbackWebSpeech = (textToSpeak: string, callback?: () => void) => {
+      if (activeSpeechIdRef.current !== currentSpeechId) return;
       if (!('speechSynthesis' in window)) {
         if (callback) callback();
         return;
@@ -191,7 +256,7 @@ export default function SpeakingReflexGame() {
   // Gemini Live 2-Phase Response Sequence:
   // Phase 1: Speak Reply & Coaching Critique FIRST
   // Phase 2: Speak Next Follow-up Question
-  const speakSequence = (replyAndCritiqueText: string, nextQuestionText: string) => {
+  const speakSequence = (replyAndCritiqueText: string, nextQuestionText: string, shouldAutoArm: boolean = true) => {
     setIsBearSpeaking(true);
     setSpeakingPhase('reply_and_critique');
 
@@ -203,12 +268,13 @@ export default function SpeakingReflexGame() {
           // Phase 2 completed
           setIsBearSpeaking(false);
           setSpeakingPhase('idle');
+          questionStartTimeRef.current = Date.now(); // Accurate reflex baseline timing!
           
-          // If Live Hands-Free mode is enabled, automatically arm microphone for learner!
-          if (isLiveHandsFree) {
+          // If Live Hands-Free mode is enabled AND speech was valid, automatically arm microphone for learner!
+          if (isLiveHandsFree && shouldAutoArm) {
             setTimeout(() => {
               startRecording();
-            }, 600);
+            }, 1000);
           }
         });
       }, 700);
@@ -217,9 +283,13 @@ export default function SpeakingReflexGame() {
 
   // Interrupt anytime (Famous Gemini Live feature)
   const interruptSpeech = () => {
+    activeSpeechIdRef.current++;
+    if (speechWatchdogRef.current) {
+      clearTimeout(speechWatchdogRef.current);
+      speechWatchdogRef.current = null;
+    }
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
-      currentAudioRef.current = null;
     }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -227,6 +297,41 @@ export default function SpeakingReflexGame() {
     }
     setIsBearSpeaking(false);
     setSpeakingPhase('idle');
+  };
+
+  // Change Question / Skip to New Topic
+  const changeQuestion = async () => {
+    interruptSpeech();
+    stopRecording();
+    primeMobileAudio();
+
+    const token = localStorage.getItem("oasis_token");
+    let newQ = "";
+    if (token) {
+      try {
+        const res = await fetch(`${API_URL}/speaking/generate-sentence?level=medium`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const d = await res.json();
+          if (d.sentence) {
+            newQ = `How do you feel about this topic: "${d.sentence}"? What are your thoughts?`;
+          }
+        }
+      } catch (e) {}
+    }
+    if (!newQ) {
+      const remaining = INITIAL_QUESTIONS.filter(q => q !== currentQuestion);
+      newQ = remaining[Math.floor(Math.random() * remaining.length)] || INITIAL_QUESTIONS[0];
+    }
+    setCurrentQuestion(newQ);
+    questionStartTimeRef.current = Date.now();
+    setChatHistory(prev => [...prev, {
+      sender: 'bear',
+      text: `Let's switch topics! ${newQ}`,
+      spokenQuestion: `Let's switch topics! ${newQ}`
+    }]);
+    playSpeech(`Let's switch to a new topic! ${newQ}`);
   };
 
   const formatTime = (secs: number) => {
@@ -238,6 +343,7 @@ export default function SpeakingReflexGame() {
   const startRecording = async () => {
     // If Bear is currently speaking, interrupt
     interruptSpeech();
+    primeMobileAudio();
 
     try {
       const now = Date.now();
@@ -254,7 +360,9 @@ export default function SpeakingReflexGame() {
       streamRef.current = stream;
       audioChunksRef.current = [];
       hasSpokenRef.current = false;
+      consecutiveVoiceRef.current = 0;
       peakVolumeRef.current = 0;
+      const recStartTime = Date.now();
       
       // Setup Web Audio API volume analyzer for real-time waveform & VAD
       try {
@@ -285,20 +393,29 @@ export default function SpeakingReflexGame() {
             peakVolumeRef.current = rms;
           }
 
+          const recDuration = (Date.now() - recStartTime) / 1000;
+
           // Voice Activity Detection (VAD) for Gemini Live Hands-Free mode
-          if (rms > 0.02) {
-            hasSpokenRef.current = true;
+          // Require at least 4 consecutive frames > 0.028 (~320ms) to confirm real vocal speech
+          if (rms > 0.028) {
+            consecutiveVoiceRef.current += 1;
+            if (consecutiveVoiceRef.current >= 4) {
+              hasSpokenRef.current = true;
+            }
             if (silenceTimerRef.current) {
               clearTimeout(silenceTimerRef.current);
               silenceTimerRef.current = null;
             }
-          } else if (hasSpokenRef.current && isLiveHandsFree) {
-            // Learner was speaking and now paused/finished -> start silence countdown (~1.8s)
-            if (!silenceTimerRef.current) {
-              silenceTimerRef.current = setTimeout(() => {
-                console.log("Gemini Live VAD: Silence detected, auto-submitting speech!");
-                stopRecording();
-              }, 1800);
+          } else {
+            consecutiveVoiceRef.current = 0;
+            // Only auto-submit after user has genuinely spoken and audio is at least 2.0s
+            if (hasSpokenRef.current && isLiveHandsFree && recDuration >= 2.0) {
+              if (!silenceTimerRef.current) {
+                silenceTimerRef.current = setTimeout(() => {
+                  console.log("Gemini Live VAD: Silence detected, auto-submitting speech!");
+                  stopRecording();
+                }, 2600);
+              }
             }
           }
         }, 80);
@@ -306,10 +423,21 @@ export default function SpeakingReflexGame() {
         console.error("Audio analyzer failed to initialize:", e);
       }
 
-      const options = { mimeType: 'audio/webm' };
+      // Supported MIME detection
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        }
+      }
+
       let mediaRecorder: MediaRecorder;
       try {
-        mediaRecorder = new MediaRecorder(stream, options);
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
       } catch (e) {
         mediaRecorder = new MediaRecorder(stream);
       }
@@ -322,8 +450,9 @@ export default function SpeakingReflexGame() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-        evaluateResponse(audioBlob);
+        const recordedMime = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordedMime });
+        evaluateResponse(audioBlob, recordedMime);
       };
 
       mediaRecorder.start();
@@ -380,7 +509,7 @@ export default function SpeakingReflexGame() {
     }
   };
 
-  const evaluateResponse = async (audioBlob: Blob) => {
+  const evaluateResponse = async (audioBlob: Blob, mimeType?: string) => {
     const token = localStorage.getItem("oasis_token");
     if (!token) {
       if ((window as any).showToast) {
@@ -399,8 +528,10 @@ export default function SpeakingReflexGame() {
     }
 
     setIsEvaluating(true);
+    const rawMime = mimeType || audioBlob.type || 'audio/webm';
+    const ext = rawMime.includes('mp4') || rawMime.includes('m4a') || rawMime.includes('aac') ? 'mp4' : 'webm';
     const formData = new FormData();
-    formData.append("file", audioBlob, "reflex_response.webm");
+    formData.append("file", audioBlob, `reflex_response.${ext}`);
     formData.append("question", currentQuestion);
 
     try {
@@ -446,12 +577,12 @@ export default function SpeakingReflexGame() {
 
         if (data.next_question) {
           setCurrentQuestion(data.next_question);
-          questionStartTimeRef.current = Date.now();
         }
 
         // 4. GEMINI LIVE MECHANISM:
         // Matcha Bear responds by VOICE, answering the user and giving coaching critique FIRST!
-        speakSequence(spokenReply, spokenNext);
+        const isSilent = data.transcript === "No speech detected" || !data.transcript;
+        speakSequence(spokenReply, spokenNext, !isSilent);
 
       } else {
         if ((window as any).showToast) {
@@ -539,8 +670,20 @@ export default function SpeakingReflexGame() {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={() => playSpeech(currentQuestion)}
-              className="p-2 bg-white text-primary hover:text-primary-dark border border-primary/15 rounded-xl shadow-sm hover:scale-105 transition-all text-xs flex items-center gap-1 font-bold"
+              onClick={changeQuestion}
+              className="px-2.5 py-1.5 bg-white text-emerald-800 hover:text-emerald-900 border border-emerald-200/80 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all text-xs flex items-center gap-1.5 font-bold cursor-pointer"
+              title="Đổi chủ đề / câu hỏi mới"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Đổi câu hỏi</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                primeMobileAudio();
+                playSpeech(currentQuestion);
+              }}
+              className="p-2 bg-white text-primary hover:text-primary-dark border border-primary/15 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all text-xs flex items-center gap-1 font-bold cursor-pointer"
               title="Nghe lại câu hỏi"
             >
               <Volume2 className="w-4 h-4" />
@@ -548,7 +691,7 @@ export default function SpeakingReflexGame() {
             <button
               type="button"
               onClick={() => setShowGuide(!showGuide)}
-              className="p-2 bg-white text-accent/60 hover:text-accent border border-primary/10 rounded-xl shadow-sm text-xs font-bold"
+              className="p-2 bg-white text-accent/60 hover:text-accent border border-primary/10 rounded-xl shadow-sm text-xs font-bold cursor-pointer"
               title="Hướng dẫn"
             >
               <Info className="w-4 h-4" />
@@ -605,18 +748,23 @@ export default function SpeakingReflexGame() {
                 {msg.sender === 'user' ? '🧑‍🚀' : '🐻'}
               </div>
 
-              <div className={`p-4 rounded-3xl border text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+              <div className={`p-4 rounded-3xl border text-xs sm:text-sm font-medium leading-relaxed shadow-md ${
                 msg.sender === 'user' 
-                  ? 'bg-[#1F4E3D] text-white border-transparent rounded-tr-none' 
-                  : 'bg-[#F9FCFA] text-accent border-primary/15 rounded-tl-none'
+                  ? 'bg-[#1B4332] text-white border border-[#2D6A4F] rounded-tr-none' 
+                  : 'bg-white text-stone-900 border-2 border-emerald-100/80 rounded-tl-none shadow-sm'
               }`}>
                 <div className="flex items-center justify-between gap-3">
-                  <span>{msg.text}</span>
+                  <span className={`leading-relaxed ${
+                    msg.sender === 'user' ? 'text-white !text-white font-medium' : 'text-stone-900 !text-stone-900 font-semibold'
+                  }`}>{msg.text}</span>
                   {msg.sender === 'bear' && (msg.spokenReply || msg.spokenQuestion) && (
                     <button
                       type="button"
-                      onClick={() => playSpeech(msg.spokenReply || msg.text)}
-                      className="p-1 rounded-lg hover:bg-primary/10 text-primary transition-all shrink-0"
+                      onClick={() => {
+                        primeMobileAudio();
+                        playSpeech(msg.spokenReply || msg.text);
+                      }}
+                      className="p-1 rounded-lg hover:bg-primary/10 text-primary transition-all shrink-0 cursor-pointer"
                       title="Nghe lại câu nói này"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
@@ -789,7 +937,10 @@ export default function SpeakingReflexGame() {
               <button 
                 type="button"
                 disabled={isEvaluating}
-                onClick={startRecording}
+                onClick={() => {
+                  primeMobileAudio();
+                  startRecording();
+                }}
                 className="w-16 h-16 rounded-full bg-[#1F4E3D] hover:bg-[#16382c] text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 transition-all cursor-pointer relative"
                 title="Bắt đầu nói"
               >

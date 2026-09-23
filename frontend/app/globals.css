@@ -27,15 +27,7 @@ body,
   color-scheme: light !important;
 }
 
-/* Remove aggressive transparency that breaks buttons */
-div,
-section,
-header,
-main,
-aside,
-nav {
-  color: #5D4037;
-}
+/* Default text color is inherited from body */
 
 .matcha-card,
 [class*="bento-card"] {
