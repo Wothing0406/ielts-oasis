@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HelpCircle, 
@@ -16,116 +16,177 @@ import {
   Lightbulb, 
   Sparkles, 
   ArrowRight, 
-  Loader2 
+  Loader2,
+  BookOpen,
+  Mic,
+  FolderOpen,
+  RotateCcw
 } from 'lucide-react';
+
+import TextbookSentenceMatching from './quiz/TextbookSentenceMatching';
+import SpeechPronunciationDrill from './quiz/SpeechPronunciationDrill';
+import GrammarMasteryLab from './grammar/GrammarMasteryLab';
 
 const API_URL = '/api';
 
 interface VocabItem {
-  id: number;
+  id?: number;
   word: string;
   meaning: string;
-  phonetic: string;
+  phonetic?: string;
   image_url?: string;
   example?: string;
   memory_hook?: string;
+  topic?: string;
+  mastery_level?: number;
 }
 
-type QuizMode = 'ABCD' | 'FILL_IN';
+type QuizType = 'textbook' | 'speech' | 'classic_vocab' | 'grammar_sanctuary' | 'srs';
+type ClassicMode = 'ABCD' | 'FILL_IN';
 
-const VocabularyQuiz = ({ vocabList, onClose, onReview }: { 
-  vocabList: VocabItem[], 
-  onClose: () => void,
-  onReview: (id: number, isCorrect: boolean) => Promise<void>
-}) => {
-  const [quizType, setQuizType] = useState<'vocab' | 'grammar' | 'srs' | null>(null);
-  const [grammarQuestions, setGrammarQuestions] = useState<any[]>([]);
-  const [isLoadingGrammar, setIsLoadingGrammar] = useState(false);
+const playAudio = async (word: string) => {
+  try {
+    const res = await fetch(`${API_URL}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word }),
+    });
+    const data = await res.json();
+    if (data.audio_url) {
+      const audio = new Audio(data.audio_url);
+      audio.play();
+    }
+  } catch (err) { console.error("TTS error:", err); }
+};
+
+interface Props {
+  vocabList: VocabItem[];
+  initialTopic?: string | null;
+  initialWordList?: VocabItem[] | null;
+  onClose: () => void;
+  onReview: (id: number, isCorrect: boolean) => Promise<void>;
+}
+
+export default function VocabularyQuiz({ 
+  vocabList, 
+  initialTopic = null,
+  initialWordList = null,
+  onClose, 
+  onReview 
+}: Props) {
+  // Topic Filter State in Quiz
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(initialTopic);
+  
+  // Available topics derived from vocabList
+  const availableTopics = useMemo(() => {
+    const topicsMap = new Map<string, number>();
+    for (const v of vocabList) {
+      const t = (v.topic || 'General').trim();
+      topicsMap.set(t, (topicsMap.get(t) || 0) + 1);
+    }
+    return Array.from(topicsMap.entries());
+  }, [vocabList]);
+
+  // Current active word list for the quiz
+  const activeVocabList = useMemo(() => {
+    if (!selectedTopic || selectedTopic === 'All') {
+      return vocabList;
+    }
+    const tLower = selectedTopic.toLowerCase();
+    return vocabList.filter(v => {
+      const vTopic = (v.topic || '').toLowerCase();
+      const vMeaning = (v.meaning || '').toLowerCase();
+      if (tLower === 'awl') return vTopic.includes('awl') || vTopic.includes('academic');
+      if (tLower === 'tech') return vTopic.includes('tech') || vMeaning.includes('công nghệ');
+      if (tLower === 'health') return vTopic.includes('health') || vMeaning.includes('sức khỏe');
+      if (tLower === 'economy') return vTopic.includes('econom') || vMeaning.includes('kinh tế');
+      if (tLower === 'environment') return vTopic.includes('environ') || vMeaning.includes('môi trường');
+      if (tLower === 'education') return vTopic.includes('educat') || vMeaning.includes('giáo dục');
+      if (tLower === 'society') return vTopic.includes('societ') || vMeaning.includes('xã hội');
+      return vTopic.includes(tLower);
+    });
+  }, [vocabList, selectedTopic]);
+
+  const [quizType, setQuizType] = useState<QuizType | null>(null);
   const [srsQuestions, setSrsQuestions] = useState<any[]>([]);
   const [isLoadingSRS, setIsLoadingSRS] = useState(false);
-  const [shuffledQuestions, setShuffledQuestions] = useState<VocabItem[]>(() => {
-    return [...vocabList].sort(() => Math.random() - 0.5);
-  });
+  
+  // Question tracking & Shuffled list
+  const [shuffledQuestions, setShuffledQuestions] = useState<VocabItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [mode, setMode] = useState<QuizMode>('ABCD');
-  const [options, setOptions] = useState<string[]>([]);
-  const [userInput, setUserInput] = useState('');
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
-  const activeQuestions = quizType === 'vocab' ? shuffledQuestions : quizType === 'grammar' ? grammarQuestions : srsQuestions;
+  // Retry Queue for skipped words in Speech drill
+  const [retryQueue, setRetryQueue] = useState<VocabItem[]>([]);
+  const [isDoingRetryRound, setIsDoingRetryRound] = useState(false);
 
-  // Handle question setup when index or activeQuestions changes
+  // Classic Vocab Mode state
+  const [classicMode, setClassicMode] = useState<ClassicMode>('ABCD');
+  const [classicOptions, setClassicOptions] = useState<string[]>([]);
+  const [userInput, setUserInput] = useState('');
+
+  // Initialize questions when quiz starts
+  const startQuizWithQuestions = (type: QuizType) => {
+    if (type === 'grammar_sanctuary') {
+      setQuizType('grammar_sanctuary');
+      return;
+    }
+
+    if (type === 'srs') {
+      setQuizType('srs');
+      fetchSRSQuestions();
+      return;
+    }
+
+    if (activeVocabList.length < 3) {
+      alert(`Chủ đề này chỉ có ${activeVocabList.length} từ. Vui lòng chọn "Tất cả từ" hoặc thêm từ vựng để ôn tập!`);
+      return;
+    }
+
+    const shuffled = [...activeVocabList].sort(() => Math.random() - 0.5);
+    setShuffledQuestions(shuffled);
+    setCurrentIndex(0);
+    setScore(0);
+    setIsFinished(false);
+    setFeedback(null);
+    setRetryQueue([]);
+    setIsDoingRetryRound(false);
+    setQuizType(type);
+  };
+
+  const activeQuestions = quizType === 'srs' ? srsQuestions : shuffledQuestions;
+
+  // Setup Classic ABCD or Fill-in options
   useEffect(() => {
-    if (activeQuestions.length > 0 && !isFinished && feedback === null) {
-      if (quizType === 'vocab') {
-        const nextMode: QuizMode = Math.random() > 0.5 ? 'ABCD' : 'FILL_IN';
-        setMode(nextMode);
-        
-        const current = activeQuestions[currentIndex];
+    if (quizType === 'classic_vocab' && activeQuestions.length > 0 && !isFinished && feedback === null) {
+      const nextMode: ClassicMode = Math.random() > 0.5 ? 'ABCD' : 'FILL_IN';
+      setClassicMode(nextMode);
+
+      const current = activeQuestions[currentIndex];
+      if (current) {
         const others = activeQuestions.filter(v => v.word !== current.word);
         const shuffledOthers = [...others].sort(() => 0.5 - Math.random()).slice(0, 3);
         const newOptions = [...shuffledOthers.map(v => v.meaning), current.meaning].sort(() => 0.5 - Math.random());
-        
-        setOptions(newOptions);
-      } else {
-        // Grammar or SRS mode
-        setMode('ABCD');
-        const current = activeQuestions[currentIndex];
-        if (current) {
-          // If error_identification and options are just ["A", "B", "C", "D"], try to extract or construct from question
-          let opts = current.options || [];
-          if (current.type === 'error_identification' && opts.length === 4 && opts.every((o: string) => /^[A-D]$/i.test(o.trim()))) {
-            // Attempt to extract underlined/bracketed phrases from question text if present
-            const matches = current.question.match(/\[([A-D])\]\s*([^\[]+)/g);
-            if (matches && matches.length === 4) {
-              opts = matches.map((m: string) => m.trim());
-            }
-          }
-          setOptions(opts);
-        }
+        setClassicOptions(newOptions);
       }
       setUserInput('');
     }
-  }, [currentIndex, activeQuestions, isFinished, quizType]);
-
-  const fetchGrammarQuestions = async () => {
-    setIsLoadingGrammar(true);
-    try {
-      const res = await fetch(`/api/quiz/grammar`);
-      if (res.ok) {
-        const data = await res.json();
-        setGrammarQuestions(data.questions || []);
-        setCurrentIndex(0);
-      } else {
-        alert("Không thể tải câu hỏi ngữ pháp từ AI.");
-        setQuizType(null);
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Lỗi kết nối máy chủ.");
-      setQuizType(null);
-    } finally {
-      setIsLoadingGrammar(false);
-    }
-  };
+  }, [currentIndex, activeQuestions, isFinished, quizType, feedback]);
 
   const fetchSRSQuestions = async () => {
     setIsLoadingSRS(true);
     try {
-      // Prioritize words with lowest mastery_level (weakest) or shuffle if none
       const sortedByWeakness = [...vocabList].sort((a: any, b: any) => {
         const levelA = a.mastery_level !== undefined ? a.mastery_level : 0;
         const levelB = b.mastery_level !== undefined ? b.mastery_level : 0;
         return levelA - levelB;
       });
 
-      // Take a dynamic sample of up to 10 weak words (mixing top weak words with random sampling)
       const topWeak = sortedByWeakness.slice(0, 15).sort(() => Math.random() - 0.5).slice(0, 8);
       const words = topWeak.map(v => v.word);
 
-      // Determine user level context if available
       let userBand = 6.5;
       try {
         const savedUser = localStorage.getItem("oasis_user");
@@ -136,28 +197,25 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
       } catch (e) {}
 
       const grammarPool = [
-        "Subject-verb agreement",
-        "Conjunction vs Preposition (Although vs Despite)",
-        "Relative clauses (who/which/that)",
-        "Conditional sentences (Type 2 & 3)",
-        "Parallel structure in lists",
-        "Articles (a/an/the) with countable/uncountable nouns",
-        "Gerund vs Infinitive after specific verbs",
-        "Word form & Part of Speech errors (adverb vs adjective)"
+        "Past Simple vs Past Perfect in Task 1",
+        "Definite article 'the' with proportions",
+        "Zero article with abstract nouns in Task 2",
+        "Future projections (is projected to reach)",
+        "Subject-verb agreement in complex sentences"
       ];
-      // Randomly pick 3-4 grammar points for variety each session
-      const shuffledGrammar = [...grammarPool].sort(() => Math.random() - 0.5).slice(0, 4);
+      const shuffledGrammar = [...grammarPool].sort(() => Math.random() - 0.5).slice(0, 3);
 
-      const res = await fetch(`/api/skills/spaced-repetition-review`, {
+      const res = await fetch(`${API_URL}/skills/spaced-repetition-review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          weak_words: words.length > 0 ? words : ["mitigate", "profound", "facilitate", "resilient", "versatile"],
+          weak_words: words.length > 0 ? words : ["mitigate", "profound", "facilitate", "resilient", "sustainable"],
           weak_grammar_points: shuffledGrammar,
           target_band: userBand,
           count: 5
         })
       });
+
       if (res.ok) {
         const data = await res.json();
         const items = data.quiz_items || data.items || [];
@@ -176,7 +234,6 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
     }
   };
 
-  // Hàm chuẩn hóa từ vựng: loại bỏ từ loại (n), (v), (adj)... và ký tự đặc biệt
   const normalizeWord = (str: string) => {
     if (!str) return '';
     return str
@@ -196,13 +253,37 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
       .trim();
   };
 
-  const handleAnswer = async (answer: string) => {
+  const handleNextQuestion = () => {
+    setFeedback(null);
+    if (currentIndex < activeQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      // Check if there are skipped words in retryQueue
+      if (retryQueue.length > 0 && !isDoingRetryRound) {
+        setIsDoingRetryRound(true);
+        setShuffledQuestions([...retryQueue]);
+        setRetryQueue([]);
+        setCurrentIndex(0);
+      } else {
+        setIsFinished(true);
+      }
+    }
+  };
+
+  // Skip in Speech Mode
+  const handleSkipWord = (word: VocabItem) => {
+    setRetryQueue(prev => [...prev, word]);
+    handleNextQuestion();
+  };
+
+  // Answer handler for Classic Vocab & SRS
+  const handleAnswerClassic = async (answer: string) => {
     if (feedback !== null) return;
     const current = activeQuestions[currentIndex];
     
     let isCorrect = false;
-    if (quizType === 'vocab') {
-      if (mode === 'ABCD') {
+    if (quizType === 'classic_vocab') {
+      if (classicMode === 'ABCD') {
         isCorrect = answer === current.meaning;
       } else {
         const cleanUser = normalizeWord(answer);
@@ -225,163 +306,266 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
       setFeedback('wrong');
     }
 
-    if (quizType === 'vocab' && current.id) {
-       onReview(current.id, isCorrect);
+    if (current.id) {
+      onReview(current.id, isCorrect);
     }
   };
 
-  const nextQuestion = () => {
-    setFeedback(null);
-    if (currentIndex < activeQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setIsFinished(true);
-    }
-  };
-
-  const skipQuestion = () => {
-    if (feedback !== null) return;
-    setFeedback('wrong');
-  };
-
-  // 1. Selection Screen
+  // ==========================================
+  // 1. SELECTION SCREEN (QUIZ SETUP BENTO MODAL)
+  // ==========================================
   if (quizType === null) {
     return (
-      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-white p-8 md:p-10 rounded-large shadow-2xl max-w-md w-full relative overflow-hidden border-4 border-primary/30 text-center flex flex-col items-center">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-          <HelpCircle className="w-8 h-8 text-primary shrink-0" />
-        </div>
-        <h3 className="text-2xl font-display font-black text-accent mb-2">Matcha Quiz</h3>
-        <p className="text-sm opacity-60 mb-8">Luyện tập giúp củng cố kiến thức tốt hơn. Hãy chọn phần thi bạn muốn ôn tập!</p>
-        
-        <div className="flex flex-col gap-3.5 w-full">
-          <button type="button"
-            onClick={() => {
-              if (vocabList.length === 0) {
-                (window as any).showAlert("Thư viện từ vựng đang trống rỗng. Hãy quét hoặc thêm vài từ vựng rồi quay lại ôn tập nhé!", "Thiếu nguyên liệu!", "warning");
-                return;
-              }
-              setQuizType('vocab');
-            }}
-            className="w-full min-h-[44px] bg-primary text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer touch-manipulation"
-          >
-            <Layers className="w-6 h-6 text-white shrink-0" />
-            <div className="text-left">
-              <p className="text-base font-black leading-none">Trắc nghiệm Từ vựng</p>
-              <p className="text-[10px] font-medium opacity-80 mt-1">Luyện từ vựng trong thư viện của bạn</p>
-            </div>
-          </button>
+      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
+        <div className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-xl w-full relative overflow-hidden border-2 border-primary/20 text-center flex flex-col items-center max-h-[90vh] overflow-y-auto custom-scrollbar">
           
-          <button type="button"
-            onClick={() => {
-              setQuizType('srs');
-              fetchSRSQuestions();
-            }}
-            className="w-full min-h-[44px] bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer touch-manipulation"
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="absolute top-5 right-5 text-accent/40 hover:text-accent p-2 rounded-full hover:bg-black/5 dark:hover:bg-neutral-800 transition-all cursor-pointer touch-manipulation active:scale-95" 
+            aria-label="Đóng"
           >
-            <Brain className="w-6 h-6 text-white shrink-0" />
-            <div className="text-left text-white">
-              <div className="flex items-center gap-1.5">
-                <p className="text-base font-black leading-none text-white">Ôn Tập SRS AI (Skill 5)</p>
-                <span className="px-1.5 py-0.5 bg-white/25 text-[8px] font-black rounded uppercase">Spaced Rep</span>
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 text-primary">
+            <GraduationCap className="w-8 h-8" />
+          </div>
+
+          <h3 className="text-2xl font-display font-black text-accent dark:text-amber-100 mb-1">
+            Matcha Quiz & Sanctuary
+          </h3>
+          <p className="text-xs text-accent/60 dark:text-neutral-400 mb-5 max-w-sm">
+            Nâng tầm từ vựng và ngữ pháp IELTS với 3 chế độ kiểm tra chuyên sâu cùng Mascot Mát Cha!
+          </p>
+
+          {/* Topic Scope Selector */}
+          <div className="w-full bg-secondary/40 dark:bg-neutral-800/60 p-3.5 rounded-2xl border border-primary/10 mb-6 text-left">
+            <div className="flex items-center justify-between text-xs font-bold text-accent/70 dark:text-neutral-300 mb-2">
+              <span className="flex items-center gap-1.5">
+                <FolderOpen className="w-4 h-4 text-primary" />
+                <span>Chọn phạm vi từ vựng ôn tập:</span>
+              </span>
+              <span className="text-primary font-black text-[11px]">
+                {activeVocabList.length} từ khả dụng
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 custom-scrollbar">
+              <button
+                type="button"
+                onClick={() => setSelectedTopic(null)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                  !selectedTopic || selectedTopic === 'All'
+                    ? 'bg-primary text-white border-primary shadow-xs'
+                    : 'bg-white dark:bg-neutral-700 text-accent dark:text-neutral-200 border-primary/10 hover:border-primary/40'
+                }`}
+              >
+                🌿 Tất cả ({vocabList.length} từ)
+              </button>
+
+              {availableTopics.map(([t, count]) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setSelectedTopic(t)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                    selectedTopic?.toLowerCase() === t.toLowerCase()
+                      ? 'bg-primary text-white border-primary shadow-xs'
+                      : 'bg-white dark:bg-neutral-700 text-accent dark:text-neutral-200 border-primary/10 hover:border-primary/40'
+                  }`}
+                >
+                  {t} ({count})
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 5 Distinct Mode Options */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+            
+            {/* Mode 1: Textbook Context Matching */}
+            <button
+              type="button"
+              onClick={() => startQuizWithQuestions('textbook')}
+              className="p-4 rounded-2xl bg-amber-50/70 hover:bg-amber-100/70 dark:bg-neutral-800 border-2 border-primary/20 hover:border-primary text-left transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer group flex flex-col justify-between min-h-[105px]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-accent dark:text-amber-100 uppercase tracking-wider">
+                    1. Nối Câu Sách Giáo Khoa
+                  </h4>
+                  <span className="text-[10px] font-bold text-primary">Cambridge Context</span>
+                </div>
               </div>
-              <p className="text-[10px] font-medium opacity-90 mt-1 text-white/95">Bài tập trúng điểm yếu & Collocations C1</p>
-            </div>
-          </button>
+              <p className="text-[11px] text-accent/70 dark:text-neutral-400 leading-snug">
+                Nối từ với câu dịch nghĩa chuẩn xác trong 3 câu ngữ cảnh học thuật.
+              </p>
+            </button>
 
-          <button type="button"
-            onClick={() => {
-              setQuizType('grammar');
-              fetchGrammarQuestions();
-            }}
-            className="w-full min-h-[44px] bg-accent text-white p-4 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-3 cursor-pointer touch-manipulation"
+            {/* Mode 2: Speech Pronunciation Drill */}
+            <button
+              type="button"
+              onClick={() => startQuizWithQuestions('speech')}
+              className="p-4 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-neutral-800 border-2 border-emerald-300 dark:border-emerald-800 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer group flex flex-col justify-between min-h-[105px]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600/10 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <Mic className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-accent dark:text-amber-100 uppercase tracking-wider">
+                    2. Luyện Đọc & Chấm Điểm Mic
+                  </h4>
+                  <span className="text-[10px] font-bold text-emerald-700">Speaking Reflex 0-100%</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-accent/70 dark:text-neutral-400 leading-snug">
+                Đọc to từ vào Micro, chấm điểm tức thì và có nút bỏ qua từ mới.
+              </p>
+            </button>
+
+            {/* Mode 3: Enhanced Classic Vocab ABCD & Cloze */}
+            <button
+              type="button"
+              onClick={() => startQuizWithQuestions('classic_vocab')}
+              className="p-4 rounded-2xl bg-white hover:bg-secondary/40 dark:bg-neutral-800 border-2 border-primary/20 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer group flex flex-col justify-between min-h-[105px]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent dark:text-neutral-200 flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-colors">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-accent dark:text-amber-100 uppercase tracking-wider">
+                    3. Trắc Nghiệm & Điền Từ
+                  </h4>
+                  <span className="text-[10px] font-bold text-accent/60">Classic Active Recall</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-accent/70 dark:text-neutral-400 leading-snug">
+                Trắc nghiệm ABCD 4 lựa chọn và gõ từ vào câu ví dụ có gợi ý.
+              </p>
+            </button>
+
+            {/* Mode 4: IELTS Grammar Sanctuary */}
+            <button
+              type="button"
+              onClick={() => startQuizWithQuestions('grammar_sanctuary')}
+              className="p-4 rounded-2xl bg-gradient-to-br from-amber-100/70 to-emerald-100/60 dark:from-neutral-800 dark:to-neutral-700 border-2 border-primary/30 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer group flex flex-col justify-between min-h-[105px]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs">
+                  <Languages className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-accent dark:text-amber-100 uppercase tracking-wider">
+                    4. Ngữ Pháp: Thì & Mạo Từ
+                  </h4>
+                  <span className="text-[10px] font-bold text-primary">Grammar Sanctuary (NEW)</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-accent/70 dark:text-neutral-400 leading-snug">
+                Dòng thời gian 12 Thì, Cây quyết định mạo từ và luyện đề từ kho cá nhân.
+              </p>
+            </button>
+          </div>
+
+          {/* Mode 5: Spaced Repetition Review (Full Width) */}
+          <button
+            type="button"
+            onClick={() => startQuizWithQuestions('srs')}
+            className="w-full mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-800 text-white font-bold text-left transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer flex items-center justify-between"
           >
-            <Languages className="w-6 h-6 text-white shrink-0" />
-            <div className="text-left text-white">
-              <p className="text-base font-black leading-none text-white">Trắc nghiệm Ngữ pháp</p>
-              <p className="text-[10px] font-medium opacity-80 mt-1 text-white/90">Câu hỏi ngữ pháp sinh động từ AI</p>
+            <div className="flex items-center gap-2.5">
+              <Brain className="w-5 h-5 shrink-0 text-emerald-200" />
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider">5. Ôn Tập SRS AI Spaced Repetition</p>
+                <p className="text-[10px] font-medium opacity-85">Luyện Collocations C1 và khắc phục điểm yếu cá nhân</p>
+              </div>
             </div>
+            <ArrowRight className="w-4 h-4 shrink-0 text-emerald-200" />
           </button>
         </div>
-        
-        <button type="button" onClick={onClose} className="absolute top-6 right-6 opacity-30 hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-black/5 touch-manipulation active:scale-95 min-w-[36px] min-h-[36px] flex items-center justify-center" aria-label="Đóng">
-           <X className="w-6 h-6 text-accent" />
-        </button>
       </div>
-    </div>
     );
   }
 
-  // 2. Loading Screen for Grammar / SRS Mode
-  if (isLoadingGrammar || isLoadingSRS) {
+  // ==========================================
+  // 2. GRAMMAR MASTERY LAB SCREEN
+  // ==========================================
+  if (quizType === 'grammar_sanctuary') {
     return (
-      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full flex flex-col items-center justify-center">
-         <div className="w-16 h-16 relative mb-4">
-           <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-           <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-         </div>
-         <p className="text-sm font-bold uppercase tracking-widest text-primary animate-pulse">
-           {isLoadingSRS ? "Gemini AI is generating SRS questions..." : "AI is brewing grammar questions..."}
-         </p>
+      <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl max-w-3xl w-full p-5 sm:p-7 relative max-h-[92vh] overflow-y-auto custom-scrollbar border-2 border-primary/20">
+          <button
+            type="button"
+            onClick={() => setQuizType(null)}
+            className="absolute top-5 right-5 text-accent/40 hover:text-accent p-2 rounded-full hover:bg-black/5 dark:hover:bg-neutral-800 transition-all cursor-pointer"
+            aria-label="Đóng"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <GrammarMasteryLab vocabList={activeVocabList} onClose={() => setQuizType(null)} />
         </div>
       </div>
     );
   }
 
-  // 3. Questions Empty Screen
-  if (activeQuestions.length === 0) {
+  // ==========================================
+  // 3. LOADING SCREEN (SRS MODE)
+  // ==========================================
+  if (isLoadingSRS) {
     return (
       <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-white p-10 rounded-large shadow-2xl text-center border-4 border-primary/30 max-w-md w-full">
-         <p className="text-xl font-display font-bold mb-6 text-accent">Không tìm thấy câu hỏi...</p>
-         <button type="button" onClick={() => setQuizType(null)} className="min-h-[44px] bg-primary text-white px-10 py-3 rounded-full font-bold touch-manipulation active:scale-95">Quay lại</button>
+        <div className="bg-white dark:bg-neutral-900 p-8 rounded-3xl shadow-2xl text-center border-2 border-primary/30 max-w-sm w-full flex flex-col items-center">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
+          <p className="text-sm font-bold text-accent dark:text-neutral-200 animate-pulse">
+            AI đang pha chế bài tập SRS từ kho từ vựng của bạn...
+          </p>
         </div>
       </div>
     );
   }
 
+  // ==========================================
+  // 4. QUESTIONS CONTAINER SCREEN
+  // ==========================================
   const current = activeQuestions[currentIndex];
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md md:max-w-lg w-full relative flex flex-col max-h-[88vh] border-2 border-primary/20 overflow-hidden">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-black/5 shrink-0 bg-white">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl max-w-lg w-full relative flex flex-col max-h-[90vh] border-2 border-primary/20 overflow-hidden">
+        
+        {/* Header Bar */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-neutral-900">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full">
-              {quizType === 'vocab' 
-                ? (mode === 'ABCD' ? 'Trắc nghiệm Từ vựng' : 'Điền từ vựng')
-                : quizType === 'srs'
-                ? `Ôn Tập SRS AI • ${current?.type === 'collocation_cloze' ? 'Collocation Cloze' : current?.type === 'error_identification' ? 'Tìm Lỗi Sai' : 'Định Nghĩa'}`
-                : 'Trắc nghiệm Ngữ pháp'}
+              {quizType === 'textbook' ? 'Sách Giáo Khoa' :
+               quizType === 'speech' ? 'Luyện Đọc Mic' :
+               quizType === 'classic_vocab' ? (classicMode === 'ABCD' ? 'Trắc Nghiệm' : 'Điền Từ') :
+               'Ôn Tập SRS AI'}
             </span>
-            <span className="text-xs font-bold text-accent/50">{currentIndex + 1} / {activeQuestions.length}</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {!isFinished && !feedback && (
-              <button
-                type="button"
-                onClick={skipQuestion}
-                className="text-xs font-bold text-accent/50 hover:text-accent px-2.5 py-1.5 rounded-lg hover:bg-black/5 transition-colors flex items-center gap-1 cursor-pointer touch-manipulation active:scale-95 min-h-[36px]"
-                title="Bỏ qua câu này"
-              >
-                <span>Bỏ qua</span>
-                <SkipForward className="w-4 h-4 shrink-0" />
-              </button>
+            <span className="text-xs font-bold text-accent/50 dark:text-neutral-400">
+              {currentIndex + 1} / {activeQuestions.length}
+            </span>
+            {isDoingRetryRound && (
+              <span className="text-[9px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full uppercase">
+                Vòng ôn từ đã bỏ qua
+              </span>
             )}
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="text-accent/40 hover:text-accent p-2 rounded-full hover:bg-black/5 transition-all cursor-pointer touch-manipulation active:scale-95 min-w-[36px] min-h-[36px] flex items-center justify-center"
-              title="Đóng"
-              aria-label="Đóng"
-            >
-              <X className="w-5 h-5 shrink-0" />
-            </button>
           </div>
+
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="text-accent/40 hover:text-accent p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-neutral-800 transition-all cursor-pointer"
+            aria-label="Đóng"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
@@ -389,264 +573,204 @@ const VocabularyQuiz = ({ vocabList, onClose, onReview }: {
           <AnimatePresence mode="wait">
             {!isFinished ? (
               <motion.div
-                key={`${quizType}-${currentIndex}`}
+                key={`${quizType}-${currentIndex}-${isDoingRetryRound}`}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="flex flex-col"
+                className="w-full"
               >
-                {/* Illustrative Image for Vocab Quiz */}
-                {quizType === 'vocab' && current.image_url && (
-                  <div className="w-full flex justify-center mb-3">
-                    <img 
-                      src={current.image_url} 
-                      alt={current.word} 
-                      className="w-40 h-28 object-cover rounded-2xl border-2 border-primary/20 shadow-md"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
-                  </div>
-                )}
-                
-                {/* Instruction & Question Prompt */}
-                <div className="text-center mb-5">
-                  <p className="text-[11px] font-bold text-accent/70 uppercase tracking-wider mb-2">
-                    {quizType === 'vocab'
-                      ? (mode === 'ABCD' ? 'Nghĩa tiếng Việt của từ này là:' : 'Từ tiếng Anh nào có nghĩa là:')
-                      : quizType === 'srs'
-                      ? (current?.type === 'error_identification' 
-                          ? 'Tìm và chọn phần bị sai ngữ pháp trong câu:' 
-                          : current?.type === 'collocation_cloze'
-                          ? 'Chọn từ học thuật thích hợp nhất để điền vào chỗ trống:'
-                          : 'Chọn từ vựng chuẩn xác tương ứng với định nghĩa:')
-                      : 'Chọn đáp án chính xác để hoàn thành câu:'}
-                  </p>
-                  
-                  <div className="text-base sm:text-lg md:text-xl font-display font-black text-accent leading-relaxed tracking-normal px-2">
-                    {quizType === 'vocab' ? (
-                      mode === 'ABCD' ? current.word : current.meaning
-                    ) : current?.type === 'error_identification' ? (
-                      (() => {
-                        const cleanQ = (current.question || '').replace(/^Identify the error:\s*/i, '');
-                        const parts = cleanQ.split(/(\[[A-D]\]|\([A-D]\))/g);
-                        return parts.map((part: string, idx: number) => {
-                          const match = part.match(/^\[([A-D])\]$/) || part.match(/^\(([A-D])\)$/);
-                          if (match) {
-                            return (
-                              <span 
-                                key={idx} 
-                                className="inline-flex items-center justify-center bg-amber-200 text-amber-950 border border-amber-400 font-sans font-black text-xs px-2 py-0.5 mx-1 rounded-md align-middle shadow-xs"
-                              >
-                                {match[1]}
-                              </span>
-                            );
-                          }
-                          return <span key={idx}>{part}</span>;
-                        });
-                      })()
-                    ) : (
-                      (() => {
-                        const qText = current.question || '';
-                        // Highlight blank if present
-                        if (qText.includes('________') || qText.includes('[...]')) {
-                          const parts = qText.split(/(_{3,}|\[\.\.\.\])/g);
-                          return parts.map((p: string, idx: number) => {
-                            if (/^(_{3,}|\[\.\.\.\])$/.test(p)) {
-                              return (
-                                <span 
-                                  key={idx} 
-                                  className="inline-block mx-1 px-3 py-0.5 bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 rounded-lg font-mono text-sm align-middle"
-                                >
-                                  _______
-                                </span>
-                              );
-                            }
-                            return <span key={idx}>{p}</span>;
-                          });
-                        }
-                        return qText;
-                      })()
-                    )}
-                  </div>
-                  {(quizType === 'vocab' && mode === 'ABCD') && <p className="text-xs opacity-50 italic mt-1 font-sans">{current.phonetic}</p>}
-                </div>
-                
-                {/* Options List */}
-                {mode === 'ABCD' ? (
-                  <div className="grid grid-cols-1 gap-2.5 w-full">
-                    {options.map((option, i) => {
-                      const cleanOpt = cleanOptionText(option).toLowerCase();
-                      const cleanCorr = cleanOptionText(quizType === 'vocab' ? current.meaning : (current.correct_answer || '')).toLowerCase();
-                      const isCorrectOption = cleanOpt === cleanCorr || (cleanCorr.length > 2 && cleanOpt.includes(cleanCorr));
-                      
-                      let btnStyle = "bg-amber-50/60 hover:bg-amber-100/70 border-amber-200/80 text-amber-950";
-                      if (feedback) {
-                        if (isCorrectOption) {
-                          btnStyle = "bg-emerald-600 border-emerald-600 text-white shadow-md font-black";
-                        } else if (feedback === 'wrong') {
-                          btnStyle = "bg-rose-50 border-rose-200 text-rose-800 opacity-60";
-                        }
-                      }
-
-                      return (
-                        <button 
-                          type="button" 
-                          key={i}
-                          onClick={() => handleAnswer(option)}
-                          disabled={feedback !== null}
-                          className={`p-3 rounded-2xl font-bold text-left transition-all border-2 flex justify-between items-center cursor-pointer ${btnStyle}`}
-                        >
-                          <span className="text-sm font-bold flex items-center gap-2.5">
-                            <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
-                              feedback && isCorrectOption 
-                                ? 'bg-white text-emerald-700' 
-                                : 'bg-amber-200 text-amber-900'
-                            }`}>
-                              {String.fromCharCode(65 + i)}
-                            </span>
-                            <span className="leading-snug">
-                              {cleanOptionText(option)}
-                            </span>
-                          </span>
-                          {feedback && isCorrectOption && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="w-full">
-                    <input 
-                      type="text"
-                      autoFocus
-                      className={`w-full min-h-[48px] p-3.5 rounded-2xl border-2 text-center text-lg font-display font-black outline-none transition-all
-                        ${feedback === 'correct' ? 'border-green-500 bg-green-50 text-green-700' : 
-                          feedback === 'wrong' ? 'border-red-500 bg-red-50 text-red-700' : 
-                          'border-amber-200 focus:border-primary bg-amber-50/50 text-accent'}
-                      `}
-                      placeholder="Gõ từ tiếng Anh..."
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAnswer(userInput)}
-                      disabled={feedback !== null}
-                    />
-                    {!feedback && (
-                      <button 
-                        type="button" 
-                        onClick={() => handleAnswer(userInput)}
-                        className="w-full min-h-[44px] mt-3 bg-primary text-white py-3 rounded-full font-bold shadow-md hover:bg-primary/90 transition-all active:scale-95 cursor-pointer touch-manipulation"
-                      >
-                        Xác nhận đáp án
-                      </button>
-                    )}
-                  </div>
+                {/* 1. TEXTBOOK CONTEXT MATCHING MODE */}
+                {quizType === 'textbook' && current && (
+                  <TextbookSentenceMatching
+                    currentWord={current}
+                    vocabPool={activeVocabList}
+                    onAnswer={(isCorrect) => {
+                      if (isCorrect) setScore(score + 1);
+                      if (current.id) onReview(current.id, isCorrect);
+                    }}
+                    onNext={handleNextQuestion}
+                    onPlayAudio={playAudio}
+                  />
                 )}
 
-                {/* Feedback Panel */}
-                {feedback && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex flex-col items-center gap-3">
-                    <div className="text-center font-bold w-full">
-                      {feedback === 'correct' ? (
-                        <div className="flex items-center justify-center gap-1.5 text-emerald-700 text-base font-black">
-                          <CheckCircle2 className="w-5 h-5 shrink-0" />
-                          <span>Chính xác!</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="flex items-center justify-center gap-1.5 text-rose-600 text-base font-black">
-                            <AlertCircle className="w-5 h-5 shrink-0" />
-                            <span>Chưa chính xác!</span>
-                          </div>
-                          <p className="text-accent text-xs font-bold mt-0.5">
-                            {quizType === 'vocab' 
-                              ? (mode === 'ABCD' ? `Đáp án đúng: "${current.meaning}"` : `Từ đúng là: "${normalizeWord(current.word) || current.word}"`)
-                              : `Đáp án đúng: "${cleanOptionText(current.correct_answer || '')}"`}
-                          </p>
-                        </div>
-                      )}
+                {/* 2. SPEECH PRONUNCIATION DRILL MODE */}
+                {quizType === 'speech' && current && (
+                  <SpeechPronunciationDrill
+                    currentWord={current}
+                    onAnswer={(isCorrect) => {
+                      if (isCorrect) setScore(score + 1);
+                      if (current.id) onReview(current.id, isCorrect);
+                    }}
+                    onSkipWord={handleSkipWord}
+                    onNext={handleNextQuestion}
+                    onPlayAudio={playAudio}
+                  />
+                )}
 
-                      {/* Hints and Explanations */}
-                      {(quizType === 'srs' && current?.explanation) && (
-                        <div className="mt-3 p-3.5 bg-emerald-50 rounded-2xl text-left border border-emerald-200 text-xs text-neutral-800 font-medium leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
-                          <div className="flex items-center gap-1 font-black text-emerald-800 mb-0.5">
-                            <GraduationCap className="w-4 h-4 shrink-0 text-emerald-800" />
-                            <span>Giải thích Cambridge IELTS:</span>
-                          </div>
-                          <p className="text-neutral-700 text-[11px] leading-relaxed">{current.explanation}</p>
-                          {current.target_word && (
-                            <p className="text-[10px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
-                              <Target className="w-3.5 h-3.5 shrink-0 text-emerald-700" />
-                              <span>Target Word: <span className="font-mono">{current.target_word}</span></span>
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {(quizType === 'grammar' && current.explanation) && (
-                        <div className="mt-3 p-3 bg-primary/10 rounded-2xl text-left border border-primary/20 text-xs text-accent font-medium leading-relaxed max-h-28 overflow-y-auto custom-scrollbar">
-                          <span className="font-black text-primary flex items-center gap-1 mb-0.5">
-                            <Lightbulb className="w-3.5 h-3.5 shrink-0 text-primary" />
-                            <span>Giải thích:</span>
-                          </span>
-                          {current.explanation}
-                        </div>
-                      )}
-                      {(quizType === 'vocab' && (current.memory_hook || current.example)) && (
-                        <div className="mt-3 p-3 bg-primary/10 rounded-2xl text-left border border-primary/20 text-xs text-accent font-medium leading-relaxed max-h-28 overflow-y-auto custom-scrollbar">
-                          <span className="font-black text-primary flex items-center gap-1 mb-0.5">
-                            <Lightbulb className="w-3.5 h-3.5 shrink-0 text-primary" />
-                            <span>Giải thích & Ví dụ:</span>
-                          </span>
-                          {current.memory_hook && <p className="mb-0.5"><b>Mẹo nhớ:</b> {current.memory_hook}</p>}
-                          {current.example && <p className="italic opacity-85"><b>Ví dụ:</b> {current.example}</p>}
-                        </div>
+                {/* 3. CLASSIC VOCAB ABCD & FILL-IN MODE */}
+                {quizType === 'classic_vocab' && current && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-[11px] font-bold text-accent/60 uppercase tracking-wider mb-2">
+                        {classicMode === 'ABCD' ? 'Nghĩa tiếng Việt của từ này là:' : 'Từ tiếng Anh nào có nghĩa là:'}
+                      </p>
+                      <h3 className="text-2xl font-display font-black text-accent dark:text-amber-100">
+                        {classicMode === 'ABCD' ? current.word : current.meaning}
+                      </h3>
+                      {classicMode === 'ABCD' && current.phonetic && (
+                        <p className="text-xs font-mono text-accent/50 mt-1">{current.phonetic}</p>
                       )}
                     </div>
-                  </motion.div>
+
+                    {classicMode === 'ABCD' ? (
+                      <div className="grid grid-cols-1 gap-2.5 w-full pt-2">
+                        {classicOptions.map((opt, i) => {
+                          const isCorrect = opt === current.meaning;
+                          let btnStyle = "bg-secondary/40 hover:bg-primary/10 border-primary/20 text-accent dark:text-neutral-200";
+                          if (feedback) {
+                            if (isCorrect) {
+                              btnStyle = "bg-emerald-600 text-white border-emerald-600 font-black shadow-md";
+                            } else if (feedback === 'wrong') {
+                              btnStyle = "bg-rose-50 text-rose-800 border-rose-200 opacity-60";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              disabled={feedback !== null}
+                              onClick={() => handleAnswerClassic(opt)}
+                              className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer ${btnStyle}`}
+                            >
+                              <span className="text-sm font-semibold flex items-center gap-2.5">
+                                <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-black">
+                                  {String.fromCharCode(65 + i)}
+                                </span>
+                                <span>{opt}</span>
+                              </span>
+                              {feedback && isCorrect && <CheckCircle2 className="w-4 h-4 text-white" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-2">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={userInput}
+                          onChange={(e) => setUserInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAnswerClassic(userInput)}
+                          placeholder="Gõ từ tiếng Anh..."
+                          disabled={feedback !== null}
+                          className="w-full min-h-[48px] p-3 rounded-2xl border-2 border-primary/30 text-center font-bold text-lg outline-none focus:border-primary bg-secondary/30"
+                        />
+                        {!feedback && (
+                          <button
+                            type="button"
+                            onClick={() => handleAnswerClassic(userInput)}
+                            className="w-full min-h-[44px] bg-primary text-white rounded-full font-bold shadow-md hover:bg-primary-dark transition-all cursor-pointer"
+                          >
+                            Xác nhận đáp án
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {feedback && (
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleNextQuestion}
+                          className="min-h-[44px] bg-primary text-white px-7 py-2.5 rounded-full font-bold shadow-md hover:bg-primary-dark transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                          <span>Câu tiếp theo</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 4. SRS AI MODE */}
+                {quizType === 'srs' && current && (
+                  <div className="space-y-4">
+                    <p className="text-xs font-bold text-accent/70 text-center">
+                      {current.question}
+                    </p>
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {(current.options || []).map((opt: string, i: number) => {
+                        const isCorrect = cleanOptionText(opt).toLowerCase() === cleanOptionText(current.correct_answer || '').toLowerCase();
+                        let btnStyle = "bg-secondary/40 hover:bg-primary/10 border-primary/20 text-accent dark:text-neutral-200";
+                        if (feedback) {
+                          if (isCorrect) btnStyle = "bg-emerald-600 text-white border-emerald-600 font-black shadow-md";
+                          else if (feedback === 'wrong') btnStyle = "bg-rose-50 text-rose-800 border-rose-200 opacity-60";
+                        }
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            disabled={feedback !== null}
+                            onClick={() => handleAnswerClassic(opt)}
+                            className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer ${btnStyle}`}
+                          >
+                            <span className="text-sm font-semibold">{cleanOptionText(opt)}</span>
+                            {feedback && isCorrect && <CheckCircle2 className="w-4 h-4 text-white" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {feedback && (
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleNextQuestion}
+                          className="min-h-[44px] bg-primary text-white px-7 py-2.5 rounded-full font-bold shadow-md hover:bg-primary-dark transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                          <span>Câu tiếp theo</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </motion.div>
             ) : (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                  <Sparkles className="w-8 h-8 text-primary shrink-0" />
+              /* Finish Screen */
+              <div className="text-center py-6 space-y-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                  <Sparkles className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-display font-black mb-1 text-accent">Hoàn thành bài ôn tập!</h3>
-                <p className="text-sm opacity-70 mb-6 text-accent">Điểm số của bạn: <b>{score}</b> / {activeQuestions.length}</p>
-                <div className="flex items-center justify-center gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setQuizType(null)} 
-                    className="min-h-[44px] bg-primary text-white px-6 py-3 rounded-full font-bold shadow-md hover:scale-[1.02] transition-all cursor-pointer text-sm touch-manipulation active:scale-95"
+                <h3 className="text-2xl font-display font-black text-accent dark:text-amber-100">
+                  Hoàn thành phiên ôn tập!
+                </h3>
+                <p className="text-sm font-bold text-accent/70 dark:text-neutral-300">
+                  Điểm số đạt được: <strong className="text-primary text-lg">{score}</strong> / {activeQuestions.length}
+                </p>
+
+                <div className="flex justify-center gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuizType(null)}
+                    className="min-h-[44px] bg-primary text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:bg-primary-dark transition-all cursor-pointer text-xs"
                   >
-                    Chơi tiếp
+                    Chọn phần thi khác
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={onClose} 
-                    className="min-h-[44px] bg-accent text-white px-6 py-3 rounded-full font-bold shadow-md hover:scale-[1.02] transition-all cursor-pointer text-sm touch-manipulation active:scale-95"
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="min-h-[44px] bg-accent text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:bg-accent-dark transition-all cursor-pointer text-xs"
                   >
                     Đóng
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Modal Sticky Footer (Always Visible When Feedback Is Displayed) */}
-        {!isFinished && feedback && (
-          <div className="p-3.5 bg-white border-t border-black/5 shrink-0 flex items-center justify-center">
-            <button 
-              type="button" 
-              onClick={nextQuestion}
-              className="w-full min-h-[44px] py-3 bg-accent text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer text-sm touch-manipulation"
-            >
-              <span>Câu tiếp theo</span>
-              <ArrowRight className="w-4 h-4 shrink-0" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
-};
-
-export default VocabularyQuiz;
+}

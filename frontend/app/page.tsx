@@ -35,6 +35,8 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [vocabList, setVocabList] = useState<any[]>([]);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [quizTopic, setQuizTopic] = useState<string | null>(null);
+  const [quizCustomVocab, setQuizCustomVocab] = useState<any[] | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [guestName, setGuestName] = useState("");
@@ -375,11 +377,18 @@ export default function Home() {
     }
   };
 
-  const handleStartQuiz = () => {
-    if (vocabList.length < 4) {
-      (window as any).showAlert("Oops! Your vocabulary lab needs at least 4 words to generate a quiz. Add more words to get started!", "More words needed!", "warning");
+  const handleStartQuiz = (topic?: string | null, customList?: any[]) => {
+    const listToQuiz = (customList && customList.length > 0) ? customList : vocabList;
+    if (listToQuiz.length < 3) {
+      (window as any).showAlert(
+        `Phần ôn tập cần ít nhất 3 từ vựng để tạo câu hỏi bài tập. ${topic ? `Chủ đề "${topic}" hiện chỉ có ${listToQuiz.length} từ.` : 'Kho hiện có ít từ.'} Bạn hãy thêm từ hoặc chọn "Học hết cả kho" nhé!`,
+        "Cần thêm từ vựng!",
+        "warning"
+      );
       return;
     }
+    setQuizTopic(topic || null);
+    setQuizCustomVocab(customList && customList.length > 0 ? customList : null);
     setShowQuiz(true);
   };
 
@@ -878,7 +887,13 @@ export default function Home() {
       {showQuiz && (
         <VocabularyQuiz
           vocabList={vocabList}
-          onClose={() => setShowQuiz(false)}
+          initialTopic={quizTopic}
+          initialWordList={quizCustomVocab}
+          onClose={() => {
+            setShowQuiz(false);
+            setQuizTopic(null);
+            setQuizCustomVocab(null);
+          }}
           onReview={handleReview}
         />
       )}
