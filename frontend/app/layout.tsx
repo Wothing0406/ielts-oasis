@@ -15,7 +15,7 @@ const safeJsonStringify = (obj: any) =>
 
 export const metadata: Metadata = {
   title: "Mát Cha AI Eo - Your Zen Learning Space",
-  description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+  description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill. Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
   keywords: [
     "luyện thi ielts",
     "ielts online",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Mát Cha AI Eo - Your Zen Learning Space",
-    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill. Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
     url: "https://ieltsoasis.site",
     siteName: "Mát Cha AI Eo",
     images: [
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Mát Cha AI Eo - Your Zen Learning Space",
-    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+    description: "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill. Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
     images: ["https://ieltsoasis.site/banner.png"],
   },
 };
@@ -78,7 +78,7 @@ export default function RootLayout({
               "name": "Mát Cha AI Eo",
               "operatingSystem": "All",
               "applicationCategory": "EducationalApplication",
-              "description": "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill 🍵 Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
+              "description": "Ghé Mát Cha AI Eo ủ một tách trà Matcha cực chill. Học từ vựng thông minh SRS, chấm Writing AI siêu tốc và luyện nghe đọc chủ động cùng bé mầm học tập nha!",
               "url": "https://ieltsoasis.site",
               "offers": {
                 "@type": "Offer",

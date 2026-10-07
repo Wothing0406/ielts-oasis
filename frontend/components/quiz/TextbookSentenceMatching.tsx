@@ -11,7 +11,8 @@ import {
   Lightbulb, 
   Volume2, 
   BookmarkCheck,
-  GraduationCap
+  GraduationCap,
+  Languages
 } from 'lucide-react';
 
 interface VocabItem {
@@ -209,7 +210,10 @@ export default function TextbookSentenceMatching({
 
               {/* Vietnamese Translation */}
               <div className="pt-1.5 border-t border-black/5 dark:border-white/5 flex items-start gap-1.5 text-xs font-medium text-accent/80 dark:text-neutral-300">
-                <span className="text-primary font-bold shrink-0">👉 Dịch:</span>
+                <span className="text-primary font-bold shrink-0 flex items-center gap-1">
+                  <Languages className="w-3.5 h-3.5 shrink-0" />
+                  <span>Dịch:</span>
+                </span>
                 <span className="leading-normal">{opt.sentence_vi}</span>
               </div>
             </motion.button>

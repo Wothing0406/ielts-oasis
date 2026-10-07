@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 const API_URL = '/api';
 
@@ -169,7 +170,7 @@ export default function CommunityFeed({
 
   const handleLike = async (postType: string, postId: number) => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để thả tim! 🍵", "info");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để thả tim!", "info");
     try {
       const res = await fetch(`${API_URL}/community/like`, {
         method: "POST",
@@ -196,12 +197,12 @@ export default function CommunityFeed({
 
   const handleSaveToVault = async (vocab: any) => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng!", "info");
     if (savingWords.has(vocab.word)) return;
 
     const isDuplicate = savedWordsSet.has(vocab.word.toLowerCase());
     if (isDuplicate) {
-      return (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+      return (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho!`, "info");
     }
 
     setSavingWords(prev => {
@@ -225,7 +226,7 @@ export default function CommunityFeed({
           is_global: false
         });
         if (result && result.status === "duplicate") {
-          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho!`, "info");
         }
       } else {
         const res = await fetch(`${API_URL}/vocabulary`, {
@@ -257,14 +258,14 @@ export default function CommunityFeed({
             window.postMessage(syncMsg, "*");
             window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: syncMsg }));
           }
-          (window as any).showToast(`Đã lưu "${vocab.word}" vào kho từ! 🍵`, "success");
+          (window as any).showToast(`Đã lưu "${vocab.word}" vào kho từ!`, "success");
         } else if (res.status === 409) {
-          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho! 🍵`, "info");
+          (window as any).showToast(`Từ vựng "${vocab.word}" đã có sẵn trong kho!`, "info");
         }
       }
     } catch (e) {
       console.error(e);
-      (window as any).showToast("Lỗi kết nối! 🍵", "error");
+      (window as any).showToast("Lỗi kết nối!", "error");
     } finally {
       setSavingWords(prev => {
         const next = new Set(prev);
@@ -294,12 +295,12 @@ export default function CommunityFeed({
 
   const handleSaveCuratedToVault = async (item: any) => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng!", "info");
     if (savingWords.has(item.word)) return;
 
     const isDuplicate = savedWordsSet.has(item.word.toLowerCase());
     if (isDuplicate) {
-      return (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
+      return (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ!`, "info");
     }
 
     setSavingWords(prev => {
@@ -324,9 +325,9 @@ export default function CommunityFeed({
           is_global: false
         });
         if (result && result.status === "duplicate") {
-          (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ! 🍵`, "info");
+          (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong Tủ từ!`, "info");
         } else {
-          (window as any).showToast(`Đã thêm từ "${item.word}" (${item.level}) vào Tủ từ thành công! 🍵`, "success");
+          (window as any).showToast(`Đã thêm từ "${item.word}" (${item.level}) vào Tủ từ thành công!`, "success");
         }
       } else {
         const res = await fetch(`${API_URL}/community/curated-vocab/save-to-lab`, {
@@ -350,7 +351,7 @@ export default function CommunityFeed({
             window.postMessage(syncMsg, "*");
             window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: syncMsg }));
           }
-          (window as any).showToast(resData.message || "Đã lưu thành công! 🍵", "success");
+          (window as any).showToast(resData.message || "Đã lưu thành công!", "success");
         } else {
           (window as any).showToast(resData.detail || "Không thể lưu từ vựng", "error");
         }
@@ -368,16 +369,16 @@ export default function CommunityFeed({
   };
 
   const handleDeleteWriting = async (writingId: number) => {
-    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài viết này khỏi Oasis Community? 🍵", async () => {
+    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài viết này khỏi Oasis Community?", async () => {
       const token = localStorage.getItem("oasis_token");
-      if (!token) return (window as any).showToast("Bạn cần đăng nhập! 🍵", "info");
+      if (!token) return (window as any).showToast("Bạn cần đăng nhập!", "info");
       try {
         const res = await fetch(`${API_URL}/community/writing/${writingId}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          (window as any).showToast("Đã xóa bài viết thành công! 🍵", "success");
+          (window as any).showToast("Đã xóa bài viết thành công!", "success");
           fetchFeed();
         } else {
           const errData = await res.json();
@@ -391,16 +392,16 @@ export default function CommunityFeed({
   };
 
   const handleDeleteVocab = async (vocabId: number) => {
-    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài từ vựng này khỏi Oasis Community? 🍵", async () => {
+    (window as any).showConfirm("Bạn có chắc chắn muốn xóa bài từ vựng này khỏi Oasis Community?", async () => {
       const token = localStorage.getItem("oasis_token");
-      if (!token) return (window as any).showToast("Bạn cần đăng nhập! 🍵", "info");
+      if (!token) return (window as any).showToast("Bạn cần đăng nhập!", "info");
       try {
         const res = await fetch(`${API_URL}/community/vocab/${vocabId}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          (window as any).showToast("Đã xóa từ vựng khỏi Community! 🍵", "success");
+          (window as any).showToast("Đã xóa từ vựng khỏi Community!", "success");
           fetchFeed();
         } else {
           const errData = await res.json();
@@ -416,7 +417,7 @@ export default function CommunityFeed({
   const handlePostComment = async () => {
     if (!newComment.trim() || !activeComments) return;
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Bạn cần đăng nhập để bình luận! 🍵", "info");
+    if (!token) return (window as any).showToast("Bạn cần đăng nhập để bình luận!", "info");
     try {
       const res = await fetch(`${API_URL}/community/comment`, {
         method: "POST",
@@ -688,7 +689,7 @@ export default function CommunityFeed({
       {activeTab === 'oxford' ? (
         oxfordLoading ? (
           <div className="py-16 text-center text-primary font-bold animate-pulse">
-            Đang nạp kho từ vựng chuẩn Oxford 5000 CEFR... 🍵
+            Đang nạp kho từ vựng chuẩn Oxford 5000 CEFR...
           </div>
         ) : oxfordData.items.length === 0 ? (
           <div className="py-16 text-center bg-[#F9F8F5] rounded-2xl border border-primary/10">
@@ -819,7 +820,7 @@ export default function CommunityFeed({
         )
       ) : loading ? (
         <div className="py-16 text-center text-primary font-bold animate-pulse">
-          Đang tải dữ liệu cộng đồng... 🍵
+          Đang tải dữ liệu cộng đồng...
         </div>
       ) : activeItems.length === 0 ? (
         <div className="py-16 text-center bg-[#F9F8F5] rounded-2xl border border-primary/10">
@@ -860,7 +861,11 @@ export default function CommunityFeed({
                         onClick={() => setExpandedWritings(prev => ({ ...prev, [w.id]: !prev[w.id] }))}
                         className="text-primary text-[10px] font-bold mt-1 hover:underline inline-block"
                       >
-                        {expandedWritings[w.id] ? "Thu gọn ⌃" : "Xem thêm ⌄"}
+                        {expandedWritings[w.id] ? (
+                          <span className="inline-flex items-center gap-0.5">Thu gọn <ChevronUp className="w-3 h-3 shrink-0" /></span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5">Xem thêm <ChevronDown className="w-3 h-3 shrink-0" /></span>
+                        )}
                       </button>
                     )}
                   </div>
@@ -1112,7 +1117,7 @@ export default function CommunityFeed({
                       disabled={savingAll}
                       onClick={async () => {
                         const token = localStorage.getItem("oasis_token");
-                        if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng! 🍵", "info");
+                        if (!token) return (window as any).showToast("Bạn cần đăng nhập để lưu từ vựng!", "info");
                         setSavingAll(true);
                         let savedCount = 0;
                         for (const v of lesson.vocabulary) {
@@ -1135,7 +1140,7 @@ export default function CommunityFeed({
                           }
                         }
                         setSavingAll(false);
-                        (window as any).showToast(`Đã lưu ${savedCount} từ vựng vào kho! 🍵`, "success");
+                        (window as any).showToast(`Đã lưu ${savedCount} từ vựng vào kho!`, "success");
                       }}
                       className="bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >

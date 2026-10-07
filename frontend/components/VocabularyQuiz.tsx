@@ -355,13 +355,14 @@ export default function VocabularyQuiz({
               <button
                 type="button"
                 onClick={() => setSelectedTopic(null)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer touch-manipulation active:scale-95 flex items-center gap-1.5 ${
                   !selectedTopic || selectedTopic === 'All'
                     ? 'bg-primary text-white border-primary shadow-xs'
                     : 'bg-white dark:bg-neutral-700 text-accent dark:text-neutral-200 border-primary/10 hover:border-primary/40'
                 }`}
               >
-                🌿 Tất cả ({vocabList.length} từ)
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>Tất cả ({vocabList.length} từ)</span>
               </button>
 
               {availableTopics.map(([t, count]) => (
@@ -369,7 +370,7 @@ export default function VocabularyQuiz({
                   key={t}
                   type="button"
                   onClick={() => setSelectedTopic(t)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer touch-manipulation active:scale-95 ${
                     selectedTopic?.toLowerCase() === t.toLowerCase()
                       ? 'bg-primary text-white border-primary shadow-xs'
                       : 'bg-white dark:bg-neutral-700 text-accent dark:text-neutral-200 border-primary/10 hover:border-primary/40'

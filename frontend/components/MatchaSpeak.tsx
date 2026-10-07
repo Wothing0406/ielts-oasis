@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Mic, Square, Volume2, VolumeX, Play, MessageSquare, Flame, CheckCircle2, AlertCircle, Info, Star, Award, Trash2, Sparkles, BookOpen, RefreshCw, Heart, Zap, Radio } from 'lucide-react';
+import { 
+  Mic, Square, Volume2, VolumeX, Play, MessageSquare, Flame, 
+  CheckCircle2, AlertCircle, Info, Star, Award, Trash2, Sparkles, 
+  BookOpen, RefreshCw, Heart, Zap, Radio, Target, Link2, 
+  TrendingUp, AlertTriangle, XCircle, Lightbulb, ArrowRight, Music 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MatchaStickerBadge } from './MatchaStickers';
 
@@ -241,7 +246,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   // Generate Sentence via AI for current level
   const generateAISentence = async () => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    if (!token) return (window as any).showToast("Please log in first!", "info");
     
     setIsGeneratingSentence(true);
     try {
@@ -257,7 +262,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
           setSelectedWord(null);
           setPronunciationGuide(null);
           setShowGuide(false);
-          (window as any).showToast("✨ AI generated a new sentence!", "success");
+          (window as any).showToast("AI generated a new sentence!", "success");
         }
       } else {
         throw new Error("Failed response");
@@ -273,7 +278,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   // Generate Cue Card via AI for sandbox level
   const generateAICueCard = async () => {
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    if (!token) return (window as any).showToast("Please log in first!", "info");
     
     setIsGeneratingCueCard(true);
     try {
@@ -287,7 +292,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
           setSandboxResult(null);
           setIsPrepActive(false);
           if (prepTimerRef.current) clearInterval(prepTimerRef.current);
-          (window as any).showToast("✨ AI generated a new IELTS Cue Card!", "success");
+          (window as any).showToast("AI generated a new IELTS Cue Card!", "success");
         }
       } else {
         throw new Error("Failed response");
@@ -304,7 +309,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const fetchPronunciationGuide = async () => {
     if (!selectedSentence) return;
     const token = localStorage.getItem("oasis_token");
-    if (!token) return (window as any).showToast("Please log in first! 🍵", "info");
+    if (!token) return (window as any).showToast("Please log in first!", "info");
     
     setIsFetchingGuide(true);
     setShowGuide(true);
@@ -459,14 +464,14 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const evaluateAudio = async (audioBlob: Blob) => {
     const token = localStorage.getItem("oasis_token");
     if (!token) {
-      (window as any).showToast("Please log in to practice speaking! 🍵", "info");
+      (window as any).showToast("Please log in to practice speaking!", "info");
       return;
     }
 
     console.log("Peak audio RMS volume analyzed:", peakVolumeRef.current);
     // Client-side silence check (peak RMS volume must exceed 0.003)
     if (peakVolumeRef.current > 0 && peakVolumeRef.current < 0.003) {
-      (window as any).showToast("No speech detected from microphone. Please speak louder and clearer! 🎙️", "warning");
+      (window as any).showToast("No speech detected from microphone. Please speak louder and clearer!", "warning");
       setIsEvaluating(false);
       return;
     }
@@ -521,7 +526,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     setPronunciationGuide(null);
     setShowGuide(false);
     setSelectedSentence(""); // Reset to empty welcome screen
-    (window as any).showToast("Cleared results & reset sentence! 🍵", "success");
+    (window as any).showToast("Cleared results & reset sentence!", "success");
   };
 
 
@@ -688,10 +693,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                     type="button"
                     onClick={generateAISentence}
                     disabled={isGeneratingSentence}
-                    className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-4 py-1.5 rounded-full text-xs font-bold transition-all disabled:opacity-50"
+                    className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-4 py-2 rounded-full text-xs font-bold transition-all disabled:opacity-50 touch-manipulation active:scale-95 min-h-[38px]"
                   >
-                    <Sparkles className={`w-3.5 h-3.5 ${isGeneratingSentence ? 'animate-spin' : ''}`} />
-                    {isGeneratingSentence ? "Generating..." : "✨ AI Generate"}
+                    <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isGeneratingSentence ? 'animate-spin' : ''}`} />
+                    <span>{isGeneratingSentence ? "Generating..." : "AI Generate"}</span>
                   </button>
                 )}
               </div>
@@ -700,9 +705,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               <button
                 type="button"
                 onClick={resetPractice}
-                className="flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3.5 py-1.5 rounded-xl transition-all"
+                className="flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3.5 py-2 rounded-xl transition-all touch-manipulation active:scale-95 min-h-[38px]"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Reset
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Reset</span>
               </button>
             </div>
 
@@ -730,19 +736,20 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                         (window as any).showToast("Loaded custom text successfully!", "success");
                       }
                     }}
-                    className="bg-primary text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all"
+                    className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-95 transition-all min-h-[38px] touch-manipulation"
                   >
                     Apply Custom Text
                   </button>
-                  <span className="text-[10px] font-bold text-primary/80 bg-primary/5 px-2 py-0.5 rounded-md">
-                    ✨ 100% AI Grading Supported
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary/80 bg-primary/5 px-2.5 py-1 rounded-md">
+                    <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                    <span>100% AI Grading Supported</span>
                   </span>
                 </div>
 
                 {/* Community Suggestions */}
                 <div className="mt-4 pt-3 border-t border-primary/10 space-y-2">
                   <span className="text-[10px] font-black text-primary uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Suggestions from Oasis Community:
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Suggestions from Oasis Community:
                   </span>
                   {isLoadingSuggestions ? (
                     <p className="text-[10px] text-accent/50 animate-pulse">Loading hot community posts...</p>
@@ -760,7 +767,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                             setSelectedWord(null);
                             setPronunciationGuide(null);
                             setShowGuide(false);
-                            (window as any).showToast(`Loaded post by @${post.username}! 🍵`, "success");
+                            (window as any).showToast(`Loaded post by @${post.username}!`, "success");
                           }}
                           className="text-left p-2.5 bg-white hover:bg-primary/5 rounded-xl border border-primary/10 transition-all group flex flex-col justify-between"
                         >
@@ -799,10 +806,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   <button 
                     type="button"
                     onClick={speakReference}
-                    className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-primary/10 transition-colors shadow-sm text-primary"
+                    className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:bg-primary/10 active:scale-95 transition-all shadow-sm text-primary touch-manipulation cursor-pointer shrink-0"
                     title="Listen Native"
                   >
-                    <Volume2 className="w-4 h-4" />
+                    <Volume2 className="w-4 h-4 shrink-0" />
                   </button>
                 </div>
 
@@ -811,11 +818,11 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
               </div>
             ) : (
               <div className="bg-[#f7fdf9] p-8 rounded-3xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center text-center gap-3">
-                <Info className="text-primary w-8 h-8 animate-bounce" />
+                <Info className="text-primary w-8 h-8 animate-bounce shrink-0" />
                 <h4 className="font-display font-bold text-accent text-sm">No Practice Sentence Selected</h4>
                 <p className="text-xs text-accent/60 max-w-sm">
                   {currentLevel 
-                    ? `Click the "✨ AI Generate" button above to generate a new English shadowing sentence for the ${currentLevel} level!` 
+                    ? `Click the "AI Generate" button above to generate a new English shadowing sentence for the ${currentLevel} level!` 
                     : "Select a difficulty level above (Easy/Medium/Hard) and click 'AI Generate' to practice, or switch to 'Custom Text' to paste your own sentence."}
                 </p>
               </div>
@@ -832,12 +839,13 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                 >
                   <div className="flex justify-between items-center border-b border-amber-900/5 pb-2">
                     <h4 className="text-xs font-black uppercase text-amber-800 flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5" /> Pronunciation & Liaison Guide
+                      <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                      <span>Pronunciation & Liaison Guide</span>
                     </h4>
                     <button 
                       type="button"
                       onClick={() => setShowGuide(false)}
-                      className="text-[10px] font-bold text-accent/50 hover:text-accent"
+                      className="text-[10px] font-bold text-accent/50 hover:text-accent p-1 cursor-pointer"
                     >
                       Close
                     </button>
@@ -845,20 +853,26 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
 
                   {isFetchingGuide ? (
                     <div className="flex items-center gap-2 text-xs text-amber-800/60 py-2">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
                       Analyzing liaison, phonetics and intonation...
                     </div>
                   ) : pronunciationGuide ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                       <div className="space-y-2">
-                        <p className="font-semibold text-accent">🗣️ IPA Transcription:</p>
+                        <p className="font-semibold text-accent flex items-center gap-1.5">
+                          <Volume2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>IPA Transcription:</span>
+                        </p>
                         <p className="text-sm font-bold text-primary italic bg-white px-3 py-1.5 rounded-xl border border-primary/5">
                           {pronunciationGuide.ipa_sentence}
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <p className="font-semibold text-accent">🎯 Keyword Stresses:</p>
+                        <p className="font-semibold text-accent flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Keyword Stresses:</span>
+                        </p>
                         <div className="flex flex-wrap gap-1.5">
                           {pronunciationGuide.stresses?.map((word: string, idx: number) => (
                             <span key={idx} className="bg-white border border-primary/10 px-2 py-0.5 rounded-lg font-bold text-[#4c663c]">
@@ -869,7 +883,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       </div>
 
                       <div className="md:col-span-2 space-y-2 border-t border-amber-900/5 pt-3">
-                        <p className="font-semibold text-accent">🔗 Liaison & Word-Linking Tips:</p>
+                        <p className="font-semibold text-accent flex items-center gap-1.5">
+                          <Link2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Liaison & Word-Linking Tips:</span>
+                        </p>
                         <ul className="list-disc pl-4 space-y-1 text-accent/80 font-medium">
                           {pronunciationGuide.liaisons?.map((tip: string, idx: number) => (
                             <li key={idx}>{tip}</li>
@@ -878,7 +895,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       </div>
 
                       <div className="md:col-span-2 space-y-1">
-                        <p className="font-semibold text-accent">📈 Intonation & Pauses:</p>
+                        <p className="font-semibold text-accent flex items-center gap-1.5">
+                          <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Intonation & Pauses:</span>
+                        </p>
                         <p className="text-accent/80 font-medium">{pronunciationGuide.intonation}</p>
                       </div>
                     </div>
@@ -929,7 +949,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   animate={{ opacity: 1 }}
                   className="flex flex-col items-center justify-center py-10 space-y-3"
                 >
-                  <span className="material-symbols-rounded text-4xl text-primary animate-spin">sync</span>
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin shrink-0" />
                   <p className="text-xs text-primary font-bold">Evaluating phonetic details...</p>
                 </motion.div>
               )}
@@ -944,7 +964,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   <div className="flex flex-col md:flex-row items-center justify-between border-b border-primary/10 pb-4 gap-4">
                     <div className="flex items-center gap-4">
                       {/* Circle Progress Bar */}
-                      <div className="relative w-16 h-16 flex items-center justify-center">
+                      <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                           <path
                             className="text-gray-100"
@@ -971,10 +991,23 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       
                       <div>
                         <h5 className="text-xs font-black uppercase text-accent/50 tracking-wider">Pronunciation Accuracy</h5>
-                        <p className="text-sm font-bold text-accent">
-                          {accuracyScore >= 80 ? "🌟 Excellent! Native-like speech." :
-                           accuracyScore >= 50 ? "👍 Good job! Keep practicing links and ending sounds." :
-                           "⚠️ Needs Practice. Try slower with clearer sounds."}
+                        <p className="text-sm font-bold text-accent flex items-center gap-1.5 mt-0.5">
+                          {accuracyScore >= 80 ? (
+                            <>
+                              <Award className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>Excellent! Native-like speech.</span>
+                            </>
+                          ) : accuracyScore >= 50 ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                              <span>Good job! Keep practicing links and ending sounds.</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                              <span>Needs Practice. Try slower with clearer sounds.</span>
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -1000,7 +1033,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                         );
                       })}
                     </div>
-                    <p className="text-[10px] text-accent/50 mt-3">💡 Click on any word to view IPA pronunciation details & improvement tips.</p>
+                    <p className="text-[10px] text-accent/60 mt-3 flex items-center gap-1">
+                      <Lightbulb className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>Click on any word to view IPA pronunciation details & improvement tips.</span>
+                    </p>
                   </div>
 
                   {/* Word Details Card */}
@@ -1030,8 +1066,8 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                     <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/60 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <h5 className="text-xs font-black uppercase text-emerald-900 tracking-wider flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-                          Đánh Giá Ngữ Âm Chuyên Sâu Band 8.5+ (Skill 1 - docs/skills.md)
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                          <span>Đánh Giá Ngữ Âm Chuyên Sâu Band 8.5+</span>
                         </h5>
                         {shadowResult.wpm > 0 && (
                           <span className="text-[10px] font-extrabold bg-white px-2 py-0.5 rounded-md border border-emerald-200 text-emerald-800">
@@ -1041,19 +1077,28 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
                         <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
-                          <p className="font-bold text-accent text-[11px]">🎯 Âm cuối (Ending Sounds):</p>
+                          <p className="font-bold text-accent text-[11px] flex items-center gap-1">
+                            <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>Âm cuối (Ending Sounds):</span>
+                          </p>
                           <p className="text-accent/80 text-[11px] leading-relaxed">
                             {shadowResult.phonetic_feedback.ending_sounds}
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
-                          <p className="font-bold text-accent text-[11px]">🔗 Nối âm (Linking Sounds):</p>
+                          <p className="font-bold text-accent text-[11px] flex items-center gap-1">
+                            <Link2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>Nối âm (Linking Sounds):</span>
+                          </p>
                           <p className="text-accent/80 text-[11px] leading-relaxed">
                             {shadowResult.phonetic_feedback.linking_sounds}
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-xl border border-emerald-100 space-y-1">
-                          <p className="font-bold text-accent text-[11px]">🎵 Ngữ điệu (Intonation):</p>
+                          <p className="font-bold text-accent text-[11px] flex items-center gap-1">
+                            <Music className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>Ngữ điệu (Intonation):</span>
+                          </p>
                           <p className="text-accent/80 text-[11px] leading-relaxed">
                             {shadowResult.phonetic_feedback.intonation}
                           </p>
@@ -1187,7 +1232,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       }}
                       className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:scale-105 transition-all"
                     >
-                      <span className="material-symbols-rounded text-white text-base">play_arrow</span>
+                      <Play className="w-4 h-4 text-white shrink-0 fill-current ml-0.5" />
                     </button>
                     <span className="text-[10px] font-bold text-accent/60">Play your response</span>
                   </div>
@@ -1203,7 +1248,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   animate={{ opacity: 1 }}
                   className="flex flex-col items-center justify-center py-10 space-y-3"
                 >
-                  <span className="material-symbols-rounded text-4xl text-primary animate-spin">sync</span>
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin shrink-0" />
                   <p className="text-xs text-primary font-bold">AI Examiner is reviewing transcript and grammar complexity...</p>
                 </motion.div>
               )}
@@ -1264,7 +1309,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                   {/* Strengths & Weaknesses */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-green-50/50 border border-green-100 p-5 rounded-2xl space-y-2">
-                      <h4 className="text-xs font-bold text-green-700 flex items-center gap-1.5">🌟 Key Strengths</h4>
+                      <h4 className="text-xs font-bold text-green-700 flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-green-600 shrink-0" /> Key Strengths</h4>
                       <ul className="text-xs text-green-800 space-y-1.5 list-disc pl-4 font-medium">
                         {sandboxResult.strengths?.map((s: string, idx: number) => (
                           <li key={idx}>{s}</li>
@@ -1272,7 +1317,7 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       </ul>
                     </div>
                     <div className="bg-orange-50/50 border border-orange-100 p-5 rounded-2xl space-y-2">
-                      <h4 className="text-xs font-bold text-orange-700 flex items-center gap-1.5">⚠️ Areas for Improvement</h4>
+                      <h4 className="text-xs font-bold text-orange-700 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0" /> Areas for Improvement</h4>
                       <ul className="text-xs text-orange-800 space-y-1.5 list-disc pl-4 font-medium">
                         {sandboxResult.weaknesses?.map((w: string, idx: number) => (
                           <li key={idx}>{w}</li>
@@ -1292,7 +1337,12 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                               <span className="font-bold text-accent text-xs">"{w.word}"</span>
                               {w.ipa && <span className="text-[10px] text-primary italic font-bold">IPA: {w.ipa}</span>}
                             </div>
-                            {w.tip && <p className="text-[10px] text-accent/70 font-semibold mt-1">💡 {w.tip}</p>}
+                            {w.tip && (
+                              <p className="text-[10px] text-accent/70 font-semibold mt-1 flex items-center gap-1">
+                                <Lightbulb className="w-3 h-3 text-amber-500 shrink-0" />
+                                <span>{w.tip}</span>
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1307,7 +1357,10 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                         {sandboxResult.corrections.map((c: any, idx: number) => (
                           <div key={idx} className="p-3 bg-red-50/40 rounded-2xl border border-red-100/50 flex flex-col gap-1">
                             <p className="text-[11px] line-through text-red-400">{c.original}</p>
-                            <p className="text-xs font-bold text-green-600">➔ {c.corrected}</p>
+                            <p className="text-xs font-bold text-green-600 flex items-center gap-1">
+                              <ArrowRight className="w-3 h-3 shrink-0" />
+                              <span>{c.corrected}</span>
+                            </p>
                             <p className="text-[10px] text-accent/60 italic font-medium">Why: {c.reason}</p>
                           </div>
                         ))}
@@ -1325,11 +1378,13 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
                       <div className="space-y-2">
                         {sandboxResult.shadow_errors_logged.map((err: any, idx: number) => (
                           <div key={idx} className="bg-white p-3 rounded-2xl border border-amber-100 text-xs space-y-1">
-                            <p className="text-red-700 font-medium">
-                              ❌ Học viên nói: <span className="line-through italic">{err.learner_utterance}</span>
+                            <p className="text-red-700 font-medium flex items-center gap-1.5">
+                              <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                              <span>Học viên nói: <span className="line-through italic">{err.learner_utterance}</span></span>
                             </p>
-                            <p className="text-emerald-800 font-extrabold">
-                              ✨ Diễn đạt Band 8.5+: <span>{err.band_8_alternative}</span>
+                            <p className="text-emerald-800 font-extrabold flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Diễn đạt Band 8.5+: <span>{err.band_8_alternative}</span></span>
                             </p>
                             {err.identified_flaw && (
                               <p className="text-[10px] text-accent/60">

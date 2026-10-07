@@ -353,7 +353,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                               setSelectedPhrase('');
                               setRephraseSuggestions([]);
                               if ((window as any).showToast) {
-                                (window as any).showToast("Đã thay thế cụm từ thành công! 📝", "success");
+                                (window as any).showToast("Đã thay thế cụm từ thành công!", "success");
                               }
                             }}
                             className="p-2.5 bg-white dark:bg-neutral-800 hover:bg-primary/5 rounded-xl border border-primary/10 text-xs text-accent dark:text-secondary font-medium cursor-pointer transition-colors shadow-sm"
@@ -402,7 +402,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                         onClick={() => {
                           navigator.clipboard.writeText(analysis.band_8_rephrase);
                           if ((window as any).showToast) {
-                            (window as any).showToast("Đã sao chép bài mẫu Band 8.5+! 📋", "success");
+                            (window as any).showToast("Đã sao chép bài mẫu Band 8.5+!", "success");
                           }
                         }}
                         className="text-[10px] font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-full border border-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer"

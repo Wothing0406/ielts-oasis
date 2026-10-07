@@ -180,7 +180,7 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
              >
                 <img src="/logoweb.png" className="w-32 h-32" alt="Mascot" />
              </motion.div>
-             <button type="button" className="matcha-btn">Open Lens 🍵</button>
+             <button type="button" className="matcha-btn flex items-center justify-center gap-2">Open Lens</button>
              <p className="mt-4 text-[10px] font-black text-matcha-primary/40 uppercase tracking-[0.3em]">Local YOLO Object Detection</p>
           </div>
         )}

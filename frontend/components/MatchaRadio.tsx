@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { Lightbulb } from 'lucide-react';
 
 const levenshtein = (a: string, b: string) => {
   if (a.length === 0) return b.length;
@@ -335,7 +336,7 @@ export default function MatchaRadio({ initialContext }: MatchaRadioProps) {
             <div className="animate-fade-in">
               <h4 className="font-bold mb-2">Paste English {manualMode === 'conversation' ? 'dialogue script' : 'passage text'} to generate Audio:</h4>
               <p className="text-xs text-primary mb-4 opacity-80 bg-primary/5 p-3 rounded-lg border border-primary/20">
-                💡 <b>Pro Tip:</b> For multi-speaker narration, use JSON format. You can copy this prompt to Gemini/ChatGPT: 
+                <span className="inline-flex items-center gap-1 font-bold text-primary mr-1"><Lightbulb className="w-3.5 h-3.5 shrink-0" /> Pro Tip:</span> For multi-speaker narration, use JSON format. You can copy this prompt to Gemini/ChatGPT: 
                 <br/><code className="bg-primary/20 px-1 py-0.5 rounded mt-1 inline-block select-all">
                   {manualMode === 'conversation' 
                     ? `Convert the dialogue below into a JSON array of objects with speaker keys: [{"a": "hello"}, {"b": "hi"}]` 

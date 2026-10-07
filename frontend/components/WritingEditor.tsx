@@ -54,9 +54,9 @@ const WritingSanctuary = () => {
 
   return (
     <div className="flex flex-col h-full p-8 bg-cream-yellow/30 relative overflow-hidden">
-      {/* Bear Mascot Sticker */}
-      <div className="absolute top-6 right-8 w-24 h-24 pointer-events-none opacity-20">
-         <span className="text-6xl">✍️</span>
+      {/* Decorative Icon */}
+      <div className="absolute top-6 right-8 w-24 h-24 pointer-events-none opacity-15 flex items-center justify-center">
+         <PenTool className="w-16 h-16 text-primary" />
       </div>
 
       <div className="flex items-center gap-3 mb-8">

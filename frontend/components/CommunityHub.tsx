@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Users, Coffee, Trophy, MessageCircle } from 'lucide-react';
+import { Users, Coffee, Trophy, MessageCircle, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = '/api';
 
 const virtualUsers = [
-  { name: "User", xp: 2500, level: 15, avatar: "🐻" },
-  { name: "MatchaLover", xp: 1800, level: 12, avatar: "🐨" },
-  { name: "IELTSKing", xp: 1200, level: 8, avatar: "🐼" },
+  { name: "User", xp: 2500, level: 15, initials: "US", color: "bg-emerald-600 text-white" },
+  { name: "MatchaLover", xp: 1800, level: 12, initials: "ML", color: "bg-amber-700 text-white" },
+  { name: "IELTSKing", xp: 1200, level: 8, initials: "IK", color: "bg-teal-700 text-white" },
 ];
 
 const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
@@ -34,8 +34,8 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
            {virtualUsers.map((user) => (
              <div key={user.name} className="flex items-center justify-between bg-white/40 p-4 rounded-3xl border border-white/60">
                 <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 bg-cream-yellow rounded-2xl flex items-center justify-center text-2xl shadow-inner border-2 border-white">
-                      {user.avatar}
+                   <div className={`w-12 h-12 ${user.color} rounded-2xl flex items-center justify-center text-sm font-black shadow-inner border-2 border-white tracking-wider`}>
+                      {user.initials}
                    </div>
                    <div>
                       <p className="font-black text-latte-brown">{user.name}</p>
@@ -52,11 +52,11 @@ const CommunityOasis = ({ onImport }: { onImport: (word: any) => void }) => {
 
         <div className="bg-matcha-primary/10 p-5 rounded-[2.5rem] border-2 border-dashed border-matcha-primary/20">
            <div className="flex items-center gap-3 mb-2">
-              <Trophy className="text-matcha-primary w-5 h-5" />
+              <Trophy className="text-matcha-primary w-5 h-5 shrink-0" />
               <p className="text-[10px] font-black uppercase tracking-widest text-matcha-primary">Weekly Challenge</p>
            </div>
            <p className="text-xs font-bold text-latte-brown leading-relaxed">
-              "Collect 5 Technology-related Objects this week to earn a Golden Leaf badge 🍃!"
+              "Collect 5 Technology-related Objects this week to earn a Golden Leaf badge!"
            </p>
         </div>
 
