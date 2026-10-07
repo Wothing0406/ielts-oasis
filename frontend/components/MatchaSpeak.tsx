@@ -112,8 +112,9 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const [pronunciationGuide, setPronunciationGuide] = useState<any | null>(null);
   
   // Custom Text state
-  const [customText, setCustomText] = useState<string>('');
-  const [isUsingCustom, setIsUsingCustom] = useState<boolean>(false);
+  const [customText, setCustomText] = useState<string>(initialContext || '');
+  const [isUsingCustom, setIsUsingCustom] = useState<boolean>(Boolean(initialContext));
+  const [prevInitialContext, setPrevInitialContext] = useState(initialContext);
   const [communitySuggestions, setCommunitySuggestions] = useState<any[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(false);
 
@@ -133,18 +134,17 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const volumeTimerRef = useRef<any>(null);
   const peakVolumeRef = useRef<number>(0);
 
-  // Load initial context if passed (e.g. from community feed)
-  useEffect(() => {
-    if (initialContext) {
-      setIsUsingCustom(true);
-      setCustomText(initialContext);
-      setSelectedSentence(initialContext);
-      setShadowResult(null);
-      setSelectedWord(null);
-      setPronunciationGuide(null);
-      setShowGuide(false);
-    }
-  }, [initialContext]);
+  // Adjust state inline during render when initialContext prop changes
+  if (initialContext && initialContext !== prevInitialContext) {
+    setPrevInitialContext(initialContext);
+    setIsUsingCustom(true);
+    setCustomText(initialContext);
+    setSelectedSentence(initialContext);
+    setShadowResult(null);
+    setSelectedWord(null);
+    setPronunciationGuide(null);
+    setShowGuide(false);
+  }
 
   const loadCommunitySuggestions = async () => {
     setIsLoadingSuggestions(true);
@@ -171,26 +171,25 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
     }
   }, [isUsingCustom]);
 
-  // Reset sentence when level changes (user must click AI Generate)
-  useEffect(() => {
-    if (!isUsingCustom && currentLevel) {
-      setSelectedSentence("");
-      setShadowResult(null);
-      setSelectedWord(null);
-      setPronunciationGuide(null);
-      setShowGuide(false);
-    }
-  }, [currentLevel, isUsingCustom]);
-  
-  // Clear sandbox cue card when sandboxLevel changes (user must click AI Generate)
-  useEffect(() => {
-    if (sandboxLevel) {
-      setSelectedCard(null);
-      setSandboxResult(null);
-      setIsPrepActive(false);
-      if (prepTimerRef.current) clearInterval(prepTimerRef.current);
-    }
-  }, [sandboxLevel]);
+  // Adjust state inline during render when level changes
+  const [prevLevel, setPrevLevel] = useState(currentLevel);
+  if (!isUsingCustom && currentLevel !== prevLevel) {
+    setPrevLevel(currentLevel);
+    setSelectedSentence("");
+    setShadowResult(null);
+    setSelectedWord(null);
+    setPronunciationGuide(null);
+    setShowGuide(false);
+  }
+
+  const [prevSandboxLevel, setPrevSandboxLevel] = useState(sandboxLevel);
+  if (sandboxLevel !== prevSandboxLevel) {
+    setPrevSandboxLevel(sandboxLevel);
+    setSelectedCard(null);
+    setSandboxResult(null);
+    setIsPrepActive(false);
+    if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+  }
 
   // Cleanup timers and audio contexts on component unmount
   useEffect(() => {
