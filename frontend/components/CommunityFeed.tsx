@@ -930,7 +930,10 @@ export default function CommunityFeed({
                         <img 
                           src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} 
                           alt={`${v.username}'s avatar`} 
-                          className="w-4 h-4 rounded-full border border-primary/20 object-cover flex-shrink-0" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                          }}
+                          className="w-5 h-5 rounded-full border border-primary/20 object-cover flex-shrink-0" 
                         />
                         <span className="text-[10px] font-bold text-accent/60 truncate">{v.username}</span>
                       </div>
@@ -963,11 +966,15 @@ export default function CommunityFeed({
                     </div>
 
                     <div className="flex items-center justify-between pt-1.5 border-t border-primary/10 gap-1">
-                      {currentUser && (currentUser.user_id === v.user_id || (currentUser.username && v.username === currentUser.username)) ? (
+                      {currentUser && (
+                        (currentUser.id && v.user_id && currentUser.id === v.user_id) ||
+                        (currentUser.user_id && v.user_id && currentUser.user_id === v.user_id) ||
+                        (currentUser.username && v.username && currentUser.username.toLowerCase() === v.username.toLowerCase())
+                      ) ? (
                         <button 
                           type="button" 
                           onClick={() => handleDeleteVocab(v.id)} 
-                          className="text-[10px] font-bold text-red-500 hover:text-red-700"
+                          className="text-[10px] font-bold text-red-500 hover:text-red-700 transition-colors"
                         >
                           Xóa
                         </button>

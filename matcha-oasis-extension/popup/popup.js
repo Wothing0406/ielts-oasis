@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const password = popupPasswordInput.value.trim();
       if (!username || !password) return;
 
-      btnSubmitPwd.textContent = 'Đang kiểm tra...';
+      btnSubmitPwd.textContent = 'Đang xác thực...';
       btnSubmitPwd.disabled = true;
       popupLoginError.style.display = 'none';
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         popupLoginError.textContent = 'Lỗi kết nối máy chủ. Vui lòng thử lại!';
         popupLoginError.style.display = 'block';
       } finally {
-        btnSubmitPwd.textContent = 'Đăng nhập bằng Mật khẩu ➔';
+        btnSubmitPwd.textContent = 'Đăng nhập';
         btnSubmitPwd.disabled = false;
       }
     });
@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnLogin.addEventListener('click', async (e) => {
     e.preventDefault();
     btnLogin.textContent = 'Đang mở Discord...';
+    btnLogin.disabled = true;
     try {
       const redirectUri = encodeURIComponent(data.server_url + '/auth/callback');
       const resp = await fetch(`${data.server_url}/api/auth/discord/login?redirect_uri=${redirectUri}`);
@@ -135,7 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error(err);
       chrome.tabs.create({ url: data.server_url });
     } finally {
-      btnLogin.textContent = '👾 Đăng nhập Discord OAuth2';
+      btnLogin.textContent = 'Discord OAuth2';
+      btnLogin.disabled = false;
     }
   });
 
@@ -182,7 +184,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSyncVocab = document.getElementById('btn-sync-vocab');
   if (btnSyncVocab) {
     btnSyncVocab.addEventListener('click', async () => {
-      btnSyncVocab.textContent = 'Đang đồng bộ... ⏳';
+      const syncIcon = document.getElementById('sync-icon');
+      if (syncIcon) syncIcon.classList.add('spin');
       btnSyncVocab.disabled = true;
       const res = await new Promise(resolve => {
         chrome.runtime.sendMessage({ action: 'sync_vocab', token: data.jwt_token }, resolve);
@@ -191,9 +194,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const count = fresh.user_vocab ? fresh.user_vocab.length : 0;
       const vocabCountEl = document.getElementById('study-vocab-count');
       if (vocabCountEl) vocabCountEl.textContent = `${count} từ`;
-      btnSyncVocab.textContent = `Đã đồng bộ (${count} từ) ✅`;
+      if (syncIcon) syncIcon.classList.remove('spin');
+      // Brief success state
+      const origText = btnSyncVocab.querySelector('span') || btnSyncVocab;
+      btnSyncVocab.setAttribute('data-done', 'true');
       setTimeout(() => {
-        btnSyncVocab.textContent = '🔄 Đồng bộ kho từ vựng';
+        btnSyncVocab.removeAttribute('data-done');
         btnSyncVocab.disabled = false;
       }, 2000);
     });

@@ -2,6 +2,16 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { 
+  Leaf, 
+  RotateCw, 
+  Volume2, 
+  ArrowRight, 
+  Quote, 
+  ArrowLeftRight, 
+  Lightbulb, 
+  RotateCcw 
+} from 'lucide-react';
 
 interface FlashcardProps {
   word: string;
@@ -21,7 +31,7 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
 
   return (
     <div 
-      className="relative w-full max-w-[310px] xs:max-w-[340px] sm:max-w-sm h-[380px] xs:h-[390px] perspective-1000 cursor-pointer group select-none"
+      className="relative w-full max-w-[310px] xs:max-w-[340px] sm:max-w-sm h-[380px] xs:h-[390px] perspective-1000 cursor-pointer group select-none touch-manipulation"
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <motion.div
@@ -34,13 +44,14 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
           {/* Top Bar: Topic & Flip hint */}
           <div className="w-full flex items-center justify-between z-10">
             {topic ? (
-              <span className="text-[10px] bg-primary/15 text-primary font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                🌿 {topic}
+              <span className="text-[10px] bg-primary/15 text-primary font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                <Leaf className="w-3 h-3 shrink-0" />
+                <span>{topic}</span>
               </span>
             ) : <span />}
             <span className="text-xs text-primary/40 group-hover:text-primary transition-colors flex items-center gap-1 font-semibold">
               <span>Lật thẻ</span>
-              <span className="material-symbols-rounded text-sm">cached</span>
+              <RotateCw className="w-3.5 h-3.5 shrink-0" />
             </span>
           </div>
 
@@ -75,16 +86,18 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
                 e.stopPropagation();
                 onAudioClick();
               }}
-              className="w-11 h-11 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-all shadow-sm active:scale-90"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-all shadow-sm active:scale-90 touch-manipulation"
               title="Phát âm từ này"
+              aria-label="Phát âm từ này"
             >
-              <span className="material-symbols-rounded text-2xl">volume_up</span>
+              <Volume2 className="w-5 h-5 shrink-0" />
             </button>
           </div>
 
           {/* Bottom Hint */}
-          <div className="text-[10px] uppercase font-bold tracking-widest text-primary/50 text-center w-full">
-            Nhấp để xem nghĩa tiếng Việt & Ví dụ ➔
+          <div className="text-[10px] uppercase font-bold tracking-widest text-primary/50 text-center w-full flex items-center justify-center gap-1">
+            <span>Nhấp để xem nghĩa tiếng Việt & Ví dụ</span>
+            <ArrowRight className="w-3 h-3 shrink-0" />
           </div>
         </div>
 
@@ -99,8 +112,8 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
         >
           {/* Header Row */}
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-primary/15 shrink-0">
-            <span className="text-[11px] font-bold text-primary flex items-center gap-1">
-              <span>🍵</span>
+            <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+              <Leaf className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="uppercase tracking-wider">IELTS Oasis Flashcard</span>
             </span>
             <span className="text-[10px] text-neutral-400 flex items-center gap-0.5">
@@ -121,8 +134,8 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
           {/* Context Example */}
           {example && (
             <div className="bg-white border border-primary/20 rounded-xl p-3 shadow-xs shrink-0 mb-2.5">
-              <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-primary/80 mb-1">
-                <span className="material-symbols-rounded text-xs">format_quote</span>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-primary/80 mb-1">
+                <Quote className="w-3.5 h-3.5 text-primary/80 shrink-0" />
                 <span>Ví dụ ngữ cảnh (Context):</span>
               </div>
               <p className="text-xs xs:text-sm text-neutral-700 italic leading-relaxed font-serif pl-1">
@@ -134,8 +147,8 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
           {/* Synonyms */}
           {synonyms && synonyms.length > 0 && (
             <div className="bg-white border border-primary/20 rounded-xl p-2.5 shadow-xs shrink-0 mb-2.5">
-              <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-primary/80 mb-1.5">
-                <span className="material-symbols-rounded text-xs">swap_horiz</span>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-primary/80 mb-1.5">
+                <ArrowLeftRight className="w-3.5 h-3.5 text-primary/80 shrink-0" />
                 <span>Từ đồng nghĩa (Synonyms):</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -154,8 +167,8 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
           {/* Memory Hook */}
           {memoryHook && (
             <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 shadow-xs shrink-0 mb-2">
-              <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-amber-800 mb-1">
-                <span className="material-symbols-rounded text-xs text-amber-600">lightbulb</span>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-amber-800 mb-1">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span>Mẹo nhớ siêu tốc (Memory Hook):</span>
               </div>
               <p className="text-xs text-amber-950 leading-relaxed pl-1">
@@ -165,8 +178,9 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
           )}
 
           {/* Flip back footer */}
-          <div className="mt-auto pt-2 text-[9px] uppercase font-bold tracking-widest text-primary/40 text-center shrink-0">
-            Nhấp để lật lại mặt trước ↻
+          <div className="mt-auto pt-2 text-[9px] uppercase font-bold tracking-widest text-primary/40 text-center shrink-0 flex items-center justify-center gap-1">
+            <span>Nhấp để lật lại mặt trước</span>
+            <RotateCcw className="w-2.5 h-2.5 shrink-0" />
           </div>
         </div>
       </motion.div>

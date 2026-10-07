@@ -92,13 +92,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     const data = await chrome.storage.local.get(['reminders_enabled']);
     if (data.reminders_enabled === false) return;
 
-    // Send to active tabs in all windows (helps trigger even if Chrome is backgrounded or has multiple windows)
-    const activeTabs = await chrome.tabs.query({ active: true });
-    for (const tab of activeTabs) {
+    // Send ONLY to the active tab in the currently focused window to avoid multi-tab stacking
+    let activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (!activeTabs || activeTabs.length === 0) {
+      activeTabs = await chrome.tabs.query({ active: true });
+    }
+    if (activeTabs && activeTabs.length > 0) {
+      const tab = activeTabs[0];
       if (tab.id && tab.url && !tab.url.includes("ieltsoasis.site") && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://")) {
         chrome.tabs.sendMessage(tab.id, {
           action: "show_reminder"
-        }).catch(() => {}); // ignore if tab has no content script
+        }).catch(() => {});
       }
     }
   } else if (alarm.name === 'matcha-snooze-alarm') {

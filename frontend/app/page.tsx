@@ -2,6 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { 
+  Leaf, 
+  Sparkles, 
+  Bot, 
+  Star, 
+  LogIn, 
+  UserPlus, 
+  ShieldAlert, 
+  Download, 
+  Gamepad2, 
+  Bell, 
+  X, 
+  LogOut,
+  Check,
+  Info
+} from "lucide-react";
 import DailyPlanner from "@/components/DailyPlanner";
 import VocabularyLab from "@/components/VocabularyLab";
 import MatchaLens from "@/components/MatchaLens";
@@ -173,7 +189,7 @@ export default function Home() {
       icon: "eco",
       color: "text-green-500 bg-green-50",
       title: "SRS Review Reminder",
-      content: `Hey friend! You have ${dueCount} words due for SRS review. Take a quick quiz to keep your streak! 🍵`,
+      content: `Hey friend! You have ${dueCount} words due for SRS review. Take a quick quiz to keep your streak!`,
       time: "Just now"
     });
   }
@@ -189,7 +205,17 @@ export default function Home() {
       }
       if (res.ok) {
         const data = await res.json();
-        setVocabList(data);
+        // Guaranteed deduplication on client-side: keep only unique words
+        const seen = new Set<string>();
+        const uniqueData: any[] = [];
+        for (const item of (Array.isArray(data) ? data : [])) {
+          const w = (item.word || "").trim().toLowerCase();
+          if (w && !seen.has(w)) {
+            seen.add(w);
+            uniqueData.push(item);
+          }
+        }
+        setVocabList(uniqueData);
       }
     } catch (e) {
       console.error(e);
@@ -266,7 +292,7 @@ export default function Home() {
       token = await ensureUserSession();
     }
     if (!token) {
-      (window as any).showToast("Please log in or try again to save vocabulary! 🍵", "info");
+      (window as any).showToast("Please log in or try again to save vocabulary!", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
     const headers: any = {
@@ -351,7 +377,7 @@ export default function Home() {
 
   const handleStartQuiz = () => {
     if (vocabList.length < 4) {
-      (window as any).showAlert("Oops! Your vocabulary lab needs at least 4 words to generate a quiz. Add more words to get started! 🍵", "More words needed!", "warning");
+      (window as any).showAlert("Oops! Your vocabulary lab needs at least 4 words to generate a quiz. Add more words to get started!", "More words needed!", "warning");
       return;
     }
     setShowQuiz(true);
@@ -395,7 +421,7 @@ export default function Home() {
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
     
     if (!captchaToken) {
-      (window as any).showToast("Please complete the Turnstile Captcha verification! 🍵", "error");
+      (window as any).showToast("Please complete the Turnstile Captcha verification!", "error");
       return;
     }
     
@@ -419,14 +445,14 @@ export default function Home() {
         setUser(data.user);
         fetchVocabs(data.token);
         syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
-        (window as any).showToast("Login successful! Welcome back 🍵", "success");
+        (window as any).showToast("Login successful! Welcome back", "success");
       } else {
         (window as any).showToast(data.detail || "Login failed.", "error");
         resetCaptcha();
       }
     } catch (err) {
       console.error(err);
-      (window as any).showToast("Server connection error. 🍵", "error");
+      (window as any).showToast("Server connection error.", "error");
       resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
@@ -437,7 +463,7 @@ export default function Home() {
     if (!guestName.trim() || !guestPassword || isGuestLoggingIn) return;
     
     if (!captchaToken) {
-      (window as any).showToast("Please complete the Turnstile Captcha verification! 🍵", "error");
+      (window as any).showToast("Please complete the Turnstile Captcha verification!", "error");
       return;
     }
 
@@ -455,7 +481,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
-        (window as any).showToast("Registration successful! Click Enter Oasis to start learning 🍵", "success");
+        (window as any).showToast("Registration successful! Click Enter Oasis to start learning", "success");
         setAuthMode("login");
         resetCaptcha();
       } else {
@@ -464,7 +490,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err);
-      (window as any).showToast("Server connection error. 🍵", "error");
+      (window as any).showToast("Server connection error.", "error");
       resetCaptcha();
     } finally {
       setIsGuestLoggingIn(false);
@@ -514,15 +540,16 @@ export default function Home() {
         <div className="absolute top-1/4 right-1/4 w-20 h-20 bg-[#6E8269]/20 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute bottom-1/3 left-1/5 w-28 h-28 bg-[#E3EAE0]/50 rounded-full blur-xl pointer-events-none" />
 
-        <div className="w-full max-w-md bg-[#FAFBF9]/95 backdrop-blur-xl border-4 border-[#8F9E8B]/40 rounded-[2.5rem] shadow-[0_25px_60px_rgba(46,62,43,0.22)] p-8 relative z-10 flex flex-col items-center">
+        <div className="w-full max-w-md bg-[#FAFBF9]/95 backdrop-blur-xl border-4 border-[#8F9E8B]/40 rounded-[2.5rem] shadow-[0_25px_60px_rgba(46,62,43,0.22)] p-6 sm:p-8 relative z-10 flex flex-col items-center">
           {/* Wooden Top Accent Tag */}
-          <div className="absolute -top-3.5 bg-[#5D4037] text-[#FAF8F5] px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
-            🍵 Oasis Entryway
+          <div className="absolute -top-3.5 bg-[#5D4037] text-[#FAF8F5] px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md inline-flex items-center gap-1.5">
+            <Leaf className="w-3 h-3 text-[#A7D08C] shrink-0" />
+            <span>Oasis Entryway</span>
           </div>
 
           {/* Logo Brand */}
           <div className="w-18 h-18 bg-gradient-to-br from-[#A7D08C] to-[#6E8269] rounded-3xl flex items-center justify-center mb-3 shadow-[0_8px_25px_rgba(110,130,105,0.4)] transform hover:rotate-12 transition-transform duration-300">
-            <span className="text-4xl filter drop-shadow-md">🍵</span>
+            <Leaf className="w-9 h-9 text-white filter drop-shadow-md shrink-0" />
           </div>
           
           <h1 className="text-3xl font-display font-black text-[#2E3E2B] tracking-tight">Matcha IELTS</h1>
@@ -531,19 +558,24 @@ export default function Home() {
           {/* Discord Priority Highlight Banner */}
           <div className="w-full bg-gradient-to-r from-[#5865F2]/10 via-[#7A9A6A]/15 to-[#5865F2]/10 border-2 border-[#5865F2]/30 rounded-2xl p-3.5 mb-3 text-center shadow-sm">
             <p className="text-xs font-black text-[#2E3E2B] flex items-center justify-center gap-1.5 leading-snug">
-              <span>🤖</span> Log in with Discord to get a personalized dynamic study buddy! 🍵
+              <Bot className="w-4 h-4 text-[#5865F2] shrink-0" />
+              <span>Log in with Discord to get a personalized dynamic study buddy!</span>
             </p>
           </div>
 
           {/* Discord Main Priority Button */}
           <button
             onClick={handleLogin}
-            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2.5 shadow-[0_8px_25px_rgba(88,101,242,0.35)] hover:shadow-xl transition-all active:scale-[0.97] border-2 border-white/20 mb-4"
+            className="w-full min-h-[44px] bg-[#5865F2] hover:bg-[#4752C4] text-white py-3.5 px-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-[0_8px_25px_rgba(88,101,242,0.35)] hover:shadow-xl transition-all active:scale-95 border-2 border-white/20 mb-4"
           >
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 127.14 96.36">
+            <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 127.14 96.36">
               <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,67.8,67.8,0,0,1-10.5-5A52,52,0,0,0,29,79.82a74.37,74.37,0,0,0,69.1,0,52,52,0,0,0,1,0.73,67.8,67.8,0,0,1-10.5,5A77.7,77.7,0,0,0,95.14,96.36a105.73,105.73,0,0,0,31-18.83C129.8,50.12,123.63,27.37,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z" />
             </svg>
-            LOG IN WITH DISCORD (RECOMMENDED ⭐)
+            <span>LOG IN WITH DISCORD</span>
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-200 uppercase font-black bg-white/20 px-1.5 py-0.5 rounded-full ml-1">
+              <Star className="w-3 h-3 fill-amber-300 text-amber-300 shrink-0" />
+              TOP
+            </span>
           </button>
 
           {/* Divider */}
@@ -557,7 +589,7 @@ export default function Home() {
           <div className="w-full bg-[#E3EAE0] p-1.5 rounded-full flex items-center mb-4 border border-[#8F9E8B]/20">
             <button
               onClick={() => { setAuthMode("login"); }}
-              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all duration-300 ${
+              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 min-h-[40px] active:scale-95 ${
                 authMode === "login"
                   ? "bg-[#6E8269] text-white shadow-md transform scale-[1.02]"
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
@@ -567,7 +599,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => { setAuthMode("register"); }}
-              className={`flex-1 text-center py-2 rounded-full text-xs font-black transition-all duration-300 ${
+              className={`flex-1 text-center py-2.5 rounded-full text-xs font-black transition-all duration-300 min-h-[40px] active:scale-95 ${
                 authMode === "register"
                   ? "bg-[#3E4F39] text-white shadow-md transform scale-[1.02]"
                   : "text-[#5D6B57] hover:text-[#2E3E2B]"
@@ -586,7 +618,7 @@ export default function Home() {
                 placeholder="Enter username..."
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all min-h-[44px]"
                 required
               />
             </div>
@@ -598,7 +630,7 @@ export default function Home() {
                 placeholder="Enter password..."
                 value={guestPassword}
                 onChange={(e) => setGuestPassword(e.target.value)}
-                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all"
+                className="bg-[#F4F7F2] border-2 border-[#8F9E8B]/20 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8F9E8B] focus:bg-white font-bold text-[#2E3E2B] placeholder:font-bold placeholder:text-[#5D6B57]/30 shadow-inner transition-all min-h-[44px]"
                 required
               />
             </div>
@@ -612,26 +644,41 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
+                className="w-full min-h-[44px] bg-[#7A9A6A] hover:bg-[#688659] disabled:bg-[#7A9A6A]/50 text-white py-3.5 px-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(122,154,106,0.35)] hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 mt-1"
               >
-                {isGuestLoggingIn ? "Brewing Matcha..." : "ENTER OASIS NOW 🍵"}
+                {isGuestLoggingIn ? (
+                  <span>Brewing Matcha...</span>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 shrink-0" />
+                    <span>ENTER OASIS NOW</span>
+                  </>
+                )}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleGuestRegister}
                 disabled={isGuestLoggingIn}
-                className="w-full bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-[0.97] mt-1"
+                className="w-full min-h-[44px] bg-[#3E4F39] hover:bg-[#2F3D2B] disabled:bg-[#3E4F39]/50 text-white py-3.5 px-4 rounded-2xl text-xs font-black tracking-wider transition-all shadow-[0_8px_25px_rgba(62,79,57,0.35)] hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 mt-1"
               >
-                {isGuestLoggingIn ? "Creating Account..." : "CREATE NEW ACCOUNT 🍀"}
+                {isGuestLoggingIn ? (
+                  <span>Creating Account...</span>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span>CREATE NEW ACCOUNT</span>
+                  </>
+                )}
               </button>
             )}
           </form>
 
           {/* Validation Rules Scroll Card */}
           <div className="w-full bg-[#F5F2EB] border-l-4 border-[#8F9E8B] rounded-2xl p-3.5 mt-4 text-[10px] text-[#5D4037] leading-relaxed flex flex-col gap-1 shadow-sm">
-            <div className="font-black text-[#2E3E2B] flex items-center gap-1 mb-0.5">
-              <span>📌</span> Guest Account Rules:
+            <div className="font-black text-[#2E3E2B] flex items-center gap-1.5 mb-0.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Guest Account Rules:</span>
             </div>
             <div>• <b>Username:</b> 3-20 characters (a-z, 0-9, _, .)</div>
             <div>• <b>Password:</b> Minimum 6 characters for security.</div>
@@ -654,46 +701,55 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-w-0">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
           <div>
-            <h2 className="text-4xl font-display font-bold">Hello {user ? user.username : 'there'} :3<span className="animate-pulse">🍵</span></h2>
-            <p className="text-lg opacity-70">Ready for your daily brew of knowledge?</p>
+            <h2 className="text-3xl sm:text-4xl font-display font-bold flex items-center gap-2 flex-wrap">
+              <span>Hello {user ? user.username : 'there'}</span>
+              <Sparkles className="w-6 h-6 text-primary shrink-0 animate-pulse" />
+            </h2>
+            <p className="text-base sm:text-lg opacity-70">Ready for your daily brew of knowledge?</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {user.avatar_url ? (
-                <img src={user.avatar_url} alt="avatar" className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary" />
+                <img src={user.avatar_url} alt="avatar" className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-primary object-cover shrink-0" />
               ) : (
-                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary text-xs sm:text-base">
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center font-bold text-primary text-xs sm:text-base shrink-0">
                   {user.username.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all">
-                Log Out
+              <button 
+                onClick={handleLogout} 
+                className="min-h-[40px] bg-red-500 hover:bg-red-600 active:scale-95 text-white px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold shadow transition-all inline-flex items-center gap-1.5"
+                title="Log out"
+              >
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Log Out</span>
               </button>
             </div>
             <a
               href="/matcha-oasis-extension.zip"
               download
-              className="bg-[#5D4037] hover:bg-[#4e342e] text-[#FFFDF5] px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
+              className="min-h-[44px] bg-[#5D4037] hover:bg-[#4e342e] active:scale-95 text-[#FFFDF5] px-4 py-2.5 sm:px-5 sm:py-3 rounded-full shadow-lg transition-all inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm cursor-pointer shrink-0"
             >
-              <span className="material-symbols-rounded text-base sm:text-lg">download</span>
-              Tải Extension 🍵
+              <Download className="w-4 h-4 shrink-0" />
+              <span>Tải Extension</span>
             </a>
             <Link
               href="/games"
-              className="bg-[#A7D08C] hover:bg-[#93bd7a] text-[#5D4037] hover:text-white px-3 py-2 sm:px-5 sm:py-3.5 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-1.5 sm:gap-2 font-bold text-xs sm:text-sm cursor-pointer flex-shrink-0"
+              className="min-h-[44px] bg-[#A7D08C] hover:bg-[#93bd7a] active:scale-95 text-[#5D4037] hover:text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-full shadow-lg shadow-primary/20 transition-all inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm cursor-pointer shrink-0"
             >
-              <span className="material-symbols-rounded text-base sm:text-lg">sports_esports</span>
-              Matcha Game
+              <Gamepad2 className="w-4 h-4 shrink-0" />
+              <span>Matcha Game</span>
             </Link>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="bg-primary hover:bg-primary/90 text-white p-2.5 sm:p-4 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
+                className="min-h-[44px] min-w-[44px] bg-primary hover:bg-primary/90 active:scale-95 text-white p-3 rounded-full shadow-lg shadow-primary/20 transition-all flex items-center justify-center relative"
+                aria-label="Thông báo"
               >
-                <span className="material-symbols-rounded text-base sm:text-lg">notifications</span>
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                 {displayNotifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] sm:text-[10px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] sm:text-[10px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
                     {displayNotifications.length}
                   </span>
                 )}
@@ -704,31 +760,35 @@ export default function Home() {
                   className="fixed left-4 right-4 top-24 md:absolute md:left-auto md:right-0 md:top-auto md:w-80 mt-3 bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 max-h-96 overflow-y-auto z-[9999]"
                   style={{ opacity: 1, backgroundColor: '#ffffff' }}
                 >
-                  <h4 className="font-bold text-sm text-accent mb-3 flex items-center justify-between">
-                    <span>New Notifications</span>
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b border-primary/10">
+                    <h4 className="font-bold text-sm text-accent flex items-center gap-1.5">
+                      <Bell className="w-4 h-4 text-primary shrink-0" />
+                      <span>Thông báo mới</span>
+                    </h4>
                     <button
                       type="button"
                       onClick={() => setShowNotifications(false)}
-                      className="text-xs text-primary font-bold hover:underline"
+                      className="min-h-[36px] min-w-[36px] flex items-center justify-center text-accent/50 hover:text-accent p-1.5 rounded-full hover:bg-secondary/40 active:scale-95 transition-all"
+                      aria-label="Đóng"
                     >
-                      Close
+                      <X className="w-4 h-4 shrink-0" />
                     </button>
-                  </h4>
+                  </div>
                   <div className="flex flex-col gap-2">
                     {displayNotifications.map((n) => (
-                      <div key={n.id} className="flex gap-3 p-2 hover:bg-secondary/35 rounded-xl border border-transparent hover:border-primary/5 transition-all text-left">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.color}`}>
-                          <span className="material-symbols-rounded text-lg">{n.icon}</span>
+                      <div key={n.id} className="flex gap-3 p-2.5 hover:bg-secondary/35 rounded-xl border border-transparent hover:border-primary/5 transition-all text-left">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.color}`}>
+                          <Leaf className="w-4 h-4 shrink-0" />
                         </div>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                           <span className="text-[11px] font-black text-accent leading-none">{n.title}</span>
-                          <span className="text-[10px] text-accent/70 leading-relaxed mt-0.5">{n.content}</span>
+                          <span className="text-[10px] text-accent/70 leading-relaxed mt-0.5 break-words">{n.content}</span>
                           <span className="text-[8px] text-accent/40 mt-1">{n.time}</span>
                         </div>
                       </div>
                     ))}
                     {displayNotifications.length === 0 && (
-                      <p className="text-center text-xs text-accent/40 py-6">No new notifications.</p>
+                      <p className="text-center text-xs text-accent/40 py-6">Không có thông báo mới.</p>
                     )}
                   </div>
                 </div>

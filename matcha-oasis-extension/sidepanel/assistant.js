@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stored = await chrome.storage.local.get(['selected_word', 'jwt_token', 'user_info']);
 
   if (stored.user_info && userNameEl) {
-    userNameEl.textContent = `Xin chào, ${stored.user_info.username || 'Học viên'}! 🍵`;
+    userNameEl.textContent = `${stored.user_info.username || 'Học viên'}`;
   }
 
   // Handle pre-selected word from context menu
@@ -132,12 +132,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Keep history limited to 20 messages
         if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
       } else {
-        appendMessage('ai', '❌ Không nhận được phản hồi từ Mát Cha. Hãy thử lại nhé!');
+        appendMessage('ai', 'Không nhận được phản hồi từ Mát Cha. Hãy thử lại nhé!');
       }
     } catch (e) {
       console.error(e);
       removeTyping(typingId);
-      appendMessage('ai', '❌ Không thể kết nối đến Matcha Server. Hãy kiểm tra đường truyền nhé!');
+      appendMessage('ai', 'Không thể kết nối đến Matcha Server. Hãy kiểm tra đường truyền nhé!');
     }
   }
 

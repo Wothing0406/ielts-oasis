@@ -2,6 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  PenTool, 
+  PenLine, 
+  RotateCw, 
+  Sparkles, 
+  Globe, 
+  Headphones, 
+  BookOpen, 
+  Lightbulb, 
+  GraduationCap, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Brain, 
+  Loader2, 
+  Copy 
+} from 'lucide-react';
 
 const API_URL = '/api';
 
@@ -47,8 +63,6 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, timeLeft]);
-
-
 
   const startTimer = (minutes: number) => {
     setTimeLeft(minutes * 60);
@@ -145,7 +159,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
 
     } catch (err: any) { 
       console.error("Analysis failed:", err);
-      (window as any).showToast(`Đánh giá thất bại: ${err.message} 🍵`, "error");
+      (window as any).showToast(`Đánh giá thất bại: ${err.message}`, "error");
       setIsAnalyzing(false);
     }
   };
@@ -170,7 +184,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
         }
       } catch (e) {}
     }
-    if (!token) return (window as any).showToast('Bạn cần đăng nhập để chia sẻ bài viết! 🍵', 'info');
+    if (!token) return (window as any).showToast('Bạn cần đăng nhập để chia sẻ bài viết!', 'info');
     
     try {
       const res = await fetch(`/api/community/share-writing`, {
@@ -186,9 +200,9 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
         }),
       });
       if (!res.ok) throw new Error('Không thể chia sẻ');
-      (window as any).showAlert('Bài viết của bạn đã được gửi tới Oasis Community thành công! 🍵', 'Đăng bài hoàn tất!', 'success');
+      (window as any).showAlert('Bài viết của bạn đã được gửi tới Oasis Community thành công!', 'Đăng bài hoàn tất!', 'success');
     } catch (err: any) {
-      (window as any).showToast(`Lỗi: ${err.message} 🍵`, 'error');
+      (window as any).showToast(`Lỗi: ${err.message}`, 'error');
     }
   };
 

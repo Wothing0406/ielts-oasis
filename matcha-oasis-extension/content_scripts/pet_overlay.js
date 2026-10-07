@@ -6,6 +6,89 @@
 
   console.log("Matcha Study Buddy injected.");
 
+  // ─── Extension Context Guard ──────────────────────────────────────────────
+  // When the extension is reloaded/updated, chrome.runtime.id becomes undefined.
+  // All Chrome API calls MUST go through these wrappers to avoid uncaught errors.
+
+  function isExtensionValid() {
+    try {
+      return !!(chrome && chrome.runtime && chrome.runtime.id);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Tracked intervals/listeners so we can clean them up on context invalidation
+  const _intervals = new Set();
+  const _timeouts  = new Set();
+
+  function safeSetInterval(fn, ms) {
+    const id = setInterval(() => {
+      if (!isExtensionValid()) {
+        // Extension reloaded — stop all our timers silently
+        _intervals.forEach(clearInterval);
+        _timeouts.forEach(clearTimeout);
+        _intervals.clear();
+        _timeouts.clear();
+        return;
+      }
+      try { fn(); } catch (e) {
+        if (e?.message?.includes("Extension context invalidated")) {
+          _intervals.forEach(clearInterval);
+          _intervals.clear();
+        }
+      }
+    }, ms);
+    _intervals.add(id);
+    return id;
+  }
+
+  function safeSetTimeout(fn, ms) {
+    const id = setTimeout(() => {
+      _timeouts.delete(id);
+      if (!isExtensionValid()) return;
+      try { fn(); } catch (e) { /* swallow invalidated context errors */ }
+    }, ms);
+    _timeouts.add(id);
+    return id;
+  }
+
+  async function safeStorageGet(keys) {
+    if (!isExtensionValid()) return {};
+    try {
+      return await chrome.storage.local.get(keys);
+    } catch (e) {
+      if (e?.message?.includes("Extension context invalidated")) return {};
+      throw e;
+    }
+  }
+
+  async function safeStorageSet(obj) {
+    if (!isExtensionValid()) return;
+    try {
+      await chrome.storage.local.set(obj);
+    } catch (e) {
+      if (e?.message?.includes("Extension context invalidated")) return;
+      throw e;
+    }
+  }
+
+  function safeSendMessage(msg) {
+    if (!isExtensionValid()) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(msg, (res) => {
+          // chrome.runtime.lastError suppression for intentionally fire-and-forget messages
+          void chrome.runtime.lastError;
+          resolve(res ?? null);
+        });
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   function checkIsOasisSite() {
     const host = window.location.hostname;
     if (
@@ -34,13 +117,14 @@
   let consecutiveWrong = 0;
 
   async function getServerUrl() {
-    const data = await chrome.storage.local.get(["server_url"]);
+    const data = await safeStorageGet(["server_url"]);
     return data.server_url || "https://ieltsoasis.site";
   }
 
+
   // Helper to save active quiz state
   async function saveActiveQuizState(shuffledList, currentIdx, score, mode) {
-    await chrome.storage.local.set({
+    await safeStorageSet({
       active_quiz_state: {
         shuffledList,
         currentIdx,
@@ -53,7 +137,7 @@
 
   // Helper to clear active quiz state
   async function clearActiveQuizState() {
-    await chrome.storage.local.set({ active_quiz_state: null });
+    await safeStorageSet({ active_quiz_state: null });
   }
 
   // Zero-touch token auto-recovery on load (checks current tab localStorage)
@@ -66,8 +150,8 @@
   } catch (e) {}
 
   if (localToken) {
-    chrome.storage.local.set({ server_url: origin, jwt_token: localToken });
-    chrome.runtime.sendMessage({
+    safeStorageSet({ server_url: origin, jwt_token: localToken });
+    safeSendMessage({
       action: "save_jwt_token",
       token: localToken,
       user: localUser,
@@ -77,23 +161,24 @@
       "[Matcha Mascot] Auto-synced active token from page localStorage.",
     );
   } else if (isMainSite) {
-    chrome.storage.local.set({ server_url: origin });
+    safeStorageSet({ server_url: origin });
   }
 
   // Unified handler for real-time events from IELTS Oasis web app
   async function handleOasisEvent(data) {
     if (!data || typeof data !== "object" || !data.type) return;
+    if (!isExtensionValid()) return;
 
     if (data.type === "OASIS_AUTH_SYNC") {
       const siteOrigin = data.origin || window.location.origin;
       const token = data.token;
       if (token) {
-        await chrome.storage.local.set({
+        await safeStorageSet({
           server_url: siteOrigin,
           jwt_token: token,
           user_info: data.user || null,
         });
-        chrome.runtime.sendMessage({
+        safeSendMessage({
           action: "save_jwt_token",
           token: token,
           user: data.user,
@@ -110,14 +195,14 @@
       const token =
         data.token ||
         localToken ||
-        (await chrome.storage.local.get(["jwt_token"])).jwt_token;
-      await chrome.storage.local.set({ server_url: siteOrigin });
+        (await safeStorageGet(["jwt_token"])).jwt_token;
+      await safeStorageSet({ server_url: siteOrigin });
       if (token) {
-        await chrome.storage.local.set({ jwt_token: token });
+        await safeStorageSet({ jwt_token: token });
       }
 
       // Optimistic 0ms instant prepend to local storage
-      const res = await chrome.storage.local.get(["user_vocab"]);
+      const res = await safeStorageGet(["user_vocab"]);
       const list = res.user_vocab || [];
       const newWord = data.vocab;
       if (
@@ -127,7 +212,7 @@
         )
       ) {
         const updatedList = [newWord, ...list];
-        await chrome.storage.local.set({ user_vocab: updatedList });
+        await safeStorageSet({ user_vocab: updatedList });
         console.log(
           "[Matcha Mascot] Instantly added vocab to extension storage:",
           newWord.word,
@@ -135,7 +220,7 @@
       }
 
       if (token) {
-        chrome.runtime.sendMessage({ action: "sync_vocab", token: token });
+        safeSendMessage({ action: "sync_vocab", token: token });
       }
       await clearActiveQuizState();
     } else if (data.type === "OASIS_VOCAB_DELETED" && (data.id || data.word)) {
@@ -143,21 +228,21 @@
         "[Matcha Mascot] Received OASIS_VOCAB_DELETED:",
         data.id || data.word,
       );
-      const res = await chrome.storage.local.get(["user_vocab"]);
+      const res = await safeStorageGet(["user_vocab"]);
       if (res.user_vocab) {
         const filtered = res.user_vocab.filter(
           (v) =>
             (data.id && v.id !== data.id) ||
             (data.word && v.word?.toLowerCase() !== data.word?.toLowerCase()),
         );
-        await chrome.storage.local.set({ user_vocab: filtered });
+        await safeStorageSet({ user_vocab: filtered });
       }
       const token =
         data.token ||
         localToken ||
-        (await chrome.storage.local.get(["jwt_token"])).jwt_token;
+        (await safeStorageGet(["jwt_token"])).jwt_token;
       if (token) {
-        chrome.runtime.sendMessage({ action: "sync_vocab", token: token });
+        safeSendMessage({ action: "sync_vocab", token: token });
       }
       await clearActiveQuizState();
     }
@@ -174,7 +259,7 @@
   // Listen to localStorage token changes across tabs on main website
   window.addEventListener("storage", (e) => {
     if (e.key === "oasis_token" && e.newValue) {
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         action: "save_jwt_token",
         token: e.newValue,
         server_url: origin,
@@ -588,7 +673,7 @@
   `;
   shadow.appendChild(style);
 
-  // Animation states definition
+  // Animation states definition with Blob preloading to prevent network spam/lag
   const animationFrames = {
     idle: [
       chrome.runtime.getURL("assets/mascot/idle_1.png"),
@@ -619,6 +704,20 @@
     ],
   };
 
+  // Preload all frames into Blob URLs so setting img.src NEVER triggers repeated network requests
+  const cachedFrames = {};
+  for (const [action, urls] of Object.entries(animationFrames)) {
+    cachedFrames[action] = [...urls];
+    urls.forEach((url, idx) => {
+      fetch(url)
+        .then((res) => res.blob())
+        .then((blob) => {
+          cachedFrames[action][idx] = URL.createObjectURL(blob);
+        })
+        .catch(() => {});
+    });
+  }
+
   let currentAction = isMainSite ? "celebrating" : "idle";
   let frameIndex = 0;
   let animationInterval = null;
@@ -628,13 +727,18 @@
     currentAction = action;
     frameIndex = 0;
 
-    animationInterval = setInterval(() => {
-      const frames = animationFrames[currentAction];
+    const tick = () => {
+      const frames = cachedFrames[currentAction] || animationFrames[currentAction];
       if (frames && frames.length > 0) {
-        img.src = frames[frameIndex];
+        const nextSrc = frames[frameIndex];
+        if (img.src !== nextSrc) {
+          img.src = nextSrc;
+        }
         frameIndex = (frameIndex + 1) % frames.length;
       }
-    }, 300); // 300ms frame rate
+    };
+    tick();
+    animationInterval = setInterval(tick, 300); // 300ms frame rate
   }
 
   // Mascot DOM Element Structure
@@ -651,6 +755,9 @@
   wrapper.appendChild(bubble);
   wrapper.appendChild(img);
   shadow.appendChild(wrapper);
+
+  // Restore saved position on injection
+  restoreMascotPosition();
 
   // Start default animation loop
   startAnimation(currentAction);
@@ -687,9 +794,12 @@
 
     let fIdx = 0;
     const updateFrame = () => {
-      const frames = animationFrames[action];
+      const frames = cachedFrames[action] || animationFrames[action];
       if (frames && frames.length > 0) {
-        mascotImg.src = frames[fIdx];
+        const nextSrc = frames[fIdx];
+        if (mascotImg.src !== nextSrc) {
+          mascotImg.src = nextSrc;
+        }
         fIdx = (fIdx + 1) % frames.length;
       }
     };
@@ -742,12 +852,23 @@
     restoreMascotPosition();
     startAnimation("idle");
 
-    await chrome.storage.local.set({ snoozed_until: null });
-    chrome.runtime.sendMessage({ action: "cancel_snooze_alarm" }).catch(() => {});
+    await safeStorageSet({ snoozed_until: null });
+    safeSendMessage({ action: "cancel_snooze_alarm" });
+  }
+
+  function saveCurrentMascotPosition() {
+    try {
+      const rect = wrapper.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const x = Math.round(rect.left);
+        const y = Math.round(rect.top);
+        safeStorageSet({ pet_pos_x: x, pet_pos_y: y });
+      }
+    } catch (e) {}
   }
 
   function restoreMascotPosition() {
-    chrome.storage.local.get(["pet_pos_x", "pet_pos_y"], (res) => {
+    safeStorageGet(["pet_pos_x", "pet_pos_y"]).then((res) => {
       if (
         res &&
         typeof res.pet_pos_x === "number" &&
@@ -762,10 +883,13 @@
         wrapper.style.left = `${posX}px`;
         wrapper.style.top = `${posY}px`;
       } else {
-        wrapper.style.left = "auto";
-        wrapper.style.top = "auto";
-        wrapper.style.right = "20px";
-        wrapper.style.bottom = "20px";
+        // Only set default if no prior left/top is already applied
+        if (!wrapper.style.left || wrapper.style.left === "auto") {
+          wrapper.style.left = "auto";
+          wrapper.style.top = "auto";
+          wrapper.style.right = "20px";
+          wrapper.style.bottom = "20px";
+        }
       }
     });
   }
@@ -780,7 +904,7 @@
       cancelAnimationFrame(angryAnimFrameId);
       angryAnimFrameId = null;
     }
-    chrome.storage.local.set({ is_punishment_mode: true });
+    safeStorageSet({ is_punishment_mode: true });
   }
 
   function stopAngryRun() {
@@ -811,7 +935,7 @@
     img.style.width = "80px";
     img.style.height = "80px";
 
-    chrome.storage.local.set({ is_punishment_mode: false });
+    safeStorageSet({ is_punishment_mode: false });
   }
 
   function flashLockoutBox() {
@@ -826,7 +950,7 @@
   }
 
   // Check snooze & punishment states on load
-  chrome.storage.local.get(["is_punishment_mode", "snoozed_until"], (data) => {
+  safeStorageGet(["is_punishment_mode", "snoozed_until"]).then((data) => {
     if (data.is_punishment_mode) {
       triggerTantrumLockout();
     } else if (data.snoozed_until && Date.now() < data.snoozed_until) {
@@ -835,7 +959,7 @@
   });
 
   // Listen to cross-tab storage changes (e.g. user answered lockout in another tab)
-  chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (isExtensionValid()) chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
 
     if (changes.is_punishment_mode) {
@@ -889,7 +1013,7 @@
   });
 
   // Listen for broadcast wake message from background service worker
-  chrome.runtime.onMessage.addListener((message) => {
+  if (isExtensionValid()) chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "wake_pet_from_snooze") {
       restoreMascotFromSnooze();
     }
@@ -897,7 +1021,7 @@
 
   // Periodically check and check on tab focus if snooze has expired
   function verifySnoozeExpiry() {
-    chrome.storage.local.get(["snoozed_until"], (data) => {
+    safeStorageGet(["snoozed_until"]).then((data) => {
       if (data.snoozed_until) {
         if (Date.now() >= data.snoozed_until) {
           restoreMascotFromSnooze();
@@ -907,10 +1031,10 @@
   }
 
   window.addEventListener("focus", verifySnoozeExpiry);
-  setInterval(verifySnoozeExpiry, 15000); // Check every 15s to bypass throttling delays
+  safeSetInterval(verifySnoozeExpiry, 15000); // Check every 15s to bypass throttling delays
 
   // Restore pet position from local storage
-  chrome.storage.local.get(["pet_pos_x", "pet_pos_y"], (res) => {
+  safeStorageGet(["pet_pos_x", "pet_pos_y"]).then((res) => {
     if (
       res &&
       typeof res.pet_pos_x === "number" &&
@@ -985,7 +1109,7 @@
     if (hasDraggedMascot) {
       lastDragEndTime = Date.now();
       const rect = wrapper.getBoundingClientRect();
-      chrome.storage.local.set({
+      safeStorageSet({
         pet_pos_x: Math.round(rect.left),
         pet_pos_y: Math.round(rect.top),
       });
@@ -1045,7 +1169,7 @@
       return;
     }
 
-    const data = await chrome.storage.local.get(["snoozed_until"]);
+    const data = await safeStorageGet(["snoozed_until"]);
     if (data.snoozed_until && Date.now() < data.snoozed_until) {
       // Show wake up confirmation
       const minsLeft = Math.ceil((data.snoozed_until - Date.now()) / 60000);
@@ -1082,7 +1206,7 @@
 
   // Dynamic Bubble Width & Font Scaling
   let currentBubbleWidth = 310;
-  chrome.storage.local.get(["bubble_width"], (res) => {
+  safeStorageGet(["bubble_width"]).then((res) => {
     if (res && res.bubble_width && typeof res.bubble_width === "number") {
       currentBubbleWidth = Math.max(240, Math.min(640, res.bubble_width));
       applyBubbleSize();
@@ -1182,7 +1306,7 @@
         window.removeEventListener("mouseup", onEnd);
         window.removeEventListener("touchmove", onMove);
         window.removeEventListener("touchend", onEnd);
-        chrome.storage.local.set({ bubble_width: currentBubbleWidth });
+        safeStorageSet({ bubble_width: currentBubbleWidth });
       };
 
       const onStart = (startEv) => {
@@ -1254,7 +1378,7 @@
         window.removeEventListener("touchend", onHeaderEnd);
 
         const rect = wrapper.getBoundingClientRect();
-        chrome.storage.local.set({
+        safeStorageSet({
           pet_pos_x: Math.round(rect.left),
           pet_pos_y: Math.round(rect.top),
         });
@@ -1327,7 +1451,7 @@
       return;
     }
 
-    let data = await chrome.storage.local.get(["jwt_token"]);
+    let data = await safeStorageGet(["jwt_token"]);
     if (!data.jwt_token) {
       // 1. Try local page recovery
       let recoveredToken = null;
@@ -1337,12 +1461,7 @@
 
       // 2. If not found, ask background service worker to check other open tabs
       if (!recoveredToken) {
-        const bgRes = await new Promise((resolve) => {
-          chrome.runtime.sendMessage(
-            { action: "recover_token_from_tabs" },
-            resolve,
-          );
-        }).catch(() => null);
+        const bgRes = await safeSendMessage({ action: "recover_token_from_tabs" });
         if (bgRes && bgRes.token) {
           recoveredToken = bgRes.token;
         }
@@ -1350,8 +1469,8 @@
 
       if (recoveredToken) {
         data.jwt_token = recoveredToken;
-        await chrome.storage.local.set({ jwt_token: recoveredToken });
-        chrome.runtime.sendMessage({
+        await safeStorageSet({ jwt_token: recoveredToken });
+        safeSendMessage({
           action: "sync_vocab",
           token: recoveredToken,
         });
@@ -1390,7 +1509,7 @@
 
     shadow.querySelector("#btn-sidepanel").addEventListener("click", () => {
       closeBubble();
-      chrome.runtime.sendMessage({ action: "open_sidepanel" });
+      safeSendMessage({ action: "open_sidepanel" });
     });
 
     shadow.querySelector("#btn-ocr").addEventListener("click", () => {
@@ -1426,8 +1545,8 @@
       .querySelector("#btn-snooze-pet")
       .addEventListener("click", async () => {
         const snoozedUntil = Date.now() + 30 * 60 * 1000;
-        await chrome.storage.local.set({ snoozed_until: snoozedUntil });
-        chrome.runtime.sendMessage({
+        await safeStorageSet({ snoozed_until: snoozedUntil });
+        safeSendMessage({
           action: "set_snooze_alarm",
           minutes: 30
         }).catch(() => {});
@@ -1535,8 +1654,8 @@
         if (response.ok) {
           const result = await response.json();
           if (result.token) {
-            await chrome.storage.local.set({ jwt_token: result.token });
-            chrome.runtime.sendMessage({
+            await safeStorageSet({ jwt_token: result.token });
+            safeSendMessage({
               action: "save_jwt_token",
               token: result.token,
             });
@@ -1655,7 +1774,7 @@
           return;
         }
 
-        const data = await chrome.storage.local.get(["jwt_token"]);
+        const data = await safeStorageGet(["jwt_token"]);
         if (!data.jwt_token) {
           alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
           return;
@@ -1685,7 +1804,7 @@
             alert(`Đã lưu thành công từ "${word}" vào Tủ Từ! 🍵`);
             closeBubble();
             // Trigger a sync refresh
-            chrome.runtime.sendMessage({
+            safeSendMessage({
               action: "save_jwt_token",
               token: data.jwt_token,
             });
@@ -1701,7 +1820,7 @@
 
   // Show Synced Vocabulary List directly inside Pet bubble
   async function showVocabListUI() {
-    let tokenData = await chrome.storage.local.get(["jwt_token", "user_vocab"]);
+    let tokenData = await safeStorageGet(["jwt_token", "user_vocab"]);
     let list = tokenData.user_vocab || [];
     let token = tokenData.jwt_token;
 
@@ -1714,15 +1833,10 @@
     // If list is empty but we have an active token or can recover one, show loading and fetch directly!
     if (list.length === 0) {
       if (!token) {
-        const bgRes = await new Promise((resolve) => {
-          chrome.runtime.sendMessage(
-            { action: "recover_token_from_tabs" },
-            resolve,
-          );
-        }).catch(() => null);
+        const bgRes = await safeSendMessage({ action: "recover_token_from_tabs" });
         if (bgRes && bgRes.token) {
           token = bgRes.token;
-          await chrome.storage.local.set({ jwt_token: token });
+          await safeStorageSet({ jwt_token: token });
         }
       }
 
@@ -1749,21 +1863,16 @@
           .querySelector("#btn-back-menu")
           ?.addEventListener("click", toggleMascotMenu);
 
-        const syncResult = await new Promise((resolve) => {
-          chrome.runtime.sendMessage(
-            { action: "sync_vocab", token: token },
-            resolve,
-          );
-        }).catch(() => null);
+        const syncResult = await safeSendMessage({ action: "sync_vocab", token: token });
 
-        const freshData = await chrome.storage.local.get(["user_vocab"]);
+        const freshData = await safeStorageGet(["user_vocab"]);
         list =
           freshData.user_vocab ||
           (syncResult && syncResult.vocab ? syncResult.vocab : []);
       }
     } else if (token) {
       // Background sync to ensure freshness
-      chrome.runtime.sendMessage({ action: "sync_vocab", token: token });
+      safeSendMessage({ action: "sync_vocab", token: token });
     }
 
     let listHtml = "";
@@ -1946,7 +2055,7 @@
       .querySelector("#close-bubble")
       .addEventListener("click", closeBubble);
 
-    const data = await chrome.storage.local.get(["active_quiz_state"]);
+    const data = await safeStorageGet(["active_quiz_state"]);
     let savedState = data.active_quiz_state;
     if (
       savedState &&
@@ -2248,7 +2357,7 @@
 
   // Show Synced Study Plan details
   async function showStudyScheduleUI() {
-    const data = await chrome.storage.local.get([
+    const data = await safeStorageGet([
       "study_schedule",
       "user_info",
     ]);
@@ -2283,8 +2392,9 @@
   }
 
   // Reminders and Quiz triggers
-  chrome.runtime.onMessage.addListener((message) => {
+  if (isExtensionValid()) chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "show_reminder" && !isMainSite) {
+      if (document.hidden) return; // Do not spawn in hidden background tabs
       showVocabReminder(true);
     }
   });
@@ -2293,7 +2403,7 @@
   async function showVocabReminder(isAutomatic = false) {
     if (reminderTimer) clearTimeout(reminderTimer);
 
-    const data = await chrome.storage.local.get([
+    const data = await safeStorageGet([
       "user_vocab",
       "active_quiz_state",
     ]);
@@ -2395,7 +2505,7 @@
     }
 
     // If pet was snoozed, wake it up fully so reminder card isn't obscured off-screen
-    const snoozeCheck = await chrome.storage.local.get(["snoozed_until"]);
+    const snoozeCheck = await safeStorageGet(["snoozed_until"]);
     if (snoozeCheck.snoozed_until) {
       await restoreMascotFromSnooze();
     } else {
@@ -2404,6 +2514,7 @@
       restoreMascotPosition();
     }
 
+    saveCurrentMascotPosition();
     // Automatic reminder popup -> Show learning flashcard with 25s auto-dismiss
     const targetWord =
       activeList[Math.floor(Math.random() * activeList.length)];
@@ -2496,11 +2607,18 @@
     const secondsEl = shadow.querySelector("#reminder-seconds");
 
     const updateTimer = () => {
+      // If tab is in background, do not decrement and do NOT trigger neglect!
+      if (document.hidden) {
+        reminderTimer = setTimeout(updateTimer, 1000);
+        return;
+      }
+
       timeLeft--;
       if (secondsEl) secondsEl.textContent = timeLeft;
       if (progressEl) progressEl.style.width = `${(timeLeft / 25) * 100}%`;
 
       if (timeLeft <= 0) {
+        // Tab was actively visible and user ignored it
         consecutiveIgnored++;
         if (consecutiveIgnored >= 3) {
           triggerTantrumLockout();
@@ -2823,6 +2941,7 @@
 
   // Strict Lockout Blocker when user fails 3 consecutive times or neglects mascot
   function triggerTantrumLockout() {
+    saveCurrentMascotPosition();
     closeBubble();
     restoreMascotFromSnooze(); // Cancel snooze if tucked
 
@@ -2906,7 +3025,7 @@
   }
 
   async function generateLockoutQuiz(card, forceNew = false) {
-    const data = await chrome.storage.local.get([
+    const data = await safeStorageGet([
       "user_vocab",
       "lockout_quiz_state",
     ]);
@@ -2961,7 +3080,7 @@
       choices = [target, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
 
       // Persist shared lockout question so all browser tabs show the EXACT same question
-      await chrome.storage.local.set({
+      await safeStorageSet({
         lockout_quiz_state: {
           target,
           choices,
@@ -2998,7 +3117,7 @@
         const unlockScreen = async () => {
           consecutiveWrong = 0;
           consecutiveIgnored = 0;
-          await chrome.storage.local.set({
+          await safeStorageSet({
             lockout_quiz_state: null,
             is_punishment_mode: false,
           });
@@ -3062,17 +3181,14 @@
           feedback.innerHTML = `
             <div style="background:#FFEBEE; border:1.5px solid #EF9A9A; border-radius:14px; padding:12px; margin-top:8px; text-align:center;">
               <div style="font-weight:bold; color:#C62828; font-size:0.95rem; margin-bottom:4px;">
-                ❌ Chưa chính xác rồi!
+                ❌ Chưa chính xác! Vẫn chưa được tha thứ! 😤
               </div>
               <div style="font-size:0.85rem; color:#5D4037; margin-bottom:10px; line-height:1.4;">
                 "${target.word}" có nghĩa chuẩn là: <strong style="color:#2E7D32;">${target.meaning}</strong>
               </div>
               <div style="display:flex; flex-direction:column; gap:6px;">
-                <button id="btn-lockout-retry" class="btn btn-yes" style="width:100%; padding:9px; font-size:0.85rem; font-weight:bold; background:#FFA726; border-color:#FB8C00; color:#fff; cursor:pointer;">
-                  🔄 Làm câu hỏi khác
-                </button>
-                <button id="btn-lockout-forgive" class="btn btn-no" style="width:100%; padding:7px; font-size:0.8rem; background:#FFF; border:1px solid #D7CCC8; color:#795548; cursor:pointer;">
-                  🥺 Tha cho tớ lần này nhé (Bỏ qua)
+                <button id="btn-lockout-retry" class="btn btn-yes" style="width:100%; padding:9px; font-size:0.85rem; font-weight:bold; background:#E53935; border-color:#C62828; color:#fff; cursor:pointer;">
+                  🔄 Trả lời câu khác để chuộc lỗi
                 </button>
               </div>
             </div>
@@ -3083,47 +3199,6 @@
             retryBtn.addEventListener("click", () => {
               setLockoutMascotAction("tantrum");
               generateLockoutQuiz(card, true);
-            });
-          }
-
-          const forgiveBtn = card.querySelector("#btn-lockout-forgive");
-          if (forgiveBtn) {
-            forgiveBtn.addEventListener("click", () => {
-              setLockoutMascotAction("celebrating");
-              let forgiveCountdown = 3;
-              feedback.innerHTML = `
-                <div style="background:#FFF8E1; border:1.5px solid #FFE082; border-radius:14px; padding:12px; margin-top:8px; text-align:center;">
-                  <div style="font-weight:bold; color:#F57F17; font-size:0.95rem; margin-bottom:4px;">
-                    🍵 Hứa phải chăm học hơn đấy nhé!
-                  </div>
-                  <div style="font-size:0.82rem; color:#5D4037; margin-bottom:8px; line-height:1.4;">
-                    Lần này Matcha tha cho cậu đó! Nhớ sớm ôn lại từ "${target.word}" nha. Mở khóa trong <strong id="forgive-count" style="font-size:1.05rem; color:#E65100;">${forgiveCountdown}</strong>s...
-                  </div>
-                  <button id="btn-forgive-unlock-now" class="btn btn-yes" style="width:100%; padding:8px; font-size:0.85rem; font-weight:bold; background:#4CAF50; border-color:#388E3C; color:#fff; cursor:pointer;">
-                    Cảm ơn Matcha, tớ hứa! ➔
-                  </button>
-                </div>
-              `;
-
-              const forgiveTimer = setInterval(() => {
-                forgiveCountdown--;
-                const countEl = card.querySelector("#forgive-count");
-                if (countEl) countEl.textContent = forgiveCountdown;
-                if (forgiveCountdown <= 0) {
-                  clearInterval(forgiveTimer);
-                  unlockScreen();
-                }
-              }, 1000);
-
-              const forgiveNowBtn = card.querySelector(
-                "#btn-forgive-unlock-now",
-              );
-              if (forgiveNowBtn) {
-                forgiveNowBtn.addEventListener("click", () => {
-                  clearInterval(forgiveTimer);
-                  unlockScreen();
-                });
-              }
             });
           }
         }
@@ -3193,7 +3268,7 @@
         btn.textContent = "Đang lưu...";
         btn.disabled = true;
 
-        const data = await chrome.storage.local.get(["jwt_token"]);
+        const data = await safeStorageGet(["jwt_token"]);
         if (!data.jwt_token) {
           alert("Vui lòng kết nối tài khoản ở popup tiện ích trước nhé!");
           btn.textContent = "Lưu từ 🍵";
@@ -3226,7 +3301,7 @@
             btn.style.border = "1px solid #4CAF50";
             btn.style.color = "#FFFFFF";
             // Trigger storage update
-            chrome.runtime.sendMessage({
+            safeSendMessage({
               action: "save_jwt_token",
               token: data.jwt_token,
             });

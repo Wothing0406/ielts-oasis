@@ -7,6 +7,7 @@ import {
   Info, Zap, Radio, RefreshCw, Flame, Award, CheckCircle2, AlertTriangle, Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MatchaBearSticker, LearnerSticker, MatchaStickerBadge } from '@/components/MatchaStickers';
 
 const API_URL = '/api';
 
@@ -631,8 +632,8 @@ export default function SpeakingReflexGame() {
             <div className="text-right">
               <span className="font-extrabold text-accent text-sm">{score} pts</span>
               {streak > 1 && (
-                <span className="ml-1.5 text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full">
-                  🔥 {streak}
+                <span className="ml-1.5 inline-block">
+                  <MatchaStickerBadge type="streak" label={`${streak} combo`} />
                 </span>
               )}
             </div>
@@ -646,8 +647,8 @@ export default function SpeakingReflexGame() {
         {/* Active Question Banner */}
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50/40 border border-primary/15 rounded-2xl p-4 mb-4 shadow-sm flex items-center justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center font-bold text-xl shadow-sm shrink-0">
-              🐻
+            <div className="shrink-0 drop-shadow-sm flex items-center justify-center">
+              <MatchaBearSticker size="md" variant={isBearSpeaking ? "speaking" : "default"} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -742,10 +743,12 @@ export default function SpeakingReflexGame() {
               key={idx} 
               className={`flex items-start gap-2.5 max-w-[85%] ${msg.sender === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm border shrink-0 ${
-                msg.sender === 'user' ? 'bg-[#A7D08C] border-primary/20' : 'bg-cream-yellow border-amber-950/15'
-              }`}>
-                {msg.sender === 'user' ? '🧑‍🚀' : '🐻'}
+              <div className="shrink-0 drop-shadow-sm flex items-center justify-center">
+                {msg.sender === 'user' ? (
+                  <LearnerSticker size="sm" />
+                ) : (
+                  <MatchaBearSticker size="sm" variant={isBearSpeaking ? "speaking" : "happy"} />
+                )}
               </div>
 
               <div className={`p-4 rounded-3xl border text-xs sm:text-sm font-medium leading-relaxed shadow-md ${
@@ -778,9 +781,9 @@ export default function SpeakingReflexGame() {
                     {/* Feedback & Coaching Tip */}
                     {msg.data.feedback && (
                       <div className="bg-white/80 p-2.5 rounded-xl border border-primary/10">
-                        <p className="font-extrabold text-primary flex items-center gap-1 mb-1">
-                          💡 Matcha Bear Coaching:
-                        </p>
+                        <div className="mb-1.5 flex items-center gap-1.5">
+                          <MatchaStickerBadge type="bulb" label="Matcha Bear Coaching" />
+                        </div>
                         <p className="text-accent/80 italic">{msg.data.feedback}</p>
                       </div>
                     )}
@@ -788,16 +791,19 @@ export default function SpeakingReflexGame() {
                     {/* Skill 4: Shadow Error Logging (docs/skills.md) */}
                     {msg.data.shadow_errors_logged && msg.data.shadow_errors_logged.length > 0 && (
                       <div className="bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/60 space-y-1.5">
-                        <div className="flex items-center gap-1 font-extrabold text-amber-900 text-[10px] uppercase">
-                          <Zap className="w-3 h-3 text-amber-600" /> Ghi nhận lỗi ngầm & Nâng cấp Band 8.5+ (Shadow Logging):
+                        <div className="flex items-center gap-1.5 font-extrabold text-amber-900 text-[10px] uppercase">
+                          <MatchaStickerBadge type="lightning" label="Shadow Logging" />
+                          <span>Ghi nhận lỗi ngầm & Nâng cấp Band 8.5+</span>
                         </div>
                         {msg.data.shadow_errors_logged.map((err: any, eIdx: number) => (
                           <div key={eIdx} className="text-[11px] bg-white/90 p-2 rounded-lg border border-amber-100">
-                            <div className="text-red-700 font-medium">
-                              ❌ Bạn nói: <span className="italic line-through">{err.learner_utterance || err.original}</span>
+                            <div className="flex items-center gap-1.5 text-red-700 font-medium">
+                              <MatchaStickerBadge type="cross" label="Bạn nói" />
+                              <span className="italic line-through text-red-600">{err.learner_utterance || err.original}</span>
                             </div>
-                            <div className="text-emerald-800 font-extrabold mt-0.5">
-                              ✨ Chuẩn Band 8.5+: <span>{err.band_8_alternative || err.suggestion}</span>
+                            <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold mt-1">
+                              <MatchaStickerBadge type="spark" label="Chuẩn Band 8.5+" />
+                              <span>{err.band_8_alternative || err.suggestion}</span>
                             </div>
                             {err.identified_flaw && (
                               <div className="text-[10px] text-accent/60 mt-0.5">
@@ -812,9 +818,10 @@ export default function SpeakingReflexGame() {
                     {/* Skill 1: Phonetic Feedback (docs/skills.md) */}
                     {msg.data.phonetic_feedback && (
                       <div className="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-200/50 space-y-1 text-[10px]">
-                        <p className="font-extrabold text-emerald-900 uppercase flex items-center gap-1">
-                          🎯 Phân tích Ngữ âm học thuật (Phonetic Assessment):
-                        </p>
+                        <div className="flex items-center gap-1.5 font-extrabold text-emerald-900 uppercase">
+                          <MatchaStickerBadge type="target" label="Phân tích Ngữ âm" />
+                          <span className="text-[10px] font-bold text-emerald-800/80">(Phonetic Assessment)</span>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
                           <div className="bg-white/90 p-1.5 rounded border border-emerald-100">
                             <strong className="text-accent">Âm cuối (Endings):</strong> {msg.data.phonetic_feedback.ending_sounds || "Tốt"}
@@ -831,19 +838,13 @@ export default function SpeakingReflexGame() {
 
                     {/* Reflex & Fluency Metrics */}
                     {msg.data.reflex_stats && (
-                      <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-accent/70">
-                        <span className="bg-white px-2 py-0.5 rounded-md border border-primary/10 font-bold">
-                          ⚡ Nhịp độ: {msg.data.reflex_stats.response_pace || "Natural"}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px]">
+                        <MatchaStickerBadge type="lightning" label={`Nhịp độ: ${msg.data.reflex_stats.response_pace || "Natural"}`} />
                         {msg.data.reflex_stats.estimated_wpm > 0 && (
-                          <span className="bg-white px-2 py-0.5 rounded-md border border-primary/10 font-bold">
-                            🗣️ {msg.data.reflex_stats.estimated_wpm} WPM
-                          </span>
+                          <MatchaStickerBadge type="speech" label={`${msg.data.reflex_stats.estimated_wpm} WPM`} />
                         )}
                         {msg.data.reflex_stats.fluency_score > 0 && (
-                          <span className="bg-white px-2 py-0.5 rounded-md border border-primary/10 font-bold text-emerald-700">
-                            ⭐ Fluency: Band {msg.data.reflex_stats.fluency_score}
-                          </span>
+                          <MatchaStickerBadge type="trophy" label={`Fluency: Band ${msg.data.reflex_stats.fluency_score}`} />
                         )}
                       </div>
                     )}
@@ -856,8 +857,8 @@ export default function SpeakingReflexGame() {
           {/* Thinking / Analyzing Animation */}
           {isEvaluating && (
             <div className="flex items-start gap-2.5 self-start max-w-[80%]">
-              <div className="w-8 h-8 rounded-full bg-cream-yellow border border-amber-950/15 flex items-center justify-center text-sm shadow-sm">
-                🐻
+              <div className="shrink-0 drop-shadow-sm flex items-center justify-center">
+                <MatchaBearSticker size="sm" variant="thinking" />
               </div>
               <div className="p-4 bg-emerald-50/80 rounded-3xl border border-primary/15 text-xs font-bold text-primary flex items-center gap-3">
                 <div className="relative flex items-center justify-center w-6 h-6">
@@ -958,7 +959,7 @@ export default function SpeakingReflexGame() {
                 : isEvaluating 
                 ? "Matcha Bear đang phân tích..." 
                 : isBearSpeaking 
-                ? (speakingPhase === 'reply_and_critique' ? "🐻 Bé Gấu đang trả lời & nhận xét bạn..." : "❓ Bé Gấu đang hỏi câu tiếp theo...") 
+                ? (speakingPhase === 'reply_and_critique' ? "Bé Gấu đang trả lời & nhận xét bạn..." : "Bé Gấu đang hỏi câu tiếp theo...") 
                 : "Bấm Micro để nói chuyện trực tiếp với Bé Gấu!"}
             </h4>
             <p className="text-[10px] text-accent/50 mt-0.5">

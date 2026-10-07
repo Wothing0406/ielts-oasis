@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { MatchaBearSticker, MatchaStickerBadge } from "@/components/MatchaStickers";
 
 export default function GamesHubPage() {
   const [user, setUser] = useState<any>(null);
@@ -19,41 +20,49 @@ export default function GamesHubPage() {
   const games = [
     {
       id: "meowcha",
-      title: "Meow-Cha: Vạn Kiếm Quy Tông ⚔️",
+      title: "Meow-Cha: Vạn Kiếm Quy Tông",
+      subtitleSticker: "spark",
       description: "Tiên hiệp tu chân gõ phím trảm ma thạch! Học 100+ từ vựng IELTS phân tầng 4.0 - 8.5+, đột phá cảnh giới và lưu đạo quả lên SQL Database.",
       icon: "military_tech",
       color: "bg-[#789262] text-[#ffdf79]",
-      badge: "MỚI • HOT 🔥",
+      badgeType: "streak" as const,
+      badgeLabel: "MỚI • HOT",
       active: true,
       link: "/games/meowcha"
     },
     {
       id: "wordle",
-      title: "Wordle Matcha 🍵",
+      title: "Wordle Matcha",
+      subtitleSticker: "tea",
       description: "Thách thức đoán từ vựng IELTS gồm 5 chữ cái cùng gợi ý từ Gemini AI. Vượt qua các cấp độ để ghi danh bảng vàng!",
       icon: "translate",
       color: "bg-[#A7D08C] text-[#5D4037]",
-      badge: "Đang mở",
+      badgeType: "tea" as const,
+      badgeLabel: "Đang mở",
       active: true,
       link: "/games/wordle"
     },
     {
       id: "speak",
-      title: "Tea Talk Reflex 🎙️",
-      description: "Challenge your speaking reflexes with Matcha Bear! Respond quickly, dodge filler words, and earn Matcha Points!",
+      title: "Tea Talk Reflex",
+      subtitleSticker: "speech",
+      description: "Luyện phản xạ giọng nói trực tiếp với Bé Gấu Matcha! Đàm thoại Gemini Live song ngữ, nhận diện ngữ âm và ghi nhận lỗi ngầm Band 8.5+.",
       icon: "record_voice_over",
       color: "bg-[#A7D08C] text-[#5D4037]",
-      badge: "Đang mở",
+      badgeType: "lightning" as const,
+      badgeLabel: "Live VAD",
       active: true,
       link: "/games/speak"
     },
     {
       id: "grammar",
-      title: "Grammar Pop 🎈",
+      title: "Grammar Pop",
+      subtitleSticker: "game",
       description: "Bắn bóng ngữ pháp tiếng Anh. Trả lời nhanh các câu hỏi ngữ pháp IELTS để ngăn chặn những quả bóng chạm đất.",
       icon: "bubble_chart",
       color: "bg-neutral-100 text-neutral-400 border-neutral-200",
-      badge: "Sắp ra mắt",
+      badgeType: "bulb" as const,
+      badgeLabel: "Sắp ra mắt",
       active: false,
       link: "#"
     }
@@ -72,8 +81,11 @@ export default function GamesHubPage() {
           Về Dashboard
         </Link>
         <div className="flex items-center gap-3">
-          <span className="material-symbols-rounded text-primary text-3xl animate-bounce">sports_esports</span>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-display font-extrabold text-accent">Matcha Arcade Hub 🎮</h1>
+          <MatchaBearSticker size="sm" variant="happy" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-display font-extrabold text-accent flex items-center gap-2">
+            Matcha Arcade Hub
+            <MatchaStickerBadge type="game" label="Zone" />
+          </h1>
         </div>
         <div>
           {user ? (
@@ -93,11 +105,14 @@ export default function GamesHubPage() {
 
       {/* Intro section */}
       <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <MatchaStickerBadge type="tea" label="Matcha English Learning Games" />
+        </div>
         <h2 className="text-3xl sm:text-4xl font-display font-black text-accent leading-tight">
           Học Tiếng Anh Thật Vui Cùng <span className="text-primary text-shadow-sm">Arcade</span>!
         </h2>
         <p className="text-sm sm:text-base text-accent/70 font-medium">
-          Chào mừng cậu đến với tổ hợp trò chơi tiếng Anh IELTS Oasis. Hãy tích lũy điểm Matcha Point và nâng cao kỹ năng từ vựng hàng ngày nhé! 🍵
+          Chào mừng cậu đến với tổ hợp trò chơi tiếng Anh IELTS Oasis. Hãy tích lũy điểm Matcha Point và nâng cao kỹ năng phản xạ hàng ngày nhé!
         </p>
       </div>
 
@@ -119,14 +134,12 @@ export default function GamesHubPage() {
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${game.active ? "bg-primary/20 text-primary border border-primary/25" : "bg-neutral-100 text-neutral-400"}`}>
                   <span className="material-symbols-rounded text-2xl">{game.icon}</span>
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${game.active ? "bg-primary/25 text-primary" : "bg-neutral-200 text-neutral-500"}`}>
-                  {game.badge}
-                </span>
+                <MatchaStickerBadge type={game.badgeType} label={game.badgeLabel} />
               </div>
 
               {/* Title & Description */}
               <div className="space-y-2.5">
-                <h3 className="text-lg sm:text-xl font-display font-extrabold text-accent">
+                <h3 className="text-lg sm:text-xl font-display font-extrabold text-accent flex items-center gap-1.5 flex-wrap">
                   {game.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-accent/70 leading-relaxed font-medium">

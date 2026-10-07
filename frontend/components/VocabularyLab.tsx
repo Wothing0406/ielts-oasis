@@ -2,6 +2,23 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  PenLine, 
+  Sparkles, 
+  FolderOpen, 
+  RotateCw, 
+  PlusCircle, 
+  CheckCheck, 
+  Volume2, 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight, 
+  GraduationCap, 
+  Trash2, 
+  Lightbulb, 
+  Leaf, 
+  Loader2 
+} from 'lucide-react';
 import Flashcard from './Flashcard';
 
 const API_URL = '/api';
@@ -51,7 +68,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [dragOver, setDragOver] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedWords, setExtractedWords] = useState<any[]>([]);
-  const [shareToCommunity, setShareToCommunity] = useState(true);
+  const [shareToCommunity, setShareToCommunity] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +101,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         setExtractedWords(words);
         if (words.length > 0) {
           if ((window as any).showToast) {
-            (window as any).showToast(`Đã tìm thấy ${words.length} từ vựng từ tài liệu! 🍵`, "success");
+            (window as any).showToast(`Đã tìm thấy ${words.length} từ vựng từ tài liệu!`, "success");
           }
         } else {
           if ((window as any).showToast) {
@@ -157,7 +174,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         });
       }
       if ((window as any).showToast) {
-        (window as any).showToast("Đã lưu tất cả từ vựng mới! 🍵", "success");
+        (window as any).showToast("Đã lưu tất cả từ vựng mới!", "success");
       }
     } catch (e) {
       console.error(e);
@@ -173,36 +190,51 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   const filteredVocabList = useMemo(() => {
-    if (!selectedTopic || selectedTopic === 'All') return vocabList;
-    const t = selectedTopic.toLowerCase();
-    return vocabList.filter((v) => {
-      const vTopic = (v.topic || '').toLowerCase();
-      const vMeaning = (v.meaning || '').toLowerCase();
-      const vSource = (v.source || '').toLowerCase();
+    // 1. Filter by topic
+    let list = vocabList;
+    if (selectedTopic && selectedTopic !== 'All') {
+      const t = selectedTopic.toLowerCase();
+      list = vocabList.filter((v) => {
+        const vTopic = (v.topic || '').toLowerCase();
+        const vMeaning = (v.meaning || '').toLowerCase();
+        const vSource = (v.source || '').toLowerCase();
 
-      if (t === 'awl') {
-        return vTopic.includes('awl') || vSource.includes('awl') || vTopic.includes('academic');
+        if (t === 'awl') {
+          return vTopic.includes('awl') || vSource.includes('awl') || vTopic.includes('academic');
+        }
+        if (t === 'tech') {
+          return vTopic.includes('tech') || vMeaning.includes('công nghệ');
+        }
+        if (t === 'health') {
+          return vTopic.includes('health') || vTopic.includes('medicin') || vMeaning.includes('sức khỏe');
+        }
+        if (t === 'economy') {
+          return vTopic.includes('econom') || vTopic.includes('business') || vMeaning.includes('kinh tế');
+        }
+        if (t === 'environment') {
+          return vTopic.includes('environ') || vMeaning.includes('môi trường');
+        }
+        if (t === 'education') {
+          return vTopic.includes('educat') || vMeaning.includes('giáo dục');
+        }
+        if (t === 'society') {
+          return vTopic.includes('societ') || vTopic.includes('social') || vMeaning.includes('xã hội');
+        }
+        return vTopic.includes(t);
+      });
+    }
+
+    // 2. Strict deduplication by word (case-insensitive and trimmed)
+    const seen = new Set<string>();
+    const deduplicated: any[] = [];
+    for (const item of list) {
+      const w = (item.word || '').trim().toLowerCase();
+      if (w && !seen.has(w)) {
+        seen.add(w);
+        deduplicated.push(item);
       }
-      if (t === 'tech') {
-        return vTopic.includes('tech') || vMeaning.includes('công nghệ');
-      }
-      if (t === 'health') {
-        return vTopic.includes('health') || vTopic.includes('medicin') || vMeaning.includes('sức khỏe');
-      }
-      if (t === 'economy') {
-        return vTopic.includes('econom') || vTopic.includes('business') || vMeaning.includes('kinh tế');
-      }
-      if (t === 'environment') {
-        return vTopic.includes('environ') || vMeaning.includes('môi trường');
-      }
-      if (t === 'education') {
-        return vTopic.includes('educat') || vMeaning.includes('giáo dục');
-      }
-      if (t === 'society') {
-        return vTopic.includes('societ') || vTopic.includes('social') || vMeaning.includes('xã hội');
-      }
-      return vTopic.includes(t);
-    });
+    }
+    return deduplicated;
   }, [vocabList, selectedTopic]);
 
   useEffect(() => {
@@ -254,7 +286,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     phonetic: '',
     meaning: '',
     topic: 'General',
-    is_global: true
+    is_global: false
   });
 
   const TOPIC_OPTIONS = [
@@ -285,7 +317,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
     setIsAdding(true);
     try {
       await onAdd(formData);
-      setFormData({ word: '', phonetic: '', meaning: '', topic: 'General', is_global: true });
+      setFormData({ word: '', phonetic: '', meaning: '', topic: 'General', is_global: false });
     } finally {
       setIsAdding(false);
     }
@@ -294,30 +326,28 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   const next = () => setCurrentIndex((prev) => (prev + 1) % (filteredVocabList.length || 1));
   const prev = () => setCurrentIndex((prev) => (prev - 1 + (filteredVocabList.length || 1)) % (filteredVocabList.length || 1));
 
-
-
   return (
     <div className="w-full h-full p-4 flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-lg font-bold flex items-center gap-2">
-          <span className="material-symbols-rounded text-primary">edit_note</span> Add New Vocab
+        <h3 className="font-display text-lg font-bold flex items-center gap-2 text-accent">
+          <PenLine className="w-5 h-5 text-primary shrink-0" /> Add New Vocab
         </h3>
         <div className="flex gap-2">
            <button type="button" 
              onClick={() => setActiveMode('ai')}
-             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'ai' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+             className={`min-h-[36px] text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-all touch-manipulation active:scale-95 ${activeMode === 'ai' ? 'bg-primary text-white shadow-sm' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
            >
              AI
            </button>
            <button type="button" 
              onClick={() => setActiveMode('scroll')}
-             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'scroll' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+             className={`min-h-[36px] text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-all touch-manipulation active:scale-95 ${activeMode === 'scroll' ? 'bg-primary text-white shadow-sm' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
            >
              Scroll
            </button>
            <button type="button" 
              onClick={() => setActiveMode('manual')}
-             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all ${activeMode === 'manual' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}
+             className={`min-h-[36px] text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-all touch-manipulation active:scale-95 ${activeMode === 'manual' ? 'bg-primary text-white shadow-sm' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
            >
              Manual
            </button>
@@ -337,14 +367,14 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             >
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60 focus:border-primary/40 focus:ring-1 focus:ring-primary/30" 
                     placeholder="English Word (e.g. Sustainable)" 
                     value={formData.word}
                     onChange={(e) => setFormData({...formData, word: e.target.value})}
                   />
                   <input 
-                    className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
-                    placeholder="IPA Phonetics /.../"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60 focus:border-primary/40 focus:ring-1 focus:ring-primary/30" 
+                    placeholder="IPA Phonetics /.../" 
                     value={formData.phonetic}
                     onChange={(e) => setFormData({...formData, phonetic: e.target.value})}
                   />
@@ -352,13 +382,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                  <input 
-                   className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60" 
+                   className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm outline-none placeholder:text-accent/60 focus:border-primary/40 focus:ring-1 focus:ring-primary/30" 
                    placeholder="Vietnamese Meaning"
                    value={formData.meaning}
                    onChange={(e) => setFormData({...formData, meaning: e.target.value})}
                  />
                  <select
-                   className="w-full px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm font-semibold text-accent outline-none cursor-pointer"
+                   className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-primary/10 rounded-xl text-sm font-semibold text-accent outline-none cursor-pointer focus:border-primary/40 focus:ring-1 focus:ring-primary/30"
                    value={formData.topic}
                    onChange={(e) => setFormData({...formData, topic: e.target.value})}
                  >
@@ -376,24 +406,24 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                      onChange={(e) => setFormData({...formData, is_global: e.target.checked})}
                      className="rounded border-primary/20 text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer"
                    />
-                   <span>Chia sẻ lên cộng đồng Oasis 🍵</span>
+                   <span>Chia sẻ lên cộng đồng Oasis</span>
                  </label>
                </div>
 
                <button 
                  type="submit"
                  disabled={isAdding || !formData.word}
-                 className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                 className="w-full min-h-[44px] bg-primary text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation active:scale-95"
                >
                  {isAdding ? (
                    <>
-                     <span className="material-symbols-rounded animate-spin text-sm">sync</span>
-                     Đang thêm...
+                     <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                     <span>Đang thêm...</span>
                    </>
                  ) : (
                    <>
-                     <span className="material-symbols-rounded text-sm">add_circle</span>
-                     Thêm từ vựng
+                     <PlusCircle className="w-4 h-4 shrink-0" />
+                     <span>Thêm từ vựng</span>
                    </>
                  )}
                </button>
@@ -409,7 +439,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             >
               <div className="flex items-center relative">
                 <input 
-                  className="pl-6 pr-12 py-3.5 bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60 shadow-inner" 
+                  className="pl-6 pr-12 py-3.5 min-h-[44px] bg-secondary border-none rounded-full text-sm w-full outline-none placeholder:text-accent/60 shadow-inner focus:ring-2 focus:ring-primary/20" 
                   placeholder="Gõ từ tiếng Anh để AI tự động tra cứu..."
                   type="text"
                   value={formData.word}
@@ -419,12 +449,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                 <button 
                   type="submit"
                   disabled={isAdding || !formData.word}
-                  className="absolute right-1.5 w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-opacity hover:shadow"
+                  className="absolute right-1.5 w-10 h-10 min-w-[40px] min-h-[40px] bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-all hover:shadow active:scale-95 touch-manipulation"
+                  aria-label="AI Tra cứu"
                 >
                   {isAdding ? (
-                    <span className="material-symbols-rounded animate-spin">sync</span>
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
-                    <span className="material-symbols-rounded">auto_awesome</span>
+                    <Sparkles className="w-4 h-4 shrink-0" />
                   )}
                 </button>
               </div>
@@ -433,7 +464,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                 <div className="flex items-center gap-2">
                   <span className="text-accent/60 font-semibold text-[11px]">Chủ đề:</span>
                   <select
-                    className="bg-secondary/60 text-accent font-bold text-[11px] px-2.5 py-1 rounded-lg border border-primary/10 outline-none cursor-pointer"
+                    className="bg-secondary/60 text-accent font-bold text-[11px] px-2.5 py-1 min-h-[32px] rounded-lg border border-primary/10 outline-none cursor-pointer"
                     value={formData.topic}
                     onChange={(e) => setFormData({...formData, topic: e.target.value})}
                   >
@@ -450,7 +481,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                     onChange={(e) => setFormData({...formData, is_global: e.target.checked})}
                     className="rounded border-primary/20 text-primary focus:ring-primary/20 w-3.5 h-3.5 cursor-pointer"
                   />
-                  <span>Chia sẻ cộng đồng 🍵</span>
+                  <span>Chia sẻ cùng cộng đồng</span>
                 </label>
               </div>
             </motion.form>
@@ -483,15 +514,15 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
-                  accept=".pdf,.docx,.png,.jpg,.jpeg" 
+                  accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp" 
                   className="hidden" 
                 />
-                <span className="material-symbols-rounded text-4xl text-amber-900/60 mb-2">folder_open</span>
+                <FolderOpen className="w-10 h-10 text-amber-900/60 mb-2 shrink-0" />
                 <h4 className="font-display text-sm font-bold text-amber-950">Matcha Dropzone (Drag & Drop)</h4>
                 <p className="text-xs text-amber-900/70 text-center mt-1">
-                  Drag & drop PDF, Word (.docx), or Image files containing vocabulary here
+                  Kéo thả file PDF, Word (.docx), hoặc ảnh chứa từ vựng vào đây
                 </p>
-                <span className="text-[10px] text-accent/40 mt-2 bg-white px-2 py-0.5 rounded-full border border-primary/10">Max 5 pages / 5MB</span>
+                <span className="text-[10px] text-accent/50 mt-2 bg-white px-2.5 py-0.5 rounded-full border border-primary/10">Tối đa 5 trang / 5MB</span>
               </div>
 
               {/* Loading State - Matcha Infusing */}
@@ -508,10 +539,10 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                       animate={{ scale: [0.9, 1.1, 0.9] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     >
-                      <span className="material-symbols-rounded text-primary text-3xl animate-bounce">eco</span>
+                      <Leaf className="w-8 h-8 text-primary animate-bounce shrink-0" />
                     </motion.div>
                   </div>
-                  <p className="text-sm font-bold text-accent animate-pulse font-display">🍵 Đang pha chế Matcha Scroll...</p>
+                  <p className="text-sm font-bold text-accent animate-pulse font-display">Đang xử lý Matcha Scroll...</p>
                   <p className="text-xs text-accent/60">Hệ thống đang trích xuất & tối ưu từ vựng IELTS</p>
                 </div>
               )}
@@ -521,7 +552,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-accent/70">
-                      Found {extractedWords.length} vocabulary words:
+                      Tìm thấy {extractedWords.length} từ vựng:
                     </span>
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 text-[11px] font-bold text-primary cursor-pointer">
@@ -531,23 +562,23 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                           onChange={(e) => setShareToCommunity(e.target.checked)} 
                           className="rounded border-primary/20 text-primary focus:ring-primary/20"
                         />
-                        Share with Community 🍵
+                        <span>Chia sẻ cùng cộng đồng</span>
                       </label>
                       <button
                         type="button"
                         disabled={isSavingAll || extractedWords.every(item => vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase()))}
                         onClick={handleSaveAll}
-                        className="bg-accent text-white text-[11px] font-bold px-3 py-1 rounded-full shadow hover:bg-accent-dark transition-all disabled:opacity-50 flex items-center gap-1 shrink-0"
+                        className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow hover:bg-accent-dark transition-all disabled:opacity-50 flex items-center gap-1 shrink-0 touch-manipulation active:scale-95 min-h-[32px]"
                       >
                         {isSavingAll ? (
                           <>
-                            <span className="material-symbols-rounded text-xs animate-spin">sync</span>
-                            Saving...
+                            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                            <span>Đang lưu...</span>
                           </>
                         ) : (
                           <>
-                            <span className="material-symbols-rounded text-xs">done_all</span>
-                            Save All
+                            <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                            <span>Lưu tất cả</span>
                           </>
                         )}
                       </button>
@@ -572,38 +603,40 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                                 <button 
                                   type="button" 
                                   onClick={() => playAudio(item.word)}
-                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all"
+                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all p-1 rounded-full hover:bg-primary/10 min-w-[28px] min-h-[28px] inline-flex items-center justify-center"
+                                  title="Nghe phát âm"
                                 >
-                                  <span className="material-symbols-rounded text-sm">volume_up</span>
+                                  <Volume2 className="w-4 h-4 shrink-0" />
                                 </button>
                               </h4>
-                              <p className="text-xs font-bold text-primary/80 mt-0.5">Meaning: {item.meaning}</p>
+                              <p className="text-xs font-bold text-primary/80 mt-0.5">Nghĩa: {item.meaning}</p>
                             </div>
                             
                             {isAlreadyAdded ? (
-                              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full shrink-0">
-                                Saved
+                              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full shrink-0">
+                                Đã lưu
                               </span>
                             ) : (
                               <button 
                                 type="button"
                                 onClick={() => handleAddExtracted(item)}
-                                className="bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full shadow hover:bg-primary-dark transition-all flex items-center gap-1 shrink-0"
+                                className="bg-primary text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow hover:bg-primary-dark transition-all flex items-center gap-1 shrink-0 touch-manipulation active:scale-95 min-h-[30px]"
                               >
-                                <span className="material-symbols-rounded text-[10px]">add</span> Add
+                                <Plus className="w-3.5 h-3.5 shrink-0" /> Thêm
                               </button>
                             )}
                           </div>
                           
                           {item.example && (
                             <p className="text-[11px] text-accent/70 bg-secondary/20 p-2 rounded-lg italic">
-                              <strong>Example:</strong> "{item.example}"
+                              <strong>Ví dụ:</strong> "{item.example}"
                             </p>
                           )}
                           
                           {item.memory_hook && (
-                            <p className="text-[11px] text-amber-900/80 bg-amber-50/20 p-2 rounded-lg border border-amber-900/5">
-                              💡 {item.memory_hook}
+                            <p className="text-[11px] text-amber-900/80 bg-amber-50/20 p-2 rounded-lg border border-amber-900/5 flex items-start gap-1">
+                              <Lightbulb className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                              <span>{item.memory_hook}</span>
                             </p>
                           )}
                         </div>
@@ -619,20 +652,20 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
         <div className="flex flex-wrap gap-2 mt-4 mb-6">
           {['All', 'AWL', 'Environment', 'Tech', 'Health', 'Education', 'Economy', 'Society'].map((topic) => {
             const topicLabels: Record<string, string> = {
-              'All': 'All Topics',
+              'All': 'Tất cả',
               'AWL': 'AWL (Academic)',
-              'Environment': 'Environment',
-              'Tech': 'Technology',
-              'Health': 'Health',
-              'Education': 'Education',
-              'Economy': 'Economy',
-              'Society': 'Society'
+              'Environment': 'Môi trường',
+              'Tech': 'Công nghệ',
+              'Health': 'Sức khỏe',
+              'Education': 'Giáo dục',
+              'Economy': 'Kinh tế',
+              'Society': 'Xã hội'
             };
             return (
               <button type="button"
                 key={topic}
                 onClick={() => setSelectedTopic(topic === 'All' ? null : topic)}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-bold transition-all border touch-manipulation active:scale-95 ${
                   (topic === 'All' && !selectedTopic) || (selectedTopic?.toLowerCase() === topic.toLowerCase())
                     ? 'bg-primary text-white border-primary shadow-sm'
                     : 'bg-secondary text-accent border-transparent hover:bg-primary hover:text-white'
@@ -644,7 +677,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           })}
         </div>
         
-        <div className="flex flex-col items-center w-full mt-8">
+        <div className="flex flex-col items-center w-full mt-6">
           <div className="w-full max-w-[310px] xs:max-w-[340px] sm:max-w-sm flex justify-center">
             <div 
               className="w-full flex justify-center min-h-[380px] xs:min-h-[390px]"
@@ -683,38 +716,40 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             <button 
               type="button" 
               onClick={prev} 
-              className="p-2.5 bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation"
               aria-label="Previous card"
             >
-              <span className="material-symbols-rounded text-xl">chevron_left</span>
+              <ChevronLeft className="w-5 h-5 shrink-0" />
             </button>
-            <span className="text-xs font-bold text-accent/50">
+            <span className="text-xs font-bold text-accent/50 select-none">
               {filteredVocabList.length > 0 ? `${currentIndex + 1} / ${filteredVocabList.length}` : '0 / 0'}
             </span>
             <button 
               type="button" 
               onClick={next} 
-              className="p-2.5 bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation"
               aria-label="Next card"
             >
-              <span className="material-symbols-rounded text-xl">chevron_right</span>
+              <ChevronRight className="w-5 h-5 shrink-0" />
             </button>
           </div>
           
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
              <button type="button" 
                onClick={onStartQuiz}
-               className="w-full sm:w-auto bg-accent text-white px-8 py-3 rounded-full font-bold shadow-lg text-sm flex items-center justify-center gap-2 hover:scale-105 transition-all"
+               className="w-full sm:w-auto min-h-[44px] bg-accent text-white px-8 py-3 rounded-full font-bold shadow-lg text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all touch-manipulation"
              >
-               <span className="material-symbols-rounded text-lg">quiz</span> Ôn tập ngay
+               <GraduationCap className="w-5 h-5 shrink-0" />
+               <span>Ôn tập ngay</span>
              </button>
              
              {current.id && current.user_id !== null && current.user_id !== undefined && (
                <button type="button" 
                  onClick={() => onDelete(current.id!)}
-                 className="w-full sm:w-auto bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                 className="w-full sm:w-auto min-h-[44px] bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all active:scale-95 touch-manipulation"
                >
-                 <span className="material-symbols-rounded text-lg">delete</span> Xóa từ này
+                 <Trash2 className="w-5 h-5 shrink-0" />
+                 <span>Xóa từ này</span>
                </button>
              )}
           </div>
