@@ -2027,6 +2027,237 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
                 "quiz_items": fallback_items
             }
 
+    async def generate_grammar_from_custom_text(self, text: str, mechanics: list = None, count: int = 4):
+        """
+        Trích xuất cấu trúc ngữ pháp và sinh đề 4 Game Mechanics từ văn bản người dùng dán vào.
+        """
+        mechanics = mechanics or ["MULTIPLE_CHOICE", "GAP_FILL", "SENTENCE_SCRAMBLE", "ERROR_SPOTTING"]
+        prompt = f"""
+        Bạn là Chuyên gia Khảo thí Ngôn ngữ IELTS Cambridge.
+        Hãy phân tích đoạn văn sau đây của người dùng và tạo ra {count} câu hỏi bài tập ngữ pháp thực chiến:
+        --- ĐOẠN VĂN ---
+        {text[:1200]}
+        ---
+        Yêu cầu bài tập phải đa dạng cơ chế trong danh sách: {mechanics}.
+        Định dạng JSON trả về DUY NHẤT một mảng các đối tượng, mỗi đối tượng có định dạng:
+        [
+          {{
+            "mechanic": "MULTIPLE_CHOICE | GAP_FILL | SENTENCE_SCRAMBLE | ERROR_SPOTTING",
+            "cefr_level": "B2",
+            "target_concept": "Tên chủ điểm (ví dụ: Inversion, Past Perfect, Relative Clause)",
+            "prompt": "Yêu cầu bài tập",
+            "content_payload": {{
+                // Nếu là MULTIPLE_CHOICE:
+                // "sentence_with_blank": "Câu tiếng Anh có [ _____ ]", "options": ["A", "B", "C", "D"], "correct_answer": "Đáp án đúng"
+                // Nếu là GAP_FILL:
+                // "sentence_with_blank": "Câu có [ _____ ]", "base_word": "từ gốc", "acceptable_answers": ["dạng đúng"]
+                // Nếu là SENTENCE_SCRAMBLE:
+                // "scrambled_tokens": ["token1", "token2", "token3"], "ordered_tokens": ["token1", "token2", "token3"]
+                // Nếu là ERROR_SPOTTING:
+                // "segments": [{{"id": "A", "text": "cụm 1"}}, {{"id": "B", "text": "cụm 2"}}, {{"id": "C", "text": "cụm 3"}}, {{"id": "D", "text": "cụm 4"}}], "error_segment_id": "A", "correction": "cụm đúng"
+            }},
+            "explanation": "Giải thích ngữ pháp chi tiết bằng tiếng Việt",
+            "ielts_tip": "Mẹo ăn điểm GRA IELTS"
+          }}
+        ]
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            raw_exercises = json.loads(cleaned)
+            return raw_exercises
+        except Exception as e:
+            print(f"generate_grammar_from_custom_text error: {e}")
+            # Fallback high quality exercises
+            return [
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "B2",
+                    "target_concept": "Passive Voice with Reporting Verbs",
+                    "prompt": "Chọn dạng động từ học thuật chuẩn xác:",
+                    "content_payload": {
+                        "sentence_with_blank": "It [ _____ ] that technological innovations accelerate productivity.",
+                        "options": ["is widely believed", "widely believes", "has widely believing", "is believe"],
+                        "correct_answer": "is widely believed"
+                    },
+                    "explanation": "Cấu trúc bị động khách quan 'It is widely believed that...' rất phổ biến trong mở bài IELTS Writing Task 2.",
+                    "ielts_tip": "Dùng bị động khách quan để tránh xưng 'I/We' thể hiện quan điểm cá nhân."
+                },
+                {
+                    "mechanic": "GAP_FILL",
+                    "cefr_level": "B2",
+                    "target_concept": "Past Simple Closed Timeline",
+                    "prompt": "Chia dạng đúng của động từ trong ngoặc theo ngữ cảnh Task 1:",
+                    "content_payload": {
+                        "sentence_with_blank": "Between 2010 and 2020, solar energy output [ _____ ] dramatically.",
+                        "base_word": "escalate",
+                        "acceptable_answers": ["escalated"]
+                    },
+                    "explanation": "Khoảng thời gian 2010-2020 đã kết thúc hoàn toàn trong quá khứ nên bắt buộc dùng thì Quá khứ đơn 'escalated'.",
+                    "ielts_tip": "Tránh dùng Present Perfect khi câu có năm quá khứ xác định."
+                },
+                {
+                    "mechanic": "SENTENCE_SCRAMBLE",
+                    "cefr_level": "C1",
+                    "target_concept": "Inversion with Seldom / Rarely",
+                    "prompt": "Sắp xếp các thẻ từ sau thành câu đảo ngữ học thuật Band 8.0+:",
+                    "content_payload": {
+                        "scrambled_tokens": ["Seldom", "do governments", "address", "such acute crises", "effectively."],
+                        "ordered_tokens": ["Seldom", "do governments", "address", "such acute crises", "effectively."]
+                    },
+                    "explanation": "Khi trạng từ phủ định 'Seldom/Rarely' đứng đầu câu, trợ động từ đảo lên trước chủ ngữ: Seldom + do/does/did + S + V.",
+                    "ielts_tip": "Sử dụng 1 câu đảo ngữ đúng chỗ trong Task 2 có thể kéo điểm tiêu chí GRA lên Band 8.0."
+                },
+                {
+                    "mechanic": "ERROR_SPOTTING",
+                    "cefr_level": "B2",
+                    "target_concept": "Connectors: Although vs Despite",
+                    "prompt": "Bấm chọn cụm từ gạch chân chứa lỗi sai ngữ pháp:",
+                    "content_payload": {
+                        "segments": [
+                            {"id": "A", "text": "Although"},
+                            {"id": "B", "text": "the rapid expansion"},
+                            {"id": "C", "text": "of electric transport,"},
+                            {"id": "D", "text": "fossil fuel usage persists."}
+                        ],
+                        "error_segment_id": "A",
+                        "correction": "Despite / In spite of"
+                    },
+                    "explanation": "'Although' chỉ đi kèm mệnh đề (S + V). Đứng trước cụm danh từ 'the rapid expansion' bắt buộc dùng 'Despite' hoặc 'In spite of'.",
+                    "ielts_tip": "Đây là lỗi sai phổ biến nhất bị trừ điểm trong tiêu chí Grammatical Range & Accuracy."
+                }
+            ]
+
+    async def generate_mirror_error_exercises(self, writing_samples: list):
+        """
+        Trích xuất lỗi ngữ pháp từ các bài viết cũ của chính User để tạo bài tập Error Spotting cá nhân hóa.
+        """
+        samples_text = ""
+        for idx, w in enumerate(writing_samples[:3]):
+            content = w.get("content", "")[:400]
+            fb = w.get("feedback", "")[:400]
+            samples_text += f"\n[Bài {idx+1}] Nội dung: {content}\nNhận xét chấm: {fb}\n"
+
+        prompt = f"""
+        Bạn là Giám khảo IELTS Cambridge. Dưới đây là các đoạn văn và nhận xét chấm Writing thực tế của học viên:
+        {samples_text}
+        
+        Hãy tìm 3 câu chứa lỗi ngữ pháp thực tế mà học viên này đã mắc phải trong bài viết.
+        Chuyển đổi mỗi câu thành một bài tập ERROR_SPOTTING với 4 phân đoạn gạch chân [A], [B], [C], [D], trong đó 1 phân đoạn là lỗi sai của học viên.
+        Định dạng JSON trả về DUY NHẤT một mảng:
+        [
+          {{
+            "mechanic": "ERROR_SPOTTING",
+            "cefr_level": "B2",
+            "target_concept": "Tên lỗi ngữ pháp (ví dụ: Subject-Verb Agreement, Wrong Preposition, Run-on sentence)",
+            "prompt": "Phát hiện lỗi ngữ pháp bạn đã từng mắc phải trong bài viết của mình:",
+            "content_payload": {{
+              "segments": [
+                {{"id": "A", "text": "cụm 1"}},
+                {{"id": "B", "text": "cụm 2"}},
+                {{"id": "C", "text": "cụm lỗi sai của bạn"}},
+                {{"id": "D", "text": "cụm 4"}}
+              ],
+              "error_segment_id": "C",
+              "correction": "cụm đã sửa đúng chuẩn Band 8.5"
+            }},
+            "explanation": "Giải thích chi tiết tại sao cách viết cũ bị trừ điểm và cách sửa chuẩn",
+            "ielts_tip": "Lời khuyên thực chiến để không lặp lại lỗi này trong phòng thi"
+          }}
+        ]
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"generate_mirror_error_exercises error: {e}")
+            return [
+                {
+                    "mechanic": "ERROR_SPOTTING",
+                    "cefr_level": "B2",
+                    "target_concept": "Subject-Verb Agreement with Gerund Subjects",
+                    "prompt": "Phát hiện lỗi ngữ pháp thường gặp trong các bài viết:",
+                    "content_payload": {
+                        "segments": [
+                            {"id": "A", "text": "Investing in renewable energy"},
+                            {"id": "B", "text": "require"},
+                            {"id": "C", "text": "substantial financial capital"},
+                            {"id": "D", "text": "from national governments."}
+                        ],
+                        "error_segment_id": "B",
+                        "correction": "requires"
+                    },
+                    "explanation": "Chủ ngữ là danh động từ 'Investing in...' là danh từ số ít, do đó động từ chính phải chia số ít: 'requires'.",
+                    "ielts_tip": "Lỗi hòa hợp chủ vị với V-ing làm chủ ngữ là lỗi trừ điểm GRA phổ biến nhất ở Band 6.0 - 6.5."
+                }
+            ]
+
+    async def generate_vault_infused_exercises(self, vocab_list: list, topic_id: str = "tenses", count: int = 4):
+        """
+        Lồng ghép danh sách từ vựng trong Tủ từ của User vào câu hỏi ngữ pháp thực chiến.
+        """
+        words = [v.get("word", "") for v in vocab_list if v.get("word")][:8]
+        words_str = ", ".join(words) if words else "deteriorate, sustainable, innovate"
+
+        prompt = f"""
+        Bạn là Chuyên gia Khảo thí IELTS.
+        Hãy tạo {count} câu hỏi bài tập ngữ pháp thuộc chuyên đề: [{topic_id}].
+        YÊU CẦU ĐẶC BIỆT: Bắt buộc lồng ghép các từ vựng sau đây của học viên vào câu ngữ cảnh bài thi IELTS: [{words_str}].
+        Mỗi bài tập phải thuộc một trong 4 cơ chế: MULTIPLE_CHOICE, GAP_FILL, SENTENCE_SCRAMBLE, ERROR_SPOTTING.
+
+        Định dạng JSON trả về DUY NHẤT một mảng:
+        [
+          {{
+            "mechanic": "MULTIPLE_CHOICE | GAP_FILL | SENTENCE_SCRAMBLE | ERROR_SPOTTING",
+            "cefr_level": "B2",
+            "target_concept": "Chủ điểm ngữ pháp",
+            "vault_word_slot": "từ trong kho được lồng ghép",
+            "prompt": "Yêu cầu bài tập",
+            "content_payload": {{ ... }},
+            "explanation": "Giải thích ngữ pháp chi tiết bằng tiếng Việt",
+            "ielts_tip": "Mẹo IELTS"
+          }}
+        ]
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.primary_text_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            content = response.choices[0].message.content
+            cleaned = self._clean_json(content)
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"generate_vault_infused_exercises error: {e}")
+            return [
+                {
+                    "mechanic": "GAP_FILL",
+                    "cefr_level": "B2",
+                    "target_concept": "Past Simple with User Vocabulary",
+                    "vault_word_slot": words[0] if words else "mitigate",
+                    "prompt": f"Chia dạng quá khứ của từ vựng '{words[0] if words else 'mitigate'}' trong ngữ cảnh Task 1:",
+                    "content_payload": {
+                        "sentence_with_blank": f"Between 2012 and 2020, green technology significantly [ _____ ] industrial carbon waste.",
+                        "base_word": words[0] if words else "mitigate",
+                        "acceptable_answers": [f"{(words[0] if words else 'mitigate').rstrip('e')}ed"]
+                    },
+                    "explanation": "Mốc thời gian 2012-2020 là quá khứ đã kết thúc nên động từ phải chia thì Quá khứ đơn.",
+                    "ielts_tip": "Kết hợp từ vựng học thuật với thì quá khứ chuẩn xác sẽ đẩy band GRA lên 7.5+."
+                }
+            ]
+
 ai_service = AIService()
 
 

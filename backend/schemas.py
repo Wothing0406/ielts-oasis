@@ -192,3 +192,76 @@ class MeowchaBattleLogResponse(BaseModel):
         from_attributes = True
 
 
+# ==========================================
+# GRAMMAR & ADAPTIVE EXAM SCHEMAS
+# ==========================================
+
+class GrammarExerciseResponse(BaseModel):
+    id: int
+    lesson_id: Optional[str] = None
+    mechanic: str
+    cefr_level: str
+    target_concept: str
+    dataset_source: str
+    prompt: str
+    content_payload: Dict[str, Any]
+    explanation: str
+    ielts_tip: Optional[str] = None
+    vault_word_slot: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class GrammarLessonResponse(BaseModel):
+    id: str
+    topic_id: str
+    title_en: str
+    title_vi: str
+    cefr_level: str
+    ielts_relevance: str
+    formula: Dict[str, Any]
+    rule_summary: str
+    ielts_application: str
+    common_pitfalls: List[str]
+    academic_examples: List[Dict[str, Any]]
+    exercises: Optional[List[GrammarExerciseResponse]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class GrammarTopicResponse(BaseModel):
+    id: str
+    title_vi: str
+    title_en: str
+    icon_name: str
+    order_index: int
+    lessons: Optional[List[GrammarLessonResponse]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ExerciseSubmitPayload(BaseModel):
+    exercise_id: int
+    user_answer: Any
+    lesson_id: Optional[str] = None
+    time_spent_seconds: Optional[int] = 0
+
+
+class CustomExamGenRequest(BaseModel):
+    custom_text: Optional[str] = None
+    mechanics: Optional[List[str]] = None
+    infused_words: Optional[List[str]] = None
+    topic_id: Optional[str] = "tenses"
+    cefr_level: Optional[str] = "B2"
+    count: Optional[int] = 5
+
+
+class MirrorErrorRequest(BaseModel):
+    limit_writings: Optional[int] = 5
+    target_band: Optional[float] = 7.5
+
+
+

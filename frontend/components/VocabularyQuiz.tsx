@@ -500,7 +500,7 @@ export default function VocabularyQuiz({
   if (quizType === 'grammar_sanctuary') {
     return (
       <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm">
-        <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl max-w-3xl w-full p-5 sm:p-7 relative max-h-[92vh] overflow-y-auto custom-scrollbar border-2 border-primary/20">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl max-w-5xl w-full p-4 sm:p-7 relative max-h-[92vh] overflow-y-auto custom-scrollbar border-2 border-primary/20">
           <button
             type="button"
             onClick={() => setQuizType(null)}

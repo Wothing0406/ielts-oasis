@@ -1,6 +1,7 @@
 
 # pyrefly: ignore [missing-import]
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey, JSON
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
 
@@ -243,6 +244,91 @@ class MeowchaBattleLog(Base):
     band_level = Column(Integer, default=0)
     is_victory = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class GrammarTopic(Base):
+    """
+    6 Cụm chuyên đề ngữ pháp lớn (Tenses, Modals, Sentence Structures, Clauses, Verb Forms, Modifiers)
+    """
+    __tablename__ = "grammar_topics"
+
+    id = Column(String(50), primary_key=True)  # e.g. "tenses", "sentence_structures"
+    title_vi = Column(String(100), nullable=False)
+    title_en = Column(String(100), nullable=False)
+    icon_name = Column(String(50), default="BookOpen")
+    order_index = Column(Integer, default=1)
+
+    lessons = relationship("GrammarLesson", back_populates="topic", cascade="all, delete-orphan")
+
+
+class GrammarLesson(Base):
+    """
+    Bài học lý thuyết cốt lõi kèm công thức, bẫy thi và ví dụ IELTS Academic
+    """
+    __tablename__ = "grammar_lessons"
+
+    id = Column(String(100), primary_key=True)  # e.g. "past_simple_vs_present_perfect"
+    topic_id = Column(String(50), ForeignKey("grammar_topics.id"), nullable=False, index=True)
+    title_en = Column(String(150), nullable=False)
+    title_vi = Column(String(150), nullable=False)
+    cefr_level = Column(String(10), default="B1", index=True)
+    ielts_relevance = Column(String(50), default="Writing Task 1 & 2")
+
+    formula = Column(JSON, default=dict)
+    rule_summary = Column(Text, nullable=False)
+    ielts_application = Column(Text, nullable=False)
+    common_pitfalls = Column(JSON, default=list)
+    academic_examples = Column(JSON, default=list)
+
+    topic = relationship("GrammarTopic", back_populates="lessons")
+    exercises = relationship("GrammarExercise", back_populates="lesson", cascade="all, delete-orphan")
+
+
+class GrammarExercise(Base):
+    """
+    Ngân hàng câu hỏi bài tập polymorphic 4 cơ chế:
+    - MULTIPLE_CHOICE
+    - GAP_FILL
+    - SENTENCE_SCRAMBLE
+    - ERROR_SPOTTING
+    """
+    __tablename__ = "grammar_exercises"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lesson_id = Column(String(100), ForeignKey("grammar_lessons.id"), nullable=True, index=True)
+    mechanic = Column(String(30), nullable=False, index=True)
+    cefr_level = Column(String(10), default="B2", index=True)
+    target_concept = Column(String(150), nullable=False)
+    dataset_source = Column(String(50), default="cambridge", index=True)
+
+    prompt = Column(Text, nullable=False)
+    content_payload = Column(JSON, nullable=False)
+    explanation = Column(Text, nullable=False)
+    ielts_tip = Column(Text, nullable=True)
+    vault_word_slot = Column(String(100), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    lesson = relationship("GrammarLesson", back_populates="exercises")
+
+
+class UserGrammarProgress(Base):
+    """
+    Theo dõi tiến độ Spaced Repetition (SRS) và điểm yếu theo từng bài học ngữ pháp
+    """
+    __tablename__ = "user_grammar_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    lesson_id = Column(String(100), ForeignKey("grammar_lessons.id"), nullable=False, index=True)
+
+    mastery_score = Column(Float, default=0.0)
+    streak = Column(Integer, default=0)
+    total_attempts = Column(Integer, default=0)
+    correct_attempts = Column(Integer, default=0)
+    last_practiced = Column(DateTime, default=datetime.utcnow)
+    next_review_due = Column(DateTime, default=datetime.utcnow)
+    weak_points = Column(JSON, default=list)
+
 
 
 

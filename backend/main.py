@@ -125,6 +125,7 @@ def seed_db():
 from auth_routes import router as auth_router
 from auth_routes import get_current_user
 from meowcha_routes import router as meowcha_router
+from grammar_routes import grammar_router
 from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
@@ -143,6 +144,7 @@ async def normalize_api_path_middleware(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(meowcha_router)
+app.include_router(grammar_router)
 
 async def cleanup_static_files_loop():
     logger.info("Static files cleanup background task started.")
