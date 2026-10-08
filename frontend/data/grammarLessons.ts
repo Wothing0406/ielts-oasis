@@ -86,10 +86,19 @@ export interface GrammarLesson {
   cefr_level?: 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
   timeline_position?: 'past' | 'present' | 'future';
   formula: string | { positive: string; negative: string; question: string };
+  three_forms?: {
+    affirmative: string;
+    negative: string;
+    interrogative: string;
+  };
+  signal_markers?: string[];
   rule_summary: string;
   ielts_application: string;
   common_pitfalls: string[];
   academic_examples: AcademicExample[];
+  youtube_id?: string;
+  youtube_title?: string;
+  youtube_channel?: string;
 }
 
 export type MechanicType = 'MULTIPLE_CHOICE' | 'GAP_FILL' | 'SENTENCE_SCRAMBLE' | 'ERROR_SPOTTING';
@@ -143,52 +152,75 @@ export interface GrammarExercise {
 // 1. TENSES & ASPECTS LESSONS
 // ==========================================
 export const TENSE_LESSONS: GrammarLesson[] = [
+  // --- 1. PRESENT SIMPLE ---
   {
-    id: 'past_simple',
+    id: 'present_simple',
     category: 'tenses',
-    title: 'Past Simple (Quá khứ đơn)',
-    vietnameseTitle: 'Quá Khứ Đơn - Vũ Khí 90% Đề Thi Task 1',
-    cefr_level: 'A2',
-    timeline_position: 'past',
-    formula: 'S + V-ed / V2 (Phủ định: S + did not + V-inf)',
-    rule_summary: 'Diễn tả hành động, sự kiện hoặc xu hướng đã bắt đầu và kết thúc hoàn toàn tại một thời điểm xác định trong quá khứ.',
-    ielts_application: 'Bắt buộc dùng trong IELTS Writing Task 1 khi biểu đồ có các mốc năm trong quá khứ (ví dụ: 1995 đến 2020) để miêu tả số liệu tăng, giảm, dao động.',
+    title: 'Present Simple (Hiện tại đơn)',
+    vietnameseTitle: 'Hiện Tại Đơn - Chân Lý Khoa Học & Mở Bài Task 2',
+    cefr_level: 'A1',
+    timeline_position: 'present',
+    formula: 'S + V(s/es) | S + am/is/are',
+    three_forms: {
+      affirmative: '(+) S + V(s/es) | S + am/is/are + N/Adj',
+      negative: '(-) S + do/does not + V-inf | S + am/is/are not',
+      interrogative: '(?) Do/Does + S + V-inf? | Am/Is/Are + S...?'
+    },
+    signal_markers: ['always', 'usually', 'frequently', 'regularly', 'every day', 'in general', 'factually'],
+    rule_summary: 'Diễn tả chân lý, quy luật khoa học hiển nhiên, thói quen lặp đi lặp lại hoặc sự thật khách quan.',
+    ielts_application: 'Viết câu chủ đề (Topic sentence), định nghĩa khái niệm và phân tích các chân lý phổ quát trong IELTS Writing Task 2.',
     common_pitfalls: [
-      'Lỗi quên lùi thì: Biểu đồ cho năm 2010 nhưng thí sinh vẫn viết "The rate increases to 45%".',
-      'Lẫn lộn với Present Perfect khi có mốc năm rõ ràng (viết "has increased in 2015" là SAI, phải viết "increased in 2015").'
+      'Quên chia đuôi -s/es cho chủ ngữ số ít (đặc biệt sau cụm danh từ dài).',
+      'Động từ trạng thái (Stative Verbs: understand, belong, believe, perceive) KHÔNG chia ở tiếp diễn, bắt buộc dùng Hiện tại đơn.'
     ],
     academic_examples: [
       {
-        sentence: 'Between 2005 and 2015, the proportion of households with high-speed internet escalated from 22% to 68%.',
-        task_type: 'Task 1',
-        analysis: 'Dùng "escalated" (quá khứ đơn) vì giai đoạn 2005-2015 đã kết thúc hoàn toàn trong quá khứ.',
+        sentence: 'Urban infrastructure expansion inherently demands substantial financial allocations from federal reserves.',
+        task_type: 'Task 2',
+        analysis: 'Chủ ngữ số ít "Urban infrastructure expansion" đi với động từ chia số ít "demands".',
         band_score: 'Band 8.0'
       }
-    ]
+    ],
+    youtube_id: 'L9AWrJnhsRI',
+    youtube_title: 'Present Simple Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   },
+
+  // --- 2. PRESENT CONTINUOUS ---
   {
-    id: 'past_perfect',
+    id: 'present_continuous',
     category: 'tenses',
-    title: 'Past Perfect (Quá khứ hoàn thành)',
-    vietnameseTitle: 'Quá Khứ Hoàn Thành - Bí Kíp Ăn Điểm GRA Band 7.5+ Task 1',
-    cefr_level: 'B2',
-    timeline_position: 'past',
-    formula: 'S + had + V3/V-ed',
-    rule_summary: 'Diễn tả một hành động xảy ra và hoàn tất TRƯỚC một hành động hoặc mốc thời gian khác trong quá khứ.',
-    ielts_application: 'Cực kỳ đắt giá trong Writing Task 1 khi dùng với liên từ "By the time", "Prior to", hoặc "Before" để so sánh 2 mốc số liệu.',
+    title: 'Present Continuous (Hiện tại tiếp diễn)',
+    vietnameseTitle: 'Hiện Tại Tiếp Diễn - Xu Hướng Đang Biến Chuyển',
+    cefr_level: 'A2',
+    timeline_position: 'present',
+    formula: 'S + am/is/are + V-ing',
+    three_forms: {
+      affirmative: '(+) S + am/is/are + V-ing',
+      negative: '(-) S + am/is/are not + V-ing',
+      interrogative: '(?) Am/Is/Are + S + V-ing?'
+    },
+    signal_markers: ['currently', 'presently', 'at present', 'right now', 'at this moment', 'these days'],
+    rule_summary: 'Diễn tả hành động đang diễn ra tại thời điểm nói hoặc một xu hướng xã hội đang trong quá trình chuyển biến (Gradual change).',
+    ielts_application: 'Miêu tả sự thay đổi và chuyển dịch kinh tế - xã hội đang diễn tiến trong Task 2 (ví dụ: biến đổi khí hậu đang gia tốc).',
     common_pitfalls: [
-      'Lạm dụng quá mức khi không có mốc đối chiếu quá khứ thứ hai.',
-      'Quên chia dạng phân từ 2 (V3) của các bất quy tắc thông dụng (surpassed, fallen, overtaken).'
+      'Áp dụng tiếp diễn cho Stative Verbs như "is knowing", "is understanding" (SAI nghiêm trọng).',
+      'Quên nhân đôi phụ âm cuối khi thêm -ing (run -> running, begin -> beginning).'
     ],
     academic_examples: [
       {
-        sentence: 'By the time the new conservation policy was introduced in 2010, carbon emissions had already reached an unprecedented peak.',
-        task_type: 'Task 1',
-        analysis: '"had already reached" xảy ra trước mốc năm 2010 ("was introduced"), thể hiện sự kiểm soát cấu trúc câu phức hoàn hảo.',
-        band_score: 'Band 8.5'
+        sentence: 'Technological disruption is currently transforming pedagogical paradigms across higher education institutions.',
+        task_type: 'Task 2',
+        analysis: '"is currently transforming" diễn tả một xu hướng biến đổi mạnh mẽ đang diễn tiến ở hiện tại.',
+        band_score: 'Band 8.0'
       }
-    ]
+    ],
+    youtube_id: '_j4Z1cQ8f8U',
+    youtube_title: 'Present Continuous Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   },
+
+  // --- 3. PRESENT PERFECT ---
   {
     id: 'present_perfect',
     category: 'tenses',
@@ -197,43 +229,331 @@ export const TENSE_LESSONS: GrammarLesson[] = [
     cefr_level: 'B1',
     timeline_position: 'present',
     formula: 'S + have/has + V3/V-ed',
-    rule_summary: 'Diễn tả hành động xảy ra trong quá khứ nhưng kéo dài đến hiện tại hoặc để lại kết quả ở hiện tại mà không nêu rõ thời điểm cụ thể.',
-    ielts_application: 'Tiêu chuẩn mở bài Writing Task 2 khi nói về các xu hướng công nghệ, biến đổi khí hậu trong các thập kỷ gần đây ("Over the past few decades...").',
+    three_forms: {
+      affirmative: '(+) S + have/has + V3/V-ed',
+      negative: '(-) S + have/has not (haven\'t/hasn\'t) + V3/V-ed',
+      interrogative: '(?) Have/Has + S + V3/V-ed?'
+    },
+    signal_markers: ['over the past decade', 'in recent years', 'since', 'for', 'lately', 'so far', 'up to now'],
+    rule_summary: 'Diễn tả hành động xảy ra trong quá khứ kéo dài đến hiện tại hoặc để lại hệ quả rõ rệt mà không xác định mốc thời gian đóng.',
+    ielts_application: 'Tiêu chuẩn vàng mở đầu thân bài và mở bài Writing Task 2 khi nói về bối cảnh thời đại gần đây ("Over the last few decades...").',
     common_pitfalls: [
-      'Dùng với mốc thời gian quá khứ đóng như "in 2010" (SAI).',
-      'Nhầm lẫn giữa "have been" và "have gone".'
+      'Dùng với mốc thời gian quá khứ đóng như "in 2010" hoặc "yesterday" (SAI -> phải dùng Past Simple).',
+      'Nhầm lẫn giữa "have been to" (đã từng đến) và "have gone to" (đã đi và chưa về).'
     ],
     academic_examples: [
       {
         sentence: 'Over the last two decades, advancements in automation have transformed traditional manufacturing sectors.',
         task_type: 'Task 2',
-        analysis: 'Cụm "Over the last two decades" là dấu hiệu bắt buộc của Present Perfect.',
+        analysis: 'Cụm "Over the last two decades" là chỉ dấu bắt buộc của Present Perfect.',
         band_score: 'Band 8.5'
       }
-    ]
+    ],
+    youtube_id: 'o1_0G_K4gwg',
+    youtube_title: 'Present Perfect Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   },
+
+  // --- 4. PRESENT PERFECT CONTINUOUS ---
   {
-    id: 'future_projections',
+    id: 'present_perfect_continuous',
     category: 'tenses',
-    title: 'Future Projections (Cấu trúc Dự đoán Tương lai)',
-    vietnameseTitle: 'Dự Báo Tương Lai - Tuyệt Đối Tránh "Will" Trong Task 1',
+    title: 'Present Perfect Continuous (Hiện tại hoàn thành tiếp diễn)',
+    vietnameseTitle: 'Hiện Tại Hoàn Thành Tiếp Diễn - Nhấn Mạnh Tính Liên Tục',
     cefr_level: 'B2',
-    timeline_position: 'future',
-    formula: 'S + is/are projected / predicted / anticipated / forecasted to + V-inf',
-    rule_summary: 'Diễn tả số liệu hoặc xu hướng trong tương lai mang tính dự đoán khoa học, tránh khẳng định chủ quan tuyệt đối.',
-    ielts_application: 'Bắt buộc dùng trong Task 1 khi có các năm tương lai (ví dụ: 2030, 2050). Tuyệt đối không dùng "will increase" vì số liệu tương lai là dự báo, không phải chắc chắn 100%.',
+    timeline_position: 'present',
+    formula: 'S + have/has been + V-ing',
+    three_forms: {
+      affirmative: '(+) S + have/has been + V-ing',
+      negative: '(-) S + have/has not been + V-ing',
+      interrogative: '(?) Have/Has + S + been + V-ing?'
+    },
+    signal_markers: ['for the entire decade', 'since morning', 'continuously', 'all year round'],
+    rule_summary: 'Nhấn mạnh quá trình và tính liên tục kéo dài không gián đoạn của hành động từ quá khứ đến hiện tại.',
+    ielts_application: 'Diễn đạt các nỗ lực kéo dài liên tục của các chính phủ hoặc tổ chức bảo vệ môi trường.',
     common_pitfalls: [
-      'Lạm dụng từ "will": Viết "The population will rise to 8 billion" khiến bài viết mất tính khách quan học thuật (Academic Tone).',
+      'Nhầm với Present Perfect đơn khi nhấn mạnh kết quả thay vì quá trình.',
+      'Dùng cho động từ trạng thái chỉ sở hữu hoặc cảm xúc.'
+    ],
+    academic_examples: [
+      {
+        sentence: 'Developing nations have been striving tirelessly to balance industrialization with ecological preservation.',
+        task_type: 'Task 2',
+        analysis: '"have been striving" nhấn mạnh nỗ lực bền bỉ và diễn ra liên tục.',
+        band_score: 'Band 8.5'
+      }
+    ],
+    youtube_id: '1_ZqQxYQj-Y',
+    youtube_title: 'Present Perfect Continuous - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 5. PAST SIMPLE ---
+  {
+    id: 'past_simple',
+    category: 'tenses',
+    title: 'Past Simple (Quá khứ đơn)',
+    vietnameseTitle: 'Quá Khứ Đơn - Vũ Khí 90% Đề Thi Task 1',
+    cefr_level: 'A2',
+    timeline_position: 'past',
+    formula: 'S + V-ed / V2 | S + was/were',
+    three_forms: {
+      affirmative: '(+) S + V-ed/V2 | S + was/were',
+      negative: '(-) S + did not (didn\'t) + V-inf | S + was/were not',
+      interrogative: '(?) Did + S + V-inf? | Was/Were + S...?'
+    },
+    signal_markers: ['yesterday', 'ago', 'last year', 'in 2010', 'between 2000 and 2015', 'during the 1990s'],
+    rule_summary: 'Diễn tả hành động, sự kiện hoặc xu hướng đã bắt đầu và kết thúc hoàn toàn tại thời điểm xác định trong quá khứ.',
+    ielts_application: 'Bắt buộc dùng trong 90% các bài IELTS Writing Task 1 khi biểu đồ có các mốc năm trong quá khứ để miêu tả xu hướng.',
+    common_pitfalls: [
+      'Quên lùi thì: Biểu đồ cho năm 2012 nhưng thí sinh vẫn viết "The figures increase to 40%".',
+      'Dùng Present Perfect khi có năm cụ thể (viết "has increased in 2015" là SAI).'
+    ],
+    academic_examples: [
+      {
+        sentence: 'Between 2005 and 2015, the proportion of households with high-speed internet escalated from 22% to 68%.',
+        task_type: 'Task 1',
+        analysis: 'Giai đoạn 2005-2015 đã kết thúc nên bắt buộc dùng "escalated".',
+        band_score: 'Band 8.0'
+      }
+    ],
+    youtube_id: 'xL6_B_Y2_qY',
+    youtube_title: 'Past Simple Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 6. PAST CONTINUOUS ---
+  {
+    id: 'past_continuous',
+    category: 'tenses',
+    title: 'Past Continuous (Quá khứ tiếp diễn)',
+    vietnameseTitle: 'Quá Khứ Tiếp Diễn - Bối Cảnh Xen Kẽ & Speaking',
+    cefr_level: 'B1',
+    timeline_position: 'past',
+    formula: 'S + was/were + V-ing',
+    three_forms: {
+      affirmative: '(+) S + was/were + V-ing',
+      negative: '(-) S + was/were not (wasn\'t/weren\'t) + V-ing',
+      interrogative: '(?) Was/Were + S + V-ing?'
+    },
+    signal_markers: ['at 7 PM yesterday', 'while', 'when', 'at that precise moment in 2010'],
+    rule_summary: 'Diễn tả hành động đang xảy ra tại một thời điểm cụ thể trong quá khứ, hoặc một hành động nền đang diễn ra thì bị hành động khác cắt ngang.',
+    ielts_application: 'Rất đắt giá trong IELTS Speaking Part 2 khi kể lại một trải nghiệm trong quá khứ ("While I was preparing for...").',
+    common_pitfalls: [
+      'Phân biệt When vs While: Mệnh đề sau While thường dùng tiếp diễn (While S + was V-ing), sau When thường dùng quá khứ đơn.',
+      'Dùng nhầm số ít/số nhiều của "was/were".'
+    ],
+    academic_examples: [
+      {
+        sentence: 'While municipal authorities were deliberating policy reforms, civic organizations initiated grassroots conservation campaigns.',
+        task_type: 'Task 2',
+        analysis: 'Hành động nền "were deliberating" diễn ra liên tục trong khi hành động khác bùng nổ.',
+        band_score: 'Band 8.0'
+      }
+    ],
+    youtube_id: 'qLz9tF5_E18',
+    youtube_title: 'Past Continuous Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 7. PAST PERFECT ---
+  {
+    id: 'past_perfect',
+    category: 'tenses',
+    title: 'Past Perfect (Quá khứ hoàn thành)',
+    vietnameseTitle: 'Quá Khứ Hoàn Thành - Bí Kíp Ăn Điểm GRA Band 7.5+ Task 1',
+    cefr_level: 'B2',
+    timeline_position: 'past',
+    formula: 'S + had + V3/V-ed',
+    three_forms: {
+      affirmative: '(+) S + had + V3/V-ed',
+      negative: '(-) S + had not (hadn\'t) + V3/V-ed',
+      interrogative: '(?) Had + S + V3/V-ed?'
+    },
+    signal_markers: ['by the time', 'prior to', 'before', 'by 2010', 'already', 'hardly... when'],
+    rule_summary: 'Diễn tả hành động xảy ra và hoàn tất TRƯỚC một hành động hoặc mốc thời gian khác trong quá khứ.',
+    ielts_application: 'Vũ khí nâng band GRA lên 7.5+ trong Task 1 khi kết hợp với liên từ "By the time" hoặc "Prior to" để so sánh 2 mốc dữ liệu.',
+    common_pitfalls: [
+      'Lạm dụng quá khứ hoàn thành khi không có mốc đối chiếu quá khứ thứ hai.',
+      'Quên chia động từ phân từ 2 bất quy tắc.'
+    ],
+    academic_examples: [
+      {
+        sentence: 'By the time the new conservation policy was introduced in 2010, carbon emissions had already reached an unprecedented peak.',
+        task_type: 'Task 1',
+        analysis: '"had already reached" hoàn tất trước mốc "was introduced" trong quá khứ.',
+        band_score: 'Band 8.5'
+      }
+    ],
+    youtube_id: 'xZz7nZ5i5-o',
+    youtube_title: 'Past Perfect Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 8. PAST PERFECT CONTINUOUS ---
+  {
+    id: 'past_perfect_continuous',
+    category: 'tenses',
+    title: 'Past Perfect Continuous (Quá khứ hoàn thành tiếp diễn)',
+    vietnameseTitle: 'Quá Khứ Hoàn Thành Tiếp Diễn - Tiến Trình Kéo Dài Quá Khứ',
+    cefr_level: 'B2',
+    timeline_position: 'past',
+    formula: 'S + had been + V-ing',
+    three_forms: {
+      affirmative: '(+) S + had been + V-ing',
+      negative: '(-) S + had not been + V-ing',
+      interrogative: '(?) Had + S + been + V-ing?'
+    },
+    signal_markers: ['had been V-ing for years before', 'until that pivotal moment'],
+    rule_summary: 'Diễn tả hành động xảy ra và diễn tiến liên tục trong một khoảng thời gian trước một hành động khác trong quá khứ.',
+    ielts_application: 'Miêu tả chuỗi phát triển kinh tế kéo dài trước khi cuộc khủng hoảng xảy ra trong bài Task 1 hoặc Task 2.',
+    common_pitfalls: [
+      'Dùng cho động từ không chỉ hành động tiếp diễn (như "belong", "know").'
+    ],
+    academic_examples: [
+      {
+        sentence: 'The regional manufacturing sector had been expanding rapidly for over a decade before the economic crisis struck in 2008.',
+        task_type: 'Task 1',
+        analysis: 'Nhấn mạnh đà tăng trưởng liên tục kéo dài hơn một thập kỷ trước khi khủng hoảng bùng phát.',
+        band_score: 'Band 8.5'
+      }
+    ],
+    youtube_id: 'Rk-8P_n3jJw',
+    youtube_title: 'Past Perfect Continuous - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 9. FUTURE SIMPLE & PROJECTIONS ---
+  {
+    id: 'future_simple',
+    category: 'tenses',
+    title: 'Future Simple & Projections (Tương lai & Dự báo)',
+    vietnameseTitle: 'Dự Báo Tương Lai - Tuyệt Đối Tránh "Will" Trong Task 1',
+    cefr_level: 'B1',
+    timeline_position: 'future',
+    formula: 'S + is/are projected / predicted to + V-inf | S + will + V-inf',
+    three_forms: {
+      affirmative: '(+) S + is/are projected to + V-inf | S + will + V-inf',
+      negative: '(-) S + is/are not anticipated to + V-inf | S + will not (won\'t) + V-inf',
+      interrogative: '(?) Is/Are + S + forecasted to + V-inf? | Will + S + V-inf?'
+    },
+    signal_markers: ['by 2030', 'in 2050', 'over the coming decades', 'in the foreseeable future'],
+    rule_summary: 'Diễn tả số liệu hoặc xu hướng trong tương lai. Trong văn phong học thuật IELTS, tránh khẳng định 100% bằng "will".',
+    ielts_application: 'Bắt buộc dùng thể bị động dự báo ("is projected/anticipated to") trong Task 1 có năm tương lai.',
+    common_pitfalls: [
+      'Lạm dụng "will": Viết "The population will rise to 10 billion" làm mất tính khách quan học thuật.',
       'Quên chia thể bị động (phải là "is projected to", không phải "projects to").'
     ],
     academic_examples: [
       {
         sentence: 'By 2040, the proportion of global electricity generated from solar power is projected to reach approximately 45%.',
         task_type: 'Task 1',
-        analysis: 'Dùng "is projected to reach" thể hiện chuẩn mực dự báo khoa học Band 8.5+ trong Task 1.',
+        analysis: 'Dùng cấu trúc dự báo khoa học khách quan Band 8.5+ thay cho "will reach".',
         band_score: 'Band 8.5'
       }
-    ]
+    ],
+    youtube_id: 'H3r9bT1K8b8',
+    youtube_title: 'Future Tenses & Projections - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 10. FUTURE CONTINUOUS ---
+  {
+    id: 'future_continuous',
+    category: 'tenses',
+    title: 'Future Continuous (Tương lai tiếp diễn)',
+    vietnameseTitle: 'Tương Lai Tiếp Diễn - Xu Hướng Tại Mốc Tương Lai',
+    cefr_level: 'B2',
+    timeline_position: 'future',
+    formula: 'S + will be + V-ing',
+    three_forms: {
+      affirmative: '(+) S + will be + V-ing',
+      negative: '(-) S + will not be + V-ing',
+      interrogative: '(?) Will + S + be + V-ing?'
+    },
+    signal_markers: ['at this time in 2030', 'during the upcoming decade', 'by the year 2045'],
+    rule_summary: 'Diễn tả hành động đang diễn ra tại một thời điểm hoặc giai đoạn cụ thể trong tương lai.',
+    ielts_application: 'Phân tích các viễn cảnh công nghệ và đời sống tương lai trong Speaking Part 3 và Task 2.',
+    common_pitfalls: [
+      'Quên "be" sau "will" (viết "will V-ing" là sai cú pháp).'
+    ],
+    academic_examples: [
+      {
+        sentence: 'By 2035, millions of commuters will be utilizing autonomous zero-emission vehicles on a daily basis.',
+        task_type: 'Task 2',
+        analysis: '"will be utilizing" khắc họa sống động bức tranh tương lai đang diễn ra thường nhật.',
+        band_score: 'Band 8.0'
+      }
+    ],
+    youtube_id: 'mD5c5gL1j0k',
+    youtube_title: 'Future Continuous Tense - BBC Learning English',
+    youtube_channel: 'BBC Learning English'
+  },
+
+  // --- 11. FUTURE PERFECT ---
+  {
+    id: 'future_perfect',
+    category: 'tenses',
+    title: 'Future Perfect (Tương lai hoàn thành)',
+    vietnameseTitle: 'Tương Lai Hoàn Thành - Điểm Nhấn Cú Pháp Band 8.5+ Task 1',
+    cefr_level: 'B2',
+    timeline_position: 'future',
+    formula: 'S + will have + V3/V-ed',
+    three_forms: {
+      affirmative: '(+) S + will have + V3/V-ed',
+      negative: '(-) S + will not have + V3/V-ed',
+      interrogative: '(?) Will + S + have + V3/V-ed?'
+    },
+    signal_markers: ['by 2050', 'by the end of the projection period', 'by the time S + V(pres)'],
+    rule_summary: 'Diễn tả hành động hoặc cột mốc số liệu sẽ hoàn tất TRƯỚC một thời điểm xác định trong tương lai.',
+    ielts_application: 'Cực kỳ đắt giá khi tổng kết mốc cuối cùng của biểu đồ dự báo tương lai trong Task 1 ("By 2050, the figure will have overtaken...").',
+    common_pitfalls: [
+      'Trong mệnh đề phụ chỉ thời gian với "by the time", động từ phải chia Hiện tại đơn, KHÔNG dùng "will".'
+    ],
+    academic_examples: [
+      {
+        sentence: 'By the end of the projection timeline in 2050, global investments in clean energy will have surpassed traditional fossil fuels.',
+        task_type: 'Task 1',
+        analysis: '"will have surpassed" thể hiện sự kiểm soát cấu trúc thời gian tương lai tuyệt đỉnh Band 8.5+.',
+        band_score: 'Band 8.5'
+      }
+    ],
+    youtube_id: 'r8F9pL0K7jI',
+    youtube_title: 'Future Perfect Tense - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 12. FUTURE PERFECT CONTINUOUS ---
+  {
+    id: 'future_perfect_continuous',
+    category: 'tenses',
+    title: 'Future Perfect Continuous (Tương lai hoàn thành tiếp diễn)',
+    vietnameseTitle: 'Tương Lai Hoàn Thành Tiếp Diễn - Đỉnh Cao Ngữ Pháp C1',
+    cefr_level: 'C1',
+    timeline_position: 'future',
+    formula: 'S + will have been + V-ing',
+    three_forms: {
+      affirmative: '(+) S + will have been + V-ing',
+      negative: '(-) S + will not have been + V-ing',
+      interrogative: '(?) Will + S + have been + V-ing?'
+    },
+    signal_markers: ['for over three decades by 2050', 'by next century'],
+    rule_summary: 'Nhấn mạnh tính liên tục kéo dài chạm tới một mốc thời gian trong tương lai.',
+    ielts_application: 'Diễn đạt một quá trình chuyển đổi sinh thái kéo dài nhiều thập kỷ cho tới mốc tương lai.',
+    common_pitfalls: [
+      'Ít gặp trong văn viết thông thường, chỉ sử dụng khi thực sự cần nhấn mạnh quá trình liên tục để tránh rườm rà.'
+    ],
+    academic_examples: [
+      {
+        sentence: 'By 2050, pioneering eco-cities will have been operating with net-zero carbon footprints for more than two decades.',
+        task_type: 'Task 2',
+        analysis: 'Cấu trúc C1 hiếm có giúp bài viết đạt điểm tuyệt đối về Grammatical Range.',
+        band_score: 'Band 9.0'
+      }
+    ],
+    youtube_id: 'k8L1vK7j2aM',
+    youtube_title: 'Future Perfect Continuous - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   }
 ];
 
@@ -374,49 +694,106 @@ export const VERB_FORM_LESSONS: GrammarLesson[] = [
 // 6. MODIFIERS & DETERMINERS (ARTICLES)
 // ==========================================
 export const ARTICLE_LESSONS: GrammarLesson[] = [
+  // --- 1. INDEFINITE ARTICLES A / AN ---
+  {
+    id: 'indefinite_articles_a_an',
+    category: 'modifiers',
+    title: 'Indefinite Articles "A / AN" (Mạo từ bất định)',
+    vietnameseTitle: 'Mạo Từ "A / AN" - Phát Âm, Âm Câm & 100% Trường Hợp Ngoại Lệ',
+    cefr_level: 'A2',
+    formula: 'A + Phụ âm (Consonant Sound) | AN + Nguyên âm (Vowel Sound)',
+    three_forms: {
+      affirmative: '(+) S + is/are + a/an + Singular Countable Noun',
+      negative: '(-) S + is/are not + a/an + Singular Countable Noun',
+      interrogative: '(?) Is/Are there + a/an + Singular Countable Noun...?'
+    },
+    signal_markers: ['a university', 'an hour', 'a European country', 'an honest mistake', 'a one-way street', 'a unique approach'],
+    rule_summary: 'Dùng trước danh từ đếm được số ít khi được nhắc đến lần đầu tiên hoặc mang nghĩa "một". QUAN TRỌNG: Lựa chọn A hay AN phụ thuộc vào PHIÊN ÂM của từ đứng ngay sau, KHÔNG phụ thuộc vào chữ cái viết.',
+    ielts_application: 'Tránh các lỗi trừ điểm GRA ngớ ngẩn ngay tại câu mở đoạn và các ví dụ minh họa trong Writing & Speaking.',
+    common_pitfalls: [
+      'Âm "H" câm: Viết "a hour" (SAI -> phải là "an hour" vì phiên âm /ˈaʊ.ər/ bắt đầu bằng nguyên âm). Tương tự: "an honest person", "an honor".',
+      'Chữ cái nguyên âm nhưng phiên âm là bán phụ âm /j/ hoặc /w/: Viết "an university" (SAI -> phải là "a university" vì /juː.nɪˈvɜː.sə.ti/). Tương tự: "a European country", "a uniform", "a one-parent family".',
+      'Dùng "a/an" trước danh từ không đếm được: Viết "an information", "an advice", "a research" (SAI NGHIÊM TRỌNG -> phải là "a piece of advice/research" hoặc bỏ a/an).'
+    ],
+    academic_examples: [
+      {
+        sentence: 'Transitioning to renewable energy offers a unique opportunity to revitalize declining industrial heartlands.',
+        task_type: 'Task 2',
+        analysis: 'Dùng "a unique opportunity" (không phải "an") vì "unique" phát âm bắt đầu bằng bán phụ âm /j/.',
+        band_score: 'Band 8.0'
+      }
+    ],
+    youtube_id: 't4L6gU4iP8M',
+    youtube_title: 'How to Use Articles in English (A, An, The) - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
+  },
+
+  // --- 2. DEFINITE ARTICLE THE ---
   {
     id: 'the_definite',
     category: 'modifiers',
     title: 'Definite Article "THE" (Mạo từ xác định)',
-    vietnameseTitle: 'Mạo Từ "THE" - 5 Quy Tắc Ăn Điểm Tuyệt Đối IELTS',
+    vietnameseTitle: 'Mạo Từ "THE" - 5 Quy Tắc Ăn Điểm Tuyệt Đối IELTS Task 1 & 2',
     cefr_level: 'B1',
-    formula: 'THE + Singular / Plural / Uncountable Noun (khi đã xác định)',
-    rule_summary: 'Dùng khi cả người nói và người nghe đều biết rõ đối tượng đang được đề cập, hoặc đối tượng là duy nhất.',
-    ielts_application: 'Chiếm 70% số lỗi mạo từ trong Task 1 & 2. Bắt buộc có "the" trước các cụm tỷ lệ ("the percentage of", "the proportion of") và so sánh nhất.',
+    formula: 'THE + Singular / Plural / Uncountable Noun (khi đối tượng đã xác định)',
+    three_forms: {
+      affirmative: '(+) THE + Noun (đã xác định / duy nhất / so sánh nhất)',
+      negative: '(-) Without THE + Noun',
+      interrogative: '(?) Does THE + Noun demonstrate...?'
+    },
+    signal_markers: ['the percentage of', 'the proportion of', 'the environment', 'the internet', 'the government', 'the most significant'],
+    rule_summary: 'Dùng khi đối tượng được cả người viết và người đọc biết rõ, đối tượng là duy nhất trong vũ trụ, trước so sánh nhất, số thứ tự, và các danh từ chỉ nhóm địa lý/liên bang.',
+    ielts_application: 'Chiếm tới 70% số lỗi mạo từ của thí sinh IELTS: Bắt buộc có "the" trước các cụm tỷ lệ trong Task 1 ("the proportion of", "the volume of") và các thực thể duy nhất trong Task 2 ("the environment", "the biosphere").',
     common_pitfalls: [
-      'Quên "the" trước cụm tỷ lệ: Viết "Percentage of students increased" (SAI -> phải là "The percentage of students").',
-      'Quên "the" trước các thực thể duy nhất: "environment", "internet", "government", "workforce".',
-      'Thừa "the" trước tên nước đơn: Viết "The Vietnam", "The Japan" (SAI -> chỉ dùng "the" với liên bang/quần đảo: "The UK", "The US").'
+      'Quên "the" trước cụm tỷ lệ Task 1: Viết "Percentage of cars escalated" (SAI -> phải là "The percentage of cars").',
+      'Quên "the" trước thực thể duy nhất: Viết "protect environment" (SAI -> phải là "protect the environment"), "browse internet" (SAI -> "the internet").',
+      'Thừa "the" trước tên quốc gia đơn: Viết "The Vietnam", "The China" (SAI -> chỉ dùng "the" với liên bang/quần đảo: "The UK", "The US", "The Netherlands").',
+      'Nhầm giữa "The number of" (đi với động từ số ít) và "A number of" (đi với động từ số nhiều).'
     ],
     academic_examples: [
       {
-        sentence: 'The proportion of graduates seeking overseas employment escalated considerably.',
+        sentence: 'The proportion of graduates seeking overseas employment escalated considerably over the five-year period.',
         task_type: 'Task 1',
-        analysis: 'Bắt buộc có "The" đứng đầu cụm "The proportion of...".',
+        analysis: 'Bắt buộc có "The" đứng đầu cụm danh từ chỉ số liệu "The proportion of...".',
         band_score: 'Band 8.0'
       }
-    ]
+    ],
+    youtube_id: 't4L6gU4iP8M',
+    youtube_title: 'Definite Article "The" Deep Dive - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   },
+
+  // --- 3. ZERO ARTICLE ---
   {
     id: 'zero_article',
     category: 'modifiers',
     title: 'Zero Article "Ø" (Mạo từ rỗng)',
-    vietnameseTitle: 'Mạo Từ Rỗng "Ø" - Khái Quát Hóa Học Thuật Band 8.0',
+    vietnameseTitle: 'Mạo Từ Rỗng "Ø" - Bí Quyết Khái Quát Hóa Học Thuật Task 2',
     cefr_level: 'B1',
-    formula: 'Ø + Plural Nouns / Uncountable Nouns (khi nói chung chung)',
+    formula: 'Ø + Plural Countable Noun / Uncountable Noun (khi nói chung chung)',
+    three_forms: {
+      affirmative: '(+) Ø + Plural / Uncountable Noun + Verb',
+      negative: '(-) Lack of Ø + Uncountable Noun',
+      interrogative: '(?) Does Ø + Uncountable Noun enhance...?'
+    },
+    signal_markers: ['Ø education', 'Ø pollution', 'Ø technological innovations', 'by car / by bus', 'at school / at work'],
     rule_summary: 'KHÔNG dùng mạo từ khi nói về các khái niệm trừu tượng, danh từ không đếm được nói chung hoặc danh từ đếm được số nhiều mang nghĩa khái quát.',
-    ielts_application: 'Tiêu chuẩn vàng của văn phong học thuật Task 2: Khi nói về giáo dục, ô nhiễm, xã hội nói chung, tuyệt đối không được thêm "the".',
+    ielts_application: 'Tiêu chuẩn vàng của văn phong học thuật Task 2: Khi thảo luận về giáo dục, ô nhiễm, xã hội nói chung, tuyệt đối không được thêm "the".',
     common_pitfalls: [
-      'Thêm "the" tùy tiện trước danh từ trừu tượng: Viết "The education plays a vital role" (SAI NGHIÊM TRỌNG -> Phải là "Ø Education plays a vital role").'
+      'Thêm "the" tùy tiện trước danh từ trừu tượng: Viết "The education plays a vital role" (SAI NGHIÊM TRỌNG -> Phải là "Ø Education plays a vital role").',
+      'Thêm "the" trước tên môn học, bữa ăn, thể thao hoặc phương tiện giao thông sau giới từ "by" (viết "by the bus" là SAI -> phải là "by bus").'
     ],
     academic_examples: [
       {
-        sentence: 'Ø Higher education plays a pivotal role in fostering economic growth.',
+        sentence: 'Ø Higher education plays a pivotal role in fostering sustainable economic prosperity.',
         task_type: 'Task 2',
-        analysis: '"Higher education" là danh từ trừu tượng nói chung -> Dùng Zero Article Ø (không có "the").',
+        analysis: '"Higher education" là khái niệm trừu tượng nói chung -> Dùng Zero Article Ø (không có "the").',
         band_score: 'Band 8.5'
       }
-    ]
+    ],
+    youtube_id: 't4L6gU4iP8M',
+    youtube_title: 'When NOT to use an article in English - Oxford Online English',
+    youtube_channel: 'Oxford Online English'
   }
 ];
 

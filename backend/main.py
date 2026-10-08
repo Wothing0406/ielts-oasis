@@ -123,7 +123,7 @@ def seed_db():
 # VocabIn is imported from schemas
 
 from auth_routes import router as auth_router
-from auth_routes import get_current_user
+from auth_routes import get_current_user, get_optional_current_user
 from meowcha_routes import router as meowcha_router
 from grammar_routes import grammar_router
 from fastapi import Depends
@@ -371,11 +371,21 @@ YOLO_TRANSLATIONS = {
 }
 
 @app.get("/vocabulary")
-async def get_vocabulary(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not user:
-        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem từ vựng.")
-    query = db.query(Vocabulary).filter(Vocabulary.user_id == user["user_id"])
-    vocabs = query.order_by(desc(Vocabulary.id)).all()
+@app.get("/vocabularies")
+async def get_vocabulary(user: Optional[dict] = Depends(get_optional_current_user), db: Session = Depends(get_db)):
+    vocabs = []
+    if user and user.get("user_id"):
+        user_id = user["user_id"]
+        vocabs = db.query(Vocabulary).filter(Vocabulary.user_id == user_id).order_by(desc(Vocabulary.id)).all()
+        # Fallback to starter/global words if user's notebook has 0 words
+        if not vocabs:
+            vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(50).all()
+    else:
+        # Public preview / guest: show starter global vocabularies so the web is never empty!
+        vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(50).all()
+        if not vocabs:
+            vocabs = db.query(Vocabulary).limit(30).all()
+
     # Deduplicate by lowercase word to ensure clean list
     unique_vocabs = []
     seen = set()

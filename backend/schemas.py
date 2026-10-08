@@ -264,4 +264,26 @@ class MirrorErrorRequest(BaseModel):
     target_band: Optional[float] = 7.5
 
 
+class AdaptivePersonalExamRequest(BaseModel):
+    cefr_level: Optional[str] = "B2"
+    topic_id: Optional[str] = "all"
+    dataset_type: Optional[str] = "cambridge_ielts" # "cambridge_ielts" | "wi_locness" | "conll_2014" | "jfleg" | "mmlu"
+    count: Optional[int] = 5
+    focus_weak_areas: Optional[bool] = True
+    include_vault_words: Optional[bool] = True
 
+
+class AICoachConsultRequest(BaseModel):
+    message: str
+    user_goal: Optional[str] = None
+    target_skills: Optional[List[str]] = ["grammar", "writing", "speaking"]
+    history: Optional[List[Dict[str, str]]] = []
+
+
+class AICoachConsultResponse(BaseModel):
+    reply: str
+    study_plan: Optional[Dict[str, Any]] = None
+    recommended_video: Optional[Dict[str, str]] = None
+    recommended_grammar_topics: Optional[List[str]] = None
+    suggested_actions: Optional[List[str]] = None
+    practice_exercise: Optional[Dict[str, Any]] = None

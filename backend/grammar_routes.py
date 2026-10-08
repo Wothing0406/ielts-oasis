@@ -10,6 +10,8 @@ from schemas import (
     ExerciseSubmitPayload,
     CustomExamGenRequest,
     MirrorErrorRequest,
+    AdaptivePersonalExamRequest,
+    AICoachConsultRequest,
 )
 from services.ai_service import ai_service
 from logger import setup_logger
@@ -26,7 +28,26 @@ def get_optional_user(request: Request, db: Session = Depends(get_db)) -> Option
     if not auth_header or not auth_header.startswith("Bearer "):
         return None
     token = auth_header.split(" ")[1]
-    # In Oasis, users can be identified by discord_id or user.id
+
+    # Try decoding JWT first
+    try:
+        from auth_routes import JWT_SECRET, JWT_ALGORITHM
+        import jwt
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                return user
+        discord_id = payload.get("discord_id")
+        if discord_id:
+            user = db.query(User).filter(User.discord_id == discord_id).first()
+            if user:
+                return user
+    except Exception:
+        pass
+
+    # In Oasis, users can also be identified by discord_id or user.id
     user = db.query(User).filter(User.discord_id == token).first()
     if not user and token.isdigit():
         user = db.query(User).filter(User.id == int(token)).first()
@@ -185,6 +206,115 @@ async def generate_mirror_errors(
 
     exercises = await ai_service.generate_mirror_error_exercises(writing_samples)
     return {"success": True, "data": exercises, "source": "mirror_writing_logs"}
+
+
+@grammar_router.post("/adaptive-personal-exam")
+async def generate_adaptive_personal_exam(
+    payload: AdaptivePersonalExamRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Tạo bộ đề thi ngữ pháp cá nhân hóa thích ứng theo thực lực (Adaptive Testing):
+    - Đọc kho từ vựng cá nhân của học viên
+    - Khảo sát các điểm yếu từ UserGrammarProgress và WritingLog
+    - Tích hợp chuẩn Benchmark (Cambridge IELTS, W&I + LOCNESS, CoNLL-2014, JFLEG, MMLU)
+    - Phân bổ 4 cơ chế tương tác: MULTIPLE_CHOICE, GAP_FILL, SENTENCE_SCRAMBLE, ERROR_SPOTTING
+    """
+    user = get_optional_user(request, db)
+
+    # 1. Thu thập từ vựng học viên
+    vocab_list = []
+    if payload.include_vault_words:
+        if user:
+            user_vocabs = db.query(Vocabulary).filter(Vocabulary.user_id == user.id).limit(15).all()
+            vocab_list = [{"word": v.word, "meaning": v.meaning} for v in user_vocabs]
+        
+        # Nếu chưa có từ cá nhân, lấy từ vựng IELTS chất lượng từ hệ thống
+        if not vocab_list:
+            global_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(10).all()
+            vocab_list = [{"word": v.word, "meaning": v.meaning} for v in global_vocabs]
+
+    # 2. Khảo sát điểm yếu ngữ pháp thực tế
+    weak_areas = []
+    if payload.focus_weak_areas and user:
+        weak_progress = db.query(UserGrammarProgress).filter(
+            UserGrammarProgress.user_id == user.id,
+            UserGrammarProgress.mastery_score < 70.0
+        ).order_by(UserGrammarProgress.mastery_score.asc()).limit(4).all()
+        for wp in weak_progress:
+            weak_areas.append(wp.lesson_id.replace("_", " ").title())
+
+        # Kiểm tra thêm phản hồi bài viết gần nhất
+        recent_writings = db.query(WritingLog).filter(WritingLog.user_id == user.id).order_by(WritingLog.created_at.desc()).limit(2).all()
+        for rw in recent_writings:
+            if rw.feedback and len(rw.feedback) > 10:
+                weak_areas.append(rw.feedback[:80])
+
+    if not weak_areas:
+        weak_areas = ["12 Tenses (Past Simple vs Present Perfect)", "Definite Article 'The'", "Passive Voice in Academic Writing", "Subject-Verb Agreement with Gerunds"]
+
+    user_profile = {
+        "cefr_level": payload.cefr_level or "B2",
+        "weak_areas": weak_areas,
+        "vocab_list": vocab_list
+    }
+
+    exercises = await ai_service.generate_adaptive_personal_exam(
+        user_profile=user_profile,
+        topic_id=payload.topic_id or "all",
+        dataset_type=payload.dataset_type or "cambridge_ielts",
+        count=payload.count or 5
+    )
+
+    return {
+        "success": True,
+        "data": exercises,
+        "user_profile_used": {
+            "cefr_level": user_profile["cefr_level"],
+            "weak_areas_count": len(weak_areas),
+            "vault_words_infused": len(vocab_list),
+            "dataset_benchmark": payload.dataset_type or "cambridge_ielts"
+        }
+    }
+
+
+@grammar_router.post("/ai-coach-consult")
+async def consult_ai_coach(
+    payload: AICoachConsultRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Chatbot Cố vấn Trưởng Ngữ pháp & Lịch học:
+    - Tư vấn lộ trình học 7-14 ngày cá nhân hóa (Vocab SRS -> 12 Thì/Mạo từ -> Writing & Speaking)
+    - Phân tích cặn kẽ lý thuyết 12 thì (3 dạng +, -, ?, dấu hiệu, stative verbs, bẫy thi) và mạo từ
+    - Đề xuất video bài giảng YouTube uy tín (Oxford Online English, BBC Learning English)
+    """
+    user = get_optional_user(request, db)
+    
+    weak_areas = []
+    if user:
+        weak_items = db.query(UserGrammarProgress).filter(
+            UserGrammarProgress.user_id == user.id,
+            UserGrammarProgress.mastery_score < 70.0
+        ).limit(3).all()
+        weak_areas = [w.lesson_id.replace("_", " ") for w in weak_items]
+
+    user_profile = {
+        "username": user.username if user else "Học viên Oasis",
+        "cefr_level": "B2",
+        "user_goal": payload.user_goal or "IELTS 6.5 - 7.5",
+        "weak_areas": weak_areas if weak_areas else ["12 thì thời gian", "mạo từ học thuật", "cấu trúc câu phức"]
+    }
+
+    consult_result = await ai_service.consult_study_and_grammar_coach(
+        message=payload.message,
+        user_profile=user_profile,
+        history=payload.history or []
+    )
+
+    return {"success": True, "data": consult_result}
 
 
 @grammar_router.post("/submit")

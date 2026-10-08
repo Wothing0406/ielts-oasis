@@ -42,7 +42,7 @@ export default function CommunityPage() {
 
   const fetchVocabs = async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/vocabularies`, {
+      const res = await fetch(`${API_URL}/vocabulary`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -62,7 +62,7 @@ export default function CommunityPage() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/vocabularies`, {
+      const res = await fetch(`${API_URL}/vocabulary`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +87,7 @@ export default function CommunityPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/vocabularies/${id}`, {
+      const res = await fetch(`${API_URL}/vocabulary/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
