@@ -748,9 +748,16 @@ async def translate_text(data: TranslateInput):
             clean_res = clean_res.strip(" \"':;,.")
             return {"meaning": clean_res}
         else:
-            # Fallback conversation / chat through /translate using enhanced chat_tutor brain
-            response = await ai_service.chat_tutor(text)
-            return {"meaning": response or "Mát Cha chưa hiểu ý cậu lắm."}
+            # Dịch nguyên câu ví dụ tiếng Anh sang tiếng Việt tự nhiên chuẩn văn phong IELTS
+            prompt = (
+                f"Hãy dịch câu tiếng Anh sau sang tiếng Việt tự nhiên, chính xác, đúng ngữ cảnh học thuật IELTS:\n"
+                f"Sentence: \"{text}\"\n\n"
+                f"YÊU CẦU: Chỉ trả về DUY NHẤT câu dịch tiếng Việt, không giải thích, không để trong ngoặc kép."
+            )
+            response = await ai_service.get_advice(prompt)
+            clean_res = response.strip() if response else text
+            clean_res = clean_res.strip(" \"'")
+            return {"meaning": clean_res}
     except Exception as e:
         logger.error(f"Translate error: {e}")
         return {"error": str(e), "meaning": "Lỗi kết nối máy chủ Matcha."}

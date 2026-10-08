@@ -61,6 +61,144 @@ const playAudio = async (word: string) => {
   } catch (err) { console.error("TTS error:", err); }
 };
 
+const STATIC_SENTENCE_TRANSLATIONS: Record<string, string> = {
+  "He took his job seriously.": "Anh ấy đã làm việc một cách nghiêm túc và có trách nhiệm.",
+  "Her father is seriously ill in St Luke's hospital.": "Bố của cô ấy đang ốm rất nặng trong bệnh viện St Luke.",
+  "IELTS is an academic English test.": "IELTS là một bài thi tiếng Anh mang tính học thuật.",
+  "The school curriculum is being updated.": "Chương trình giảng dạy của nhà trường đang được cập nhật.",
+  "Modern pedagogy focuses on student engagement.": "Phương pháp sư phạm hiện đại tập trung vào sự chủ động tham gia của học sinh.",
+  "Technological innovation drives the economy.": "Đổi mới công nghệ là động lực thúc đẩy nền kinh tế phát triển.",
+  "Automation is replacing many manual jobs.": "Tự động hóa đang dần thay thế nhiều công việc thủ công.",
+  "Artificial intelligence is a hot topic.": "Trí tuệ nhân tạo là một chủ đề đang rất được quan tâm.",
+  "We need sustainable energy sources.": "Chúng ta cần các nguồn năng lượng bền vững.",
+  "The rainforest has high biodiversity.": "Rừng mưa nhiệt đới sở hữu độ đa dạng sinh học phong phú.",
+  "Pollution can destroy the local ecosystem.": "Ô nhiễm có thể tàn phá hệ sinh thái địa phương.",
+  "Exercise is vital for your well-being.": "Tập thể dục là điều tối quan trọng cho sức khỏe và thể trạng của bạn.",
+  "Music has therapeutic benefits.": "Âm nhạc mang lại những lợi ích trị liệu quý giá.",
+  "Always try to eat a nutritious breakfast.": "Hãy luôn cố gắng ăn một bữa sáng giàu chất dinh dưỡng.",
+  "A strong grasp of English is advantageous in the global job market.": "Nắm vững tiếng Anh là một lợi thế lớn trên thị trường việc làm toàn cầu.",
+  "Our confidence in the team has been seriously undermined by their recent defeats.": "Niềm tin của chúng tôi vào đội bóng đã bị suy giảm nghiêm trọng sau những thất bại gần đây.",
+};
+
+interface GrammarReasonInfo {
+  posBadge: string;
+  posColor: string;
+  roleAnalysis: string;
+  collocation: string;
+  selectionReason: string;
+}
+
+const getGrammarAndSelectionReason = (
+  wordRaw: string, 
+  meaningRaw: string, 
+  sentence: string
+): GrammarReasonInfo => {
+  const word = wordRaw.trim();
+  const meaning = meaningRaw.trim();
+  const w = word.toLowerCase();
+  const m = meaning.toLowerCase();
+  const s = sentence.toLowerCase();
+
+  // 1. Phân loại từ loại
+  const isAdv = (
+    (w.endsWith('ly') && !['family', 'friendly', 'lovely', 'ugly', 'lonely', 'silly', 'early'].includes(w)) ||
+    w.endsWith('wise') || w.endsWith('ward') || w.endsWith('wards') ||
+    m.startsWith('một cách ') || m.startsWith('rất ') || m.startsWith('khá ') ||
+    (m.includes('nghiêm túc') && w.endsWith('ly')) ||
+    w === 'fast' || w === 'well' || w === 'hard'
+  );
+
+  const isVerb = (
+    w.endsWith('ate') || w.endsWith('ize') || w.endsWith('ise') || w.endsWith('ify') || w.endsWith('en') ||
+    m.startsWith('làm ') || m.startsWith('giảm ') || m.startsWith('tăng ') || 
+    m.startsWith('tạo ') || m.startsWith('thúc ') || m.startsWith('ủng hộ') || 
+    m.startsWith('chứng minh') || m.startsWith('ngăn ') || m.startsWith('duy trì') ||
+    m.startsWith('áp dụng') || m.startsWith('thực hiện')
+  );
+
+  const isAdj = (
+    w.endsWith('able') || w.endsWith('ible') || w.endsWith('al') || 
+    w.endsWith('ic') || w.endsWith('ous') || w.endsWith('ful') || w.endsWith('ive') ||
+    w.endsWith('less') || w.endsWith('ish') ||
+    m.startsWith('có ') || m.startsWith('mang ') || m.startsWith('đáng ') || 
+    m.includes('bền vững') || m.includes('chủ yếu') || m.includes('thiết yếu')
+  );
+
+  // Trường hợp đặc biệt: 'seriously' trong cụm 'took his job seriously'
+  if (w === 'seriously' || (s.includes('took') && s.includes('seriously')) || (s.includes('take') && s.includes('seriously'))) {
+    return {
+      posBadge: 'Trạng từ (Adverb)',
+      posColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      roleAnalysis: `Trong câu "${sentence}", từ "${word}" đóng vai trò là trạng từ cách thức (adverb of manner) đứng sau tân ngữ ("job" / "his job") để bổ nghĩa cho động từ "took" (quá khứ của "take"), diễn tả thái độ làm việc hết sức nghiêm túc và có trách nhiệm.`,
+      collocation: `take [something] seriously (Cụm cố định: coi trọng điều gì / làm việc gì một cách nghiêm túc).`,
+      selectionReason: `Điền trạng từ "${word}" (nghĩa: "${meaning}") là chính xác tuyệt đối vì: (1) Cần một trạng từ bổ nghĩa cho hành động của động từ "took" (không thể dùng tính từ "serious"); (2) Tạo thành collocation kinh điển chuẩn văn phong học thuật IELTS.`
+    };
+  }
+
+  // Từ điển Collocation tiêu biểu
+  const COLLOCATION_MAP: Record<string, string> = {
+    academic: 'academic performance / achievement / journal (thành tích / tạp chí học thuật)',
+    curriculum: 'school / core curriculum (chương trình giảng dạy cốt lõi)',
+    pedagogy: 'modern / innovative pedagogy (phương pháp sư phạm hiện đại)',
+    innovation: 'technological innovation / drive innovation (đổi mới công nghệ)',
+    automation: 'workplace automation / process automation (tự động hóa quy trình)',
+    artificial: 'artificial intelligence (AI) (trí tuệ nhân tạo)',
+    sustainable: 'sustainable development / sustainable growth (phát triển bền vững)',
+    biodiversity: 'biodiversity conservation / loss of biodiversity (bảo tồn đa dạng sinh học)',
+    ecosystem: 'marine / fragile ecosystem (hệ sinh thái biển / mong manh)',
+    'well-being': 'mental / physical well-being (sức khỏe thể chất và tinh thần)',
+    therapeutic: 'therapeutic effect / therapeutic benefit (tác dụng trị liệu y khoa)',
+    nutritious: 'nutritious diet / meal (bữa ăn giàu dinh dưỡng)',
+    advantageous: 'be highly advantageous to/for (rất có lợi cho)',
+    facilitate: 'facilitate communication / learning (tạo điều kiện thuận lợi)',
+    implement: 'implement policies / measures (thực thi chính sách, biện pháp)',
+    mitigate: 'mitigate the impact / risk (giảm thiểu tác động tiêu cực, rủi ro)',
+    advocate: 'advocate for reforms / sustainable practices (ủng hộ cải cách)',
+    substantiate: 'substantiate a claim / hypothesis (chứng minh luận điểm)',
+  };
+
+  const detectedCollocation = COLLOCATION_MAP[w] || `${word} + [ngữ cảnh học thuật] (kết hợp tự nhiên trong bài thi IELTS)`;
+
+  if (isAdv) {
+    return {
+      posBadge: 'Trạng từ (Adverb)',
+      posColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      roleAnalysis: `Từ "${word}" (đuôi "-ly") đóng vai trò là trạng từ trong câu, bổ nghĩa cho động từ hành động hoặc tính từ lân cận, diễn đạt cách thức hoặc mức độ: "${meaning}".`,
+      collocation: detectedCollocation,
+      selectionReason: `Vị trí này đòi hỏi một trạng từ bổ nghĩa cho hành động/tính chất, không thể dùng danh từ hay tính từ. Điền "${word}" giúp câu chuẩn ngữ pháp và truyền tải trọn vẹn nghĩa "${meaning}".`
+    };
+  }
+
+  if (isVerb) {
+    return {
+      posBadge: 'Động từ (Verb)',
+      posColor: 'bg-blue-100 text-blue-800 border-blue-300',
+      roleAnalysis: `Từ "${word}" là động từ (verb), làm vị ngữ chính diễn tả hành động/quá trình "${meaning}". Đứng sau chủ ngữ hoặc sau trợ động từ khuyết thiếu (modal verbs: should, can, must) hoặc dạng to-infinitive.`,
+      collocation: detectedCollocation,
+      selectionReason: `Chỗ trống nằm ở vị trí vị ngữ yêu cầu động từ diễn đạt hành động "${meaning}". Điền "${word}" đáp ứng hoàn hảo cấu trúc ngữ pháp và ý nghĩa văn cảnh.`
+    };
+  }
+
+  if (isAdj) {
+    return {
+      posBadge: 'Tính từ (Adjective)',
+      posColor: 'bg-amber-100 text-amber-800 border-amber-300',
+      roleAnalysis: `Từ "${word}" là tính từ (adjective), đứng trước danh từ để bổ nghĩa trực tiếp cho danh từ đó trong cụm danh từ (Noun Phrase), hoặc đứng sau liên động từ (linking verb: to be, seem, become) làm vị ngữ bổ ngữ mang nghĩa "${meaning}".`,
+      collocation: detectedCollocation,
+      selectionReason: `Chỗ trống cần một tính từ miêu tả đặc tính mang nghĩa "${meaning}" cho danh từ. Điền "${word}" đảm bảo tính chuẩn xác về ngữ pháp và ghi điểm tiêu chí Lexical Resource.`
+    };
+  }
+
+  // Mặc định: Danh từ
+  return {
+    posBadge: 'Danh từ (Noun)',
+    posColor: 'bg-purple-100 text-purple-800 border-purple-300',
+    roleAnalysis: `Từ "${word}" là danh từ (noun), đóng vai trò làm chủ ngữ hoặc tân ngữ trong câu, đứng sau mạo từ (a/an/the) hoặc tính từ sở hữu để thể hiện khái niệm/đối tượng: "${meaning}".`,
+    collocation: detectedCollocation,
+    selectionReason: `Cấu trúc câu yêu cầu một danh từ chỉ khái niệm hoặc thực thể mang nghĩa "${meaning}". Điền "${word}" giúp hoàn thiện cấu trúc cú pháp của câu một cách chuẩn xác.`
+  };
+};
+
 interface Props {
   vocabList: VocabItem[];
   initialTopic?: string | null;
@@ -129,6 +267,7 @@ export default function VocabularyQuiz({
   const [userInput, setUserInput] = useState('');
   const [userSelectedOption, setUserSelectedOption] = useState<string | null>(null);
   const [showMeaningHint, setShowMeaningHint] = useState<boolean>(false);
+  const [sentenceTranslations, setSentenceTranslations] = useState<Record<string, string>>({});
 
   // Initialize questions when quiz starts
   const startQuizWithQuestions = (type: QuizType) => {
@@ -624,45 +763,111 @@ export default function VocabularyQuiz({
   // 4. QUESTIONS CONTAINER SCREEN
   const current = activeQuestions[currentIndex];
 
-  // Helper cloze sentence computed for current word
-  const currentCloze = (() => {
-    if (!current) return { sentenceWithBlank: '', fullSentence: '', translation: '' };
+  // Helper cloze sentence computed for current word with intelligent bilingual extraction
+  const currentCloze = useMemo(() => {
+    if (!current) return { sentenceWithBlank: '', fullSentence: '', rawTranslation: '' };
     const word = current.word.trim();
     const meaning = current.meaning.trim();
     
-    if (current.example && current.example.trim().length > 15) {
+    // Check if current.example contains inline Vietnamese translation e.g. "(Dịch: ...)" or " - ..."
+    if (current.example && current.example.trim().length > 10) {
+      const rawEx = current.example.trim();
+      
+      // Check if example has parentheses with Vietnamese text
+      const parenMatch = rawEx.match(/^(.*?)\s*[\(\[]([^\)\]]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ][^\)\]]*)[\)\]]\.?$/i);
+      let enSentence = rawEx;
+      let viTrans = '';
+
+      if (parenMatch) {
+        enSentence = parenMatch[1].trim();
+        viTrans = parenMatch[2].replace(/^(?:dịch|nghĩa|tương ứng ngữ cảnh)\s*[:.\-]\s*/i, '').trim();
+      } else if (rawEx.includes(' - ') && /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(rawEx)) {
+        const parts = rawEx.split(' - ');
+        enSentence = parts[0].trim();
+        viTrans = parts.slice(1).join(' - ').trim();
+      }
+
       const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-      if (regex.test(current.example)) {
+      if (regex.test(enSentence)) {
         return {
-          sentenceWithBlank: current.example.replace(regex, '_______'),
-          fullSentence: current.example,
-          translation: `Ngữ cảnh học thuật mang nghĩa: ${meaning}`
+          sentenceWithBlank: enSentence.replace(regex, '_______'),
+          fullSentence: enSentence,
+          rawTranslation: viTrans
         };
       }
+      
       const stem = word.length > 4 ? word.slice(0, word.length - 2) : word;
       const stemEscaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const stemRegex = new RegExp(`\\b${stemEscaped}\\w*\\b`, 'gi');
-      if (stemRegex.test(current.example)) {
+      if (stemRegex.test(enSentence)) {
         return {
-          sentenceWithBlank: current.example.replace(stemRegex, '_______'),
-          fullSentence: current.example,
-          translation: `Ngữ cảnh học thuật mang nghĩa: ${meaning}`
+          sentenceWithBlank: enSentence.replace(stemRegex, '_______'),
+          fullSentence: enSentence,
+          rawTranslation: viTrans
         };
       }
+
+      // If word is not found inside raw example, construct high-quality IELTS sentence
       return {
         sentenceWithBlank: `The lecturer emphasized that students should _______ this concept in their essays.`,
         fullSentence: `The lecturer emphasized that students should ${word} this concept in their essays.`,
-        translation: `Giảng viên nhấn mạnh rằng sinh viên nên ${meaning} khái niệm này trong bài luận.`
+        rawTranslation: `Giảng viên nhấn mạnh rằng sinh viên nên ${meaning} khái niệm này trong bài luận.`
       };
     }
     
     return {
       sentenceWithBlank: `The policy was formulated to _______ long-term sustainable growth.`,
       fullSentence: `The policy was formulated to ${word} long-term sustainable growth.`,
-      translation: `Chính sách được đề ra nhằm ${meaning} tăng trưởng bền vững lâu dài.`
+      rawTranslation: `Chính sách được đề ra nhằm ${meaning} tăng trưởng bền vững lâu dài.`
     };
-  })();
+  }, [current]);
+
+  // Dynamic background sentence translator with in-memory caching via /api/translate
+  useEffect(() => {
+    if (!currentCloze?.fullSentence) return;
+    const sentence = currentCloze.fullSentence.trim();
+    if (!sentence || sentenceTranslations[sentence]) return;
+    if (STATIC_SENTENCE_TRANSLATIONS[sentence]) return;
+
+    let isCancelled = false;
+    const fetchTrans = async () => {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: sentence })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.meaning && !isCancelled) {
+            setSentenceTranslations(prev => ({
+              ...prev,
+              [sentence]: data.meaning
+            }));
+          }
+        }
+      } catch (err) {
+        // Silently use contextual fallback
+      }
+    };
+
+    fetchTrans();
+    return () => { isCancelled = true; };
+  }, [currentCloze?.fullSentence, sentenceTranslations]);
+
+  // Active Vietnamese translation for the example sentence
+  const displaySentenceTranslation = useMemo(() => {
+    if (!currentCloze.fullSentence) return '';
+    if (currentCloze.rawTranslation) return currentCloze.rawTranslation;
+    if (STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence]) {
+      return STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence];
+    }
+    if (sentenceTranslations[currentCloze.fullSentence]) {
+      return sentenceTranslations[currentCloze.fullSentence];
+    }
+    return `Trong câu ví dụ trên, từ "${current?.word}" được sử dụng với ý nghĩa: "${current?.meaning}".`;
+  }, [currentCloze, sentenceTranslations, current]);
 
   return (
     <div className="fixed inset-0 bg-stone-900/60 z-[100] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
@@ -1043,10 +1248,46 @@ export default function VocabularyQuiz({
                             <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#A7D08C]/20 text-stone-800 font-serif leading-relaxed text-sm font-medium">
                               {currentCloze.fullSentence}
                             </div>
-                            <p className="text-stone-600 text-xs italic pl-1">
-                              Dịch: {currentCloze.translation}
-                            </p>
+                            <div className="flex items-start gap-1.5 text-stone-600 text-xs pl-1">
+                              <span className="font-bold text-[#4A7C39] shrink-0">Dịch nghĩa:</span>
+                              <span className="italic leading-relaxed">{displaySentenceTranslation}</span>
+                            </div>
                           </div>
+
+                          {/* 🎯 Giải thích lý do chọn & điền từ */}
+                          {(() => {
+                            const grammarInfo = getGrammarAndSelectionReason(
+                              current.word,
+                              current.meaning,
+                              currentCloze.fullSentence
+                            );
+                            return (
+                              <div className="p-3.5 rounded-2xl bg-[#F4EFE6]/70 border border-[#A7D08C]/40 space-y-2.5 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-[#2E3E2B] flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                                    <Target className="w-3.5 h-3.5 text-[#4A7C39]" />
+                                    <span>Giải thích lý do chọn & điền từ:</span>
+                                  </span>
+                                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${grammarInfo.posColor}`}>
+                                    {grammarInfo.posBadge}
+                                  </span>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <p className="text-stone-700 leading-relaxed">
+                                    <strong className="text-[#2E3E2B]">Cấu trúc & Vai trò:</strong> {grammarInfo.roleAnalysis}
+                                  </p>
+                                  <p className="text-stone-700 leading-relaxed">
+                                    <strong className="text-[#2E3E2B]">Collocation học thuật:</strong>{' '}
+                                    <span className="text-[#4A7C39] font-bold">{grammarInfo.collocation}</span>
+                                  </p>
+                                  <div className="text-[#15803D] bg-white p-2.5 rounded-xl border border-[#A7D08C]/30 leading-relaxed shadow-2xs">
+                                    <strong className="text-[#14532D]">✓ Lý do chọn đáp án:</strong> {grammarInfo.selectionReason}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Memory Hook / Collocation if present */}
                           {current.memory_hook && (

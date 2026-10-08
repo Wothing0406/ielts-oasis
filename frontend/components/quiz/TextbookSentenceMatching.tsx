@@ -45,13 +45,22 @@ interface Props {
 }
 
 // Helper xác định từ loại dựa trên nghĩa tiếng Việt và hậu tố
-function detectWordType(word: string, meaning: string): 'noun' | 'verb' | 'adj' {
+function detectWordType(word: string, meaning: string): 'noun' | 'verb' | 'adj' | 'adv' {
   const w = word.toLowerCase().trim();
   const m = meaning.toLowerCase().trim();
 
+  // Trạng từ (Adverb)
+  if (
+    w.endsWith('ly') || w.endsWith('wise') || w.endsWith('ward') || w.endsWith('wards') ||
+    m.startsWith('một cách ') || m.startsWith('rất ') || m.startsWith('khá ') ||
+    (m.includes('nghiêm túc') && w.endsWith('ly'))
+  ) {
+    return 'adv';
+  }
+
   // Danh từ
   if (
-    w.endsWith('tion') || w.endsWith('ment') || w.endsWith('ness') || 
+    w.endsWith('tion') || w.endsWith('sion') || w.endsWith('ment') || w.endsWith('ness') || 
     w.endsWith('ity') || w.endsWith('ence') || w.endsWith('ance') || 
     w.endsWith('er') || w.endsWith('or') || w.endsWith('ist') ||
     m.startsWith('sự ') || m.startsWith('việc ') || m.startsWith('người ') || 
@@ -193,6 +202,46 @@ export default function TextbookSentenceMatching({
         is_correct: false,
         trap_type: 'semantic_trap',
         trap_reason: `⚠️ Bẫy nhầm ngữ cảnh: Ngữ cảnh y tế uống thuốc đòi hỏi động từ "take medicine / dosage", không thể dùng từ "${word}" (${meaning}).`
+      };
+    } else if (wordType === 'adv') {
+      // 1. Câu chuẩn trạng từ
+      correctOpt = {
+        id: 'opt_correct',
+        sentence_en: `The management board agreed to address the workplace challenges ${wordLower} and objectively.`,
+        sentence_vi: `Hội đồng quản trị đã đồng ý giải quyết các thách thức nơi làm việc một cách ${meaningLower} và khách quan.`,
+        is_correct: true,
+        trap_type: 'correct',
+        trap_reason: `✓ Đáp án chuẩn: "${word}" là trạng từ (adverb) bổ nghĩa chính xác cho động từ "address" theo cấu trúc song hành với "objectively", thể hiện đúng ý nghĩa "${meaning}".`
+      };
+
+      // 2. Bẫy sai từ loại (trạng từ dùng làm tính từ bổ nghĩa cho danh từ)
+      trap1Pos = {
+        id: 'opt_trap_pos',
+        sentence_en: `The department published three ${wordLower} reports regarding financial sustainability.`,
+        sentence_vi: `Phòng ban đã công bố ba bản báo cáo [${wordLower} - dùng sai như tính từ] về tính bền vững tài chính.`,
+        is_correct: false,
+        trap_type: 'pos_trap',
+        trap_reason: `⚠️ Bẫy sai từ loại: "${word}" là trạng từ (đuôi "-ly", nghĩa: "${meaning}"), không thể đứng trước danh từ "reports" để bổ nghĩa. Vị trí này bắt buộc phải dùng tính từ.`
+      };
+
+      // 3. Bẫy sai Collocation
+      trap2Colloc = {
+        id: 'opt_trap_colloc',
+        sentence_en: `The delegates were ${wordLower} delighted with the preliminary conference schedule.`,
+        sentence_vi: `Các đại biểu đã [${wordLower} - sai collocation với delighted] hài lòng với lịch trình sơ bộ của hội nghị.`,
+        is_correct: false,
+        trap_type: 'collocation_trap',
+        trap_reason: `⚠️ Bẫy sai Collocation: Tính từ "delighted" không kết hợp tự nhiên với "${word}". Trong văn phong học thuật, người ta dùng "greatly / extremely delighted".`
+      };
+
+      // 4. Bẫy nhầm ngữ cảnh
+      trap3Semantic = {
+        id: 'opt_trap_semantic',
+        sentence_en: `The meteorologist predicted that heavy rain would occur ${wordLower} throughout the weekend.`,
+        sentence_vi: `Nhà khí tượng học dự đoán mưa lớn sẽ xảy ra [${wordLower} - nhầm ngữ cảnh tần suất thời tiết] trong suốt kỳ nghỉ cuối tuần.`,
+        is_correct: false,
+        trap_type: 'semantic_trap',
+        trap_reason: `⚠️ Bẫy nhầm ngữ cảnh: Ngữ cảnh tần suất thời tiết yêu cầu trạng từ tần suất ("frequently" hoặc "continuously"), không thể dùng từ "${word}" (${meaning}).`
       };
     } else {
       // 1. Câu chuẩn tính từ
