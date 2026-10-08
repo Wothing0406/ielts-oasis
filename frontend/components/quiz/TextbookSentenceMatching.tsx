@@ -12,7 +12,8 @@ import {
   Volume2, 
   BookmarkCheck,
   GraduationCap,
-  Languages
+  Languages,
+  SkipForward
 } from 'lucide-react';
 
 interface VocabItem {
@@ -39,6 +40,7 @@ interface Props {
   vocabPool: VocabItem[];
   onAnswer: (isCorrect: boolean) => void;
   onNext: () => void;
+  onSkip?: () => void;
   onPlayAudio?: (word: string) => void;
 }
 
@@ -47,12 +49,13 @@ export default function TextbookSentenceMatching({
   vocabPool,
   onAnswer,
   onNext,
+  onSkip,
   onPlayAudio
 }: Props) {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
-  // Generate 3 textbook-style context sentences: 1 Correct + 2 Traps
+  // Generate 4 textbook-style context sentences: 1 Correct + 3 Traps (A, B, C, D)
   const sentenceOptions: SentenceOption[] = useMemo(() => {
     const word = currentWord.word.trim();
     const meaning = currentWord.meaning.trim();
@@ -79,22 +82,30 @@ export default function TextbookSentenceMatching({
       trap_reason: `Bẫy ngược nghĩa: Từ "${word}" mang nghĩa "${meaning}", trong khi câu này đang diễn đạt hành động làm trầm trọng thêm (tương đương "exacerbate").`
     };
 
-    // 3. Distractor 2: Meaning borrowed from another word in vault or standard pool
-    const otherWord = vocabPool.find(v => v.word.toLowerCase() !== word.toLowerCase()) || {
-      word: 'neglect',
-      meaning: 'thờ ơ, bỏ bê'
-    };
+    // 3. Distractor 2: Meaning borrowed from another word in vault
+    const otherWords = vocabPool.filter(v => v.word.toLowerCase() !== word.toLowerCase());
+    const otherWord1 = otherWords[0] || { word: 'neglect', meaning: 'thờ ơ, bỏ bê' };
+    const otherWord2 = otherWords[1] || { word: 'differentiate', meaning: 'phân biệt, phân loại' };
 
     const trap2: SentenceOption = {
       id: 'opt_trap2',
       sentence_en: `The committee decided to completely ${word.toLowerCase()} the newly submitted infrastructure proposals.`,
-      sentence_vi: `Ủy ban đã quyết định hoàn toàn ${otherWord.meaning.toLowerCase()} các đề xuất cơ sở hạ tầng mới được đệ trình.`,
+      sentence_vi: `Ủy ban đã quyết định hoàn toàn ${otherWord1.meaning.toLowerCase()} các đề xuất cơ sở hạ tầng mới được đệ trình.`,
       is_correct: false,
-      trap_reason: `Bẫy nhầm lẫn nghĩa: Câu này gán nghĩa "${otherWord.meaning}" vào từ "${word}". Nghĩa đúng thực tế của "${word}" phải là "${meaning}".`
+      trap_reason: `Bẫy nhầm lẫn nghĩa: Câu này gán nghĩa "${otherWord1.meaning}" vào từ "${word}". Nghĩa đúng thực tế của "${word}" phải là "${meaning}".`
     };
 
-    // Xáo trộn 3 lựa chọn ngẫu nhiên
-    return [correctOption, trap1, trap2].sort(() => 0.5 - Math.random());
+    // 4. Distractor 3: Collocation mismatch / semantic trap (Option D)
+    const trap3: SentenceOption = {
+      id: 'opt_trap3',
+      sentence_en: `The experimental results made it impossible to ${word.toLowerCase()} the primary variables from the secondary control group.`,
+      sentence_vi: `Kết quả thực nghiệm đã khiến việc ${otherWord2.meaning.toLowerCase()} các biến số chính với nhóm đối chứng phụ trở nên bất khả thi.`,
+      is_correct: false,
+      trap_reason: `Bẫy sai collocation: Cấu trúc "... variables from control group" đòi hỏi động từ chỉ sự phân tách/phân biệt, không tương thích với "${word}".`
+    };
+
+    // Xáo trộn 4 lựa chọn ngẫu nhiên (A, B, C, D)
+    return [correctOption, trap1, trap2, trap3].sort(() => 0.5 - Math.random());
   }, [currentWord, vocabPool]);
 
   // Reset khi đổi câu hỏi
@@ -112,25 +123,25 @@ export default function TextbookSentenceMatching({
   };
 
   return (
-    <div className="flex flex-col w-full space-y-5">
+    <div className="flex flex-col w-full space-y-4 pb-10">
       {/* Target Word Header Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 dark:bg-neutral-800/60 border-2 border-primary/20 text-center relative overflow-hidden shadow-sm">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <BookOpen className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-[11px] font-black uppercase tracking-wider text-primary">
+      <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-[#A7D08C]/40 text-center relative overflow-hidden shadow-xs">
+        <div className="flex items-center justify-center gap-2 mb-1.5">
+          <BookOpen className="w-4 h-4 text-[#4A7C39] shrink-0" />
+          <span className="text-[11px] font-black uppercase tracking-wider text-[#4A7C39]">
             Sách Giáo Khoa • Ngữ Cảnh & Dịch Nghĩa Chuẩn
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-3">
-          <h2 className="text-2xl sm:text-3xl font-display font-black text-accent dark:text-amber-100 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-display font-black text-[#2E3E2B] tracking-tight">
             {currentWord.word}
           </h2>
           {onPlayAudio && (
             <button
               type="button"
               onClick={() => onPlayAudio(currentWord.word)}
-              className="p-1.5 rounded-full hover:bg-primary/10 text-primary hover:scale-110 active:scale-95 transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-all cursor-pointer"
               title="Nghe phát âm"
             >
               <Volume2 className="w-5 h-5 shrink-0" />
@@ -139,13 +150,13 @@ export default function TextbookSentenceMatching({
         </div>
 
         {currentWord.phonetic && (
-          <p className="text-xs font-mono text-accent/60 dark:text-neutral-400 mt-0.5">
+          <p className="text-xs font-mono text-stone-500 mt-0.5">
             {currentWord.phonetic}
           </p>
         )}
 
-        <p className="text-xs font-semibold text-accent/70 dark:text-neutral-300 mt-2 max-w-md mx-auto">
-          Chọn câu ngữ cảnh Cambridge IELTS sử dụng chuẩn xác nhất về ngữ nghĩa và collocation của từ vựng: <strong className="text-primary font-bold">"{currentWord.word}"</strong>
+        <p className="text-xs font-semibold text-stone-600 mt-2 max-w-md mx-auto">
+          Chọn câu ngữ cảnh Cambridge IELTS sử dụng chuẩn xác nhất về ngữ nghĩa và collocation của từ vựng: <strong className="text-[#4A7C39] font-bold">"{currentWord.word}"</strong>
         </p>
       </div>
 
@@ -223,6 +234,21 @@ export default function TextbookSentenceMatching({
         })}
       </div>
 
+      {/* Skip question button */}
+      {!feedback && (
+        <div className="flex items-center justify-between pt-2 border-t border-stone-200">
+          <button
+            type="button"
+            onClick={onSkip || onNext}
+            className="min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+            title="Bỏ qua câu này để chuyển sang từ tiếp theo"
+          >
+            <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>Bỏ qua câu này (Chuyển sang từ khác)</span>
+          </button>
+        </div>
+      )}
+
       {/* Pedagogical Explanation & Next Action */}
       {feedback && (
         <motion.div
@@ -238,15 +264,15 @@ export default function TextbookSentenceMatching({
           <div className="text-xs text-stone-700 space-y-1.5 leading-relaxed">
             {sentenceOptions.map((opt, i) => (
               <div key={i} className="flex items-start gap-2 text-[11px]">
-                <span className="font-bold text-primary shrink-0">[{String.fromCharCode(65 + i)}]:</span>
+                <span className="font-bold text-[#4A7C39] shrink-0">[{String.fromCharCode(65 + i)}]:</span>
                 <span>{opt.trap_reason}</span>
               </div>
             ))}
           </div>
 
           {currentWord.memory_hook && (
-            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary flex items-start gap-2 font-medium">
-              <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2 font-medium">
+              <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <span><strong>Mẹo nhớ:</strong> {currentWord.memory_hook}</span>
             </div>
           )}
@@ -255,7 +281,7 @@ export default function TextbookSentenceMatching({
             <button
               type="button"
               onClick={onNext}
-              className="min-h-[44px] bg-primary text-white px-7 py-2.5 rounded-full font-bold shadow-md hover:bg-primary-dark transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95 text-xs sm:text-sm"
+              className="min-h-[44px] bg-[#4A7C39] text-white px-7 py-2.5 rounded-full font-bold shadow-md hover:bg-[#3B642D] transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95 text-xs sm:text-sm"
             >
               <span>Câu tiếp theo</span>
               <ArrowRight className="w-4 h-4 shrink-0" />

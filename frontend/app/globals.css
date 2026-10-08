@@ -78,13 +78,27 @@ body {
     line-height: 2.5rem;
   }
 
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #A7D08C #FAF7F2;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #FAF7F2;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #A7D08C;
     border-radius: 10px;
+    border: 2px solid #FAF7F2;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #4A7C39;
   }
 }
 

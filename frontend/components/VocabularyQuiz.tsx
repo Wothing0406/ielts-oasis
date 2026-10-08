@@ -22,8 +22,7 @@ import {
   FolderOpen,
   RotateCcw,
   Volume2,
-  PenTool,
-  Shuffle
+  PenTool
 } from 'lucide-react';
 
 import TextbookSentenceMatching from './quiz/TextbookSentenceMatching';
@@ -46,7 +45,6 @@ interface VocabItem {
 
 type QuizType = 'textbook' | 'speech' | 'classic_vocab' | 'grammar_sanctuary' | 'srs';
 type ClassicMode = 'ABCD' | 'FILL_IN';
-type InterleaveMode = 'MIX' | 'ABCD' | 'FILL_IN';
 
 const playAudio = async (word: string) => {
   try {
@@ -126,9 +124,8 @@ export default function VocabularyQuiz({
   const [retryQueue, setRetryQueue] = useState<VocabItem[]>([]);
   const [isDoingRetryRound, setIsDoingRetryRound] = useState(false);
 
-  // Classic Vocab Interleaving & Options state
-  const [interleaveMode, setInterleaveMode] = useState<InterleaveMode>('MIX');
-  const [wordOptions, setWordOptions] = useState<{ word: string; meaning: string }[]>([]);
+  // Classic Vocab Options & User input state
+  const [meaningOptions, setMeaningOptions] = useState<string[]>([]);
   const [userInput, setUserInput] = useState('');
   const [userSelectedOption, setUserSelectedOption] = useState<string | null>(null);
   const [showMeaningHint, setShowMeaningHint] = useState<boolean>(false);
@@ -167,46 +164,50 @@ export default function VocabularyQuiz({
 
   const activeQuestions = quizType === 'srs' ? srsQuestions : shuffledQuestions;
 
-  // Active classic mode (ABCD or FILL_IN) based on interleave setting
+  // Automatically interleaved 50/50: Even index = ABCD (Meaning Choice), Odd index = FILL_IN (Active Recall)
   const activeClassicMode: ClassicMode = useMemo(() => {
-    if (interleaveMode === 'ABCD') return 'ABCD';
-    if (interleaveMode === 'FILL_IN') return 'FILL_IN';
-    // When MIX: Even index is ABCD, Odd index is FILL_IN
     return currentIndex % 2 === 0 ? 'ABCD' : 'FILL_IN';
-  }, [interleaveMode, currentIndex]);
+  }, [currentIndex]);
 
-  // Setup Classic ABCD options (1 correct English word + 3 English distractors)
+  // Setup Classic ABCD options: 1 correct Vietnamese meaning + 3 Vietnamese distractors
   useEffect(() => {
     if (quizType === 'classic_vocab' && activeQuestions.length > 0 && !isFinished && feedback === null) {
       const current = activeQuestions[currentIndex];
       if (current) {
-        const others = activeVocabList.filter(v => v.word.toLowerCase() !== current.word.toLowerCase());
-        const shuffledOthers = [...others].sort(() => 0.5 - Math.random()).slice(0, 3);
-        
-        const fallbackList = [
-          { word: "facilitate", meaning: "tạo điều kiện thuận lợi" },
-          { word: "mitigate", meaning: "giảm thiểu, làm dịu bớt" },
-          { word: "advocate", meaning: "ủng hộ, chủ trương" },
-          { word: "substantiate", meaning: "chứng minh, làm sáng tỏ" },
-          { word: "comprehend", meaning: "thấu hiểu trọn vẹn" },
-          { word: "stimulate", meaning: "kích thích, khuyến khích" }
+        // Collect distinct Vietnamese meanings from other words in the vault
+        const otherMeanings = Array.from(new Set(
+          activeVocabList
+            .filter(v => v.word.toLowerCase() !== current.word.toLowerCase() && v.meaning.trim().toLowerCase() !== current.meaning.trim().toLowerCase())
+            .map(v => v.meaning.trim())
+        ));
+
+        const fallbackMeanings = [
+          "tạo điều kiện thuận lợi, hỗ trợ thúc đẩy",
+          "giảm thiểu tác động tiêu cực, làm dịu bớt",
+          "ủng hộ công khai, đề xuất chủ trương",
+          "chứng minh, đưa ra luận cứ xác thực",
+          "thấu hiểu trọn vẹn, bao hàm toàn diện",
+          "kích thích, tạo động lực phát triển",
+          "bền vững, thân thiện với môi trường",
+          "kiên cường, có khả năng phục hồi nhanh"
         ];
-        
-        while (shuffledOthers.length < 3) {
-          const candidate = fallbackList.find(f => 
-            f.word.toLowerCase() !== current.word.toLowerCase() &&
-            !shuffledOthers.some(o => o.word.toLowerCase() === f.word.toLowerCase())
+
+        const shuffledDistractors = [...otherMeanings].sort(() => 0.5 - Math.random()).slice(0, 3);
+        while (shuffledDistractors.length < 3) {
+          const candidate = fallbackMeanings.find(f => 
+            f.toLowerCase() !== current.meaning.toLowerCase() &&
+            !shuffledDistractors.some(d => d.toLowerCase() === f.toLowerCase())
           );
-          if (candidate) shuffledOthers.push(candidate as VocabItem);
+          if (candidate) shuffledDistractors.push(candidate);
           else break;
         }
-        
+
         const opts = [
-          { word: current.word, meaning: current.meaning },
-          ...shuffledOthers.map(o => ({ word: o.word, meaning: o.meaning }))
+          current.meaning.trim(),
+          ...shuffledDistractors
         ].sort(() => 0.5 - Math.random());
-        
-        setWordOptions(opts);
+
+        setMeaningOptions(opts);
       }
       setUserInput('');
       setUserSelectedOption(null);
@@ -339,7 +340,7 @@ export default function VocabularyQuiz({
     
     if (quizType === 'classic_vocab') {
       if (activeClassicMode === 'ABCD') {
-        isCorrect = answer.toLowerCase().trim() === current.word.toLowerCase().trim();
+        isCorrect = answer.trim().toLowerCase() === current.meaning.trim().toLowerCase();
       } else {
         const cleanUser = normalizeWord(answer);
         const cleanCorrect = normalizeWord(current.word);
@@ -625,7 +626,7 @@ export default function VocabularyQuiz({
 
   return (
     <div className="fixed inset-0 bg-stone-900/60 z-[100] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
-      <div className="bg-[#FAF7F2] rounded-3xl shadow-2xl max-w-lg w-full relative flex flex-col max-h-[90vh] border-2 border-[#A7D08C] overflow-hidden text-[#2E3E2B]">
+      <div className="bg-[#FAF7F2] rounded-3xl shadow-2xl max-w-2xl sm:max-w-3xl w-full relative flex flex-col max-h-[92vh] border-2 border-[#A7D08C] overflow-hidden text-[#2E3E2B]">
         
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#A7D08C]/30 shrink-0 bg-[#F4EFE6]">
@@ -649,7 +650,7 @@ export default function VocabularyQuiz({
           <button 
             type="button" 
             onClick={onClose} 
-            className="text-stone-400 hover:text-[#2E3E2B] p-1.5 rounded-full hover:bg-stone-200/50 transition-all cursor-pointer"
+            className="text-stone-400 hover:text-[#2E3E2B] p-1.5 rounded-full hover:bg-stone-200/50 transition-all cursor-pointer" 
             aria-label="Đóng"
           >
             <X className="w-5 h-5" />
@@ -657,7 +658,10 @@ export default function VocabularyQuiz({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-[#FAF7F2]">
+        <div 
+          className="p-5 sm:p-7 overflow-y-auto custom-scrollbar flex-1 bg-[#FAF7F2] pb-10"
+          style={{ overscrollBehavior: 'contain' }}
+        >
           <AnimatePresence mode="wait">
             {!isFinished ? (
               <motion.div
@@ -678,6 +682,7 @@ export default function VocabularyQuiz({
                       if (current.id) onReview(current.id, isCorrect);
                     }}
                     onNext={handleNextQuestion}
+                    onSkip={handleNextQuestion}
                     onPlayAudio={playAudio}
                   />
                 )}
@@ -696,172 +701,185 @@ export default function VocabularyQuiz({
                   />
                 )}
 
-                {/* 3. CLASSIC VOCAB INTERLEAVED (ABCD + CLOZE FILL-IN) */}
+                {/* 3. CLASSIC VOCAB INTERLEAVED (ABCD MEANING + ACTIVE RECALL FILL-IN) */}
                 {quizType === 'classic_vocab' && current && (
                   <div className="space-y-4">
-                    {/* Interleaving Mode Switcher Controls */}
-                    <div className="flex items-center justify-between bg-white px-3 py-2 rounded-2xl border border-[#A7D08C]/30 text-xs shadow-xs">
-                      <span className="font-bold text-stone-500 text-[11px] flex items-center gap-1">
-                        <Shuffle className="w-3.5 h-3.5 text-[#4A7C39]" />
-                        <span>Chế độ:</span>
-                      </span>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setInterleaveMode('MIX')}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            interleaveMode === 'MIX'
-                              ? 'bg-[#4A7C39] text-white shadow-xs'
-                              : 'text-stone-600 hover:bg-stone-100'
-                          }`}
-                        >
-                          Xen kẽ 50/50
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInterleaveMode('ABCD')}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            interleaveMode === 'ABCD'
-                              ? 'bg-[#4A7C39] text-white shadow-xs'
-                              : 'text-stone-600 hover:bg-stone-100'
-                          }`}
-                        >
-                          Trắc nghiệm
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInterleaveMode('FILL_IN')}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            interleaveMode === 'FILL_IN'
-                              ? 'bg-[#4A7C39] text-white shadow-xs'
-                              : 'text-stone-600 hover:bg-stone-100'
-                          }`}
-                        >
-                          Điền từ
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Question Card: Academic Sentence Context */}
-                    <div className="bg-white p-5 rounded-2xl border-2 border-[#A7D08C]/40 shadow-xs space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-[#4A7C39] bg-[#EAF2E3] px-3 py-1 rounded-full flex items-center gap-1.5 border border-[#A7D08C]/30">
-                          {activeClassicMode === 'ABCD' ? (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5" />
-                              <span>Trắc nghiệm ngữ cảnh (4 lựa chọn)</span>
-                            </>
-                          ) : (
-                            <>
-                              <PenTool className="w-3.5 h-3.5" />
-                              <span>Điền từ khuyết (Cloze Context)</span>
-                            </>
-                          )}
-                        </span>
-                        {current.topic && (
-                          <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2.5 py-0.5 rounded-full">
-                            {current.topic}
-                          </span>
+                    {/* Question Type Indicator Badge */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-black text-[#4A7C39] bg-[#EAF2E3] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 border border-[#A7D08C]/40">
+                        {activeClassicMode === 'ABCD' ? (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                            <span>Trắc nghiệm 4 lựa chọn: Chọn nghĩa tiếng Việt đúng</span>
+                          </>
+                        ) : (
+                          <>
+                            <PenTool className="w-3.5 h-3.5 shrink-0" />
+                            <span>Điền từ tiếng Anh: Active Recall từ vựng</span>
+                          </>
                         )}
-                      </div>
-
-                      <p className="text-xs text-stone-600 font-medium">
-                        {activeClassicMode === 'ABCD'
-                          ? 'Đọc câu văn học thuật và chọn từ tiếng Anh thích hợp nhất vào chỗ trống:'
-                          : 'Đọc câu ngữ cảnh bên dưới và gõ từ tiếng Anh thích hợp vào chỗ trống:'}
-                      </p>
-
-                      {/* Cloze Blank Sentence */}
-                      <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-[#2E3E2B] font-serif text-base sm:text-lg leading-relaxed font-semibold">
-                        "{currentCloze.sentenceWithBlank}"
-                      </div>
-
-                      {/* Fill-in Hint Bar (Letters count & Meaning Toggle) */}
-                      {activeClassicMode === 'FILL_IN' && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
-                          <div className="flex items-center gap-1.5 text-stone-600 font-medium">
-                            <span className="text-[#4A7C39] font-black">Gợi ý:</span>
-                            <span className="font-mono bg-stone-100 px-2 py-0.5 rounded-md font-bold text-[#2E3E2B] tracking-wider">
-                              {getWordHint(current.word)}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setShowMeaningHint(!showMeaningHint)}
-                            className="text-stone-500 hover:text-[#4A7C39] text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer hover:underline"
-                          >
-                            <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{showMeaningHint ? `Nghĩa: ${current.meaning}` : 'Xem gợi ý nghĩa'}</span>
-                          </button>
-                        </div>
+                      </span>
+                      {current.topic && (
+                        <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
+                          {current.topic}
+                        </span>
                       )}
                     </div>
 
-                    {/* DẠNG 1: TRẮC NGHIỆM ABCD (4 ENGLISH WORDS) */}
+                    {/* DẠNG 1: TRẮC NGHIỆM ABCD (HỎI NGHĨA TIẾNG VIỆT CỦA TỪ TIẾNG ANH) */}
                     {activeClassicMode === 'ABCD' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                        {wordOptions.map((opt, i) => {
-                          const isCorrect = opt.word.toLowerCase() === current.word.toLowerCase();
-                          const isSelected = userSelectedOption?.toLowerCase() === opt.word.toLowerCase();
-                          
-                          let btnStyle = "bg-white hover:bg-[#F0FDF4] hover:border-[#4A7C39] border-2 border-[#A7D08C]/30 text-[#2E3E2B]";
-                          if (feedback) {
-                            if (isCorrect) {
-                              btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black ring-2 ring-[#22C55E]/40";
-                            } else if (isSelected && !isCorrect) {
-                              btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold opacity-85";
-                            } else {
-                              btnStyle = "bg-stone-50 border-stone-200 text-stone-400 opacity-50";
-                            }
-                          }
+                      <div className="space-y-4">
+                        {/* Target English Word Card */}
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-[#A7D08C]/40 shadow-xs text-center space-y-2">
+                          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                            Nghĩa tiếng Việt chuẩn xác nhất của từ vựng này là gì?
+                          </p>
 
-                          return (
+                          <div className="flex items-center justify-center gap-3">
+                            <h3 className="text-2xl sm:text-3xl font-display font-black text-[#2E3E2B]">
+                              {current.word}
+                            </h3>
                             <button
-                              key={i}
                               type="button"
-                              disabled={feedback !== null}
-                              onClick={() => handleAnswerClassic(opt.word)}
-                              className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[52px] shadow-xs ${btnStyle}`}
+                              onClick={() => playAudio(current.word)}
+                              className="p-1.5 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                              title="Nghe phát âm"
                             >
-                              <span className="text-sm flex items-center gap-2.5">
-                                <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                  feedback && isCorrect ? 'bg-[#22C55E] text-white' : 'bg-[#EAF2E3] text-[#4A7C39]'
-                                }`}>
-                                  {String.fromCharCode(65 + i)}
-                                </span>
-                                <span className="font-sans font-bold">{opt.word}</span>
-                              </span>
-                              {feedback && isCorrect && <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />}
-                              {feedback && isSelected && !isCorrect && <AlertCircle className="w-5 h-5 text-[#DC2626] shrink-0" />}
+                              <Volume2 className="w-5 h-5 shrink-0" />
                             </button>
-                          );
-                        })}
+                          </div>
+
+                          {current.phonetic && (
+                            <p className="text-xs font-mono text-stone-500">{current.phonetic}</p>
+                          )}
+                        </div>
+
+                        {/* 4 Vietnamese Meaning Options (A, B, C, D) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {meaningOptions.map((optMeaning, i) => {
+                            const isCorrect = optMeaning.trim().toLowerCase() === current.meaning.trim().toLowerCase();
+                            const isSelected = userSelectedOption?.trim().toLowerCase() === optMeaning.trim().toLowerCase();
+
+                            let btnStyle = "bg-white hover:bg-[#F0FDF4] hover:border-[#4A7C39] border-2 border-[#A7D08C]/30 text-[#2E3E2B]";
+                            if (feedback) {
+                              if (isCorrect) {
+                                btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black ring-2 ring-[#22C55E]/40";
+                              } else if (isSelected && !isCorrect) {
+                                btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold opacity-85";
+                              } else {
+                                btnStyle = "bg-stone-50 border-stone-200 text-stone-400 opacity-50";
+                              }
+                            }
+
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                disabled={feedback !== null}
+                                onClick={() => handleAnswerClassic(optMeaning)}
+                                className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[56px] shadow-xs ${btnStyle}`}
+                              >
+                                <span className="text-sm flex items-center gap-2.5">
+                                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                                    feedback && isCorrect ? 'bg-[#22C55E] text-white' : 'bg-[#EAF2E3] text-[#4A7C39]'
+                                  }`}>
+                                    {String.fromCharCode(65 + i)}
+                                  </span>
+                                  <span className="font-sans leading-snug">{optMeaning}</span>
+                                </span>
+                                {feedback && isCorrect && <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />}
+                                {feedback && isSelected && !isCorrect && <AlertCircle className="w-5 h-5 text-[#DC2626] shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Skip Question Button */}
+                        {!feedback && (
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={handleNextQuestion}
+                              className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center gap-1.5 cursor-pointer touch-manipulation active:scale-95"
+                            >
+                              <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
+                              <span>Bỏ qua câu này (Chuyển sang từ khác)</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      /* DẠNG 2: ĐIỀN TỪ (CLOZE FILL-IN) */
-                      <div className="space-y-3 pt-1">
-                        <input
-                          type="text"
-                          autoFocus
-                          value={userInput}
-                          onChange={(e) => setUserInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && userInput.trim() && handleAnswerClassic(userInput)}
-                          placeholder="Gõ từ tiếng Anh cần điền..."
-                          disabled={feedback !== null}
-                          className="w-full min-h-[50px] px-4 py-3 rounded-2xl border-2 border-[#A7D08C] text-center font-bold text-lg outline-none focus:border-[#4A7C39] bg-white text-[#2E3E2B] shadow-inner placeholder:text-stone-400 placeholder:font-normal placeholder:text-sm"
-                        />
-                        {!feedback && (
-                          <button
-                            type="button"
-                            disabled={!userInput.trim()}
-                            onClick={() => handleAnswerClassic(userInput)}
-                            className="w-full min-h-[46px] bg-[#4A7C39] disabled:bg-stone-300 text-white rounded-full font-black text-sm shadow-md hover:bg-[#3B642D] transition-all cursor-pointer flex items-center justify-center gap-2"
-                          >
-                            <span>Xác nhận đáp án</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        )}
+                      /* DẠNG 2: ĐIỀN TỪ (GÕ TỪ TIẾNG ANH KHI BIẾT NGHĨA TIẾNG VIỆT) */
+                      <div className="space-y-4">
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-[#A7D08C]/40 shadow-xs space-y-3">
+                          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                            Từ tiếng Anh nào mang ý nghĩa sau đây?
+                          </p>
+
+                          {/* Prominent Vietnamese Meaning */}
+                          <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-center">
+                            <h3 className="text-xl sm:text-2xl font-bold text-[#4A7C39]">
+                              "{current.meaning}"
+                            </h3>
+                          </div>
+
+                          {/* Cloze Academic Context Sentence if available */}
+                          <div className="space-y-1 pt-1">
+                            <span className="text-[11px] font-bold text-stone-500 flex items-center gap-1">
+                              <BookOpen className="w-3.5 h-3.5 text-[#4A7C39]" />
+                              <span>Ngữ cảnh học thuật (câu khuyết từ):</span>
+                            </span>
+                            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[#2E3E2B] font-serif text-sm leading-relaxed font-semibold">
+                              "{currentCloze.sentenceWithBlank}"
+                            </div>
+                          </div>
+
+                          {/* Word Hint (Letters count & First/Last characters) */}
+                          <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-xs">
+                            <span className="text-stone-600 font-medium flex items-center gap-1.5">
+                              <span className="text-[#4A7C39] font-black">Gợi ý ký tự:</span>
+                              <span className="font-mono bg-stone-100 px-2.5 py-1 rounded-md font-bold text-[#2E3E2B] tracking-widest">
+                                {getWordHint(current.word)}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Input Field & Submit Button */}
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && userInput.trim() && handleAnswerClassic(userInput)}
+                            placeholder="Gõ từ tiếng Anh cần điền..."
+                            disabled={feedback !== null}
+                            className="w-full min-h-[50px] px-4 py-3 rounded-2xl border-2 border-[#A7D08C] text-center font-bold text-lg outline-none focus:border-[#4A7C39] bg-white text-[#2E3E2B] shadow-inner placeholder:text-stone-400 placeholder:font-normal placeholder:text-sm"
+                          />
+
+                          {!feedback && (
+                            <div className="flex flex-col sm:flex-row items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={!userInput.trim()}
+                                onClick={() => handleAnswerClassic(userInput)}
+                                className="w-full min-h-[46px] bg-[#4A7C39] disabled:bg-stone-300 text-white rounded-full font-black text-sm shadow-md hover:bg-[#3B642D] transition-all cursor-pointer flex items-center justify-center gap-2"
+                              >
+                                <span>Xác nhận đáp án</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleNextQuestion}
+                                className="w-full sm:w-auto min-h-[44px] px-4 rounded-full text-xs font-bold text-stone-500 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                              >
+                                <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
+                                <span>Bỏ qua</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -881,7 +899,11 @@ export default function VocabularyQuiz({
                               </div>
                               <div>
                                 <p className="font-black text-sm text-[#14532D]">Chính xác! Xuất sắc!</p>
-                                <p className="text-xs text-[#166534]">Bạn đã nắm vững từ vựng này trong ngữ cảnh học thuật.</p>
+                                <p className="text-xs text-[#166534]">
+                                  {activeClassicMode === 'ABCD'
+                                    ? `"${current.word}" mang nghĩa là "${current.meaning}".`
+                                    : `Bạn đã nhớ chính xác từ vựng "${current.word}".`}
+                                </p>
                               </div>
                             </div>
                             <span className="text-xs font-black bg-[#16A34A] text-white px-3 py-1 rounded-full shadow-xs">+1 Điểm</span>
@@ -893,15 +915,24 @@ export default function VocabularyQuiz({
                             </div>
                             <div className="flex-1">
                               <p className="font-black text-sm text-[#991B1B]">Chưa chính xác!</p>
-                              <div className="text-xs text-[#7F1D1D] mt-1 flex flex-wrap items-center gap-1.5">
-                                <span>Đáp án đúng là:</span>
-                                <span className="font-black text-sm text-[#15803D] bg-white px-2.5 py-0.5 rounded-lg border border-[#A7D08C] shadow-xs">
-                                  {current.word}
-                                </span>
-                                {userSelectedOption && (
-                                  <span className="text-stone-500 text-[11px]">
-                                    (Bạn đã chọn: <span className="line-through text-[#DC2626] font-medium">{userSelectedOption}</span>)
+                              <div className="text-xs text-[#7F1D1D] mt-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span>Từ vựng:</span>
+                                  <span className="font-black text-sm text-[#15803D] bg-white px-2.5 py-0.5 rounded-lg border border-[#A7D08C] shadow-xs">
+                                    {current.word}
                                   </span>
+                                  <span>- Định nghĩa:</span>
+                                  <span className="font-bold text-[#15803D]">"{current.meaning}"</span>
+                                </div>
+                                {activeClassicMode === 'ABCD' && userSelectedOption && (
+                                  <p className="text-stone-500 text-[11px]">
+                                    (Bạn đã chọn: <span className="line-through text-[#DC2626] font-medium">{userSelectedOption}</span>)
+                                  </p>
+                                )}
+                                {activeClassicMode === 'FILL_IN' && userInput && (
+                                  <p className="text-stone-500 text-[11px]">
+                                    (Bạn đã nhập: <span className="line-through text-[#DC2626] font-medium">{userInput}</span>)
+                                  </p>
                                 )}
                               </div>
                             </div>
