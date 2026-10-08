@@ -28,6 +28,18 @@ export default function CommunityPage() {
 
     if (token) {
       fetchVocabs(token);
+      // Refresh current user to ensure avatar_url is always up-to-date
+      fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(freshUser => {
+          if (freshUser) {
+            setUser(freshUser);
+            localStorage.setItem("oasis_user", JSON.stringify(freshUser));
+          }
+        })
+        .catch(err => console.error("Error refreshing user in community:", err));
     }
   }, []);
 
@@ -162,7 +174,23 @@ export default function CommunityPage() {
           <div className="flex items-center gap-2.5">
             {user ? (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-800 border border-[#7A9A6A]/20 shadow-sm">
-                <div className="w-6 h-6 rounded-full bg-[#7A9A6A] text-white flex items-center justify-center text-xs font-bold uppercase">
+                {user.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.username || "Avatar"}
+                    className="w-6 h-6 rounded-full border border-[#7A9A6A]/30 object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={`w-6 h-6 rounded-full bg-[#7A9A6A] text-white items-center justify-center text-xs font-bold uppercase ${
+                    user.avatar_url ? "hidden" : "flex"
+                  }`}
+                >
                   {user.username?.[0] || "U"}
                 </div>
                 <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200 hidden sm:inline">

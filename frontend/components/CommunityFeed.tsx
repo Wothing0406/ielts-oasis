@@ -79,6 +79,20 @@ export default function CommunityFeed({
         setCurrentUser(JSON.parse(savedUser));
       } catch (e) {}
     }
+    const token = localStorage.getItem("oasis_token");
+    if (token) {
+      fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(freshUser => {
+          if (freshUser) {
+            setCurrentUser(freshUser);
+            localStorage.setItem("oasis_user", JSON.stringify(freshUser));
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const [selectedTopic, setSelectedTopic] = useState('All');
@@ -841,8 +855,13 @@ export default function CommunityFeed({
                     <div className="flex items-center justify-between border-b border-primary/10 pb-2 mb-2.5">
                       <div className="flex items-center gap-2">
                         <img 
-                          src={w.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} 
+                          src={w.avatar_url || (currentUser?.username === w.username ? currentUser?.avatar_url : null) || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(w.username || 'user')}`} 
                           alt={`${w.username}'s avatar`} 
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(w.username || 'user')}`;
+                          }}
                           className="w-6 h-6 rounded-full border border-primary/20 object-cover" 
                         />
                         <span className="text-xs font-bold text-accent">{w.username}</span>
@@ -933,10 +952,12 @@ export default function CommunityFeed({
                     <div className="flex items-center justify-between border-b border-primary/10 pb-1.5">
                       <div className="flex items-center gap-1.5 truncate max-w-[130px]">
                         <img 
-                          src={v.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} 
+                          src={v.avatar_url || (currentUser?.username === v.username ? currentUser?.avatar_url : null) || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(v.username || 'user')}`} 
                           alt={`${v.username}'s avatar`} 
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://cdn.discordapp.com/embed/avatars/0.png';
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(v.username || 'user')}`;
                           }}
                           className="w-5 h-5 rounded-full border border-primary/20 object-cover flex-shrink-0" 
                         />
@@ -1193,7 +1214,16 @@ export default function CommunityFeed({
                 ) : (
                   commentsList.map((c: any) => (
                     <div key={c.id} className="flex gap-2.5 items-start">
-                      <img src={c.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'} alt={`${c.username}'s avatar`} className="w-6 h-6 rounded-full border border-primary/20 object-cover mt-0.5" />
+                      <img 
+                        src={c.avatar_url || (currentUser?.username === c.username ? currentUser?.avatar_url : null) || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(c.username || 'user')}`} 
+                        alt={`${c.username}'s avatar`} 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(c.username || 'user')}`;
+                        }}
+                        className="w-6 h-6 rounded-full border border-primary/20 object-cover mt-0.5" 
+                      />
                       <div className="bg-[#F6F5F0] px-3 py-2 rounded-2xl rounded-tl-none border border-primary/5 flex-1">
                         <p className="text-[10px] font-black text-primary mb-0.5">{c.username}</p>
                         <p className="text-xs text-accent/85 leading-normal">{c.content}</p>

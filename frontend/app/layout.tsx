@@ -31,7 +31,12 @@ export const metadata: Metadata = {
     "matcha radio"
   ],
   icons: {
-    icon: "/logoweb.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logoweb.png", type: "image/png" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "Mát Cha AI Eo - Your Zen Learning Space",
