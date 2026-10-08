@@ -43,7 +43,7 @@ interface VocabItem {
   mastery_level?: number;
 }
 
-type QuizType = 'textbook' | 'speech' | 'classic_vocab' | 'grammar_sanctuary' | 'srs';
+type QuizType = 'textbook' | 'speech' | 'fill_in' | 'grammar_sanctuary' | 'vocab_meaning' | 'srs' | 'classic_vocab';
 type ClassicMode = 'ABCD' | 'FILL_IN';
 
 const playAudio = async (word: string) => {
@@ -164,14 +164,16 @@ export default function VocabularyQuiz({
 
   const activeQuestions = quizType === 'srs' ? srsQuestions : shuffledQuestions;
 
-  // Automatically interleaved 50/50: Even index = ABCD (Meaning Choice), Odd index = FILL_IN (Active Recall)
+  // Mode determination: vocab_meaning is always ABCD; fill_in is always FILL_IN; classic_vocab alternates
   const activeClassicMode: ClassicMode = useMemo(() => {
+    if (quizType === 'vocab_meaning') return 'ABCD';
+    if (quizType === 'fill_in') return 'FILL_IN';
     return currentIndex % 2 === 0 ? 'ABCD' : 'FILL_IN';
-  }, [currentIndex]);
+  }, [quizType, currentIndex]);
 
   // Setup Classic ABCD options: 1 correct Vietnamese meaning + 3 Vietnamese distractors
   useEffect(() => {
-    if (quizType === 'classic_vocab' && activeQuestions.length > 0 && !isFinished && feedback === null) {
+    if ((quizType === 'vocab_meaning' || quizType === 'classic_vocab') && activeQuestions.length > 0 && !isFinished && feedback === null) {
       const current = activeQuestions[currentIndex];
       if (current) {
         // Collect distinct Vietnamese meanings from other words in the vault
@@ -338,7 +340,15 @@ export default function VocabularyQuiz({
     setUserSelectedOption(answer);
     let isCorrect = false;
     
-    if (quizType === 'classic_vocab') {
+    if (quizType === 'vocab_meaning') {
+      isCorrect = answer.trim().toLowerCase() === current.meaning.trim().toLowerCase();
+    } else if (quizType === 'fill_in') {
+      const cleanUser = normalizeWord(answer);
+      const cleanCorrect = normalizeWord(current.word);
+      isCorrect = cleanUser === cleanCorrect ||
+        answer.toLowerCase().trim() === current.word.toLowerCase().trim() ||
+        (cleanCorrect.length > 2 && cleanUser === cleanCorrect.split(' ')[0]);
+    } else if (quizType === 'classic_vocab') {
       if (activeClassicMode === 'ABCD') {
         isCorrect = answer.trim().toLowerCase() === current.meaning.trim().toLowerCase();
       } else {
@@ -443,7 +453,7 @@ export default function VocabularyQuiz({
             <button
               type="button"
               onClick={() => startQuizWithQuestions('textbook')}
-              className="p-4 rounded-2xl bg-white hover:bg-[#FDFBF7] border-2 border-[#A7D08C]/30 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
+              className="p-4 rounded-2xl bg-white hover:bg-[#FDFBF7] border-2 border-[#A7D08C]/40 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-[#EAF2E3] text-[#4A7C39] flex items-center justify-center group-hover:bg-[#4A7C39] group-hover:text-white transition-colors">
@@ -483,29 +493,29 @@ export default function VocabularyQuiz({
               </p>
             </button>
 
-            {/* Mode 3: Dual Vocabulary Recall */}
+            {/* Mode 3: Fill-in Blank Active Recall */}
             <button
               type="button"
-              onClick={() => startQuizWithQuestions('classic_vocab')}
+              onClick={() => startQuizWithQuestions('fill_in')}
               className="p-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border-2 border-[#A7D08C]/40 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-[#EAF2E3] text-[#4A7C39] flex items-center justify-center group-hover:bg-[#4A7C39] group-hover:text-white transition-colors">
-                  <Layers className="w-4 h-4" />
+                  <PenTool className="w-4 h-4" />
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                    3. Phản Xạ Từ Vựng Kép
+                    3. Thử Thách Điền Từ & Chính Tả
                   </h4>
-                  <span className="text-[10px] font-bold text-[#4A7C39]">Vocabulary Recall 50/50</span>
+                  <span className="text-[10px] font-bold text-[#4A7C39]">Active Recall • Gõ Từ Tiếng Anh</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Tự động xen kẽ 50/50: Trắc nghiệm ABCD chọn nghĩa tiếng Việt và gõ điền từ vựng tiếng Anh có gợi ý.
+                Cho nghĩa tiếng Việt và câu khuyết từ, gõ chuẩn xác từ vựng tiếng Anh kèm gợi ý ký tự và độ dài từ.
               </p>
             </button>
 
-            {/* Mode 4: IELTS Grammar Sanctuary */}
+            {/* Mode 4: IELTS Grammar Sanctuary (GIỮ NGUYÊN NÂNG CẤP) */}
             <button
               type="button"
               onClick={() => startQuizWithQuestions('grammar_sanctuary')}
@@ -519,16 +529,46 @@ export default function VocabularyQuiz({
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
                     4. Đấu Trường Ngữ Pháp
                   </h4>
-                  <span className="text-[10px] font-bold text-amber-700">Grammar Sanctuary</span>
+                  <span className="text-[10px] font-bold text-amber-700">Grammar Sanctuary (Đã Nâng Cấp)</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
                 Dòng thời gian 12 Thì, cây quyết định mạo từ A/An/The và luyện đề bắt lỗi sai từ kho cá nhân.
               </p>
             </button>
+
+            {/* Mode 5: Classic Vocab Meaning Translation (TÍNH NĂNG NHƯ CŨ) */}
+            <button
+              type="button"
+              onClick={() => startQuizWithQuestions('vocab_meaning')}
+              className="p-4 rounded-2xl bg-white hover:bg-[#F0FDF4] border-2 border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-sm cursor-pointer group flex flex-col justify-between min-h-[110px] sm:col-span-2"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#EAF2E3] text-[#4A7C39] flex items-center justify-center group-hover:bg-[#4A7C39] group-hover:text-white transition-colors shadow-xs">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
+                        5. Trắc Nghiệm Dịch Nghĩa Từ Vựng
+                      </h4>
+                      <span className="text-[9px] font-black bg-[#4A7C39] text-white px-2 py-0.5 rounded-full uppercase">
+                        Tính Năng Gốc
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#4A7C39]">Classic Vocab Quiz • 4 Lựa Chọn A, B, C, D</span>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-[#4A7C39] group-hover:translate-x-1 transition-transform" />
+              </div>
+              <p className="text-[11px] text-stone-600 leading-snug">
+                Dạng làm quiz truyền thống quen thuộc: Đọc từ vựng tiếng Anh và chọn nhanh đáp án dịch nghĩa tiếng Việt chuẩn xác nhất từ 4 lựa chọn A, B, C, D.
+              </p>
+            </button>
           </div>
 
-          {/* Mode 5: Spaced Repetition Review (Full Width) */}
+          {/* Mode 6: Spaced Repetition Review (Full Width) */}
           <button
             type="button"
             onClick={() => startQuizWithQuestions('srs')}
@@ -537,8 +577,8 @@ export default function VocabularyQuiz({
             <div className="flex items-center gap-2.5">
               <Brain className="w-5 h-5 shrink-0 text-emerald-300" />
               <div>
-                <p className="text-xs font-black uppercase tracking-wider">5. Ôn Tập SRS Cá Nhân Hóa</p>
-                <p className="text-[10px] font-medium opacity-90">Collocations C1 và thuật toán đường cong quên lãng</p>
+                <p className="text-xs font-black uppercase tracking-wider">6. Ôn Tập SRS Cá Nhân Hóa</p>
+                <p className="text-[10px] font-medium opacity-90">Collocations C1 và thuật toán đường cong quên lãng SuperMemo</p>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0 text-emerald-300" />
@@ -632,10 +672,12 @@ export default function VocabularyQuiz({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#A7D08C]/30 shrink-0 bg-[#F4EFE6]">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-[#4A7C39] uppercase tracking-widest bg-[#EAF2E3] px-3 py-1 rounded-full border border-[#A7D08C]/40">
-              {quizType === 'textbook' ? 'Ngữ Cảnh Cambridge' :
-               quizType === 'speech' ? 'Luyện Phát Âm Mic' :
+              {quizType === 'textbook' ? '1. Ngữ Cảnh Cambridge' :
+               quizType === 'speech' ? '2. Luyện Phát Âm Mic' :
+               quizType === 'fill_in' ? '3. Điền Từ Tiếng Anh' :
+               quizType === 'vocab_meaning' ? '5. Trắc Nghiệm Dịch Nghĩa' :
                quizType === 'classic_vocab' ? (activeClassicMode === 'ABCD' ? 'Trắc Nghiệm Nghĩa' : 'Điền Từ Tiếng Anh') :
-               'Ôn Tập SRS AI'}
+               '6. Ôn Tập SRS AI'}
             </span>
             <span className="text-xs font-bold text-stone-500">
               {currentIndex + 1} / {activeQuestions.length}
@@ -701,8 +743,8 @@ export default function VocabularyQuiz({
                   />
                 )}
 
-                {/* 3. CLASSIC VOCAB INTERLEAVED (ABCD MEANING + ACTIVE RECALL FILL-IN) */}
-                {quizType === 'classic_vocab' && current && (
+                {/* 3. VOCAB MODES (ABCD MEANING & FILL-IN) */}
+                {(quizType === 'classic_vocab' || quizType === 'vocab_meaning' || quizType === 'fill_in') && current && (
                   <div className="space-y-4">
                     {/* Question Type Indicator Badge */}
                     <div className="flex items-center justify-between text-xs">
@@ -710,7 +752,7 @@ export default function VocabularyQuiz({
                         {activeClassicMode === 'ABCD' ? (
                           <>
                             <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                            <span>Trắc nghiệm 4 lựa chọn: Chọn nghĩa tiếng Việt đúng</span>
+                            <span>Trắc nghiệm 4 lựa chọn: Chọn nghĩa tiếng Việt đúng (Tính năng gốc)</span>
                           </>
                         ) : (
                           <>
