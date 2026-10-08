@@ -439,25 +439,25 @@ export default function VocabularyQuiz({
           {/* 5 Distinct Mode Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
             
-            {/* Mode 1: Textbook Context Matching */}
+            {/* Mode 1: Cambridge Context Mastery */}
             <button
               type="button"
               onClick={() => startQuizWithQuestions('textbook')}
-              className="p-4 rounded-2xl bg-white hover:bg-[#FDFBF7] border-2 border-[#A7D08C]/30 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[105px]"
+              className="p-4 rounded-2xl bg-white hover:bg-[#FDFBF7] border-2 border-[#A7D08C]/30 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-[#EAF2E3] text-[#4A7C39] flex items-center justify-center group-hover:bg-[#4A7C39] group-hover:text-white transition-colors">
-                  <BookOpen className="w-4 h-4" />
+                  <Target className="w-4 h-4" />
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                    1. Nối Câu Sách Giáo Khoa
+                    1. Ngữ Cảnh Chuẩn Cambridge
                   </h4>
-                  <span className="text-[10px] font-bold text-[#4A7C39]">Cambridge Context</span>
+                  <span className="text-[10px] font-bold text-[#4A7C39]">Context Detective • Bẫy Đề Thi</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Nối từ với câu dịch nghĩa chuẩn xác trong 3 câu ngữ cảnh học thuật.
+                Đọc 4 câu ngữ cảnh học thuật và phát hiện câu dùng từ chuẩn xác, bóc tách các bẫy từ loại & collocation.
               </p>
             </button>
 
@@ -465,7 +465,7 @@ export default function VocabularyQuiz({
             <button
               type="button"
               onClick={() => startQuizWithQuestions('speech')}
-              className="p-4 rounded-2xl bg-white hover:bg-[#F0FDF4] border-2 border-emerald-300 hover:border-emerald-600 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[105px]"
+              className="p-4 rounded-2xl bg-white hover:bg-[#F0FDF4] border-2 border-emerald-300 hover:border-emerald-600 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -473,21 +473,21 @@ export default function VocabularyQuiz({
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                    2. Luyện Đọc & Chấm Điểm Mic
+                    2. Luyện Phát Âm & Phản Xạ Mic
                   </h4>
                   <span className="text-[10px] font-bold text-emerald-700">Speaking Reflex 0-100%</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Đọc to từ vào Micro, chấm điểm tức thì và có nút bỏ qua từ mới.
+                Đọc to từ vựng qua Micro, AI phân tích âm tiết và chấm điểm độ chính xác phát âm tức thì.
               </p>
             </button>
 
-            {/* Mode 3: Enhanced Classic Vocab ABCD & Cloze */}
+            {/* Mode 3: Dual Vocabulary Recall */}
             <button
               type="button"
               onClick={() => startQuizWithQuestions('classic_vocab')}
-              className="p-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border-2 border-[#A7D08C]/40 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[105px]"
+              className="p-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border-2 border-[#A7D08C]/40 hover:border-[#4A7C39] text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-[#EAF2E3] text-[#4A7C39] flex items-center justify-center group-hover:bg-[#4A7C39] group-hover:text-white transition-colors">
@@ -495,13 +495,13 @@ export default function VocabularyQuiz({
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                    3. Trắc Nghiệm & Điền Từ
+                    3. Phản Xạ Từ Vựng Kép
                   </h4>
-                  <span className="text-[10px] font-bold text-[#4A7C39]">Active Recall Xen Kẽ</span>
+                  <span className="text-[10px] font-bold text-[#4A7C39]">Vocabulary Recall 50/50</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Trắc nghiệm 4 lựa chọn xen kẽ điền từ khuyết ngữ cảnh và giải thích chi tiết.
+                Tự động xen kẽ 50/50: Trắc nghiệm ABCD chọn nghĩa tiếng Việt và gõ điền từ vựng tiếng Anh có gợi ý.
               </p>
             </button>
 
@@ -509,7 +509,7 @@ export default function VocabularyQuiz({
             <button
               type="button"
               onClick={() => startQuizWithQuestions('grammar_sanctuary')}
-              className="p-4 rounded-2xl bg-white hover:bg-[#FEFCE8] border-2 border-amber-300 hover:border-amber-500 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[105px]"
+              className="p-4 rounded-2xl bg-white hover:bg-[#FEFCE8] border-2 border-amber-300 hover:border-amber-500 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-xs cursor-pointer group flex flex-col justify-between min-h-[110px]"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shadow-xs">
@@ -517,13 +517,13 @@ export default function VocabularyQuiz({
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                    4. Ngữ Pháp: Thì & Mạo Từ
+                    4. Đấu Trường Ngữ Pháp
                   </h4>
                   <span className="text-[10px] font-bold text-amber-700">Grammar Sanctuary</span>
                 </div>
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Dòng thời gian 12 Thì, Cây quyết định mạo từ và luyện đề từ kho cá nhân.
+                Dòng thời gian 12 Thì, cây quyết định mạo từ A/An/The và luyện đề bắt lỗi sai từ kho cá nhân.
               </p>
             </button>
           </div>
@@ -537,8 +537,8 @@ export default function VocabularyQuiz({
             <div className="flex items-center gap-2.5">
               <Brain className="w-5 h-5 shrink-0 text-emerald-300" />
               <div>
-                <p className="text-xs font-black uppercase tracking-wider">5. Ôn Tập SRS AI Spaced Repetition</p>
-                <p className="text-[10px] font-medium opacity-90">Luyện Collocations C1 và khắc phục điểm yếu cá nhân</p>
+                <p className="text-xs font-black uppercase tracking-wider">5. Ôn Tập SRS Cá Nhân Hóa</p>
+                <p className="text-[10px] font-medium opacity-90">Collocations C1 và thuật toán đường cong quên lãng</p>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0 text-emerald-300" />
@@ -632,9 +632,9 @@ export default function VocabularyQuiz({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#A7D08C]/30 shrink-0 bg-[#F4EFE6]">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-[#4A7C39] uppercase tracking-widest bg-[#EAF2E3] px-3 py-1 rounded-full border border-[#A7D08C]/40">
-              {quizType === 'textbook' ? 'Sách Giáo Khoa' :
-               quizType === 'speech' ? 'Luyện Đọc Mic' :
-               quizType === 'classic_vocab' ? (activeClassicMode === 'ABCD' ? 'Trắc Nghiệm' : 'Điền Từ') :
+              {quizType === 'textbook' ? 'Ngữ Cảnh Cambridge' :
+               quizType === 'speech' ? 'Luyện Phát Âm Mic' :
+               quizType === 'classic_vocab' ? (activeClassicMode === 'ABCD' ? 'Trắc Nghiệm Nghĩa' : 'Điền Từ Tiếng Anh') :
                'Ôn Tập SRS AI'}
             </span>
             <span className="text-xs font-bold text-stone-500">
@@ -752,6 +752,15 @@ export default function VocabularyQuiz({
                           {current.phonetic && (
                             <p className="text-xs font-mono text-stone-500">{current.phonetic}</p>
                           )}
+
+                          {feedback !== null && (
+                            <div className="pt-2 border-t border-stone-100 mt-2">
+                              <span className="inline-flex items-center gap-1.5 bg-[#EAF2E3] border border-[#A7D08C] text-[#14532D] px-3.5 py-1.5 rounded-full text-xs font-bold shadow-xs">
+                                <span className="font-black text-[#4A7C39]">Định nghĩa chuẩn:</span>
+                                <span className="font-bold text-[#2E3E2B]">"{current.meaning}"</span>
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* 4 Vietnamese Meaning Options (A, B, C, D) */}
@@ -760,14 +769,14 @@ export default function VocabularyQuiz({
                             const isCorrect = optMeaning.trim().toLowerCase() === current.meaning.trim().toLowerCase();
                             const isSelected = userSelectedOption?.trim().toLowerCase() === optMeaning.trim().toLowerCase();
 
-                            let btnStyle = "bg-white hover:bg-[#F0FDF4] hover:border-[#4A7C39] border-2 border-[#A7D08C]/30 text-[#2E3E2B]";
+                            let btnStyle = "bg-white hover:bg-[#F0FDF4] hover:border-[#4A7C39] border-2 border-[#A7D08C]/40 text-[#2E3E2B]";
                             if (feedback) {
                               if (isCorrect) {
-                                btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black ring-2 ring-[#22C55E]/40";
+                                btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black ring-2 ring-[#22C55E]/40 shadow-sm";
                               } else if (isSelected && !isCorrect) {
-                                btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold opacity-85";
+                                btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold shadow-sm";
                               } else {
-                                btnStyle = "bg-stone-50 border-stone-200 text-stone-400 opacity-50";
+                                btnStyle = "bg-white border-stone-200 text-[#2E3E2B]";
                               }
                             }
 
@@ -777,18 +786,32 @@ export default function VocabularyQuiz({
                                 type="button"
                                 disabled={feedback !== null}
                                 onClick={() => handleAnswerClassic(optMeaning)}
-                                className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[56px] shadow-xs ${btnStyle}`}
+                                className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[58px] shadow-xs ${btnStyle}`}
                               >
                                 <span className="text-sm flex items-center gap-2.5">
                                   <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                    feedback && isCorrect ? 'bg-[#22C55E] text-white' : 'bg-[#EAF2E3] text-[#4A7C39]'
+                                    feedback && isCorrect 
+                                      ? 'bg-[#22C55E] text-white' 
+                                      : feedback && isSelected && !isCorrect
+                                      ? 'bg-[#EF4444] text-white'
+                                      : 'bg-[#EAF2E3] text-[#4A7C39]'
                                   }`}>
                                     {String.fromCharCode(65 + i)}
                                   </span>
                                   <span className="font-sans leading-snug">{optMeaning}</span>
                                 </span>
-                                {feedback && isCorrect && <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />}
-                                {feedback && isSelected && !isCorrect && <AlertCircle className="w-5 h-5 text-[#DC2626] shrink-0" />}
+                                {feedback && isCorrect && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="text-[10px] font-black bg-[#16A34A] text-white px-2 py-0.5 rounded-full hidden sm:inline-block">ĐÚNG</span>
+                                    <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />
+                                  </div>
+                                )}
+                                {feedback && isSelected && !isCorrect && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="text-[10px] font-black bg-[#DC2626] text-white px-2 py-0.5 rounded-full hidden sm:inline-block">BẠN CHỌN</span>
+                                    <AlertCircle className="w-5 h-5 text-[#DC2626] shrink-0" />
+                                  </div>
+                                )}
                               </button>
                             );
                           })}
@@ -1022,10 +1045,12 @@ export default function VocabularyQuiz({
                     <div className="grid grid-cols-1 gap-2.5">
                       {(current.options || []).map((opt: string, i: number) => {
                         const isCorrect = cleanOptionText(opt).toLowerCase() === cleanOptionText(current.correct_answer || '').toLowerCase();
-                        let btnStyle = "bg-white hover:bg-[#F0FDF4] border-2 border-[#A7D08C]/30 text-[#2E3E2B]";
+                        const isSelected = userSelectedOption && cleanOptionText(userSelectedOption).toLowerCase() === cleanOptionText(opt).toLowerCase();
+                        let btnStyle = "bg-white hover:bg-[#F0FDF4] border-2 border-[#A7D08C]/40 text-[#2E3E2B]";
                         if (feedback) {
-                          if (isCorrect) btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black shadow-xs ring-2 ring-[#22C55E]/40";
-                          else if (feedback === 'wrong') btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold opacity-75";
+                          if (isCorrect) btnStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] font-black shadow-sm ring-2 ring-[#22C55E]/40";
+                          else if (isSelected && !isCorrect) btnStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] font-bold shadow-sm";
+                          else btnStyle = "bg-white border-stone-200 text-[#2E3E2B]";
                         }
                         return (
                           <button
@@ -1033,10 +1058,21 @@ export default function VocabularyQuiz({
                             type="button"
                             disabled={feedback !== null}
                             onClick={() => handleAnswerClassic(opt)}
-                            className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[50px] shadow-xs ${btnStyle}`}
+                            className={`p-3.5 rounded-2xl border-2 font-bold text-left transition-all flex items-center justify-between cursor-pointer min-h-[52px] shadow-xs ${btnStyle}`}
                           >
                             <span className="text-sm font-semibold">{cleanOptionText(opt)}</span>
-                            {feedback && isCorrect && <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />}
+                            {feedback && isCorrect && (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[10px] font-black bg-[#16A34A] text-white px-2 py-0.5 rounded-full">ĐÚNG</span>
+                                <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0" />
+                              </div>
+                            )}
+                            {feedback && isSelected && !isCorrect && (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[10px] font-black bg-[#DC2626] text-white px-2 py-0.5 rounded-full">BẠN CHỌN</span>
+                                <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0" />
+                              </div>
+                            )}
                           </button>
                         );
                       })}
