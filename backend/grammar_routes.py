@@ -163,7 +163,7 @@ async def generate_custom_drills(
     generated = await ai_service.generate_vault_infused_exercises(
         vocab_list=vocab_list,
         topic_id=payload.topic_id or "tenses",
-        count=payload.count or 4
+        count=payload.count or 5
     )
     return {"success": True, "data": generated, "source": "vault_infused"}
 

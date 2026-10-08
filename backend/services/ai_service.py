@@ -2203,30 +2203,56 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
                 }
             ]
 
-    async def generate_vault_infused_exercises(self, vocab_list: list, topic_id: str = "tenses", count: int = 4):
+    async def generate_vault_infused_exercises(self, vocab_list: list, topic_id: str = "tenses", count: int = 5):
         """
-        Lồng ghép danh sách từ vựng trong Tủ từ của User vào câu hỏi ngữ pháp thực chiến.
+        Lồng ghép danh sách từ vựng trong Tủ từ của User vào câu hỏi ngữ pháp thực chiến
+        hoặc sinh câu hỏi chuyên sâu theo từng chủ đề bài học cụ thể (Mạo từ, Rút gọn mệnh đề, 12 thì, Đảo ngữ...).
         """
-        words = [v.get("word", "") for v in vocab_list if v.get("word")][:8]
-        words_str = ", ".join(words) if words else "deteriorate, sustainable, innovate"
+        words = [v.get("word", "").strip() for v in vocab_list if v.get("word") and v.get("word").strip()][:8]
+        if words:
+            vocab_instruction = f"""
+            YÊU CẦU ĐẶC BIỆT: Bắt buộc lồng ghép các từ vựng sau đây của học viên vào câu ngữ cảnh bài thi IELTS: [{', '.join(words)}].
+            Trong mỗi câu hỏi, gán trường 'vault_word_slot' bằng từ vựng được lồng ghép.
+            """
+        else:
+            vocab_instruction = """
+            Sử dụng từ vựng học thuật chuẩn Cambridge IELTS Band 7.5+ - 8.5+ phù hợp với ngữ cảnh câu hỏi.
+            """
+
+        topic_clean = topic_id.strip() if topic_id else "tenses"
 
         prompt = f"""
-        Bạn là Chuyên gia Khảo thí IELTS.
-        Hãy tạo {count} câu hỏi bài tập ngữ pháp thuộc chuyên đề: [{topic_id}].
-        YÊU CẦU ĐẶC BIỆT: Bắt buộc lồng ghép các từ vựng sau đây của học viên vào câu ngữ cảnh bài thi IELTS: [{words_str}].
-        Mỗi bài tập phải thuộc một trong 4 cơ chế: MULTIPLE_CHOICE, GAP_FILL, SENTENCE_SCRAMBLE, ERROR_SPOTTING.
+        Bạn là Chuyên gia Khảo thí Ngôn ngữ Cambridge IELTS.
+        Hãy tạo {count} câu hỏi bài tập ngữ pháp chuyên sâu thuộc chuyên đề: [{topic_clean}].
+        {vocab_instruction}
 
-        Định dạng JSON trả về DUY NHẤT một mảng:
+        YÊU CẦU VỀ DẠNG BÀI: Phân bổ đều giữa 4 cơ chế sau:
+        1. MULTIPLE_CHOICE: 
+           content_payload: {{"sentence_with_blank": "câu có chỗ trống [ _____ ]", "options": ["A", "B", "C", "D"], "correct_answer": "đáp án chính xác"}}
+        2. GAP_FILL:
+           content_payload: {{"sentence_with_blank": "câu có chỗ trống [ _____ ]", "base_word": "từ gốc trong ngoặc", "acceptable_answers": ["đáp án 1", "đáp án 2"]}}
+        3. SENTENCE_SCRAMBLE:
+           content_payload: {{"scrambled_tokens": ["từ/cụm 1", "từ/cụm 2", "..."], "ordered_tokens": ["từ/cụm đúng 1", "từ/cụm đúng 2", "..."]}}
+        4. ERROR_SPOTTING:
+           content_payload: {{"segments": [{{"id": "A", "text": "phân đoạn 1"}}, {{"id": "B", "text": "phân đoạn 2"}}, {{"id": "C", "text": "phân đoạn 3"}}, {{"id": "D", "text": "phân đoạn 4"}}], "error_segment_id": "B", "correction": "sửa đúng"}}
+
+        QUY TẮC CHUYÊN ĐỀ QUAN TRỌNG:
+        - Nếu chuyên đề liên quan đến "Mạo từ" hoặc "articles", câu hỏi BẮT BUỘC kiểm tra cách dùng A / AN / THE / Ø (Zero Article).
+        - Nếu chuyên đề liên quan đến "Rút gọn mệnh đề quan hệ" hoặc "reduced relative clauses", câu hỏi BẮT BUỘC kiểm tra V-ing (chủ động) vs V-ed/V3 (bị động).
+        - Nếu chuyên đề liên quan đến "12 thì" hoặc "tenses", câu hỏi kiểm tra phân biệt thì quá khứ, hoàn thành, hoặc dự báo tương lai Task 1.
+        - Nếu chuyên đề liên quan đến "Đảo ngữ" hoặc "inversion", câu hỏi kiểm tra cấu trúc Seldom, Not only, Hardly, v.v.
+
+        Định dạng JSON trả về DUY NHẤT một JSON Array (không kèm bất kỳ văn bản giải thích nào ngoài JSON):
         [
           {{
             "mechanic": "MULTIPLE_CHOICE | GAP_FILL | SENTENCE_SCRAMBLE | ERROR_SPOTTING",
             "cefr_level": "B2",
-            "target_concept": "Chủ điểm ngữ pháp",
-            "vault_word_slot": "từ trong kho được lồng ghép",
-            "prompt": "Yêu cầu bài tập",
+            "target_concept": "Tên quy tắc ngữ pháp chi tiết",
+            "vault_word_slot": "từ trong kho (nếu có lồng ghép)",
+            "prompt": "Yêu cầu bài tập bằng tiếng Việt",
             "content_payload": {{ ... }},
-            "explanation": "Giải thích ngữ pháp chi tiết bằng tiếng Việt",
-            "ielts_tip": "Mẹo IELTS"
+            "explanation": "Giải thích ngữ pháp chi tiết bằng tiếng Việt vì sao đúng/sai",
+            "ielts_tip": "Mẹo thực chiến cho bài thi IELTS Writing/Speaking"
           }}
         ]
         """
@@ -2234,18 +2260,148 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
             response = await self.client.chat.completions.create(
                 model=self.primary_text_model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3
+                temperature=0.4
             )
             content = response.choices[0].message.content
-            cleaned = self._clean_json(content)
-            return json.loads(cleaned)
+            cleaned = self._clean_json(content, expect_list=True)
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                return parsed
         except Exception as e:
             print(f"generate_vault_infused_exercises error: {e}")
+
+        # Topic-aware dynamic fallbacks
+        topic_lower = topic_clean.lower()
+        if "mạo từ" in topic_lower or "article" in topic_lower or "modifier" in topic_lower:
+            return [
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "B1",
+                    "target_concept": "The Definite Article with Statistical Trends",
+                    "vault_word_slot": words[0] if words else None,
+                    "prompt": "Chọn mạo từ chính xác điền vào chỗ trống trong câu Task 1:",
+                    "content_payload": {
+                        "sentence_with_blank": "According to the graph, [ _____ ] proportion of households adopting renewable power grew steadily.",
+                        "options": ["the", "a", "an", "Ø"],
+                        "correct_answer": "the"
+                    },
+                    "explanation": "Cụm danh từ chỉ tỷ lệ 'proportion of...' đã được xác định cụ thể bởi ngữ cảnh nên bắt buộc dùng mạo từ 'the'.",
+                    "ielts_tip": "Trong IELTS Writing Task 1, luôn dùng 'The proportion of...', 'The percentage of...'."
+                },
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "A2",
+                    "target_concept": "Indefinite Article A vs AN with Pronunciation",
+                    "vault_word_slot": words[1] if len(words) > 1 else None,
+                    "prompt": "Chọn mạo từ phù hợp trước cụm từ có phát âm đặc biệt:",
+                    "content_payload": {
+                        "sentence_with_blank": "The implementation of clean technologies represents [ _____ ] unique opportunity for industrial transformation.",
+                        "options": ["a", "an", "the", "Ø"],
+                        "correct_answer": "a"
+                    },
+                    "explanation": "Từ 'unique' phát âm bắt đầu bằng bán phụ âm /j/ (/juːˈniːk/), do đó bắt buộc đi với mạo từ 'a', không dùng 'an'.",
+                    "ielts_tip": "Dùng 'a/an' căn cứ vào phiên âm thực tế, không căn cứ vào mặt chữ cái."
+                },
+                {
+                    "mechanic": "ERROR_SPOTTING",
+                    "cefr_level": "B2",
+                    "target_concept": "Zero Article with Abstract Academic Concepts",
+                    "vault_word_slot": words[2] if len(words) > 2 else None,
+                    "prompt": "Phát hiện phân đoạn sử dụng sai mạo từ:",
+                    "content_payload": {
+                        "segments": [
+                            {"id": "A", "text": "Sociologists contend that"},
+                            {"id": "B", "text": "the higher education"},
+                            {"id": "C", "text": "serves as an engine"},
+                            {"id": "D", "text": "for social progress."}
+                        ],
+                        "error_segment_id": "B",
+                        "correction": "Ø Higher education"
+                    },
+                    "explanation": "'Higher education' là danh từ trừu tượng khái quát nói chung, dùng Zero Article (Ø). Không được dùng 'the'.",
+                    "ielts_tip": "Tránh dùng 'the' trước các danh từ trừu tượng như education, technology, pollution trong Task 2."
+                }
+            ]
+        elif "rút gọn" in topic_lower or "clause" in topic_lower or "relative" in topic_lower:
+            return [
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "B2",
+                    "target_concept": "Passive Reduced Relative Clause",
+                    "vault_word_slot": words[0] if words else None,
+                    "prompt": "Chọn dạng rút gọn mệnh đề quan hệ chính xác:",
+                    "content_payload": {
+                        "sentence_with_blank": "Stringent regulations [ _____ ] by the municipal council curbed carbon emissions.",
+                        "options": ["implemented", "implementing", "which implemented", "were implemented"],
+                        "correct_answer": "implemented"
+                    },
+                    "explanation": "Rút gọn mệnh đề quan hệ dạng bị động (which were implemented) thành quá khứ phân từ 'implemented'.",
+                    "ielts_tip": "Rút gọn mệnh đề quan hệ giúp câu văn súc tích, nâng tiêu chí GRA lên Band 8.0+."
+                },
+                {
+                    "mechanic": "GAP_FILL",
+                    "cefr_level": "B2",
+                    "target_concept": "Active Reduced Relative Clause with V-ing",
+                    "vault_word_slot": words[1] if len(words) > 1 else None,
+                    "prompt": "Rút gọn mệnh đề quan hệ chủ động với động từ trong ngoặc:",
+                    "content_payload": {
+                        "sentence_with_blank": "The comprehensive study, [ _____ ] (highlight) persistent economic disparities, was published recently.",
+                        "base_word": "highlight",
+                        "acceptable_answers": ["highlighting"]
+                    },
+                    "explanation": "Mệnh đề chủ động 'which highlights...' được rút gọn bằng hiện tại phân từ 'highlighting'.",
+                    "ielts_tip": "Sử dụng V-ing rút gọn để chèn thêm thông tin bổ sung mượt mà trong Task 2."
+                },
+                {
+                    "mechanic": "SENTENCE_SCRAMBLE",
+                    "cefr_level": "B2",
+                    "target_concept": "Reduced Relative Clause Word Order",
+                    "vault_word_slot": words[2] if len(words) > 2 else None,
+                    "prompt": "Sắp xếp các thẻ từ thành câu hoàn chỉnh chứa mệnh đề rút gọn:",
+                    "content_payload": {
+                        "scrambled_tokens": ["Policies", "enacted by", "authorities", "municipal", "traffic congestion.", "reduced"],
+                        "ordered_tokens": ["Policies", "enacted by", "municipal", "authorities", "reduced", "traffic congestion."]
+                    },
+                    "explanation": "'Policies enacted by municipal authorities...' là dạng rút gọn bị động của 'Policies which were enacted by...'.",
+                    "ielts_tip": "Dạng rút gọn này giúp tránh câu văn rườm rà trong Writing Task 2."
+                }
+            ]
+        elif "đảo ngữ" in topic_lower or "inversion" in topic_lower or "structure" in topic_lower:
+            return [
+                {
+                    "mechanic": "SENTENCE_SCRAMBLE",
+                    "cefr_level": "C1",
+                    "target_concept": "Negative Inversion with Seldom",
+                    "vault_word_slot": words[0] if words else None,
+                    "prompt": "Sắp xếp câu đảo ngữ học thuật Band 8.0+ với trạng từ phủ định Seldom:",
+                    "content_payload": {
+                        "scrambled_tokens": ["Seldom", "governments", "do", "such severe crises", "address", "effectively."],
+                        "ordered_tokens": ["Seldom", "do", "governments", "address", "such severe crises", "effectively."]
+                    },
+                    "explanation": "Khi Seldom đứng đầu câu, trợ động từ 'do' phải đảo lên trước chủ ngữ 'governments'.",
+                    "ielts_tip": "Đảo ngữ Seldom / Not only giúp bài thi IELTS đạt điểm tuyệt đối về đa dạng cấu trúc câu (GRA)."
+                },
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "C1",
+                    "target_concept": "Inversion with Not Only",
+                    "vault_word_slot": words[1] if len(words) > 1 else None,
+                    "prompt": "Chọn cấu trúc đảo ngữ chính xác sau cụm 'Not only':",
+                    "content_payload": {
+                        "sentence_with_blank": "Not only [ _____ ] emissions, but it also reduced manufacturing expenses.",
+                        "options": ["did the strategy curb", "the strategy curbed", "does the strategy curbed", "curbed the strategy"],
+                        "correct_answer": "did the strategy curb"
+                    },
+                    "explanation": "Cấu trúc đảo ngữ: Not only + trợ động từ (did) + S (the strategy) + V-inf (curb)...",
+                    "ielts_tip": "Cặp liên từ đảo ngữ Not only... but also... là vũ khí ghi điểm Band 8.0+ trong Task 2."
+                }
+            ]
+        else:
             return [
                 {
                     "mechanic": "GAP_FILL",
                     "cefr_level": "B2",
-                    "target_concept": "Past Simple with User Vocabulary",
+                    "target_concept": "Past Simple with Closed Historical Interval",
                     "vault_word_slot": words[0] if words else "mitigate",
                     "prompt": f"Chia dạng quá khứ của từ vựng '{words[0] if words else 'mitigate'}' trong ngữ cảnh Task 1:",
                     "content_payload": {
@@ -2255,6 +2411,20 @@ Xưng hô tự nhiên: 'Mát Cha' hoặc 'mình/tớ' với 'bạn/cậu'. Giữ
                     },
                     "explanation": "Mốc thời gian 2012-2020 là quá khứ đã kết thúc nên động từ phải chia thì Quá khứ đơn.",
                     "ielts_tip": "Kết hợp từ vựng học thuật với thì quá khứ chuẩn xác sẽ đẩy band GRA lên 7.5+."
+                },
+                {
+                    "mechanic": "MULTIPLE_CHOICE",
+                    "cefr_level": "B2",
+                    "target_concept": "Future Academic Projections in Task 1",
+                    "vault_word_slot": words[1] if len(words) > 1 else None,
+                    "prompt": "Chọn cách diễn đạt dự báo khách quan chuẩn Task 1 thay cho 'will':",
+                    "content_payload": {
+                        "sentence_with_blank": "By 2050, the proportion of electric vehicles [ _____ ] 70%.",
+                        "options": ["is projected to reach", "will reach", "reaches", "has reached"],
+                        "correct_answer": "is projected to reach"
+                    },
+                    "explanation": "Dùng cấu trúc bị động dự báo khách quan 'is projected to reach' thay cho 'will reach' trong bài Task 1.",
+                    "ielts_tip": "Tránh dùng 'will' để khẳng định số liệu tương lai trong Task 1."
                 }
             ]
 

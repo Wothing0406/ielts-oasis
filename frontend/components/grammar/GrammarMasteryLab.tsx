@@ -69,7 +69,45 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
   const [selectedLessonId, setSelectedLessonId] = useState<string>('past_simple');
   const [taxonomyView, setTaxonomyView] = useState<'theory' | 'video' | 'practice'>('theory');
 
-  // Mode 2: Adaptive Personal Exam State
+  // Mode 1: Lesson-Specific AI Generation
+  const [lessonAiDrills, setLessonAiDrills] = useState<Record<string, ExerciseItem[]>>({});
+  const [isGeneratingLessonAi, setIsGeneratingLessonAi] = useState(false);
+  const [lessonGenError, setLessonGenError] = useState<string | null>(null);
+
+  // User detected flashcards for Vault Mode
+  const detectedUserWords = useMemo(() => {
+    let words = vocabList.map(v => v.word).filter(Boolean);
+    if (words.length === 0 && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem("oasis_flashcards");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            words = parsed.map((item: any) => item.word || item.vocab).filter(Boolean);
+          }
+        }
+      } catch {}
+    }
+    return words.length > 0 ? words : ['mitigate', 'sustainable', 'deteriorate', 'infrastructure', 'unprecedented'];
+  }, [vocabList]);
+
+  // Mode 2: Vault Infused Dynamic Generation
+  const [vaultExercises, setVaultExercises] = useState<ExerciseItem[]>([]);
+  const [isGeneratingVault, setIsGeneratingVault] = useState(false);
+  const [vaultGenError, setVaultGenError] = useState<string | null>(null);
+  const [selectedVaultTopic, setSelectedVaultTopic] = useState<string>("all");
+
+  // Mode 3: Custom AI Generation State
+  const [customInputText, setCustomInputText] = useState("");
+  const [customExercises, setCustomExercises] = useState<ExerciseItem[]>([]);
+  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
+  const [customGenError, setCustomGenError] = useState<string | null>(null);
+
+  // Mode 4: Mirror Errors State
+  const [mirrorExercises, setMirrorExercises] = useState<ExerciseItem[]>([]);
+  const [isLoadingMirror, setIsLoadingMirror] = useState(false);
+
+  // Mode 5: Adaptive Personal Exam State
   const [adaptiveCefrLevel, setAdaptiveCefrLevel] = useState<string>('B2');
   const [adaptiveDatasetType, setAdaptiveDatasetType] = useState<string>('cambridge_ielts');
   const [adaptiveTopicId, setAdaptiveTopicId] = useState<string>('all');
@@ -78,21 +116,6 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
   const [adaptiveExercises, setAdaptiveExercises] = useState<ExerciseItem[]>([]);
   const [isGeneratingAdaptive, setIsGeneratingAdaptive] = useState(false);
   const [adaptiveGenError, setAdaptiveGenError] = useState<string | null>(null);
-
-  // Mode 3: Vault Infused Drills
-  const vaultDrills: GrammarDrill[] = useMemo(() => {
-    return generateVaultInfusedExercises(vocabList);
-  }, [vocabList]);
-
-  // Mode 4: Custom AI Generation State
-  const [customInputText, setCustomInputText] = useState("");
-  const [customExercises, setCustomExercises] = useState<ExerciseItem[]>([]);
-  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
-  const [customGenError, setCustomGenError] = useState<string | null>(null);
-
-  // Mode 5: Mirror Errors State
-  const [mirrorExercises, setMirrorExercises] = useState<ExerciseItem[]>([]);
-  const [isLoadingMirror, setIsLoadingMirror] = useState(false);
 
   // Active Quiz Session State
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
@@ -137,6 +160,94 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
     setDrillScore(0);
     setIsSessionFinished(false);
   };
+
+  // Generate AI drills specifically for the active lesson
+  const handleGenerateLessonAi = async (lesson?: GrammarLesson) => {
+    const target = lesson || activeLesson;
+    if (!target) return;
+    setIsGeneratingLessonAi(true);
+    setLessonGenError(null);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem("oasis_token") : null;
+      const formulaStr = typeof target.formula === 'string' ? target.formula : (target.formula?.positive || '');
+      const res = await fetch("/api/grammar/custom-generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          topic_id: `${target.title} - ${target.vietnameseTitle} (Quy tắc: ${target.rule_summary}. Công thức: ${formulaStr})`,
+          count: 5
+        })
+      });
+      const resData = await res.json();
+      if (resData.success && resData.data && resData.data.length > 0) {
+        setLessonAiDrills(prev => ({ ...prev, [target.id]: resData.data }));
+        setTaxonomyView('practice');
+        setCurrentDrillIndex(0);
+        setDrillScore(0);
+        setIsSessionFinished(false);
+      } else {
+        setLessonGenError("Không thể tạo thêm đề AI lúc này. Đang dùng đề bài học chuẩn.");
+        setTaxonomyView('practice');
+      }
+    } catch (e) {
+      console.error(e);
+      setLessonGenError("Lỗi kết nối AI. Đang dùng đề bài học chuẩn.");
+      setTaxonomyView('practice');
+    } finally {
+      setIsGeneratingLessonAi(false);
+    }
+  };
+
+  // Generate Vault Infused Exercises via AI API
+  const handleGenerateVaultExercises = async (overrideTopic?: string) => {
+    setIsGeneratingVault(true);
+    setVaultGenError(null);
+    const topicToUse = overrideTopic || selectedVaultTopic;
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem("oasis_token") : null;
+      const res = await fetch("/api/grammar/custom-generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          infused_words: detectedUserWords.slice(0, 8),
+          topic_id: topicToUse === 'all' 
+            ? "Tổng hợp ngữ pháp (Chia thì, Mạo từ, Đảo ngữ, Mệnh đề quan hệ)" 
+            : topicToUse,
+          count: 5
+        })
+      });
+      const resData = await res.json();
+      if (resData.success && resData.data && resData.data.length > 0) {
+        setVaultExercises(resData.data);
+        setCurrentDrillIndex(0);
+        setDrillScore(0);
+        setIsSessionFinished(false);
+      } else {
+        const fallback = generateVaultInfusedExercises(vocabList);
+        setVaultExercises(fallback as any);
+      }
+    } catch (err) {
+      console.error(err);
+      const fallback = generateVaultInfusedExercises(vocabList);
+      setVaultExercises(fallback as any);
+    } finally {
+      setIsGeneratingVault(false);
+    }
+  };
+
+  // Auto trigger dynamic vault generation on mode switch if empty
+  useEffect(() => {
+    if (activeMode === 'vault_drills' && vaultExercises.length === 0) {
+      handleGenerateVaultExercises();
+    }
+  }, [activeMode]);
 
   // Fetch Mirror Errors from API
   const fetchMirrorErrors = async () => {
@@ -318,7 +429,7 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
       return adaptiveExercises.length > 0 ? adaptiveExercises : (STATIC_DRILLS as any);
     }
     if (activeMode === 'vault_drills') {
-      return vaultDrills as any;
+      return vaultExercises.length > 0 ? vaultExercises : (generateVaultInfusedExercises(vocabList) as any);
     }
     if (activeMode === 'custom_ai') {
       return customExercises.length > 0 ? customExercises : (STATIC_DRILLS as any);
@@ -326,9 +437,30 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
     if (activeMode === 'mirror_errors') {
       return mirrorExercises.length > 0 ? mirrorExercises : (STATIC_DRILLS.filter(d => d.mechanic === 'ERROR_SPOTTING') as any);
     }
-    // Taxonomy practice
-    return STATIC_DRILLS.filter(d => d.category === selectedTopicId) as any;
-  }, [activeMode, adaptiveExercises, vaultDrills, customExercises, mirrorExercises, selectedTopicId]);
+    // Mode 1: Taxonomy practice - Check lesson-specific first!
+    if (lessonAiDrills[selectedLessonId]?.length > 0) {
+      return lessonAiDrills[selectedLessonId];
+    }
+    const matchingLessonDrills = STATIC_DRILLS.filter(d => d.lesson_id === selectedLessonId);
+    if (matchingLessonDrills.length > 0) {
+      return matchingLessonDrills as any;
+    }
+    const matchingCategoryDrills = STATIC_DRILLS.filter(d => d.category === selectedTopicId);
+    if (matchingCategoryDrills.length > 0) {
+      return matchingCategoryDrills as any;
+    }
+    return STATIC_DRILLS as any;
+  }, [
+    activeMode, 
+    adaptiveExercises, 
+    vaultExercises, 
+    customExercises, 
+    mirrorExercises, 
+    selectedTopicId, 
+    selectedLessonId, 
+    lessonAiDrills, 
+    vocabList
+  ]);
 
   const activeDrill = currentExerciseList[currentDrillIndex] || currentExerciseList[0];
 
@@ -393,6 +525,7 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
 
       {/* 5 Core Mode Navigation Tabs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+        {/* Tab 1: Theo từng bài học */}
         <button
           type="button"
           onClick={() => handleSwitchMode('taxonomy')}
@@ -410,33 +543,12 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
           <div className="overflow-hidden">
             <span className="text-xs font-black block truncate">1. 12 Thì & Mạo Từ</span>
             <span className={`text-[10px] block truncate ${activeMode === 'taxonomy' ? 'text-white/80' : 'text-accent/60'}`}>
-              Lý thuyết, 3 dạng & video
+              Lý thuyết, 3 dạng & đề từng bài
             </span>
           </div>
         </button>
 
-        <button
-          type="button"
-          onClick={() => handleSwitchMode('adaptive_exam')}
-          className={`min-h-[48px] p-3 rounded-2xl border text-left transition-all active:scale-95 touch-manipulation flex items-center gap-3 ${
-            activeMode === 'adaptive_exam'
-              ? 'bg-primary text-white border-primary shadow-sm ring-2 ring-primary/25'
-              : 'bg-white hover:bg-primary/5 border-primary/15 text-accent'
-          }`}
-        >
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-            activeMode === 'adaptive_exam' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-          }`}>
-            <Database className="w-4 h-4 shrink-0" />
-          </div>
-          <div className="overflow-hidden">
-            <span className="text-xs font-black block truncate">2. Đề Cá Nhân Hóa (AI)</span>
-            <span className={`text-[10px] block truncate ${activeMode === 'adaptive_exam' ? 'text-white/80' : 'text-accent/60'}`}>
-              Adaptive theo Dataset
-            </span>
-          </div>
-        </button>
-
+        {/* Tab 2: May đo tủ từ */}
         <button
           type="button"
           onClick={() => handleSwitchMode('vault_drills')}
@@ -452,13 +564,14 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
             <Sparkles className="w-4 h-4 shrink-0" />
           </div>
           <div className="overflow-hidden">
-            <span className="text-xs font-black block truncate">3. May Đo Tủ Từ</span>
+            <span className="text-xs font-black block truncate">2. Đề May Đo Tủ Từ</span>
             <span className={`text-[10px] block truncate ${activeMode === 'vault_drills' ? 'text-white/80' : 'text-accent/60'}`}>
-              Lồng ghép từ của bạn
+              AI lồng ghép Flashcard
             </span>
           </div>
         </button>
 
+        {/* Tab 3: Tự tạo đề AI */}
         <button
           type="button"
           onClick={() => handleSwitchMode('custom_ai')}
@@ -474,13 +587,14 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
             <PenTool className="w-4 h-4 shrink-0" />
           </div>
           <div className="overflow-hidden">
-            <span className="text-xs font-black block truncate">4. Tạo Đề Từ Bài Đọc</span>
+            <span className="text-xs font-black block truncate">3. Tự Tạo Đề AI</span>
             <span className={`text-[10px] block truncate ${activeMode === 'custom_ai' ? 'text-white/80' : 'text-accent/60'}`}>
-              Dán essay / đoạn văn
+              Dán bài đọc / essay bất kỳ
             </span>
           </div>
         </button>
 
+        {/* Tab 4: Mirror error spotting */}
         <button
           type="button"
           onClick={() => handleSwitchMode('mirror_errors')}
@@ -496,9 +610,32 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
             <AlertTriangle className="w-4 h-4 shrink-0" />
           </div>
           <div className="overflow-hidden">
-            <span className="text-xs font-black block truncate">5. Mirror Error Spotting</span>
+            <span className="text-xs font-black block truncate">4. Mirror Error Spotting</span>
             <span className={`text-[10px] block truncate ${activeMode === 'mirror_errors' ? 'text-white/80' : 'text-accent/60'}`}>
-              Lỗi bài viết của bạn
+              Sửa lỗi từ Writing cũ
+            </span>
+          </div>
+        </button>
+
+        {/* Tab 5: Adaptive personal exam */}
+        <button
+          type="button"
+          onClick={() => handleSwitchMode('adaptive_exam')}
+          className={`min-h-[48px] p-3 rounded-2xl border text-left transition-all active:scale-95 touch-manipulation flex items-center gap-3 ${
+            activeMode === 'adaptive_exam'
+              ? 'bg-primary text-white border-primary shadow-sm ring-2 ring-primary/25'
+              : 'bg-white hover:bg-primary/5 border-primary/15 text-accent'
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            activeMode === 'adaptive_exam' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+          }`}>
+            <Database className="w-4 h-4 shrink-0" />
+          </div>
+          <div className="overflow-hidden">
+            <span className="text-xs font-black block truncate">5. Đề Cá Nhân Hóa</span>
+            <span className={`text-[10px] block truncate ${activeMode === 'adaptive_exam' ? 'text-white/80' : 'text-accent/60'}`}>
+              Adaptive theo Dataset
             </span>
           </div>
         </button>
@@ -727,13 +864,24 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
                     >
                       <Youtube className="w-4 h-4 shrink-0 text-rose-600" /> Xem Video Giảng Giải
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setTaxonomyView('practice')}
-                      className="min-h-[44px] px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all active:scale-95 touch-manipulation inline-flex items-center gap-2"
-                    >
-                      Luyện Tập Đề Ngay <ArrowRight className="w-4 h-4 shrink-0" />
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateLessonAi(activeLesson)}
+                        disabled={isGeneratingLessonAi}
+                        className="min-h-[44px] px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-xs transition-all active:scale-95 touch-manipulation inline-flex items-center gap-2"
+                      >
+                        <Sparkles className={`w-4 h-4 shrink-0 ${isGeneratingLessonAi ? 'animate-spin' : ''}`} />
+                        <span>{isGeneratingLessonAi ? 'AI Đang Sinh Đề...' : 'AI Sinh Đề Riêng Bài Này'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTaxonomyView('practice')}
+                        className="min-h-[44px] px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all active:scale-95 touch-manipulation inline-flex items-center gap-2"
+                      >
+                        Luyện Tập Đề Ngay ({currentExerciseList.length} câu) <ArrowRight className="w-4 h-4 shrink-0" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : taxonomyView === 'video' ? (
@@ -784,6 +932,45 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
               ) : (
                 /* Practice View inside Taxonomy */
                 <div className="flex flex-col gap-4">
+                  {/* Active Lesson Practice Header Banner */}
+                  <div className="bg-emerald-50/80 p-3.5 sm:p-4 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                          {activeLesson.cefr_level || 'B2'}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-950">Chuyên đề bài học:</span>
+                      </div>
+                      <h3 className="text-sm sm:text-base font-black text-accent">
+                        {activeLesson.vietnameseTitle}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setTaxonomyView('theory')}
+                        className="min-h-[38px] px-3.5 py-1.5 bg-white hover:bg-primary/5 text-accent font-bold text-xs rounded-xl border border-primary/20 transition-all active:scale-95 touch-manipulation inline-flex items-center gap-1.5"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-primary" /> Quay Lại Lý Thuyết
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateLessonAi(activeLesson)}
+                        disabled={isGeneratingLessonAi}
+                        className="min-h-[38px] px-3.5 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 touch-manipulation inline-flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isGeneratingLessonAi ? 'animate-spin' : ''}`} />
+                        <span>{isGeneratingLessonAi ? 'AI Đang Sinh...' : 'AI Sinh Thêm Đề Mới'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {lessonGenError && (
+                    <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-xs text-amber-800 font-medium">
+                      {lessonGenError}
+                    </div>
+                  )}
+
                   {isSessionFinished ? (
                     <SessionSummaryCard
                       score={drillScore}
@@ -983,24 +1170,95 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
       )}
 
       {/* ========================================================================= */}
-      {/* MODE 3: PERSONAL VAULT INFUSION DRILLS                                    */}
+      {/* MODE 2: PERSONAL VAULT INFUSION DRILLS (AI DYNAMIC)                       */}
       {/* ========================================================================= */}
       {activeMode === 'vault_drills' && (
-        <div className="flex flex-col gap-4">
-          <div className="bg-white p-5 rounded-3xl border border-primary/20 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <h2 className="text-base sm:text-lg font-black text-accent flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> Đề May Đo Từ Tủ Từ Vựng Của Bạn
-              </h2>
-              <p className="text-xs text-accent/70 mt-0.5">
-                AI tự động lồng ghép các từ vựng bạn đang lưu trong Flashcard vào các bài tập chia thì, mạo từ và đảo ngữ.
-              </p>
+        <div className="flex flex-col gap-5">
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-primary/20 shadow-xs flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" /> AI Flashcard Infusion
+                  </span>
+                  <span className="text-xs text-accent/60 font-semibold">Cá nhân hóa theo kho từ vựng</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-accent flex items-center gap-2">
+                  Đề May Đo Từ Tủ Từ Vựng Của Bạn
+                </h2>
+                <p className="text-xs sm:text-sm text-accent/75 mt-0.5 max-w-2xl leading-relaxed">
+                  AI tự động phân tích và lồng ghép các từ vựng bạn đang lưu trong Flashcard vào các bài tập chia thì, mạo từ (A/An/The/Ø), đảo ngữ và mệnh đề quan hệ.
+                </p>
+              </div>
+              <span className="bg-primary/10 text-primary text-xs font-extrabold px-3 py-1.5 rounded-xl shrink-0">
+                {detectedUserWords.length} từ khả dụng
+              </span>
             </div>
-            <span className="bg-primary/10 text-primary text-xs font-extrabold px-3 py-1 rounded-xl shrink-0">
-              {vocabList.length} từ trong kho
-            </span>
+
+            {/* Detected Words Bar */}
+            <div className="flex flex-col gap-1.5 bg-[#FAF9F5] p-3.5 rounded-2xl border border-primary/15">
+              <span className="text-[11px] font-black uppercase text-accent/70 tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Từ vựng Flashcard của bạn đang được lồng ghép:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {detectedUserWords.slice(0, 10).map((w, i) => (
+                  <span key={i} className="px-2.5 py-1 bg-white border border-primary/20 text-primary rounded-xl text-xs font-mono font-bold shadow-2xs">
+                    {w}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Grammar Topic Selector Pills */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-black text-accent uppercase tracking-wider flex items-center gap-1.5">
+                <Target className="w-4 h-4 text-primary" /> Chọn Chuyên Đề Ngữ Pháp Cần May Đo:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'all', label: 'Tất cả chuyên đề (Chia thì, Mạo từ, Đảo ngữ)' },
+                  { id: 'Mạo từ (A, An, The, Ø)', label: 'Mạo từ (A, An, The, Ø)' },
+                  { id: '12 Thì & Chia động từ', label: '12 Thì & Chia động từ' },
+                  { id: 'Cấu trúc câu & Đảo ngữ', label: 'Cấu trúc câu & Đảo ngữ' },
+                  { id: 'Rút gọn mệnh đề quan hệ', label: 'Rút gọn mệnh đề quan hệ' }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedVaultTopic(item.id);
+                      handleGenerateVaultExercises(item.id);
+                    }}
+                    className={`min-h-[40px] px-3.5 py-2 rounded-2xl text-xs font-bold transition-all active:scale-95 touch-manipulation ${
+                      selectedVaultTopic === item.id
+                        ? 'bg-primary text-white shadow-xs'
+                        : 'bg-white hover:bg-primary/10 border border-primary/15 text-accent/80'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Trigger Button */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-primary/10">
+              {vaultGenError && (
+                <span className="text-xs text-rose-600 font-bold">{vaultGenError}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => handleGenerateVaultExercises()}
+                disabled={isGeneratingVault}
+                className="w-full sm:w-auto min-h-[44px] px-6 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-500 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-2xl shadow-sm transition-all active:scale-95 touch-manipulation inline-flex items-center justify-center gap-2 self-end ml-auto"
+              >
+                <RefreshCw className={`w-4 h-4 shrink-0 ${isGeneratingVault ? 'animate-spin' : ''}`} />
+                {isGeneratingVault ? 'AI Đang May Đo Đề Mới...' : 'Sinh Đề May Đo Mới Bằng AI'}
+              </button>
+            </div>
           </div>
 
+          {/* Interactive Card for Vault Exercises */}
           {isSessionFinished ? (
             <SessionSummaryCard
               score={drillScore}
@@ -1011,7 +1269,7 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
           ) : activeDrill ? (
             <div>
               <div className="flex justify-between items-center text-xs font-bold text-accent/60 mb-2">
-                <span>Câu hỏi {currentDrillIndex + 1} / {currentExerciseList.length}</span>
+                <span>Bộ đề may đo tủ từ: Câu {currentDrillIndex + 1} / {currentExerciseList.length}</span>
                 <span className="text-primary font-black">Điểm: {drillScore}</span>
               </div>
               <InteractiveGrammarCard
@@ -1025,18 +1283,50 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
       )}
 
       {/* ========================================================================= */}
-      {/* MODE 4: CUSTOM AI GENERATOR FROM ANY TEXT                                 */}
+      {/* MODE 3: CUSTOM AI GENERATOR FROM ANY TEXT                                 */}
       {/* ========================================================================= */}
       {activeMode === 'custom_ai' && (
         <div className="flex flex-col gap-5">
-          <div className="bg-white p-5 rounded-3xl border border-primary/20 shadow-xs flex flex-col gap-3">
+          <div className="bg-white p-5 sm:p-6 rounded-3xl border border-primary/20 shadow-xs flex flex-col gap-3">
             <div>
-              <h2 className="text-base sm:text-lg font-black text-accent flex items-center gap-2">
-                <PenTool className="w-4 h-4 text-primary shrink-0" /> Tự Nhập Văn Bản Bất Kỳ Để AI Sinh Đề
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-primary/10 text-primary text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+                  <PenTool className="w-3.5 h-3.5" /> Text Extractor
+                </span>
+                <span className="text-xs text-accent/60 font-semibold">Tự do nhập văn bản</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-accent flex items-center gap-2">
+                Tự Dán Bài Đọc Bất Kỳ Để AI Sinh Đề
               </h2>
-              <p className="text-xs text-accent/70 mt-0.5">
-                Dán bài đọc báo (BBC, Economist), bài luận mẫu hoặc danh sách câu bạn muốn học. AI sẽ phân tích và trích xuất 4 dạng bài tập ngay tức thì.
+              <p className="text-xs sm:text-sm text-accent/75 mt-0.5 leading-relaxed">
+                Dán bài đọc báo (BBC, Economist), bài luận mẫu hoặc đoạn văn bạn muốn học. AI sẽ phân tích và trích xuất 4 dạng bài tập tương tác ngay tức thì.
               </p>
+            </div>
+
+            {/* Quick Sample Presets */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] font-bold text-accent/70">Mẫu nhanh 1-click:</span>
+              <button
+                type="button"
+                onClick={() => setCustomInputText("Sociologists contend that higher education serves as an indispensable catalyst for social mobility. However, access to tertiary schooling remains unequal across rural regions, necessitating targeted government subsidies and progressive fiscal policies.")}
+                className="px-3 py-1.5 bg-[#FAF9F5] hover:bg-primary/10 border border-primary/20 text-accent font-semibold text-xs rounded-xl transition-all active:scale-95 touch-manipulation"
+              >
+                Mẫu 1: Mạo Từ & Giáo Dục
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomInputText("Between 1995 and 2015, the proportion of households consuming solar energy escalated steadily. In contrast, dependence on conventional fossil fuels plunged to an unprecedented low, registering a 40% reduction over the period.")}
+                className="px-3 py-1.5 bg-[#FAF9F5] hover:bg-primary/10 border border-primary/20 text-accent font-semibold text-xs rounded-xl transition-all active:scale-95 touch-manipulation"
+              >
+                Mẫu 2: Task 1 Xu Hướng Biểu Đồ
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomInputText("Seldom do governments tackle climate crises without grassroots mobilization. Not only did stringent emission caps reduce industrial pollution, but they also spurred breakthrough green technological innovations across the continent.")}
+                className="px-3 py-1.5 bg-[#FAF9F5] hover:bg-primary/10 border border-primary/20 text-accent font-semibold text-xs rounded-xl transition-all active:scale-95 touch-manipulation"
+              >
+                Mẫu 3: Đảo Ngữ & Nghị Luận
+              </button>
             </div>
 
             <textarea
@@ -1055,7 +1345,7 @@ export default function GrammarMasteryLab({ vocabList = [], onClose }: Props) {
                 type="button"
                 onClick={handleGenerateFromText}
                 disabled={isGeneratingCustom || !customInputText.trim()}
-                className="w-full sm:w-auto min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-2xl shadow-sm transition-all active:scale-95 touch-manipulation inline-flex items-center justify-center gap-2 shrink-0 self-end"
+                className="w-full sm:w-auto min-h-[44px] px-6 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-2xl shadow-sm transition-all active:scale-95 touch-manipulation inline-flex items-center justify-center gap-2 shrink-0 self-end ml-auto"
               >
                 {isGeneratingCustom ? (
                   <>

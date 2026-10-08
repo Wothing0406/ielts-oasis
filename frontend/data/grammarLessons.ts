@@ -106,6 +106,7 @@ export type MechanicType = 'MULTIPLE_CHOICE' | 'GAP_FILL' | 'SENTENCE_SCRAMBLE' 
 export interface GrammarDrill {
   id: string;
   category: GrammarCategory;
+  lesson_id?: string;
   mechanic: MechanicType;
   title: string;
   prompt: string;
@@ -811,10 +812,330 @@ export const ALL_GRAMMAR_LESSONS: GrammarLesson[] = [
 // 7. COMPREHENSIVE STATIC DRILLS (4 MECHANICS)
 // ==========================================
 export const STATIC_DRILLS: GrammarDrill[] = [
-  // --- 1. MULTIPLE CHOICE ---
+  // --- CHUYÊN ĐỀ: RÚT GỌN MỆNH ĐỀ QUAN HỆ (reduced_relative_clauses) ---
   {
-    id: 'drill-mcq-1',
+    id: 'drill-reduced-mcq-1',
+    category: 'clauses',
+    lesson_id: 'reduced_relative_clauses',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Rút gọn mệnh đề quan hệ thể bị động (V-ed/V3)',
+    prompt: 'Chọn dạng rút gọn mệnh đề quan hệ chính xác cho câu luận điểm Task 2:',
+    target_concept: 'Passive Reduced Relative Clause with Past Participle',
+    cefr_level: 'B2',
+    ielts_tip: 'Rút gọn mệnh đề bằng quá khứ phân từ (V-ed) giúp câu văn cô đọng và đẩy tiêu chí GRA lên Band 8.0+.',
+    explanation: 'Câu gốc: "regulations which were implemented by...". Khi rút gọn mệnh đề bị động, lược bỏ đại từ quan hệ và to be, giữ lại V-ed: "implemented".',
+    content_payload: {
+      sentence_with_blank: 'Stringent environmental regulations [ _____ ] by the central government prompted substantial industrial upgrades.',
+      options: ['implemented', 'implementing', 'which implemented', 'were implemented'],
+      correct_answer: 'implemented'
+    }
+  },
+  {
+    id: 'drill-reduced-mcq-2',
+    category: 'clauses',
+    lesson_id: 'reduced_relative_clauses',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Rút gọn mệnh đề quan hệ thể chủ động (V-ing)',
+    prompt: 'Chọn dạng rút gọn mệnh đề chủ động chính xác:',
+    target_concept: 'Active Reduced Relative Clause with Present Participle',
+    cefr_level: 'B2',
+    ielts_tip: 'Khi danh từ thực hiện hành động chủ động, rút gọn thành cụm V-ing.',
+    explanation: 'Mệnh đề gốc: "The summit, which attracted representatives..." mang nghĩa chủ động -> rút gọn thành V-ing: "attracting".',
+    content_payload: {
+      sentence_with_blank: 'The international climate summit, [ _____ ] representatives from over 50 nations, concluded with a historic agreement.',
+      options: ['attracting', 'attracted', 'which attracting', 'was attracted'],
+      correct_answer: 'attracting'
+    }
+  },
+  {
+    id: 'drill-reduced-gap-1',
+    category: 'clauses',
+    lesson_id: 'reduced_relative_clauses',
+    mechanic: 'GAP_FILL',
+    title: 'Điền dạng phân từ rút gọn cho động từ trong ngoặc',
+    prompt: 'Chia dạng phân từ thích hợp của động từ trong ngoặc để rút gọn mệnh đề:',
+    target_concept: 'Reduced Relative Clause Gap Fill',
+    cefr_level: 'B2',
+    ielts_tip: 'Xác định xem danh từ đứng trước thực hiện hành động (chủ động -> V-ing) hay chịu tác động (bị động -> V-ed).',
+    explanation: 'Chính sách thuế được thiết kế nhằm mục đích (bị động: which was aimed at...) -> rút gọn thành "aimed".',
+    content_payload: {
+      sentence_with_blank: 'A fiscal stimulus package [ _____ ] (aim) at stabilizing renewable energy enterprises was unveiled yesterday.',
+      base_word: 'aim',
+      acceptable_answers: ['aimed']
+    }
+  },
+  {
+    id: 'drill-reduced-scramble-1',
+    category: 'clauses',
+    lesson_id: 'reduced_relative_clauses',
+    mechanic: 'SENTENCE_SCRAMBLE',
+    title: 'Sắp xếp câu chứa mệnh đề rút gọn bị động Band 8.0+',
+    prompt: 'Bấm các thẻ từ theo thứ tự để tạo câu hoàn chỉnh có mệnh đề rút gọn:',
+    target_concept: 'Reduced Relative Clause Word Order',
+    cefr_level: 'B2',
+    ielts_tip: 'Cụm phân từ rút gọn thường đứng ngay sau danh từ mà nó bổ nghĩa.',
+    explanation: '"Policies enacted by municipal authorities..." là dạng rút gọn của "Policies which were enacted by...".',
+    content_payload: {
+      scrambled_tokens: ['Policies', 'enacted by', 'authorities', 'municipal', 'traffic congestion.', 'reduced'],
+      ordered_tokens: ['Policies', 'enacted by', 'municipal', 'authorities', 'reduced', 'traffic congestion.']
+    }
+  },
+  {
+    id: 'drill-reduced-error-1',
+    category: 'clauses',
+    lesson_id: 'reduced_relative_clauses',
+    mechanic: 'ERROR_SPOTTING',
+    title: 'Phát hiện lỗi sai rút gọn mệnh đề quan hệ',
+    prompt: 'Bấm chọn phân đoạn gạch chân chứa lỗi sai ngữ pháp:',
+    target_concept: 'Faulty Participle Reduction in Relative Clause',
+    cefr_level: 'B2',
+    ielts_tip: 'Không dùng dạng quá khứ đơn (V2) khi danh từ đóng vai trò chủ động thực hiện hành động phân từ.',
+    explanation: 'Báo cáo chủ động nhấn mạnh sự chênh lệch (chủ động), do đó phải dùng hiện tại phân từ "highlighting", không dùng quá khứ đơn "highlighted".',
+    content_payload: {
+      segments: [
+        { id: 'A', text: 'The comprehensive report,' },
+        { id: 'B', text: 'highlighted persistent disparities,' },
+        { id: 'C', text: 'prompted intense debates' },
+        { id: 'D', text: 'among parliament members.' }
+      ],
+      error_segment_id: 'B',
+      correction: 'highlighting persistent disparities,'
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: MẠO TỪ XÁC ĐỊNH "THE" (the_definite) ---
+  {
+    id: 'drill-the-mcq-1',
+    category: 'modifiers',
+    lesson_id: 'the_definite',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Mạo từ "The" với cụm số liệu Task 1',
+    prompt: 'Chọn mạo từ thích hợp điền vào chỗ trống mở đầu câu mô tả biểu đồ:',
+    target_concept: 'The Definite Article with Statistical Trends',
+    cefr_level: 'B1',
+    ielts_tip: 'Trong Writing Task 1, luôn luôn dùng "The proportion of...", "The percentage of...".',
+    explanation: 'Cụm "proportion of..." đã được xác định bởi ngữ cảnh nghiên cứu cụ thể -> BẮT BUỘC dùng mạo từ "the".',
+    content_payload: {
+      sentence_with_blank: 'According to the chart, [ _____ ] proportion of households adopting solar power increased significantly.',
+      options: ['the', 'a', 'an', 'Ø'],
+      correct_answer: 'the'
+    }
+  },
+  {
+    id: 'drill-the-mcq-2',
+    category: 'modifiers',
+    lesson_id: 'the_definite',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Mạo từ "The" với so sánh nhất (Superlatives)',
+    prompt: 'Chọn mạo từ chính xác điền vào câu luận điểm Task 1:',
+    target_concept: 'The Definite Article with Superlative Degree',
+    cefr_level: 'A2',
+    ielts_tip: 'Trước tính từ so sánh nhất (highest, lowest, most significant), bắt buộc luôn có "the".',
+    explanation: 'Cụm so sánh nhất "most substantial increase" bắt buộc phải đi cùng mạo từ xác định "the".',
+    content_payload: {
+      sentence_with_blank: 'Renewable energy registered [ _____ ] most substantial increase over the 10-year timeframe.',
+      options: ['the', 'a', 'an', 'Ø'],
+      correct_answer: 'the'
+    }
+  },
+  {
+    id: 'drill-the-gap-1',
+    category: 'modifiers',
+    lesson_id: 'the_definite',
+    mechanic: 'GAP_FILL',
+    title: 'Điền mạo từ với thực thể duy nhất trong môi trường',
+    prompt: 'Điền mạo từ chính xác vào chỗ trống (a / an / the / Ø):',
+    target_concept: 'The Definite Article with Unique Entities',
+    cefr_level: 'B1',
+    ielts_tip: 'Các thực thể duy nhất như "the environment", "the internet", "the government" luôn có "the".',
+    explanation: '"The environment" là thực thể duy nhất trong tự nhiên, luôn đi với mạo từ "the".',
+    content_payload: {
+      sentence_with_blank: 'Governments must implement stringent policies to protect [ _____ ] environment from industrial pollution.',
+      base_word: 'article',
+      acceptable_answers: ['the']
+    }
+  },
+  {
+    id: 'drill-the-error-1',
+    category: 'modifiers',
+    lesson_id: 'the_definite',
+    mechanic: 'ERROR_SPOTTING',
+    title: 'Phát hiện lỗi thiếu mạo từ "The" trong Writing Task 1',
+    prompt: 'Bấm chọn phân đoạn gạch chân chứa lỗi ngữ pháp:',
+    target_concept: 'Missing Definite Article in Task 1 Subject',
+    cefr_level: 'B1',
+    ielts_tip: 'Không được mở đầu câu Task 1 bằng "Percentage of..." mà không có "The".',
+    explanation: 'Cụm danh từ chủ ngữ mở đầu Task 1 phải là "The percentage of vehicles", thiếu "The" là lỗi trừ điểm GRA cơ bản.',
+    content_payload: {
+      segments: [
+        { id: 'A', text: 'Over the subsequent decade,' },
+        { id: 'B', text: 'percentage of electric vehicles' },
+        { id: 'C', text: 'surged dramatically' },
+        { id: 'D', text: 'across urban districts.' }
+      ],
+      error_segment_id: 'B',
+      correction: 'the percentage of electric vehicles'
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: MẠO TỪ BẤT ĐỊNH "A / AN" (indefinite_articles_a_an) ---
+  {
+    id: 'drill-aan-mcq-1',
+    category: 'modifiers',
+    lesson_id: 'indefinite_articles_a_an',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Mạo từ "A" trước từ bắt đầu bằng bán phụ âm /j/ (Unique)',
+    prompt: 'Chọn mạo từ thích hợp điền vào chỗ trống:',
+    target_concept: 'Indefinite Article A before Semi-Vowel /j/',
+    cefr_level: 'B1',
+    ielts_tip: 'Từ "unique" phát âm bắt đầu bằng /j/ (phụ âm), do đó dùng "a unique", KHÔNG dùng "an unique".',
+    explanation: 'Phiên âm của "unique" là /juːˈniːk/ (bắt đầu bằng bán phụ âm /j/), nên bắt buộc dùng mạo từ "a".',
+    content_payload: {
+      sentence_with_blank: 'The renewable project presents [ _____ ] unique opportunity to transform the local energy infrastructure.',
+      options: ['a', 'an', 'the', 'Ø'],
+      correct_answer: 'a'
+    }
+  },
+  {
+    id: 'drill-aan-mcq-2',
+    category: 'modifiers',
+    lesson_id: 'indefinite_articles_a_an',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Mạo từ "An" trước âm "H" câm (Hour, Honest, Honor)',
+    prompt: 'Chọn mạo từ chính xác điền vào câu sau:',
+    target_concept: 'Indefinite Article An with Silent H',
+    cefr_level: 'A2',
+    ielts_tip: 'Chữ cái "H" trong "hour", "honest", "honor" là âm câm, phát âm bắt đầu bằng nguyên âm -> Dùng "an".',
+    explanation: '"hour" phát âm là /ˈaʊ.ər/ (bắt đầu bằng nguyên âm đôi /aʊ/) -> Dùng mạo từ "an".',
+    content_payload: {
+      sentence_with_blank: 'The committee deliberated for nearly [ _____ ] hour before reaching a unanimous resolution.',
+      options: ['an', 'a', 'the', 'Ø'],
+      correct_answer: 'an'
+    }
+  },
+  {
+    id: 'drill-aan-error-1',
+    category: 'modifiers',
+    lesson_id: 'indefinite_articles_a_an',
+    mechanic: 'ERROR_SPOTTING',
+    title: 'Phát hiện lỗi sai dùng "an" trước từ phát âm /j/ (European)',
+    prompt: 'Bấm chọn phân đoạn gạch chân sử dụng mạo từ sai:',
+    target_concept: 'Misuse of An before European (/j/ sound)',
+    cefr_level: 'B1',
+    ielts_tip: '"European" phát âm là /ˌjʊə.rəˈpiː.ən/ -> bắt đầu bằng phụ âm /j/, phải dùng "a European".',
+    explanation: 'Dùng "an European" là sai ngữ pháp vì phiên âm bắt đầu bằng /j/. Phải sửa thành "a European country".',
+    content_payload: {
+      segments: [
+        { id: 'A', text: 'Germany has emerged as' },
+        { id: 'B', text: 'an European pioneer' },
+        { id: 'C', text: 'in solar technological' },
+        { id: 'D', text: 'advancements and exports.' }
+      ],
+      error_segment_id: 'B',
+      correction: 'a European pioneer'
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: MẠO TỪ RỖNG "Ø" (zero_article) ---
+  {
+    id: 'drill-zero-mcq-1',
+    category: 'modifiers',
+    lesson_id: 'zero_article',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Zero Article (Ø) với danh từ trừu tượng khái quát',
+    prompt: 'Chọn mạo từ chính xác cho câu luận điểm Task 2:',
+    target_concept: 'Zero Article with Abstract Concepts',
+    cefr_level: 'B1',
+    ielts_tip: 'Không thêm "the" trước các danh từ trừu tượng nói chung như "education", "technology", "pollution".',
+    explanation: '"Higher education" là khái niệm trừu tượng chung, bắt buộc dùng Zero Article (Ø).',
+    content_payload: {
+      sentence_with_blank: 'Sociologists believe that [ _____ ] higher education serves as a catalyst for social mobility.',
+      options: ['Ø', 'the', 'a', 'an'],
+      correct_answer: 'Ø'
+    }
+  },
+  {
+    id: 'drill-zero-error-1',
+    category: 'modifiers',
+    lesson_id: 'zero_article',
+    mechanic: 'ERROR_SPOTTING',
+    title: 'Phát hiện lỗi thêm "the" sai trước danh từ trừu tượng',
+    prompt: 'Bấm chọn phân đoạn gạch chân có lỗi mạo từ:',
+    target_concept: 'Superfluous The with Abstract Concept',
+    cefr_level: 'B1',
+    ielts_tip: 'Trong Task 2, khi nói về giáo dục hay công nghệ nói chung, không dùng mạo từ "the".',
+    explanation: 'Không dùng "The higher education" khi nói khái quát. Phải bỏ "The" và dùng Zero Article "Ø Higher education".',
+    content_payload: {
+      segments: [
+        { id: 'A', text: 'Sociologists believe that' },
+        { id: 'B', text: 'the higher education' },
+        { id: 'C', text: 'serves as a catalyst' },
+        { id: 'D', text: 'for social mobility.' }
+      ],
+      error_segment_id: 'B',
+      correction: 'Ø Higher education'
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: CẤU TRÚC ĐẢO NGỮ (inversion_negative_adverbs) ---
+  {
+    id: 'drill-inv-scramble-1',
+    category: 'sentence_structures',
+    lesson_id: 'inversion_negative_adverbs',
+    mechanic: 'SENTENCE_SCRAMBLE',
+    title: 'Đảo ngữ với trạng từ phủ định Seldom',
+    prompt: 'Bấm các thẻ từ sau theo đúng thứ tự để tạo câu đảo ngữ học thuật Band 8.0+:',
+    target_concept: 'Negative Inversion with Seldom',
+    cefr_level: 'C1',
+    ielts_tip: 'Seldom + do/does/did + S + V-inf là cấu trúc đảo ngữ kinh điển tạo ấn tượng mạnh với giám khảo.',
+    explanation: 'Khi "Seldom" đứng đầu câu, trợ động từ "do" phải đảo lên trước chủ ngữ "governments".',
+    content_payload: {
+      scrambled_tokens: ['Seldom', 'governments', 'do', 'such severe crises', 'address', 'effectively.'],
+      ordered_tokens: ['Seldom', 'do', 'governments', 'address', 'such severe crises', 'effectively.']
+    }
+  },
+  {
+    id: 'drill-inv-mcq-1',
+    category: 'sentence_structures',
+    lesson_id: 'inversion_negative_adverbs',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Đảo ngữ với cặp liên từ Not only... but also...',
+    prompt: 'Chọn cấu trúc đảo ngữ chính xác sau cụm "Not only":',
+    target_concept: 'Inversion with Not Only',
+    cefr_level: 'C1',
+    ielts_tip: 'Not only + Trợ động từ + S + V-inf, but S also + V...',
+    explanation: 'Sau "Not only" ở đầu câu, cấu trúc đảo ngữ yêu cầu trợ động từ "did" đứng trước chủ ngữ "the policy": "did the policy reduce".',
+    content_payload: {
+      sentence_with_blank: 'Not only [ _____ ] carbon emissions, but it also reduced manufacturing operational costs.',
+      options: ['did the policy reduce', 'the policy reduced', 'does the policy reduced', 'reduced the policy'],
+      correct_answer: 'did the policy reduce'
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: DANH ĐỘNG TỪ LÀM CHỦ NGỮ (gerund_as_subject) ---
+  {
+    id: 'drill-ger-gap-1',
+    category: 'verb_forms',
+    lesson_id: 'gerund_as_subject',
+    mechanic: 'GAP_FILL',
+    title: 'Hòa hợp Chủ - Vị với Danh động từ làm chủ ngữ',
+    prompt: 'Chia dạng đúng của động từ trong ngoặc để hoàn thiện câu luận điểm Task 2:',
+    target_concept: 'Subject-Verb Agreement with Gerunds',
+    cefr_level: 'B2',
+    ielts_tip: 'Cụm danh động từ "V-ing" làm chủ ngữ luôn đi với động từ số ít.',
+    explanation: 'Chủ ngữ "Investing in renewable energy" là số ít, do đó động từ "demand" phải thêm "s" -> "demands".',
+    content_payload: {
+      sentence_with_blank: 'Investing in renewable energy infrastructures [ _____ ] substantial public funding.',
+      base_word: 'demand',
+      acceptable_answers: ['demands']
+    }
+  },
+
+  // --- CHUYÊN ĐỀ: CÁC THÌ IELTS (tenses) ---
+  {
+    id: 'drill-tense-past-simple',
     category: 'tenses',
+    lesson_id: 'past_simple',
     mechanic: 'MULTIPLE_CHOICE',
     title: 'Chia thì Writing Task 1 - Mốc năm quá khứ đóng',
     prompt: 'Chọn dạng động từ chính xác nhất theo chuẩn học thuật:',
@@ -829,42 +1150,9 @@ export const STATIC_DRILLS: GrammarDrill[] = [
     }
   },
   {
-    id: 'drill-mcq-2',
-    category: 'sentence_structures',
-    mechanic: 'MULTIPLE_CHOICE',
-    title: 'Dự báo học thuật Task 1 - Tránh dùng "will"',
-    prompt: 'Chọn cấu trúc diễn đạt dự báo khách quan chuẩn Band 8.5+:',
-    target_concept: 'Future Academic Projections',
-    cefr_level: 'B2',
-    ielts_tip: 'Trong IELTS Task 1, số liệu tương lai là dự báo khoa học (projections). Dùng cấu trúc bị động "is projected to".',
-    explanation: 'Cấu trúc "is projected to exceed" thể hiện phong cách khách quan chuẩn mực của bài viết học thuật.',
-    content_payload: {
-      sentence_with_blank: 'By 2050, the global population residing in metropolitan centers [ _____ ] 68%.',
-      options: ['is projected to exceed', 'will exceed', 'exceeds', 'has exceeded'],
-      correct_answer: 'is projected to exceed'
-    }
-  },
-
-  // --- 2. GAP FILL / CLOZE TEST ---
-  {
-    id: 'drill-gap-1',
-    category: 'verb_forms',
-    mechanic: 'GAP_FILL',
-    title: 'Hòa hợp Chủ - Vị với Danh động từ làm chủ ngữ',
-    prompt: 'Chia dạng đúng của động từ trong ngoặc để hoàn thiện câu luận điểm Task 2:',
-    target_concept: 'Subject-Verb Agreement with Gerunds',
-    cefr_level: 'B2',
-    ielts_tip: 'Cụm danh động từ "V-ing" làm chủ ngữ luôn đi với động từ số ít.',
-    explanation: 'Chủ ngữ "Investing in renewable energy" là số ít, do đó động từ "demand" phải thêm "s" -> "demands".',
-    content_payload: {
-      sentence_with_blank: 'Investing in renewable energy infrastructures [ _____ ] substantial public funding.',
-      base_word: 'demand',
-      acceptable_answers: ['demands']
-    }
-  },
-  {
-    id: 'drill-gap-2',
+    id: 'drill-tense-past-perfect',
     category: 'tenses',
+    lesson_id: 'past_perfect',
     mechanic: 'GAP_FILL',
     title: 'Quá khứ hoàn thành với mốc so sánh Task 1',
     prompt: 'Chia dạng đúng của động từ trong ngoặc:',
@@ -878,80 +1166,38 @@ export const STATIC_DRILLS: GrammarDrill[] = [
       acceptable_answers: ['had overtaken']
     }
   },
-
-  // --- 3. SENTENCE SCRAMBLE ---
   {
-    id: 'drill-scramble-1',
-    category: 'sentence_structures',
-    mechanic: 'SENTENCE_SCRAMBLE',
-    title: 'Đảo ngữ với trạng từ phủ định Seldom',
-    prompt: 'Bấm các thẻ từ sau theo đúng thứ tự để tạo câu đảo ngữ học thuật Band 8.0+:',
-    target_concept: 'Negative Inversion with Seldom',
-    cefr_level: 'C1',
-    ielts_tip: 'Seldom + do/does/did + S + V-inf là cấu trúc đảo ngữ kinh điển tạo ấn tượng mạnh với giám khảo.',
-    explanation: 'Khi "Seldom" đứng đầu câu, trợ động từ "do" phải đảo lên trước chủ ngữ "governments".',
-    content_payload: {
-      scrambled_tokens: ['Seldom', 'governments', 'do', 'such severe crises', 'address', 'effectively.'],
-      ordered_tokens: ['Seldom', 'do', 'governments', 'address', 'such severe crises', 'effectively.']
-    }
-  },
-  {
-    id: 'drill-scramble-2',
-    category: 'clauses',
-    mechanic: 'SENTENCE_SCRAMBLE',
-    title: 'Mệnh đề quan hệ rút gọn bị động',
-    prompt: 'Sắp xếp các thẻ từ thành câu hoàn chỉnh cô đọng:',
-    target_concept: 'Reduced Relative Clause with Past Participle',
+    id: 'drill-tense-future-projections',
+    category: 'tenses',
+    lesson_id: 'future_simple',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Dự báo học thuật Task 1 - Tránh dùng "will"',
+    prompt: 'Chọn cấu trúc diễn đạt dự báo khách quan chuẩn Band 8.5+:',
+    target_concept: 'Future Academic Projections',
     cefr_level: 'B2',
-    ielts_tip: 'Rút gọn mệnh đề bằng phân từ 2 (V-ed/V3) giúp câu văn ngắn gọn và tăng điểm GRA.',
-    explanation: '"Policies enacted by municipal authorities..." là dạng rút gọn của "Policies which were enacted by...".',
+    ielts_tip: 'Trong IELTS Task 1, số liệu tương lai là dự báo khoa học (projections). Dùng cấu trúc bị động "is projected to".',
+    explanation: 'Cấu trúc "is projected to exceed" thể hiện phong cách khách quan chuẩn mực của bài viết học thuật.',
     content_payload: {
-      scrambled_tokens: ['Policies', 'enacted by', 'authorities', 'municipal', 'traffic congestion.', 'reduced'],
-      ordered_tokens: ['Policies', 'enacted by', 'municipal', 'authorities', 'reduced', 'traffic congestion.']
-    }
-  },
-
-  // --- 4. ERROR SPOTTING ---
-  {
-    id: 'drill-error-1',
-    category: 'clauses',
-    mechanic: 'ERROR_SPOTTING',
-    title: 'Phát hiện lỗi sai liên từ: Although vs Despite',
-    prompt: 'Bấm chọn cụm từ gạch chân chứa lỗi sai ngữ pháp trong câu học thuật sau:',
-    target_concept: 'Connectors: Although vs Despite',
-    cefr_level: 'B2',
-    ielts_tip: "'Although' đi với mệnh đề (S + V), còn 'Despite / In spite of' đi với cụm danh từ.",
-    explanation: "Đứng trước cụm danh từ 'the rapid expansion of AI', không được dùng 'Although'. Phải thay bằng 'Despite' hoặc 'In spite of'.",
-    content_payload: {
-      segments: [
-        { id: 'A', text: 'Although' },
-        { id: 'B', text: 'the rapid expansion of AI,' },
-        { id: 'C', text: 'ethical guidelines remain' },
-        { id: 'D', text: 'alarmingly underdeveloped.' }
-      ],
-      error_segment_id: 'A',
-      correction: 'Despite / In spite of'
+      sentence_with_blank: 'By 2050, the global population residing in metropolitan centers [ _____ ] 68%.',
+      options: ['is projected to exceed', 'will exceed', 'exceeds', 'has exceeded'],
+      correct_answer: 'is projected to exceed'
     }
   },
   {
-    id: 'drill-error-2',
-    category: 'modifiers',
-    mechanic: 'ERROR_SPOTTING',
-    title: 'Phát hiện lỗi mạo từ với danh từ trừu tượng',
-    prompt: 'Bấm chọn phân đoạn gạch chân sử dụng mạo từ sai:',
-    target_concept: 'Zero Article with Abstract Concepts',
+    id: 'drill-tense-present-perfect',
+    category: 'tenses',
+    lesson_id: 'present_perfect',
+    mechanic: 'MULTIPLE_CHOICE',
+    title: 'Hiện tại hoàn thành với mốc thời gian "Since"',
+    prompt: 'Chọn dạng động từ chính xác đi cùng mốc thời gian "Since 2015":',
+    target_concept: 'Present Perfect with Since [Year]',
     cefr_level: 'B1',
-    ielts_tip: 'Tuyệt đối không dùng "the" trước các danh từ trừu tượng nói chung như "education", "technology", "pollution".',
-    explanation: "'Higher education' là khái niệm trừu tượng nói chung, do đó dùng Zero Article (Ø). Viết 'The higher education' là sai ngữ pháp.",
+    ielts_tip: 'Mốc thời gian "Since + [Năm]" bắt đầu từ quá khứ và kéo dài đến hiện tại -> Dùng Present Perfect.',
+    explanation: '"Since 2015" kết nối quá khứ với hiện tại, động từ phải chia thì Hiện tại hoàn thành: "have escalated".',
     content_payload: {
-      segments: [
-        { id: 'A', text: 'Sociologists believe that' },
-        { id: 'B', text: 'the higher education' },
-        { id: 'C', text: 'serves as a catalyst' },
-        { id: 'D', text: 'for social mobility.' }
-      ],
-      error_segment_id: 'B',
-      correction: 'Ø Higher education'
+      sentence_with_blank: 'Since 2015, global expenditures on clean technology [ _____ ] at an unprecedented rate.',
+      options: ['have escalated', 'escalated', 'had escalated', 'escalate'],
+      correct_answer: 'have escalated'
     }
   }
 ];
