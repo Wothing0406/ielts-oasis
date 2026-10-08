@@ -145,7 +145,7 @@ export default function TextbookSentenceMatching({
         )}
 
         <p className="text-xs font-semibold text-accent/70 dark:text-neutral-300 mt-2 max-w-md mx-auto">
-          Chọn câu dịch nghĩa tiếng Việt chuẩn xác nhất cho từ vựng <strong className="text-primary font-bold">"{currentWord.word}"</strong> trong 3 câu ngữ cảnh dưới đây:
+          Chọn câu ngữ cảnh Cambridge IELTS sử dụng chuẩn xác nhất về ngữ nghĩa và collocation của từ vựng: <strong className="text-primary font-bold">"{currentWord.word}"</strong>
         </p>
       </div>
 
@@ -153,15 +153,15 @@ export default function TextbookSentenceMatching({
       <div className="space-y-3">
         {sentenceOptions.map((opt, idx) => {
           const isSelected = selectedOptionId === opt.id;
-          let containerStyle = "bg-white dark:bg-neutral-800 border-primary/15 hover:border-primary/40 hover:bg-primary/5 text-accent dark:text-neutral-100 shadow-sm";
+          let containerStyle = "bg-white border-2 border-[#A7D08C]/30 hover:border-[#4A7C39] hover:bg-[#F0FDF4] text-[#2E3E2B] shadow-xs";
 
           if (feedback) {
             if (opt.is_correct) {
-              containerStyle = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-md ring-2 ring-emerald-400/40";
+              containerStyle = "bg-[#DCFCE7] border-[#22C55E] text-[#14532D] shadow-md ring-2 ring-[#22C55E]/40 font-semibold";
             } else if (isSelected && !opt.is_correct) {
-              containerStyle = "bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-950 dark:text-rose-100 opacity-70";
+              containerStyle = "bg-[#FEE2E2] border-[#EF4444] text-[#991B1B] opacity-85";
             } else {
-              containerStyle = "bg-neutral-50 dark:bg-neutral-800/40 border-black/5 opacity-40";
+              containerStyle = "bg-stone-50 border-stone-200 text-stone-400 opacity-50";
             }
           }
 
@@ -179,43 +179,45 @@ export default function TextbookSentenceMatching({
                 <div className="flex items-center gap-2">
                   <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
                     feedback && opt.is_correct 
-                      ? 'bg-emerald-600 text-white' 
-                      : 'bg-primary/10 text-primary'
+                      ? 'bg-[#22C55E] text-white' 
+                      : 'bg-[#EAF2E3] text-[#4A7C39]'
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span className="text-[10px] font-bold text-accent/50 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
                     Cambridge Context {idx + 1}
                   </span>
                 </div>
 
                 {feedback && opt.is_correct && (
-                  <span className="flex items-center gap-1 text-xs font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="flex items-center gap-1 text-xs font-black text-[#14532D] bg-[#DCFCE7] px-2.5 py-0.5 rounded-full border border-[#22C55E]/40">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#16A34A]" />
                     <span>Đáp án chuẩn</span>
                   </span>
                 )}
                 {feedback && isSelected && !opt.is_correct && (
-                  <span className="flex items-center gap-1 text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="flex items-center gap-1 text-xs font-black text-[#991B1B] bg-[#FEE2E2] px-2.5 py-0.5 rounded-full border border-[#EF4444]/40">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-[#DC2626]" />
                     <span>Bẫy ngữ nghĩa</span>
                   </span>
                 )}
               </div>
 
               {/* English Sentence */}
-              <p className="text-sm font-semibold font-serif leading-relaxed text-accent dark:text-neutral-200">
+              <p className="text-sm font-semibold font-serif leading-relaxed text-[#2E3E2B]">
                 "{opt.sentence_en}"
               </p>
 
-              {/* Vietnamese Translation */}
-              <div className="pt-1.5 border-t border-black/5 dark:border-white/5 flex items-start gap-1.5 text-xs font-medium text-accent/80 dark:text-neutral-300">
-                <span className="text-primary font-bold shrink-0 flex items-center gap-1">
-                  <Languages className="w-3.5 h-3.5 shrink-0" />
-                  <span>Dịch:</span>
-                </span>
-                <span className="leading-normal">{opt.sentence_vi}</span>
-              </div>
+              {/* Vietnamese Translation (Hidden before answering so user cannot cheat) */}
+              {feedback && (
+                <div className="pt-2 border-t border-stone-200 flex items-start gap-1.5 text-xs font-medium text-stone-800 bg-[#FAF7F2] p-2.5 rounded-xl border border-[#A7D08C]/20">
+                  <span className="text-[#4A7C39] font-bold shrink-0 flex items-center gap-1">
+                    <Languages className="w-3.5 h-3.5 shrink-0" />
+                    <span>Dịch nghĩa:</span>
+                  </span>
+                  <span className="leading-normal">{opt.sentence_vi}</span>
+                </div>
+              )}
             </motion.button>
           );
         })}
@@ -226,14 +228,14 @@ export default function TextbookSentenceMatching({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl bg-amber-50/80 dark:bg-neutral-800/80 border border-primary/20 space-y-3"
+          className="p-4 rounded-2xl bg-white border-2 border-[#A7D08C]/40 space-y-3 shadow-xs"
         >
-          <div className="flex items-center gap-2 font-bold text-xs text-accent">
-            <GraduationCap className="w-4 h-4 text-primary shrink-0" />
+          <div className="flex items-center gap-2 font-bold text-xs text-[#2E3E2B]">
+            <GraduationCap className="w-4 h-4 text-[#4A7C39] shrink-0" />
             <span>Phân tích Sư phạm & Bẫy Đề Thi:</span>
           </div>
 
-          <div className="text-xs text-accent/80 space-y-1.5 leading-relaxed">
+          <div className="text-xs text-stone-700 space-y-1.5 leading-relaxed">
             {sentenceOptions.map((opt, i) => (
               <div key={i} className="flex items-start gap-2 text-[11px]">
                 <span className="font-bold text-primary shrink-0">[{String.fromCharCode(65 + i)}]:</span>

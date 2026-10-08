@@ -17,14 +17,15 @@
   --radius-medium: 2rem;
 }
 
-/* NUCLEAR LIGHT MODE FORCE */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Base light theme styling */
 :root,
 html,
-body,
-[class*="dark"] {
-  background-color: #FFFDF5 !important;
-  color: #5D4037 !important;
-  color-scheme: light !important;
+body {
+  background-color: #FFFDF5;
+  color: #5D4037;
+  color-scheme: light;
 }
 
 /* Default text color is inherited from body */
@@ -61,11 +62,6 @@ body,
   color: #5D4037 !important;
 }
 
-/* Remove any dark: classes influence */
-[class*="dark:"] {
-  background-color: transparent !important;
-  color: inherit !important;
-}
 
 @layer base {
   body {

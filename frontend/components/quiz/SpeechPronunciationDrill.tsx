@@ -217,7 +217,7 @@ export default function SpeechPronunciationDrill({
           </div>
 
           {currentWord.phonetic && (
-            <p className="text-xs font-mono text-accent/50 dark:text-neutral-400 mt-1">
+            <p className="text-xs font-mono text-stone-500 mt-1">
               Phát âm: {currentWord.phonetic}
             </p>
           )}
@@ -228,7 +228,7 @@ export default function SpeechPronunciationDrill({
           <button
             type="button"
             onClick={() => onPlayAudio(currentWord.word)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-white dark:bg-neutral-700 px-3 py-1.5 rounded-full border border-primary/20 shadow-xs hover:bg-primary hover:text-white transition-all cursor-pointer mt-2"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A7C39] bg-white px-3 py-1.5 rounded-full border border-[#A7D08C]/40 shadow-xs hover:bg-[#4A7C39] hover:text-white transition-all cursor-pointer mt-2"
           >
             <Headphones className="w-3.5 h-3.5 shrink-0" />
             <span>Nghe mẫu chuẩn bản xứ</span>
@@ -254,7 +254,7 @@ export default function SpeechPronunciationDrill({
           className={`w-20 h-20 min-w-[80px] min-h-[80px] rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer touch-manipulation active:scale-95 ${
             isListening 
               ? 'bg-rose-500 text-white ring-8 ring-rose-200 animate-pulse' 
-              : 'bg-primary text-white hover:bg-primary-dark hover:scale-105'
+              : 'bg-[#4A7C39] text-white hover:bg-[#3B642D] hover:scale-105'
           }`}
           aria-label={isListening ? "Dừng ghi âm" : "Bắt đầu đọc"}
         >
@@ -265,12 +265,12 @@ export default function SpeechPronunciationDrill({
           )}
         </button>
 
-        <p className="text-xs font-bold text-accent/70 dark:text-neutral-300 mt-3">
+        <p className="text-xs font-bold text-stone-600 mt-3">
           {isListening ? "Đang lắng nghe... Hãy đọc to rõ từ tiếng Anh!" : "Chạm vào Micro để đọc từ này"}
         </p>
 
         {transcript && (
-          <div className="mt-2 text-xs font-mono bg-secondary/60 dark:bg-neutral-700 px-3 py-1 rounded-full text-accent/80">
+          <div className="mt-2 text-xs font-mono bg-stone-100 px-3 py-1 rounded-full text-stone-800">
             Giọng nói nhận diện: "<strong>{transcript}</strong>"
           </div>
         )}
@@ -283,10 +283,10 @@ export default function SpeechPronunciationDrill({
           animate={{ opacity: 1, scale: 1 }}
           className={`w-full p-4 rounded-2xl border-2 text-center space-y-2 ${
             score >= 75
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-100'
+              ? 'bg-[#DCFCE7] border-[#22C55E] text-[#14532D]'
               : score >= 50
-              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-950 dark:text-amber-100'
-              : 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-950 dark:text-rose-100'
+              ? 'bg-amber-50 border-amber-400 text-amber-950'
+              : 'bg-[#FEE2E2] border-[#EF4444] text-[#991B1B]'
           }`}
         >
           <div className="flex items-center justify-center gap-2">
@@ -320,7 +320,7 @@ export default function SpeechPronunciationDrill({
             <button
               type="button"
               onClick={onNext}
-              className="min-h-[40px] bg-primary text-white px-6 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-primary-dark flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[40px] bg-[#4A7C39] text-white px-6 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-[#3B642D] flex items-center gap-1.5 cursor-pointer"
             >
               <span>Tiếp tục</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -330,12 +330,12 @@ export default function SpeechPronunciationDrill({
       )}
 
       {/* Skip Word (Bỏ qua từ mới) Panel */}
-      <div className="w-full flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5">
+      <div className="w-full flex items-center justify-between pt-2 border-t border-stone-200">
         <button
           type="button"
           onClick={handleSkip}
           disabled={isSkipping}
-          className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-accent/60 hover:text-accent hover:bg-amber-100/60 dark:hover:bg-neutral-800 transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+          className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:text-[#2E3E2B] hover:bg-stone-100 transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
           title="Bỏ qua từ này để nghe phát âm mẫu và ôn lại ở cuối buổi"
         >
           <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
