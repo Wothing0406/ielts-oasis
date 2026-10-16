@@ -310,6 +310,114 @@ export default function VocabularyQuiz({
     return currentIndex % 2 === 0 ? 'ABCD' : 'FILL_IN';
   }, [quizType, currentIndex]);
 
+  const current = activeQuestions[currentIndex];
+
+  // Helper cloze sentence computed for current word with intelligent bilingual extraction (declared unconditionally at top level)
+  const currentCloze = useMemo(() => {
+    if (!current) return { sentenceWithBlank: '', fullSentence: '', rawTranslation: '' };
+    const word = current.word.trim();
+    const meaning = current.meaning.trim();
+    
+    // Check if current.example contains inline Vietnamese translation e.g. "(Dịch: ...)" or " - ..."
+    if (current.example && current.example.trim().length > 10) {
+      const rawEx = current.example.trim();
+      
+      // Check if example has parentheses with Vietnamese text
+      const parenMatch = rawEx.match(/^(.*?)\s*[\(\[]([^\)\]]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ][^\)\]]*)[\)\]]\.?$/i);
+      let enSentence = rawEx;
+      let viTrans = '';
+
+      if (parenMatch) {
+        enSentence = parenMatch[1].trim();
+        viTrans = parenMatch[2].replace(/^(?:dịch|nghĩa|tương ứng ngữ cảnh)\s*[:.\-]\s*/i, '').trim();
+      } else if (rawEx.includes(' - ') && /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(rawEx)) {
+        const parts = rawEx.split(' - ');
+        enSentence = parts[0].trim();
+        viTrans = parts.slice(1).join(' - ').trim();
+      }
+
+      const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+      if (regex.test(enSentence)) {
+        return {
+          sentenceWithBlank: enSentence.replace(regex, '_______'),
+          fullSentence: enSentence,
+          rawTranslation: viTrans
+        };
+      }
+      
+      const stem = word.length > 4 ? word.slice(0, word.length - 2) : word;
+      const stemEscaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const stemRegex = new RegExp(`\\b${stemEscaped}\\w*\\b`, 'gi');
+      if (stemRegex.test(enSentence)) {
+        return {
+          sentenceWithBlank: enSentence.replace(stemRegex, '_______'),
+          fullSentence: enSentence,
+          rawTranslation: viTrans
+        };
+      }
+
+      // If word is not found inside raw example, construct high-quality IELTS sentence
+      return {
+        sentenceWithBlank: `The lecturer emphasized that students should _______ this concept in their essays.`,
+        fullSentence: `The lecturer emphasized that students should ${word} this concept in their essays.`,
+        rawTranslation: `Giảng viên nhấn mạnh rằng sinh viên nên ${meaning} khái niệm này trong bài luận.`
+      };
+    }
+    
+    return {
+      sentenceWithBlank: `The policy was formulated to _______ long-term sustainable growth.`,
+      fullSentence: `The policy was formulated to ${word} long-term sustainable growth.`,
+      rawTranslation: `Chính sách được đề ra nhằm ${meaning} tăng trưởng bền vững lâu dài.`
+    };
+  }, [current]);
+
+  // Dynamic background sentence translator with in-memory caching via /api/translate
+  useEffect(() => {
+    if (!currentCloze?.fullSentence) return;
+    const sentence = currentCloze.fullSentence.trim();
+    if (!sentence || sentenceTranslations[sentence]) return;
+    if (STATIC_SENTENCE_TRANSLATIONS[sentence]) return;
+
+    let isCancelled = false;
+    const fetchTrans = async () => {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: sentence })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.meaning && !isCancelled) {
+            setSentenceTranslations(prev => ({
+              ...prev,
+              [sentence]: data.meaning
+            }));
+          }
+        }
+      } catch (err) {
+        // Silently use contextual fallback
+      }
+    };
+
+    fetchTrans();
+    return () => { isCancelled = true; };
+  }, [currentCloze?.fullSentence, sentenceTranslations]);
+
+  // Active Vietnamese translation for the example sentence (declared unconditionally at top level)
+  const displaySentenceTranslation = useMemo(() => {
+    if (!currentCloze?.fullSentence) return '';
+    if (currentCloze.rawTranslation) return currentCloze.rawTranslation;
+    if (STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence]) {
+      return STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence];
+    }
+    if (sentenceTranslations[currentCloze.fullSentence]) {
+      return sentenceTranslations[currentCloze.fullSentence];
+    }
+    return current?.meaning ? `Trong câu ví dụ trên, từ "${current.word}" được sử dụng với ý nghĩa: "${current.meaning}".` : '';
+  }, [currentCloze, sentenceTranslations, current]);
+
   // Setup Classic ABCD options: 1 correct Vietnamese meaning + 3 Vietnamese distractors
   useEffect(() => {
     if ((quizType === 'vocab_meaning' || quizType === 'classic_vocab') && activeQuestions.length > 0 && !isFinished && feedback === null) {
@@ -761,113 +869,7 @@ export default function VocabularyQuiz({
   }
 
   // 4. QUESTIONS CONTAINER SCREEN
-  const current = activeQuestions[currentIndex];
-
-  // Helper cloze sentence computed for current word with intelligent bilingual extraction
-  const currentCloze = useMemo(() => {
-    if (!current) return { sentenceWithBlank: '', fullSentence: '', rawTranslation: '' };
-    const word = current.word.trim();
-    const meaning = current.meaning.trim();
-    
-    // Check if current.example contains inline Vietnamese translation e.g. "(Dịch: ...)" or " - ..."
-    if (current.example && current.example.trim().length > 10) {
-      const rawEx = current.example.trim();
-      
-      // Check if example has parentheses with Vietnamese text
-      const parenMatch = rawEx.match(/^(.*?)\s*[\(\[]([^\)\]]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ][^\)\]]*)[\)\]]\.?$/i);
-      let enSentence = rawEx;
-      let viTrans = '';
-
-      if (parenMatch) {
-        enSentence = parenMatch[1].trim();
-        viTrans = parenMatch[2].replace(/^(?:dịch|nghĩa|tương ứng ngữ cảnh)\s*[:.\-]\s*/i, '').trim();
-      } else if (rawEx.includes(' - ') && /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(rawEx)) {
-        const parts = rawEx.split(' - ');
-        enSentence = parts[0].trim();
-        viTrans = parts.slice(1).join(' - ').trim();
-      }
-
-      const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-      if (regex.test(enSentence)) {
-        return {
-          sentenceWithBlank: enSentence.replace(regex, '_______'),
-          fullSentence: enSentence,
-          rawTranslation: viTrans
-        };
-      }
-      
-      const stem = word.length > 4 ? word.slice(0, word.length - 2) : word;
-      const stemEscaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const stemRegex = new RegExp(`\\b${stemEscaped}\\w*\\b`, 'gi');
-      if (stemRegex.test(enSentence)) {
-        return {
-          sentenceWithBlank: enSentence.replace(stemRegex, '_______'),
-          fullSentence: enSentence,
-          rawTranslation: viTrans
-        };
-      }
-
-      // If word is not found inside raw example, construct high-quality IELTS sentence
-      return {
-        sentenceWithBlank: `The lecturer emphasized that students should _______ this concept in their essays.`,
-        fullSentence: `The lecturer emphasized that students should ${word} this concept in their essays.`,
-        rawTranslation: `Giảng viên nhấn mạnh rằng sinh viên nên ${meaning} khái niệm này trong bài luận.`
-      };
-    }
-    
-    return {
-      sentenceWithBlank: `The policy was formulated to _______ long-term sustainable growth.`,
-      fullSentence: `The policy was formulated to ${word} long-term sustainable growth.`,
-      rawTranslation: `Chính sách được đề ra nhằm ${meaning} tăng trưởng bền vững lâu dài.`
-    };
-  }, [current]);
-
-  // Dynamic background sentence translator with in-memory caching via /api/translate
-  useEffect(() => {
-    if (!currentCloze?.fullSentence) return;
-    const sentence = currentCloze.fullSentence.trim();
-    if (!sentence || sentenceTranslations[sentence]) return;
-    if (STATIC_SENTENCE_TRANSLATIONS[sentence]) return;
-
-    let isCancelled = false;
-    const fetchTrans = async () => {
-      try {
-        const res = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: sentence })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.meaning && !isCancelled) {
-            setSentenceTranslations(prev => ({
-              ...prev,
-              [sentence]: data.meaning
-            }));
-          }
-        }
-      } catch (err) {
-        // Silently use contextual fallback
-      }
-    };
-
-    fetchTrans();
-    return () => { isCancelled = true; };
-  }, [currentCloze?.fullSentence, sentenceTranslations]);
-
-  // Active Vietnamese translation for the example sentence
-  const displaySentenceTranslation = useMemo(() => {
-    if (!currentCloze.fullSentence) return '';
-    if (currentCloze.rawTranslation) return currentCloze.rawTranslation;
-    if (STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence]) {
-      return STATIC_SENTENCE_TRANSLATIONS[currentCloze.fullSentence];
-    }
-    if (sentenceTranslations[currentCloze.fullSentence]) {
-      return sentenceTranslations[currentCloze.fullSentence];
-    }
-    return `Trong câu ví dụ trên, từ "${current?.word}" được sử dụng với ý nghĩa: "${current?.meaning}".`;
-  }, [currentCloze, sentenceTranslations, current]);
+  // (current, currentCloze, and displaySentenceTranslation are already safely declared at component top level)
 
   return (
     <div className="fixed inset-0 bg-stone-900/60 z-[100] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">

@@ -30,12 +30,6 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const handleManualBypass = () => {
-    sessionStorage.setItem("turnstile_verified", "true");
-    sessionStorage.setItem("turnstile_device_fallback", "true");
-    setIsVerified(true);
-  };
-
   const handleRetry = () => {
     setDeviceError(false);
     setIsSlow(false);
@@ -53,12 +47,12 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
 
     let active = true;
 
-    // Timeout safety fallback: if Turnstile is blocked or device verification hangs for > 5 seconds
+    // Timeout safety fallback: alert user if network is slow
     const timeoutTimer = setTimeout(() => {
       if (active && !isVerified) {
         setIsSlow(true);
       }
-    }, 5500);
+    }, 6000);
 
     const renderCaptcha = () => {
       if (!active) return;
@@ -78,12 +72,16 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           widgetIdRef.current = (window as any).turnstile.render(turnstileDiv, {
             sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD5-TV0_dcBjBpVd",
             theme: "dark",
+            action: "security-shield",
+            retry: "auto",
+            "retry-interval": 1500,
+            "refresh-expired": "auto",
             callback: (token: string) => {
               if (token) {
                 sessionStorage.setItem("turnstile_verified", "true");
                 setTimeout(() => {
                   setIsVerified(true);
-                }, 750);
+                }, 500);
               }
             },
             "expired-callback": () => {
@@ -157,7 +155,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
                 <div ref={containerRef} id="global-turnstile-container"></div>
               </div>
 
-              {/* Fallback Section when Device verification fails or takes too long */}
+              {/* Retry Section when Cloudflare verification needs user interaction or refresh */}
               {(deviceError || isSlow) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -169,28 +167,19 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
                     <div className="space-y-2">
                       <p className="text-xs md:text-sm text-neutral-200 leading-relaxed font-medium">
                         {deviceError 
-                          ? "Trình duyệt hoặc thiết bị của bạn đang hạn chế xác minh Cloudflare (chế độ ẩn danh, chặn cookie/script hoặc tường lửa mạng)."
-                          : "Xác minh thiết bị đang mất nhiều thời gian hơn bình thường do đường truyền hoặc cài đặt riêng tư."
+                          ? "Xác minh Cloudflare chưa hoàn tất. Vui lòng kiểm tra kết nối mạng và bấm 'Thử lại xác minh Cloudflare' để tải lại widget."
+                          : "Đang kết nối đến máy chủ bảo mật Cloudflare. Nếu quá trình tải lâu, bạn có thể bấm 'Thử lại' bên dưới."
                         }
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={handleManualBypass}
-                          className="min-h-[44px] px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95"
-                        >
-                          <span>Tiếp tục vào IELTS Oasis</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-
+                      <div className="pt-1">
                         <button
                           type="button"
                           onClick={handleRetry}
-                          className="min-h-[44px] px-3 py-2 text-xs md:text-sm font-medium rounded-lg border border-neutral-700 hover:bg-neutral-800 text-neutral-300 flex items-center gap-1.5 transition-all active:scale-95"
+                          className="min-h-[44px] px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Thử lại</span>
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Thử lại xác minh Cloudflare</span>
                         </button>
                       </div>
                     </div>

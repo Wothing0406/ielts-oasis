@@ -73,7 +73,7 @@ export default function RootLayout({
         <title>Mát Cha AI Eo - Your Zen Learning Space</title>
         <meta name="color-scheme" content="light" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
