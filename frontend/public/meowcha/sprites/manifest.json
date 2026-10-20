@@ -1,0 +1,99 @@
+{
+  "schema": "meowcha.sprite_manifest.v2",
+  "version": "9.0.0",
+  "frameSize": { "width": 360, "height": 360 },
+  "realms": [
+    {
+      "id": 0,
+      "folder": "characters/realm0_qi_refining",
+      "name": "Luyện Khí Kỳ",
+      "title": "Tiểu Miêu Kiếm Đồng",
+      "weapon": "weapons/bamboo_sword.png",
+      "states": {
+        "idle": { "single": "idle.png", "sheet": "idle_sheet.png", "frames": 6, "fps": 8, "loop": true },
+        "attack": { "single": "attack.png", "sheet": "attack_sheet.png", "frames": 4, "fps": 18, "loop": false, "hitFrame": 1 },
+        "ultimate": { "single": "ultimate.png", "sheet": "ultimate_sheet.png", "frames": 6, "fps": 14, "loop": false, "hitFrame": 2 },
+        "hurt": { "single": "hurt.png", "sheet": "hurt_sheet.png", "frames": 4, "fps": 14, "loop": false },
+        "defeated": { "single": "defeated.png", "sheet": "defeated_sheet.png", "frames": 4, "fps": 6, "loop": true }
+      }
+    },
+    {
+      "id": 1,
+      "folder": "characters/realm1_foundation",
+      "name": "Trúc Cơ Kỳ",
+      "title": "Miêu Tiên Trúc Cơ",
+      "weapon": "weapons/jade_sword.png",
+      "states": {
+        "idle": { "single": "idle.png", "sheet": "idle_sheet.png", "frames": 6, "fps": 8, "loop": true },
+        "attack": { "single": "attack.png", "sheet": "attack_sheet.png", "frames": 4, "fps": 18, "loop": false, "hitFrame": 1 },
+        "ultimate": { "single": "ultimate.png", "sheet": "ultimate_sheet.png", "frames": 6, "fps": 14, "loop": false, "hitFrame": 2 },
+        "hurt": { "single": "hurt.png", "sheet": "hurt_sheet.png", "frames": 4, "fps": 14, "loop": false },
+        "defeated": { "single": "defeated.png", "sheet": "defeated_sheet.png", "frames": 4, "fps": 6, "loop": true }
+      }
+    },
+    {
+      "id": 2,
+      "folder": "characters/realm2_golden_core",
+      "name": "Kim Đan Kỳ",
+      "title": "Kim Đan Chân Nhân",
+      "weapon": "weapons/golden_bagua_sword.png",
+      "states": {
+        "idle": { "single": "idle.png", "sheet": "idle_sheet.png", "frames": 6, "fps": 8, "loop": true },
+        "attack": { "single": "attack.png", "sheet": "attack_sheet.png", "frames": 4, "fps": 18, "loop": false, "hitFrame": 1 },
+        "ultimate": { "single": "ultimate.png", "sheet": "ultimate_sheet.png", "frames": 6, "fps": 14, "loop": false, "hitFrame": 2 },
+        "hurt": { "single": "hurt.png", "sheet": "hurt_sheet.png", "frames": 4, "fps": 14, "loop": false },
+        "defeated": { "single": "defeated.png", "sheet": "defeated_sheet.png", "frames": 4, "fps": 6, "loop": true }
+      }
+    },
+    {
+      "id": 3,
+      "folder": "characters/realm3_nascent_soul",
+      "name": "Nguyên Anh Kỳ",
+      "title": "Nguyên Anh Tiên Tôn",
+      "weapon": "weapons/thunder_sword.png",
+      "states": {
+        "idle": { "single": "idle.png", "sheet": "idle_sheet.png", "frames": 6, "fps": 8, "loop": true },
+        "attack": { "single": "attack.png", "sheet": "attack_sheet.png", "frames": 4, "fps": 18, "loop": false, "hitFrame": 1 },
+        "ultimate": { "single": "ultimate.png", "sheet": "ultimate_sheet.png", "frames": 6, "fps": 14, "loop": false, "hitFrame": 2 },
+        "hurt": { "single": "hurt.png", "sheet": "hurt_sheet.png", "frames": 4, "fps": 14, "loop": false },
+        "defeated": { "single": "defeated.png", "sheet": "defeated_sheet.png", "frames": 4, "fps": 6, "loop": true }
+      }
+    },
+    {
+      "id": 4,
+      "folder": "characters/realm4_tribulation",
+      "name": "Độ Kiếp Kỳ",
+      "title": "Thái Thượng Kiếm Tôn",
+      "weapon": "weapons/dragon_sword.png",
+      "states": {
+        "idle": { "single": "idle.png", "sheet": "idle_sheet.png", "frames": 6, "fps": 8, "loop": true },
+        "attack": { "single": "attack.png", "sheet": "attack_sheet.png", "frames": 4, "fps": 18, "loop": false, "hitFrame": 1 },
+        "ultimate": { "single": "ultimate.png", "sheet": "ultimate_sheet.png", "frames": 6, "fps": 14, "loop": false, "hitFrame": 2 },
+        "hurt": { "single": "hurt.png", "sheet": "hurt_sheet.png", "frames": 4, "fps": 14, "loop": false },
+        "defeated": { "single": "defeated.png", "sheet": "defeated_sheet.png", "frames": 4, "fps": 6, "loop": true }
+      }
+    }
+  ],
+  "asteroids": {
+    "ice": "asteroids/ice.png",
+    "fire": "asteroids/fire.png",
+    "void": "asteroids/void.png",
+    "thunder": "asteroids/thunder.png"
+  },
+  "vfx": {
+    "slashes": {
+      "realm0": "vfx/slashes/slash_bamboo_sheet.png",
+      "realm1": "vfx/slashes/slash_jade_x_sheet.png",
+      "realm2": "vfx/slashes/slash_golden_sheet.png",
+      "realm3": "vfx/slashes/slash_thunder_sheet.png",
+      "realm4": "vfx/slashes/slash_dragon_sheet.png"
+    },
+    "impacts": {
+      "burst": "vfx/impacts/impact_burst_sheet.png",
+      "tea_explosion": "vfx/impacts/tea_explosion.png"
+    }
+  },
+  "environment": {
+    "mystic_cloud": "environment/mystic_cloud.png"
+  }
+}

@@ -261,6 +261,7 @@ export const MeowchaGame: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameIdRef = useRef<number>(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const startTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Game Engine mutable state
   const asteroidsRef = useRef<Asteroid[]>([]);
@@ -621,18 +622,54 @@ export const MeowchaGame: React.FC<{
     setShowBreakthroughModal(false);
     setViewMode("battle");
 
-    setTimeout(() => spawnAsteroid(initialWord), 150);
+    if (startTimerRef.current) clearTimeout(startTimerRef.current);
+    startTimerRef.current = setTimeout(() => spawnAsteroid(initialWord), 150);
   }, [loadedSave, spawnAsteroid]);
 
   // Handle external launch target word
   useEffect(() => {
     if (targetInitialWord) startBattle(targetInitialWord);
+    return () => {
+      if (startTimerRef.current) {
+        clearTimeout(startTimerRef.current);
+        startTimerRef.current = null;
+      }
+    };
   }, [targetInitialWord, startBattle]);
 
   // Handle external load save
   useEffect(() => {
     if (loadedSave) startBattle();
+    return () => {
+      if (startTimerRef.current) {
+        clearTimeout(startTimerRef.current);
+        startTimerRef.current = null;
+      }
+    };
   }, [loadedSave, startBattle]);
+
+  // 9. Breakthrough Check
+  const checkBreakthroughProgress = useCallback(() => {
+    const curScore = statsRef.current.score;
+    const curIdx = statsRef.current.realmIdx;
+
+    for (let i = CULTIVATION_REALMS.length - 1; i >= 0; i--) {
+      if (curScore >= CULTIVATION_REALMS[i].minScore) {
+        if (i > curIdx) {
+          // BREAKTHROUGH TRIGGERED!
+          statsRef.current.realmIdx = i;
+          setCurrentRealmIdx(i);
+          playSound("level");
+
+          // Pick 3 random talents
+          const shuffled = [...TALENT_POOL].sort(() => Math.random() - 0.5);
+          setTalentChoices(shuffled.slice(0, 3));
+          setShowBreakthroughModal(true);
+        }
+        break;
+      }
+    }
+  }, [playSound]);
 
   // 8. Keystroke Processor (Hardware keyboard & Virtual keyboard & Screen Touch)
   const processInputChar = useCallback((inputChar: string) => {
@@ -787,30 +824,7 @@ export const MeowchaGame: React.FC<{
       setCombo(0);
       playSound("hurt");
     }
-  }, [isGameOver, isPaused, playSound, spawnAsteroid]);
-
-  // 9. Breakthrough Check
-  const checkBreakthroughProgress = useCallback(() => {
-    const curScore = statsRef.current.score;
-    const curIdx = statsRef.current.realmIdx;
-
-    for (let i = CULTIVATION_REALMS.length - 1; i >= 0; i--) {
-      if (curScore >= CULTIVATION_REALMS[i].minScore) {
-        if (i > curIdx) {
-          // BREAKTHROUGH TRIGGERED!
-          statsRef.current.realmIdx = i;
-          setCurrentRealmIdx(i);
-          playSound("level");
-
-          // Pick 3 random talents
-          const shuffled = [...TALENT_POOL].sort(() => Math.random() - 0.5);
-          setTalentChoices(shuffled.slice(0, 3));
-          setShowBreakthroughModal(true);
-        }
-        break;
-      }
-    }
-  }, [playSound]);
+  }, [isGameOver, isPaused, playSound, spawnAsteroid, checkBreakthroughProgress]);
 
   // Select Talent from Breakthrough Modal
   const handleSelectTalent = (talent: typeof TALENT_POOL[0]) => {

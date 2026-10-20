@@ -10,7 +10,7 @@
       this.canvas = document.getElementById("gameCanvas");
       this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
-      // Khởi tạo Asset Loader
+      // Khởi tạo Asset Loader (Hỗ trợ cả đường dẫn phân tầng mới & tương thích ngược)
       this.assets = {
         bg: { src: "./bg_study_sanctuary.jpg", img: new Image(), loaded: false },
         cat_idle: { src: "./sprites/cat_idle.png", img: new Image(), loaded: false },
@@ -21,30 +21,62 @@
         cat_hurt: { src: "./sprites/cat_hurt.png", img: new Image(), loaded: false },
         cat_defeated: { src: "./sprites/cat_defeated.png", img: new Image(), loaded: false },
         cat_ultimate_blast: { src: "./sprites/cat_ultimate_blast.png", img: new Image(), loaded: false },
-        prop_asteroid: { src: "./sprites/prop_asteroid.png", img: new Image(), loaded: false },
-        prop_asteroid_ice: { src: "./sprites/prop_asteroid_ice.png", img: new Image(), loaded: false },
-        prop_asteroid_fire: { src: "./sprites/prop_asteroid_fire.png", img: new Image(), loaded: false },
-        prop_asteroid_void: { src: "./sprites/prop_asteroid_void.png", img: new Image(), loaded: false },
-        prop_asteroid_thunder: { src: "./sprites/prop_asteroid_thunder.png", img: new Image(), loaded: false },
-        prop_bamboo_sword: { src: "./sprites/prop_bamboo_sword.png", img: new Image(), loaded: false },
-        prop_jade_sword: { src: "./sprites/prop_jade_sword.png", img: new Image(), loaded: false },
-        sword_realm3_thunder: { src: "./sprites/sword_realm3_thunder.png", img: new Image(), loaded: false },
-        sword_realm4_dragon: { src: "./sprites/sword_realm4_dragon.png", img: new Image(), loaded: false },
-        prop_sword_slash: { src: "./sprites/prop_sword_slash.png", img: new Image(), loaded: false },
-        prop_tea_explosion: { src: "./sprites/prop_tea_explosion.png", img: new Image(), loaded: false },
-        prop_mystic_cloud: { src: "./sprites/prop_mystic_cloud.png", img: new Image(), loaded: false }
+        prop_asteroid: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
+        prop_asteroid_ice: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
+        prop_asteroid_fire: { src: "./sprites/asteroids/fire.png", img: new Image(), loaded: false },
+        prop_asteroid_void: { src: "./sprites/asteroids/void.png", img: new Image(), loaded: false },
+        prop_asteroid_thunder: { src: "./sprites/asteroids/thunder.png", img: new Image(), loaded: false },
+        prop_bamboo_sword: { src: "./sprites/weapons/bamboo_sword.png", img: new Image(), loaded: false },
+        prop_jade_sword: { src: "./sprites/weapons/jade_sword.png", img: new Image(), loaded: false },
+        prop_golden_sword: { src: "./sprites/weapons/golden_bagua_sword.png", img: new Image(), loaded: false },
+        sword_realm3_thunder: { src: "./sprites/weapons/thunder_sword.png", img: new Image(), loaded: false },
+        sword_realm4_dragon: { src: "./sprites/weapons/dragon_sword.png", img: new Image(), loaded: false },
+        prop_sword_slash: { src: "./sprites/vfx/slashes/sword_slash.png", img: new Image(), loaded: false },
+        prop_tea_explosion: { src: "./sprites/vfx/impacts/tea_explosion.png", img: new Image(), loaded: false },
+        prop_mystic_cloud: { src: "./sprites/environment/mystic_cloud.png", img: new Image(), loaded: false },
+        vfx_slash_r0_sheet: { src: "./sprites/vfx/slashes/slash_bamboo_sheet.png", img: new Image(), loaded: false },
+        vfx_slash_r1_sheet: { src: "./sprites/vfx/slashes/slash_jade_x_sheet.png", img: new Image(), loaded: false },
+        vfx_slash_r2_sheet: { src: "./sprites/vfx/slashes/slash_golden_sheet.png", img: new Image(), loaded: false },
+        vfx_slash_r3_sheet: { src: "./sprites/vfx/slashes/slash_thunder_sheet.png", img: new Image(), loaded: false },
+        vfx_slash_r4_sheet: { src: "./sprites/vfx/slashes/slash_dragon_sheet.png", img: new Image(), loaded: false },
+        vfx_impact_burst_sheet: { src: "./sprites/vfx/impacts/impact_burst_sheet.png", img: new Image(), loaded: false }
       };
+
+      // Đăng ký động 5 Cảnh Giới Nhân Vật x 5 Trạng Thái (Ảnh đơn + Sprite Sheet đa frame)
+      const realmFolders = [
+        "realm0_qi_refining",
+        "realm1_foundation",
+        "realm2_golden_core",
+        "realm3_nascent_soul",
+        "realm4_tribulation"
+      ];
+      const stateKeys = ["idle", "attack", "ultimate", "hurt", "defeated"];
+      realmFolders.forEach((folder, rIdx) => {
+        stateKeys.forEach((st) => {
+          this.assets[`char_r${rIdx}_${st}`] = {
+            src: `./sprites/characters/${folder}/${st}.png`,
+            img: new Image(),
+            loaded: false
+          };
+          this.assets[`char_r${rIdx}_${st}_sheet`] = {
+            src: `./sprites/characters/${folder}/${st}_sheet.png`,
+            img: new Image(),
+            loaded: false
+          };
+        });
+      });
 
       // Các hệ thống con
       this.gameState = new M.GameState();
       this.audio = new M.AudioManager();
       this.saveSystem = new M.SaveSystem();
+      this.animator = M.SpriteAnimator ? new M.SpriteAnimator(this.assets) : null;
       this.particles = new M.ParticleEngine();
       this.realmVFX = new M.RealmVFX(this.assets);
       this.floatingText = new M.FloatingText();
-      this.cat = new M.CatCultivator(this.assets, this.realmVFX);
+      this.cat = new M.CatCultivator(this.assets, this.realmVFX, this.animator);
       this.asteroids = new M.AsteroidManager(this.assets);
-      this.projectiles = new M.ProjectileSystem(this.assets);
+      this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
       this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge);
@@ -584,6 +616,7 @@
         this.particles.createHitSparks(this.canvas.width / 2, catTargetY, "#FDE047", 10);
         this.audio.play("type");
       });
+      if (this.animator) this.animator.update(dt, this.gameState);
       this.cat.update(dt, this.gameState);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên đỉnh bàn phím ảo)
@@ -716,8 +749,9 @@
           this.realmVFX.drawMysticClouds(ctx, w, h, true);
         }
 
-        // 5. Vẽ Hạt hiệu ứng
+        // 5. Vẽ Hạt hiệu ứng & VFX Clips
         this.particles.draw(ctx);
+        if (this.animator) this.animator.drawVFXClips(ctx);
 
         // 6. Vẽ Nhân vật Mèo Tôn kèm Phi Kiếm & Sợi Tơ Kiếm Ý Khóa Mục Tiêu
         this.cat.draw(ctx, this.canvas, this.gameState, this.typing.currentTarget);
