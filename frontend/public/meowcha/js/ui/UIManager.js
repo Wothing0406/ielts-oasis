@@ -820,6 +820,203 @@
       if (this.modalPause) this.modalPause.style.display = "none";
     }
 
+    
+    showCertificateModal() {
+      if (!this.modalCertificate) return;
+      const dataUrl = this.generateCertificateCanvas();
+      if (this.certificateImgPreview && dataUrl) {
+        this.certificateImgPreview.src = dataUrl;
+      }
+      this.modalCertificate.style.display = "flex";
+      this.audio.play("chime");
+    }
+
+    hideCertificateModal() {
+      if (this.modalCertificate) this.modalCertificate.style.display = "none";
+    }
+
+    downloadCertificatePNG() {
+      const dataUrl = this.generateCertificateCanvas();
+      if (!dataUrl) return;
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `Chung_Dao_Kim_Do_Cap${this.state.realmIdx || 0}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      this.showStatus("[ 符 ] Đã xuất Chứng Đạo Kim Đồ thành công!");
+    }
+
+    copyShareLink() {
+      const shareUrl = `${window.location.origin}/games/meowcha?score=${this.state.score}&realm=${this.state.realmIdx}&wpm=${Math.round(this.state.wpm || 0)}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          this.showStatus("[ 符 ] Đã sao chép liên kết tỷ thí vào khay nhớ tạm!");
+        }).catch(() => {
+          this.showStatus(`Liên kết tỷ thí: ${shareUrl}`);
+        });
+      } else {
+        this.showStatus(`Liên kết tỷ thí: ${shareUrl}`);
+      }
+    }
+
+    generateCertificateCanvas() {
+      const c = document.createElement("canvas");
+      c.width = 1200;
+      c.height = 630;
+      const ctx = c.getContext("2d");
+      if (!ctx) return "";
+
+      const s = this.state;
+      const realms = root.Meowcha?.CULTIVATION_REALMS || [];
+      const realmData = realms[s.realmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ" };
+
+      // 1. Nền lụa tiên đạo thâm thúy
+      const grad = ctx.createRadialGradient(600, 315, 80, 600, 315, 680);
+      grad.addColorStop(0, "#0F172A");
+      grad.addColorStop(0.7, "#090D16");
+      grad.addColorStop(1, "#020408");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // Hạt linh khí vàng kim lấp lánh
+      for (let i = 0; i < 40; i++) {
+        const sx = Math.sin(i * 99) * 580 + 600;
+        const sy = Math.cos(i * 77) * 290 + 315;
+        const sr = (i % 3) + 1;
+        ctx.fillStyle = i % 2 === 0 ? "rgba(253, 224, 71, 0.45)" : "rgba(56, 189, 248, 0.35)";
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. Viền đôi Hoàng Kim & Chu Sa cổ phong
+      ctx.strokeStyle = "rgba(212, 175, 55, 0.85)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(28, 28, 1144, 574);
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.55)";
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(38, 38, 1124, 554);
+
+      // 4 Phù Ấn Tứ Chính tại 4 góc
+      ctx.fillStyle = "#FDE047";
+      ctx.font = "700 16px 'Cinzel', serif";
+      ctx.fillText("[ 乾 ]", 48, 62);
+      ctx.fillText("[ 坤 ]", 1115, 62);
+      ctx.fillText("[ 坎 ]", 48, 578);
+      ctx.fillText("[ 离 ]", 1115, 578);
+
+      // 3. Tiêu đề Chứng Đạo Kim Đồ
+      ctx.textAlign = "center";
+      ctx.font = "900 15px 'Cinzel', sans-serif";
+      ctx.fillStyle = "#94A3B8";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("MEOW-CHA: VẠN KIẾM QUY TÔNG • TIÊN HIỆP TRÀ VIỆN", 600, 78);
+
+      ctx.font = "900 36px 'Cinzel', serif";
+      ctx.fillStyle = "#FDE047";
+      ctx.shadowColor = "rgba(245, 158, 11, 0.75)";
+      ctx.shadowBlur = 18;
+      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ", 600, 126);
+      ctx.shadowBlur = 0;
+
+      // 4. Khối bên trái: Avatar Miêu Tiên & Đài Sen
+      const catImg = document.getElementById("lobbyCatImg");
+      ctx.save();
+      ctx.shadowColor = "#F59E0B";
+      ctx.shadowBlur = 25;
+      ctx.strokeStyle = "rgba(253, 224, 71, 0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(260, 350, 140, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (catImg && catImg.complete && catImg.naturalWidth > 0) {
+        ctx.drawImage(catImg, 140, 230, 240, 240);
+      } else {
+        // Fallback: Đài Sen & Dấu Chân Mèo Tiên
+        ctx.fillStyle = "#FDE047";
+        ctx.beginPath();
+        ctx.arc(260, 340, 60, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#1E1B4B";
+        ctx.font = "900 24px 'Cinzel', serif";
+        ctx.textAlign = "center";
+        ctx.fillText("[ 仙 喵 ]", 260, 348);
+      }
+      ctx.restore();
+
+      // 5. Khối bên phải: Bảng chiến tích tu chân
+      ctx.textAlign = "left";
+      ctx.font = "900 24px 'Cinzel', serif";
+      ctx.fillStyle = "#FEF3C7";
+      ctx.fillText(`ĐẠO HIỆU: ${(realmData.title || '').toUpperCase()}`, 470, 215);
+
+      ctx.font = "700 16px 'Be Vietnam Pro', sans-serif";
+      ctx.fillStyle = "#67E8F9";
+      ctx.fillText(`CẢNH GIỚI: ${realmData.name || 'Luyện Khí'} (CẤP ${s.realmIdx || 0})`, 470, 248);
+
+      // Lưới thông số (Stats grid)
+      const stats = [
+        { label: "TU VI ĐẠO HẠNH", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#FDE047" },
+        { label: "CỔ NGỮ TRẢM DIỆT", val: `${s.wordsSlain || 0} TỪ VỰNG IELTS`, color: "#38BDF8" },
+        { label: "KIẾM TỐC TRUY CẦU", val: `${Math.round(s.wpm || 0)} WPM`, color: "#34D399" },
+        { label: "MAX COMBO CHUỖI", val: `x${s.maxCombo || s.combo || 1}`, color: "#C084FC" }
+      ];
+
+      stats.forEach((st, idx) => {
+        const col = idx % 2;
+        const row = Math.floor(idx / 2);
+        const bx = 470 + col * 310;
+        const by = 280 + row * 82;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+        ctx.strokeStyle = "rgba(212, 175, 55, 0.35)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, 290, 68, 6);
+        else ctx.rect(bx, by, 290, 68);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = "600 11px 'Cinzel', sans-serif";
+        ctx.fillStyle = "#94A3B8";
+        ctx.fillText(st.label, bx + 14, by + 26);
+
+        ctx.font = "900 20px 'Cinzel', serif";
+        ctx.fillStyle = st.color;
+        ctx.fillText(st.val, bx + 14, by + 53);
+      });
+
+      // Đạo Tâm Châm Ngôn & Dấu Triện Chu Sa
+      ctx.font = "italic 13.5px 'Cinzel', serif";
+      ctx.fillStyle = "#E2E8F0";
+      ctx.fillText("“Ngụm trà đắng lắng ngàn kiếm ý • Chữ chữ khắc kim chứng đạo Bảng Vàng”", 470, 480);
+
+      // Dấu Triện Chu Sa [ TIÊN ĐẠO CHỨNG NHẬN ]
+      ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
+      ctx.strokeStyle = "#EF4444";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(470, 508, 220, 42, 4);
+      else ctx.rect(470, 508, 220, 42);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.font = "900 13px 'Cinzel', serif";
+      ctx.fillStyle = "#EF4444";
+      ctx.fillText("[ 极 品 ] TIÊN ĐẠO CHỨNG ĐẠO", 580, 534);
+
+      // Link trang web
+      ctx.textAlign = "right";
+      ctx.font = "600 12px 'Cinzel', sans-serif";
+      ctx.fillStyle = "#64748B";
+      ctx.fillText("ieltsoasis.site/games/meowcha", 1115, 540);
+
+      return c.toDataURL("image/png");
+    }
+
     showGameOverModal() {
       if (!this.modalGameOver) return;
       const finalScoreEl = document.getElementById("gameOverFinalScore");

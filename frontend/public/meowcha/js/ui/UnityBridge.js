@@ -25,6 +25,7 @@
 
       window.addEventListener("message", (e) => {
         if (!e.data || typeof e.data !== "object") return;
+        if (e.origin && e.origin !== window.location.origin) return;
 
         if (e.data.type === "UNITY_READY") {
           this.ready = true;

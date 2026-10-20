@@ -312,6 +312,7 @@
       // Lắng nghe lệnh từ trang Next.js cha
       window.addEventListener("message", (event) => {
         if (!event.data) return;
+        if (event.origin && event.origin !== window.location.origin) return;
         if (event.data.type === "MEOWCHA_LOAD_SLOT") {
           const slot = event.data.data;
           if (slot) {
@@ -485,7 +486,8 @@
     }
 
     spawnWord() {
-      if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver) return;
+      if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver || this.gameState.isPaused || this.gameState.catState === "BREAKTHROUGH") return;
+      if (this.breakthrough && this.breakthrough.isBossEncounterActive) return;
       // QUY CHUẨN ĐỘ KIẾP: TUYỆT ĐỐI CHỈ RƠI 1 QUẢ DUY NHẤT TẠI MỘT THỜI ĐIỂM!
       // Không bao giờ rơi chồng chéo 2-3 quả. Trảm xong quả này thì quả mới mới xuất hiện!
       if (this.asteroids.count >= 1) return;
@@ -688,6 +690,7 @@
       const bottomThreshold = isMobile ? (this.canvas.height * 0.61 - 15) : (this.canvas.height - 120);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
+        if (!missedAst || missedAst.isBoss) return;
         if (this.saveSystem && !missedAst.isBoss) {
           this.saveSystem.recordWeaknessWord(missedAst);
         }

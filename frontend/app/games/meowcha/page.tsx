@@ -12,6 +12,7 @@ export default function MeowchaGamePage() {
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
         title="Meowcha Xianxia Game Engine"
         allow="autoplay; fullscreen; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-forms"
         scrolling="no"
       />
     </main>

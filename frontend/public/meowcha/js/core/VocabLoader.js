@@ -60,8 +60,39 @@
       }
       return words;
     } catch (err) {
+      console.warn('[VocabLoader] API fetch failed, trying local static ./data/oxford_5000.json:', err.message);
+      try {
+        const localResp = await fetch('./data/oxford_5000.json');
+        if (localResp.ok) {
+          const allOxford = await localResp.json();
+          if (Array.isArray(allOxford)) {
+            const levelMap = { 0: ['A1', 'A2'], 1: ['B1'], 2: ['B2'], 3: ['C1'] };
+            const targetLevels = levelMap[bandIdx] || ['A1', 'A2'];
+            const filtered = allOxford.filter(w => targetLevels.includes(w.level) && w.word && w.word.length >= 3 && !w.word.includes(' ') && !w.word.includes('-'));
+            const words = filtered.map((w, i) => ({
+              id: bandIdx * 10000 + i,
+              word: w.word.trim().toUpperCase(),
+              ipa: w.phonetic || '/.../',
+              meaning: w.meaning || '',
+              type: w.type || 'vocab',
+              audio_url: w.audio_url || '',
+              band_level: bandIdx,
+              asteroid_type: bandIdx === 0 ? 'FROST' : bandIdx === 1 ? 'FIRE' : bandIdx === 2 ? 'VOID' : 'THUNDER'
+            }));
+            if (words.length > 0) {
+              CACHE[key] = words;
+              FETCH_STATE[key] = 'done';
+              var M = root.Meowcha || {};
+              if (M.REALM_DECKS) M.REALM_DECKS[bandIdx] = words;
+              console.log(`[VocabLoader] Loaded ${words.length} Oxford words from local static data for Band ${bandIdx}`);
+              return words;
+            }
+          }
+        }
+      } catch (localErr) {
+        console.warn('[VocabLoader] Local static fetch failed:', localErr.message);
+      }
       FETCH_STATE[key] = 'error';
-      console.warn('[VocabLoader] Band ' + bandIdx + ' fetch failed:', err.message, '-- sử dụng static fallback');
       return _getStaticFallback(bandIdx);
     }
   }
