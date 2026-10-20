@@ -16,6 +16,24 @@
       this.bindEvents();
     }
 
+    _safeGet(key, defVal = "") {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          const v = window.localStorage.getItem(key);
+          return v !== null ? v : defVal;
+        }
+      } catch (_) {}
+      return defVal;
+    }
+
+    _safeSet(key, val) {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(key, String(val));
+        }
+      } catch (_) {}
+    }
+
     initDOMElements() {
       // Views
       this.lobbyView = document.getElementById("lobbyView");
@@ -1494,34 +1512,40 @@
        BẢNG PHONG THẦN TIÊN GIỚI (PANTHEON LEADERBOARD LOGIC & AUTO SYNC)
        ========================================================================= */
     getLoggedInUser() {
+      let rawUser = null;
+      let token = "";
+      let localName = this._safeGet("meowcha_player_name", "Tiểu Miêu Kiếm Sĩ");
+
       try {
-        let rawUser = localStorage.getItem("oasis_user");
-        let token = localStorage.getItem("oasis_token");
-        if (!rawUser && typeof window !== "undefined" && window.parent && window.parent !== window) {
-          try {
-            rawUser = window.parent.localStorage.getItem("oasis_user");
-            token = window.parent.localStorage.getItem("oasis_token");
-          } catch (crossErr) {}
-        }
-        if (rawUser) {
+        rawUser = this._safeGet("oasis_user", null);
+        token = this._safeGet("oasis_token", "");
+      } catch (_) {}
+
+      if (!rawUser && typeof window !== "undefined" && window.parent && window.parent !== window) {
+        try {
+          rawUser = window.parent.localStorage.getItem("oasis_user");
+          token = token || window.parent.localStorage.getItem("oasis_token") || "";
+        } catch (crossErr) {}
+      }
+
+      if (rawUser) {
+        try {
           const u = JSON.parse(rawUser);
           const name = u.full_name || u.name || u.username || (u.email ? u.email.split("@")[0] : "");
           let avatar = u.discord_avatar || u.avatar_url || u.avatar || u.image || "";
           return {
-            name: name || "Tiểu Miêu Kiếm Sĩ",
+            name: name || localName,
             avatar: avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png",
             token: token || "",
             isLoggedIn: true
           };
-        }
-      } catch (e) {}
+        } catch (_) {}
+      }
 
-      const localName = localStorage.getItem("meowcha_player_name") || "Tiểu Miêu Kiếm Sĩ";
-      let fallbackToken = localStorage.getItem("oasis_token") || "";
       return {
         name: localName,
         avatar: "./sprites/characters/realm0_qi_refining/poses/idle.png",
-        token: fallbackToken,
+        token: token,
         isLoggedIn: false
       };
     }
@@ -1538,7 +1562,7 @@
       if (bestScore > currentHighScore) {
         this.state.highScore = bestScore;
         try {
-          localStorage.setItem("meowcha_high_score", String(bestScore));
+          this._safeSet("meowcha_high_score", String(bestScore));
         } catch (e) {}
       }
 
@@ -1560,7 +1584,7 @@
       this.state.highScore = bestScore;
       this.state.activeSlotId = activeSlot;
       try {
-        localStorage.setItem("meowcha_high_score", String(bestScore));
+        this._safeSet("meowcha_high_score", String(bestScore));
       } catch (e) {}
 
       this.saveSystem.saveGame(activeSlot, this.state);
@@ -1633,7 +1657,7 @@
         if (submitScore > (this.state.highScore || 0)) {
           this.state.highScore = submitScore;
           try {
-            localStorage.setItem("meowcha_high_score", String(this.state.highScore));
+            this._safeSet("meowcha_high_score", String(this.state.highScore));
           } catch (err) {}
           this.updateLobbyStats();
         }
@@ -1726,7 +1750,7 @@
             // Kỷ lục trên Tiên Giới cao hơn thiết bị hiện tại -> Cập nhật vào máy
             this.state.highScore = myRankEntry.score;
             try {
-              localStorage.setItem("meowcha_high_score", String(this.state.highScore));
+              this._safeSet("meowcha_high_score", String(this.state.highScore));
             } catch (e) {}
             this.updatePantheonSelfStats();
             this.updateLobbyStats();

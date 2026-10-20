@@ -106,11 +106,9 @@
         // KIỂM TRA ĐÃ TRẢM HOÀN TẤT TỪ HAY CHƯA
         if (target.typedLen >= target.word.length) {
           this.handleWordSlain(target, canvas);
+          this.updateSwordAltarUI(null);
         } else {
-          const intentEl = document.getElementById("swordIntentText");
-          if (intentEl) {
-            intentEl.innerText = `[ Trảm ] ${target.word} (${target.typedLen}/${target.word.length})`;
-          }
+          this.updateSwordAltarUI(target);
         }
       } else {
         // GÕ NHẦM (KHÔNG CÓ TỪ NÀO TRÊN MÀN HÌNH KHỚP PHÍM)
@@ -519,6 +517,7 @@
         this.asteroids.asteroids.splice(idx, 1);
       }
       this.currentTarget = null;
+      this.updateSwordAltarUI(null);
 
       // Kích hoạt callback nếu có (để kiểm tra đột phá)
       if (this.onWordCompleted) {
@@ -618,6 +617,42 @@
         console.warn("[Meowcha Speech Synthesis]", e);
       }
     }
+    updateSwordAltarUI(target) {
+      const intentEl = document.getElementById("swordIntentText");
+      const meaningEl = document.getElementById("swordTargetMeaning");
+      const gaugeEl = document.getElementById("swordTargetGauge");
+      const counterEl = document.getElementById("swordTargetCounter");
+
+      if (!target || !target.word) {
+        if (intentEl) {
+          intentEl.innerHTML = '<span class="altar-idle-msg">❖ ĐỊNH TÂM DƯỠNG KHÍ • GÕ CỔ NGỮ ĐỂ XUẤT KIẾM ❖</span>';
+        }
+        if (meaningEl) meaningEl.innerText = "";
+        if (gaugeEl) gaugeEl.style.width = "0%";
+        if (counterEl) counterEl.innerText = "0/0";
+        return;
+      }
+
+      const word = target.word;
+      const typed = Math.min(target.typedLen, word.length);
+      const typedPart = word.substring(0, typed);
+      const untypedPart = word.substring(typed);
+      const pct = Math.round((typed / word.length) * 100);
+
+      if (intentEl) {
+        intentEl.innerHTML = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${untypedPart}</span>`;
+      }
+      if (meaningEl) {
+        meaningEl.innerText = target.meaning || target.definition || "";
+      }
+      if (gaugeEl) {
+        gaugeEl.style.width = `${pct}%`;
+      }
+      if (counterEl) {
+        counterEl.innerText = `${typed}/${word.length}`;
+      }
+    }
+
   }
 
   root.Meowcha = root.Meowcha || {};

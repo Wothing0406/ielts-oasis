@@ -36,14 +36,13 @@
         }
       });
 
-      // Timeout fallback 8 giây: Nếu Unity không sẵn sàng thì ẩn overlay, dùng canvas cat
+      // Fallback nhanh về 2D Canvas Cat Cultivator
       setTimeout(() => {
         if (!this.ready) {
-          console.warn("[UnityBridge] Unity timeout — fallback về canvas cat 2D");
           this.failed = true;
           if (this.mountEl) this.mountEl.style.display = "none";
         }
-      }, 8000);
+      }, 500);
     }
 
     send(method, args = "") {

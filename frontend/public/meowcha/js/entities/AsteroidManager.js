@@ -599,7 +599,7 @@
 
             // Nếu là chế độ CLOZE và không phải chữ cái đầu/cuối: hiện dấu phong ấn '_'
             const isMaskedInCloze = ast.isCloze && (c > 0 && c < word.length - 1);
-            const displayChar = isMaskedInCloze ? "_" : letter;
+            const displayChar = isMaskedInCloze ? "✦" : letter;
 
             ctx.strokeText(displayChar, cx, runeY);
             ctx.fillStyle = isMaskedInCloze ? "rgba(254, 243, 199, 0.65)" : "#FEF3C7";
@@ -612,29 +612,31 @@
         ctx.restore();
 
         // 5.5 CHÂN GIẢI NGHĨA TIẾNG VIỆT & PHIÊN ÂM IPA (MEANING & IPA BANNER)
-        if (ast.meaning && (ast.isCloze || ast.isAudio)) {
+        if (ast.meaning) {
           ctx.save();
           const meanY = posY + ast.radius + (isMobileScreen ? 14 : 18);
-          ctx.font = isMobileScreen ? "700 11px 'Cinzel', sans-serif" : "700 12.5px 'Cinzel', 'Playfair Display', serif";
+          ctx.font = isMobileScreen ? "700 11.5px 'Be Vietnam Pro', sans-serif" : "700 13px 'Be Vietnam Pro', sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
           const displayText = ast.isAudio ? (ast.ipa ? `Tiên Âm: ${ast.ipa}` : ast.meaning) : ast.meaning;
-          const textW = Math.min(260, ctx.measureText(displayText).width);
+          const textW = Math.min(280, ctx.measureText(displayText).width);
 
-          // Thẻ bài mộc bản nhỏ viền chu sa
-          ctx.fillStyle = "rgba(12, 6, 4, 0.82)";
-          ctx.strokeStyle = ast.isAudio ? "#38BDF8" : "rgba(245, 158, 11, 0.65)";
-          ctx.lineWidth = 1.2;
+          // Thẻ bài mộc bản ngọc bích viền hoàng kim
+          ctx.fillStyle = "rgba(8, 20, 14, 0.88)";
+          ctx.strokeStyle = ast.isAudio ? "#38BDF8" : "rgba(245, 158, 11, 0.85)";
+          ctx.lineWidth = 1.4;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+          ctx.shadowBlur = 8;
           ctx.beginPath();
-          ctx.roundRect(posX - textW / 2 - 8, meanY - 9, textW + 16, 18, 4);
+          ctx.roundRect(posX - textW / 2 - 10, meanY - 11, textW + 20, 22, 6);
           ctx.fill();
           ctx.stroke();
 
-          // Chữ dịch nghĩa vàng kim / lam ngọc
-          ctx.fillStyle = ast.isAudio ? "#BAE6FD" : "#FEF3C7";
-          ctx.shadowColor = ast.isAudio ? "#0284C7" : "#F59E0B";
-          ctx.shadowBlur = 6;
+          // Chữ dịch nghĩa vàng kim sáng rõ, không lỗi font
+          ctx.fillStyle = ast.isAudio ? "#BAE6FD" : "#FEF08A";
+          ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+          ctx.shadowBlur = 3;
           ctx.fillText(displayText, posX, meanY);
           ctx.restore();
         }

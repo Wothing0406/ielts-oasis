@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Reques
 from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -156,16 +156,14 @@ async def cleanup_static_files_loop():
             if os.path.exists(static_dir):
                 now = time.time()
                 for filename in os.listdir(static_dir):
-                    if filename.endswith((".mp3", ".wav", ".webm", ".webp", ".jpg", ".jpeg", ".png", ".pdf", ".txt")):
-                        # Skip protected assets
-                        if filename in ("matcha-default.jpg", "yolov8n.pt"):
-                            continue
+                    # Only clean temporary processing files, protect user vocab audio and images
+                    if filename.startswith(("temp_", "list_", "recording_", "temp-", "preview_")):
                         filepath = os.path.join(static_dir, filename)
                         file_age = now - os.path.getmtime(filepath)
-                        if file_age > 86400:  # 24 hours
+                        if file_age > 7200:  # 2 hours
                             try:
                                 os.remove(filepath)
-                                logger.info(f"Cleaned up old static file: {filename}")
+                                logger.info(f"Cleaned up temp static file: {filename}")
                             except Exception as ex:
                                 logger.error(f"Failed to delete {filename}: {ex}")
         except Exception as e:
@@ -342,6 +340,7 @@ DEFAULT_TRUSTED_ORIGINS = [
     "https://www.ieltsoasis.site",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "null",
 ]
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if allowed_origins_env and allowed_origins_env.strip() != "*":
@@ -480,7 +479,45 @@ async def global_exception_handler(request: Request, exc: Exception):
 static_dir = "static"
 if not os.path.exists(static_dir):
     os.makedirs(static_dir)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+class ResilientStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except HTTPException as ex:
+            if ex.status_code == 404 and path.endswith(".mp3"):
+                filename = os.path.basename(path)
+                target_file = os.path.join(self.directory, filename)
+                try:
+                    from database import get_db_context
+                    from models import Vocabulary
+                    from services.tts_service import tts_service
+                    with get_db_context() as db:
+                        vocab = db.query(Vocabulary).filter(
+                            Vocabulary.audio_url.like(f"%{filename}")
+                        ).first()
+                        if vocab and vocab.word:
+                            saved = False
+                            if tts_service:
+                                try:
+                                    if hasattr(tts_service, 'edge_tts') and tts_service.edge_tts:
+                                        communicate = tts_service.edge_tts.Communicate(vocab.word, "en-US-JennyNeural")
+                                        await communicate.save(target_file)
+                                        saved = True
+                                    if not saved:
+                                        saved = tts_service._download_google_tts(vocab.word, target_file)
+                                except Exception:
+                                    pass
+                            if saved and os.path.exists(target_file):
+                                return await super().get_response(path, scope)
+                except Exception as db_err:
+                    logger.warning(f"Audio auto-healing error for {filename}: {db_err}")
+
+                fallback_url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=English"
+                return RedirectResponse(url=fallback_url, status_code=307)
+            raise ex
+
+app.mount("/static", ResilientStaticFiles(directory=static_dir), name="static")
 
 try:
     yolo_model = YOLO("yolov8n.pt") if YOLO is not None else None

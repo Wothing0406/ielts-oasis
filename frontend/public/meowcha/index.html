@@ -20,10 +20,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=9.7" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=9.7" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=9.7" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=9.7" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=9.8" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=9.8" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=9.8" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=9.8" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -36,6 +36,40 @@
       <div class="parallax-bg-layer drifting-mist-2"></div>
       <div class="parallax-bg-layer sword-streak"></div>
       <div class="parallax-bg-layer sword-streak sword-streak-2"></div>
+
+      <!-- TỨ ĐẠI TIÊN GIỚI CƯƠNG TRẬN (FOUR CORNER CELESTIAL ORNAMENTS) -->
+      <div class="xianxia-corner top-left">
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+          <path d="M4 24V4H24" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M8 20V8H20" stroke="#FDE047" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.8"/>
+          <circle cx="4" cy="4" r="3" fill="#D4AF37"/>
+          <circle cx="14" cy="14" r="1.5" fill="#FDE047"/>
+        </svg>
+      </div>
+      <div class="xianxia-corner top-right">
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+          <path d="M44 24V4H24" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M40 20V8H28" stroke="#FDE047" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.8"/>
+          <circle cx="44" cy="4" r="3" fill="#D4AF37"/>
+          <circle cx="34" cy="14" r="1.5" fill="#FDE047"/>
+        </svg>
+      </div>
+      <div class="xianxia-corner bottom-left">
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+          <path d="M4 24V44H24" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M8 28V40H20" stroke="#FDE047" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.8"/>
+          <circle cx="4" cy="44" r="3" fill="#D4AF37"/>
+          <circle cx="14" cy="34" r="1.5" fill="#FDE047"/>
+        </svg>
+      </div>
+      <div class="xianxia-corner bottom-right">
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none">
+          <path d="M44 24V44H24" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M40 28V40H28" stroke="#FDE047" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.8"/>
+          <circle cx="44" cy="44" r="3" fill="#D4AF37"/>
+          <circle cx="34" cy="34" r="1.5" fill="#FDE047"/>
+        </svg>
+      </div>
 
       <!-- ========================================================= -->
       <!-- 1. SẢNH CHỜ TIÊN HIỆP (XIANXIA TEA CEREMONY LOBBY) -->
@@ -920,7 +954,7 @@
             </div>
 
             <div class="mode-selector-row" id="modeSelectorRow">
-              <button class="mode-pill-btn active-mode" data-mode="CLOZE" title="Điền khuyết ký tự giữa dựa vào nghĩa tiếng Việt">
+              <button class="mode-pill-btn" data-mode="CLOZE" title="Điền khuyết ký tự giữa dựa vào nghĩa tiếng Việt">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8" style="vertical-align: middle;">
                   <path d="M19 17V5a2 2 0 0 0-2-2H4"></path>
                   <path d="M8 21h12a2 2 0 0 0 2-2v-1.5a2.5 2.5 0 0 0-2.5-2.5H4"></path>
@@ -934,7 +968,7 @@
                 </div>
               </button>
 
-              <button class="mode-pill-btn" data-mode="DIRECT" title="Gõ trực tiếp toàn bộ ký tự từ vựng">
+              <button class="mode-pill-btn active-mode" data-mode="DIRECT" title="Gõ trực tiếp toàn bộ ký tự từ vựng">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" style="vertical-align: middle;">
                   <path d="M19 5 L9 15 L7 14 L5 16 L8 19 L10 17 L9 15 Z" fill="#38BDF8" fill-opacity="0.25"></path>
                   <line x1="19" y1="5" x2="10" y2="14"></line>
@@ -1288,12 +1322,25 @@
           ></iframe>
         </div>
 
-        <!-- Ô KIẾM Ý CỔ PHONG GÓC DƯỚI BÊN PHẢI -->
-        <div class="sword-intent-box" id="swordIntentBox">
-          <span class="intent-seal">[ 剑意 ]</span>
-          <span class="intent-text" id="swordIntentText"
-            >Chờ đạo hữu xuất kiếm trảm ma...</span
-          >
+        <!-- BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD) -->
+        <div class="sword-altar-hud" id="swordIntentBox">
+          <div class="altar-seal-wing left">
+            <span class="altar-trigram">☰</span>
+            <span class="intent-seal">KIẾM Ý</span>
+          </div>
+          <div class="altar-core-panel">
+            <div class="altar-word-display" id="swordIntentText">
+              <span class="altar-idle-msg">❖ ĐỊNH TÂM DƯỠNG KHÍ • GÕ CỔ NGỮ ĐỂ XUẤT KIẾM ❖</span>
+            </div>
+            <div class="altar-meaning-display" id="swordTargetMeaning"></div>
+            <div class="altar-gauge-track">
+              <div class="altar-gauge-fill" id="swordTargetGauge" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="altar-seal-wing right">
+            <span class="altar-counter" id="swordTargetCounter">0/0</span>
+            <span class="altar-trigram">☷</span>
+          </div>
         </div>
 
         <!-- BÀN PHÍM ẢO CHO MOBILE (DOCK Ở ĐÁY MÀN HÌNH) -->
@@ -2057,35 +2104,35 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=9.7"></script>
-    <script src="./js/data/WordDecks.js?v=9.7"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=9.7"></script>
-    <script src="./js/data/TalentsData.js?v=9.7"></script>
-    <script src="./js/data/SpeechesData.js?v=9.7"></script>
+    <script src="./js/data/RealmsData.js?v=9.8"></script>
+    <script src="./js/data/WordDecks.js?v=9.8"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=9.8"></script>
+    <script src="./js/data/TalentsData.js?v=9.8"></script>
+    <script src="./js/data/SpeechesData.js?v=9.8"></script>
 
-    <script src="./js/core/AudioManager.js?v=9.7"></script>
-    <script src="./js/core/SaveSystem.js?v=9.7"></script>
-    <script src="./js/core/GameState.js?v=9.7"></script>
-    <script src="./js/core/SpriteAnimator.js?v=9.7"></script>
+    <script src="./js/core/AudioManager.js?v=9.8"></script>
+    <script src="./js/core/SaveSystem.js?v=9.8"></script>
+    <script src="./js/core/GameState.js?v=9.8"></script>
+    <script src="./js/core/SpriteAnimator.js?v=9.8"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=9.7"></script>
-    <script src="./js/effects/RealmVFX.js?v=9.7"></script>
-    <script src="./js/effects/FloatingText.js?v=9.7"></script>
+    <script src="./js/effects/ParticleEngine.js?v=9.8"></script>
+    <script src="./js/effects/RealmVFX.js?v=9.8"></script>
+    <script src="./js/effects/FloatingText.js?v=9.8"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=9.7"></script>
-    <script src="./js/entities/AsteroidManager.js?v=9.7"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=9.7"></script>
+    <script src="./js/entities/CatCultivator.js?v=9.8"></script>
+    <script src="./js/entities/AsteroidManager.js?v=9.8"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=9.8"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=9.7"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=9.7"></script>
+    <script src="./js/combat/TypingEngine.js?v=9.8"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=9.8"></script>
 
-    <script src="./js/ui/IPAToast.js?v=9.7"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=9.7"></script>
-    <script src="./js/ui/UnityBridge.js?v=9.7"></script>
-    <script src="./js/core/VocabLoader.js?v=9.7"></script>
-    <script src="./js/ui/UIManager.js?v=9.7"></script>
+    <script src="./js/ui/IPAToast.js?v=9.8"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=9.8"></script>
+    <script src="./js/ui/UnityBridge.js?v=9.8"></script>
+    <script src="./js/core/VocabLoader.js?v=9.8"></script>
+    <script src="./js/ui/UIManager.js?v=9.8"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=9.7"></script>
+    <script src="./js/main.js?v=9.8"></script>
   </body>
 </html>

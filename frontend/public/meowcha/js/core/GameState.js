@@ -81,7 +81,7 @@
 
       // Pháp Môn & Ngọc Giản Tu Luyện (IELTS Deck & Game Mode)
       this.activeDeckId = this.activeDeckId || "oxford_5000"; // oxford_5000 | listening_1200 | reading_academic | flashcard_srs
-      this.gameMode = this.gameMode || "CLOZE"; // CLOZE (Ngộ Đạo Thông Linh) | DIRECT (Chính Tả Phản Xạ) | AUDIO (Thính Lôi Biện Âm)
+      this.gameMode = this.gameMode || "DIRECT"; // DIRECT (Chính Tả Phản Xạ) | CLOZE (Ngộ Đạo Thông Linh) | AUDIO (Thính Lôi Biện Âm)
     }
 
     getRealmPassiveConfig() {

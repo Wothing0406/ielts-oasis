@@ -1577,24 +1577,24 @@
 .sect-scroll-hud {
   position: absolute;
   top: 10px;
-  left: 12px;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
   right: auto;
-  width: max-content !important;
-  min-width: 460px !important;
-  max-width: calc(100vw - 24px) !important;
+  width: min(94vw, 840px) !important;
+  max-width: calc(100vw - 20px) !important;
   margin: 0;
   z-index: 50;
-  background: transparent !important;
-  border: 1.2px solid rgba(212, 175, 55, 0.45) !important;
+  background: linear-gradient(180deg, rgba(8, 20, 14, 0.94) 0%, rgba(4, 12, 8, 0.96) 100%) !important;
+  border: 1.5px solid #D4AF37 !important;
   outline: none !important;
-  border-radius: 8px !important;
-  padding: 6px 14px !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  border-radius: 12px !important;
+  padding: 8px 18px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(254, 240, 138, 0.25), 0 0 20px rgba(212, 175, 55, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
+  gap: 6px !important;
   pointer-events: auto;
   box-sizing: border-box !important;
   white-space: nowrap !important;
@@ -1701,14 +1701,14 @@
 }
 
 .hud-talisman-btn.gold {
-  border-color: rgba(245, 158, 11, 0.65) !important;
-  background: transparent !important;
+  border-color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.2) !important;
   color: #FDE047 !important;
 }
 
 .hud-talisman-btn.crimson {
-  border-color: rgba(220, 38, 38, 0.65) !important;
-  background: transparent !important;
+  border-color: #DC2626 !important;
+  background: rgba(220, 38, 38, 0.2) !important;
   color: #FCA5A5 !important;
 }
 
@@ -1728,7 +1728,7 @@
   width: 26px !important;
   height: 26px !important;
   border-radius: 5px !important;
-  background: transparent !important;
+  background: rgba(212, 175, 55, 0.15) !important;
   border: 1.2px solid rgba(212, 175, 55, 0.45) !important;
   box-shadow: none !important;
   color: #FDE047 !important;
@@ -4253,4 +4253,157 @@
   .certificate-actions-bar {
     flex-direction: column;
   }
+}
+
+
+/* ============================================================
+   TỨ ĐẠI TIÊN GIỚI CƯƠNG TRẬN (FOUR CORNER CELESTIAL ORNAMENTS)
+   ============================================================ */
+.xianxia-corner {
+  position: absolute;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.4));
+}
+.xianxia-corner.top-left { top: 8px; left: 8px; }
+.xianxia-corner.top-right { top: 8px; right: 8px; }
+.xianxia-corner.bottom-left { bottom: 8px; left: 8px; }
+.xianxia-corner.bottom-right { bottom: 8px; right: 8px; }
+
+/* ============================================================
+   BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD)
+   ============================================================ */
+.sword-altar-hud, #swordIntentBox {
+  position: absolute;
+  bottom: 22px;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  z-index: 45;
+  width: min(92vw, 560px);
+  background: linear-gradient(135deg, rgba(8, 22, 16, 0.94) 0%, rgba(14, 30, 22, 0.96) 100%) !important;
+  border: 1.5px solid #F59E0B !important;
+  border-radius: 12px !important;
+  padding: 8px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(254, 240, 138, 0.3), 0 0 18px rgba(245, 158, 11, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  pointer-events: none;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease;
+}
+
+.altar-seal-wing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-xianxia-title, serif);
+  font-weight: 800;
+  font-size: 13px;
+  color: #FDE047;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.75);
+  flex-shrink: 0;
+}
+
+.altar-seal-wing.left .intent-seal {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.35) 0%, rgba(185, 28, 28, 0.5) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.8);
+  color: #FCA5A5;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.altar-trigram {
+  font-size: 17px;
+  color: #F59E0B;
+  text-shadow: 0 0 6px #F59E0B;
+}
+
+.altar-core-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.altar-word-display {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #FFFFFF;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+  line-height: 1.2;
+}
+
+.altar-typed-txt {
+  color: #FDE047;
+  text-shadow: 0 0 14px #EF4444, 0 0 6px #F59E0B;
+}
+
+.altar-untyped-txt {
+  color: #F8FAFC;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.altar-idle-msg {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FEF08A;
+  letter-spacing: 0.8px;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.altar-meaning-display {
+  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6EE7B7;
+  font-style: italic;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+.altar-gauge-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  margin-top: 3px;
+}
+
+.altar-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #FBBF24, #EF4444);
+  box-shadow: 0 0 10px #FBBF24;
+  transition: width 0.12s ease;
+}
+
+.altar-counter {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: #67E8F9;
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.7);
+  background: rgba(8, 47, 73, 0.4);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.5);
 }
