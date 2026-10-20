@@ -1439,7 +1439,7 @@
           </div>
           <div class="vocab-card-body">
             <span class="vocab-ipa-text">${item.ipa || '/.../'}</span>
-            <button class="btn-pronounce-speaker" data-word="${item.word}" title="Nghe phát âm chuẩn">
+            <button class="btn-pronounce-speaker" data-word="${item.word}" data-audio="${item.audio_url || ''}" title="Nghe phát âm chuẩn Oxford">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -1457,12 +1457,28 @@
         btn.onclick = (e) => {
           e.stopPropagation();
           const word = btn.getAttribute("data-word");
-          this.speakWord(word);
+          const audioUrl = btn.getAttribute("data-audio");
+          this.speakWord(word, audioUrl);
         };
       });
     }
 
-    speakWord(word) {
+    speakWord(word, audioUrl) {
+      if (audioUrl && audioUrl.trim()) {
+        try {
+          const snd = new Audio(audioUrl.trim());
+          snd.volume = 0.9;
+          const p = snd.play();
+          if (p !== undefined) {
+            p.catch(() => this._synthSpeak(word));
+            return;
+          }
+        } catch (_) {}
+      }
+      this._synthSpeak(word);
+    }
+
+    _synthSpeak(word) {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.cancel();

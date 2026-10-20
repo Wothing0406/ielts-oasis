@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import random
@@ -59,7 +59,7 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
 
 
 # =========================================================================
-# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab) TỪ KHO OXFORD 5000
+# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab) TỪ KHO SQL DATABASE (meowcha_vocab)
 # =========================================================================
 @router.get("/vocab", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 def get_vocab_deck(
@@ -67,141 +67,147 @@ def get_vocab_deck(
     search: Optional[str] = Query(None, description="Tìm kiếm từ tiếng Anh hoặc nghĩa tiếng Việt trong kho Oxford 5000"),
     page: int = Query(1, ge=1, description="Trang kết quả"),
     page_size: int = Query(60, ge=1, le=5000, description="Số lượng từ mỗi trang"),
-    limit: Optional[int] = Query(None, ge=1, le=5000, description="Giới hạn số lượng trả về"),
+    limit: Optional[int] = Query(None, ge=1, le=5000, description="Giới hạn số lượng trả về (dùng cho preload toàn bộ deck)"),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách từ vựng IELTS trực tiếp từ kho Oxford 5000 CEFR in-memory (5946 từ chuẩn).
-    Hỗ trợ tìm kiếm thời gian thực < 0.1ms, lọc theo Band/Ma Thạch, và phân trang mượt mà.
+    Lấy danh sách từ vựng IELTS trực tiếp từ cơ sở dữ liệu MySQL (bảng meowcha_vocab).
+    Hỗ trợ tìm kiếm thời gian thực, lọc theo Band/Ma Thạch, phân trang mượt mà,
+    và kèm theo audio_url phát âm bản xứ chuẩn Oxford Learner's Dictionaries.
     """
     try:
-        oxford = OxfordDatasetService.get_instance()
-        
-        # Ánh xạ Cảnh Giới / Band sang cấp độ CEFR
-        level_map = {
-            0: ["A1", "A2"],
-            1: ["B1"],
-            2: ["B2"],
-            3: ["C1"]
-        }
-        
-        target_levels = level_map.get(band, ["A1", "A2", "B1", "B2", "C1"]) if band is not None else ["A1", "A2", "B1", "B2", "C1"]
-        
-        candidates = []
-        for lvl in target_levels:
-            candidates.extend(oxford.by_level.get(lvl, []))
-            
-        # Lọc các từ hợp lệ cho game đánh máy (độ dài 3 - 16 ký tự, chỉ chứa chữ cái a-z)
-        valid_words_raw = [
-            e for e in candidates 
-            if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
-        ]
-        
-        if not valid_words_raw:
-            valid_words_raw = [
-                e for e in oxford.words 
-                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
-            ]
+        query = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True)
 
-        # Khử triệt để trùng lặp từ vựng (Case-insensitive) - giữ lại bản ghi đầy đủ nhất
-        seen_dict = {}
-        for e in valid_words_raw:
-            w_clean = e.get("word", "").strip().upper()
-            if not w_clean:
-                continue
-            if w_clean not in seen_dict:
-                seen_dict[w_clean] = e
-            else:
-                existing = seen_dict[w_clean]
-                if not existing.get("meaning") and e.get("meaning"):
-                    existing["meaning"] = e["meaning"]
-                if not existing.get("phonetic") and e.get("phonetic"):
-                    existing["phonetic"] = e["phonetic"]
-        
-        valid_words = list(seen_dict.values())
+        if band is not None:
+            query = query.filter(MeowchaVocab.band_level == band)
 
-        # Tìm kiếm từ khóa nếu có (tra cứu cả Word và Meaning)
         if search and search.strip():
-            query_clean = search.strip().lower()
-            valid_words = [
-                e for e in valid_words
-                if query_clean in e.get("word", "").lower() or query_clean in e.get("meaning", "").lower()
-            ]
+            kw = f"%{search.strip()}%"
+            query = query.filter(or_(MeowchaVocab.word.ilike(kw), MeowchaVocab.meaning.ilike(kw)))
 
-        total_matches = len(valid_words)
-        effective_limit = limit if limit is not None else page_size
+        total_count = query.count()
 
-        # Nếu có search hoặc yêu cầu trang, lấy tuần tự theo phân trang; nếu không lấy random sample cho trận đấu
-        if search or (limit is None and page > 1):
-            start_idx = (page - 1) * effective_limit
-            sampled = valid_words[start_idx : start_idx + effective_limit]
-        elif limit is not None:
-            # Random sample cho trận chiến đấu
-            sampled = random.sample(valid_words, min(len(valid_words), effective_limit))
+        if limit is not None:
+            effective_page_size = limit
+            records = query.order_by(MeowchaVocab.id.asc()).limit(limit).all()
         else:
-            start_idx = (page - 1) * effective_limit
-            sampled = valid_words[start_idx : start_idx + effective_limit]
-        
-        def to_ast_type(lvl: str) -> str:
-            if lvl in ("A1", "A2"): return "FROST"
-            if lvl == "B1": return "INFERNO"
-            if lvl == "B2": return "VOID"
-            return "BLOOD_THUNDER"
-
-        def to_band_level(lvl: str) -> int:
-            if lvl in ("A1", "A2"): return 0
-            if lvl == "B1": return 1
-            if lvl == "B2": return 2
-            return 3
+            effective_page_size = page_size
+            records = query.order_by(MeowchaVocab.id.asc()).offset((page - 1) * page_size).limit(page_size).all()
 
         result_data = [
             {
-                "id": idx + 1,
-                "word": v.get("word", "").upper(),
-                "ipa": v.get("phonetic", ""),
-                "type": v.get("type", "noun"),
-                "meaning": v.get("meaning", ""),
-                "audio_url": v.get("audio_url", ""),
-                "band_level": to_band_level(v.get("level", "B1")),
-                "asteroid_type": to_ast_type(v.get("level", "B1")),
-                "difficulty_score": len(v.get("word", "")) * 5
+                "id": v.id,
+                "word": (v.word or "").upper(),
+                "ipa": v.ipa or "/.../",
+                "type": v.part_of_speech or "vocab",
+                "meaning": v.meaning or "",
+                "audio_url": v.audio_url or "",
+                "band_level": v.band_level if v.band_level is not None else (band if band is not None else 0),
+                "asteroid_type": v.asteroid_type or ("FROST" if v.band_level == 0 else "INFERNO" if v.band_level == 1 else "VOID" if v.band_level == 2 else "BLOOD_THUNDER"),
+                "difficulty_score": v.difficulty_score or (len(v.word or "") * 5)
             }
-            for idx, v in enumerate(sampled)
+            for v in records
         ]
 
         return api_response(
             data=result_data,
             meta={
-                "total": total_matches,
+                "total": total_count,
                 "page": page,
-                "page_size": effective_limit,
-                "oxford_total": len(oxford.words)
+                "page_size": effective_page_size,
+                "band": band,
+                "has_more": (page * effective_page_size) < total_count,
+                "source": "mysql_database"
             },
             success=True
         )
     except Exception as e:
-        logger.error(f"Lỗi khi lấy từ vựng Oxford Meow-Cha: {e}")
-        # Fallback database nếu có lỗi
+        logger.error(f"[MeowchaVocab] MySQL query error: {e}, falling back to Oxford dataset service")
         try:
-            records = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True).limit(limit).all()
+            oxford = OxfordDatasetService.get_instance()
+            level_map = {0: ["A1", "A2"], 1: ["B1"], 2: ["B2"], 3: ["C1"]}
+            target_levels = level_map.get(band, ["A1", "A2", "B1", "B2", "C1"]) if band is not None else ["A1", "A2", "B1", "B2", "C1"]
+            candidates = []
+            for lvl in target_levels:
+                candidates.extend(oxford.by_level.get(lvl, []))
+
+            valid_words_raw = [
+                e for e in candidates
+                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
+            ] or [
+                e for e in oxford.words
+                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
+            ]
+
+            seen_dict = {}
+            for e in valid_words_raw:
+                w_clean = e.get("word", "").strip().upper()
+                if w_clean and w_clean not in seen_dict:
+                    seen_dict[w_clean] = e
+
+            valid_words = list(seen_dict.values())
+
+            if search and search.strip():
+                query_clean = search.strip().lower()
+                valid_words = [
+                    e for e in valid_words
+                    if query_clean in e.get("word", "").lower() or query_clean in e.get("meaning", "").lower()
+                ]
+
+            total_matches = len(valid_words)
+            effective_limit = limit if limit is not None else page_size
+
+            if search or (limit is None and page > 1):
+                start_idx = (page - 1) * effective_limit
+                sampled = valid_words[start_idx : start_idx + effective_limit]
+            elif limit is not None:
+                sampled = valid_words[:effective_limit]
+            else:
+                start_idx = (page - 1) * effective_limit
+                sampled = valid_words[start_idx : start_idx + effective_limit]
+
+            def to_ast_type(lvl: str) -> str:
+                if lvl in ("A1", "A2"): return "FROST"
+                if lvl == "B1": return "INFERNO"
+                if lvl == "B2": return "VOID"
+                return "BLOOD_THUNDER"
+
+            def to_band_level(lvl: str) -> int:
+                if lvl in ("A1", "A2"): return 0
+                if lvl == "B1": return 1
+                if lvl == "B2": return 2
+                return 3
+
             result_data = [
                 {
-                    "id": v.id,
-                    "word": v.word,
-                    "ipa": v.ipa,
-                    "type": v.part_of_speech,
-                    "meaning": v.meaning,
-                    "band_level": v.band_level,
-                    "asteroid_type": v.asteroid_type,
-                    "difficulty_score": v.difficulty_score
+                    "id": idx + 1,
+                    "word": v.get("word", "").upper(),
+                    "ipa": v.get("phonetic", ""),
+                    "type": v.get("type", "noun"),
+                    "meaning": v.get("meaning", ""),
+                    "audio_url": v.get("audio_url", ""),
+                    "band_level": to_band_level(v.get("level", "B1")),
+                    "asteroid_type": to_ast_type(v.get("level", "B1")),
+                    "difficulty_score": len(v.get("word", "")) * 5
                 }
-                for v in records
+                for idx, v in enumerate(sampled)
             ]
-            return api_response(data=result_data, success=True)
-        except Exception as db_e:
+
+            return api_response(
+                data=result_data,
+                meta={
+                    "total": total_matches,
+                    "page": page,
+                    "page_size": effective_limit,
+                    "oxford_total": len(oxford.words),
+                    "source": "oxford_json_fallback"
+                },
+                success=True
+            )
+        except Exception as fallback_e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "INTERNAL_SERVER_ERROR", "message": str(e)}
+                detail={"code": "INTERNAL_SERVER_ERROR", "message": f"Database error: {str(e)}; Fallback error: {str(fallback_e)}"}
             )
 
 

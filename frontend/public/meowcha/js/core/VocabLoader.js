@@ -144,6 +144,7 @@
             ipa:     w.ipa || w.phonetic || w.default_ipa || '/.../',
             meaning: w.meaning || w.definition || w.vietnamese || '',
             type:    w.type || w.pos || w.part_of_speech || 'vocab',
+            audio_url: w.audio_url || '',
             band_level: w.band_level !== undefined ? w.band_level : band,
             asteroid_type: w.asteroid_type || 'FROST'
           };

@@ -153,6 +153,7 @@ class MeowchaVocab(Base):
     ipa = Column(String(100), nullable=False)
     part_of_speech = Column(String(50), default="vocab")
     meaning = Column(Text, nullable=False)
+    audio_url = Column(String(500), nullable=True)
     band_level = Column(Integer, index=True, default=0) # 0, 1, 2, 3
     asteroid_type = Column(String(50), default="FROST") # FROST, INFERNO, VOID, BLOOD_THUNDER
     difficulty_score = Column(Integer, default=1)
