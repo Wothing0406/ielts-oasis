@@ -1,5 +1,5 @@
 /**
- * WordDecks.js - Kho Từ Vựng IELTS Tiên Đạo 5 Cảnh Giới
+ * WordDecks.js - Kho Từ Vựng IELTS Tiên Đạo 5 Cảnh Giới & 4 Đại Ngọc Giản
  * Phân chia theo chuẩn IELTS từ 4.0 đến 9.0 Master, kèm phiên âm chuẩn IPA
  */
 (function(root) {
@@ -80,6 +80,75 @@
     ]
   };
 
+  // 4 ĐẠI NGỌC GIẢN TU TIÊN HỌC THUẬT (SPECIALIZED IELTS DECKS)
+  const TANG_KINH_DECKS = [
+    {
+      id: "oxford_5000",
+      name: "Cửu Chuyển Hỗn Độn Đan",
+      subName: "Oxford 5000 Toàn Tập (Band 4.0 - 9.0)",
+      desc: "Vạn chữ đại thiên bao la, phân tầng theo 5 đại cảnh giới tu tiên.",
+      badge: "TOÀN DIỆN",
+      wordsCount: 5000,
+      iconType: "scroll",
+      color: "#FDE047"
+    },
+    {
+      id: "listening_1200",
+      name: "Thính Lôi Trực Điểm",
+      subName: "1200 Từ Listening Hay Viết Sai (Band 6.0 - 8.0)",
+      desc: "Chuyên trảm các từ có phụ âm đôi, đuôi -tion, -ment, tên đường, ngày tháng.",
+      badge: "LISTENING CHUYÊN SÂU",
+      wordsCount: 1200,
+      iconType: "thunder",
+      color: "#38BDF8",
+      words: [
+        { word: "ACCOMMODATION", ipa: "/əˌkɒm.əˈdeɪ.ʃən/", type: "noun", meaning: "Chỗ ở, phòng trọ, lưu trú" },
+        { word: "MEDITERRANEAN", ipa: "/ˌmed.ɪ.tərˈeɪ.ni.ən/", type: "adj", meaning: "Địa Trung Hải" },
+        { word: "CONSCIENTIOUS", ipa: "/ˌkɒn.ʃiˈen.ʃəs/", type: "adj", meaning: "Chu đáo, tận tâm, hết lòng" },
+        { word: "ENTREPRENEUR", ipa: "/ˌɒn.trə.prəˈnɜːr/", type: "noun", meaning: "Doanh nhân khởi nghiệp" },
+        { word: "QUESTIONNAIRE", ipa: "/ˌkwes.tʃəˈneər/", type: "noun", meaning: "Bảng câu hỏi khảo sát" },
+        { word: "MAINTENANCE", ipa: "/ˈmeɪn.tən.əns/", type: "noun", meaning: "Bảo trì, duy tu, bảo dưỡng" },
+        { word: "ENVIRONMENT", ipa: "/ɪnˈvaɪ.rən.mənt/", type: "noun", meaning: "Môi trường thiên nhiên" },
+        { word: "GOVERNMENT", ipa: "/ˈɡʌv.ən.mənt/", type: "noun", meaning: "Chính phủ, chính quyền" },
+        { word: "DISAPPOINTMENT", ipa: "/ˌdɪs.əˈpɔɪnt.mənt/", type: "noun", meaning: "Sự thất vọng, chán nản" },
+        { word: "OPPORTUNITY", ipa: "/ˌɒp.əˈtʃuː.nə.ti/", type: "noun", meaning: "Cơ hội, thời cơ thuận lợi" },
+        { word: "PRIVILEGE", ipa: "/ˈprɪv.əl.ɪdʒ/", type: "noun", meaning: "Đặc quyền, đặc ân" },
+        { word: "OCCASIONALLY", ipa: "/əˈkeɪ.ʒən.əl.i/", type: "adv", meaning: "Thỉnh thoảng, đôi khi" }
+      ]
+    },
+    {
+      id: "reading_academic",
+      name: "Thánh Điển Tàng Thư",
+      subName: "Cambridge Academic Reading (Band 7.5 - 9.0)",
+      desc: "Thuật ngữ học thuật chuyên sâu về khảo cổ, vũ trụ, sinh thái và công nghệ.",
+      badge: "READING HỌC THUẬT",
+      wordsCount: 850,
+      iconType: "tome",
+      color: "#34D399",
+      words: [
+        { word: "BIODIVERSITY", ipa: "/ˌbaɪ.əʊ.daɪˈvɜː.sə.ti/", type: "noun", meaning: "Đa dạng sinh học" },
+        { word: "ARCHAEOLOGICAL", ipa: "/ˌɑː.ki.əˈlɒdʒ.ɪ.kəl/", type: "adj", meaning: "Thuộc về khảo cổ học" },
+        { word: "STRATIFICATION", ipa: "/ˌstræt.ɪ.fɪˈkeɪ.ʃən/", type: "noun", meaning: "Sự phân tầng địa chất, xã hội" },
+        { word: "DETERIORATION", ipa: "/dɪˌtɪə.ri.əˈreɪ.ʃən/", type: "noun", meaning: "Sự suy thoái, xuống cấp" },
+        { word: "INFRASTRUCTURE", ipa: "/ˈɪn.frəˌstrʌk.tʃər/", type: "noun", meaning: "Cơ sở hạ tầng kiến trúc" },
+        { word: "COUNTERMEASURE", ipa: "/ˈkaʊn.təˌmeʒ.ər/", type: "noun", meaning: "Biện pháp đối phó, hóa giải" },
+        { word: "SUSTAINABILITY", ipa: "/səˌsteɪ.nəˈbɪl.ə.ti/", type: "noun", meaning: "Tính bền vững lâu dài" },
+        { word: "PHOTOSYNTHESIS", ipa: "/ˌfəʊ.təʊˈsɪn.θə.sɪs/", type: "noun", meaning: "Quá trình quang hợp thực vật" }
+      ]
+    },
+    {
+      id: "flashcard_srs",
+      name: "Bản Mệnh Linh Từ",
+      subName: "Kho Flashcard Cá Nhân của Đạo Hữu",
+      desc: "Trảm lại những từ từng bị Tâm Ma quấy nhiễu (gõ sai trong các trận trước).",
+      badge: "ÔN TẬP SRS",
+      wordsCount: 0,
+      iconType: "catPaw",
+      color: "#F43F5E"
+    }
+  ];
+
   root.Meowcha = root.Meowcha || {};
   root.Meowcha.REALM_DECKS = REALM_DECKS;
+  root.Meowcha.TANG_KINH_DECKS = TANG_KINH_DECKS;
 })(typeof window !== 'undefined' ? window : globalThis);

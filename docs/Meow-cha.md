@@ -104,49 +104,67 @@ Không còn tình trạng các nhân vật cấp cao chỉ dùng chung hiệu �
 
 ## 4. KIẾN TRÚC MODULAR ENGINE (`frontend/public/meowcha/js/`)
 
+Toàn bộ logic vận hành game được phân tách thành các module chuyên biệt:
+
 ```text
 frontend/public/meowcha/js/
-├── main.js                     # Bộ điều phối Game Loop, Asset Loader (305 đường dẫn) & Lifecycle
+├── data/
+│   ├── RealmsData.js           # Chỉ số 5 cảnh giới (máu, tu vi, tỷ lệ rơi, tốc độ)
+│   ├── WordDecks.js            # Kho từ vựng Oxford 5000 & 4 Đại Ngọc Giản Tàng Kinh Các
+│   ├── TalentsData.js          # Hệ thống thiên phú khi đột phá
+│   └── SpeechesData.js         # Khẩu quyết tiên đạo & câu thoại miêu tiên
+│
 ├── core/
-│   ├── GameState.js            # Quản lý Tu Vi, Cảnh Giới, Thanh Thần Thông (realmSkillCharge), Pháp Bảo
-│   ├── SpriteAnimator.js       # Động cơ diễn hoạt Multi-Frame Sprite Sheet (Poses, Slashes, Hits)
-│   ├── VocabLoader.js          # Tải & cache từ vựng Oxford 5000 theo Band từ Backend API
-│   ├── SaveSystem.js           # Lưu trữ Ngọc Giản đa slot (LocalStorage + Cloud API Sync)
-│   └── AudioManager.js         # Bộ tổng hợp âm thanh Web Audio API (Tiếng kiếm, Cổ tranh, Sấm sét)
+│   ├── GameState.js            # Quản lý trạng thái phiên chơi (tu vi, máu, activeDeckId, gameMode)
+│   ├── SaveSystem.js           # Hệ thống 3 ngọc giản lưu trữ độc lập
+│   ├── AudioManager.js         # Bộ tổng hợp âm thanh Web Audio API cổ phong
+│   ├── SpriteAnimator.js       # Engine hoạt ảnh đa frame 60 FPS
+│   └── VocabLoader.js          # Nạp từ vựng linh hoạt theo Deck và Cảnh giới
+│
 ├── entities/
-│   ├── CatCultivator.js        # Vẽ nhân vật 5 cảnh giới, Chibi Hộ Đạo, Tia bắn & Hiệu ứng bắn ra (Muzzle)
-│   ├── ProjectileSystem.js     # Hệ thống đạn phi kiếm, đuôi tia bắn, Muzzle Flash & Hit Explosion
-│   └── AsteroidManager.js      # Quản lý ma thạch 4 nguyên tố, hiệu ứng Làm Chậm (Slow), Đóng Băng (Freeze), Đẩy Lùi
+│   ├── CatCultivator.js        # Thực thể mèo tiên, vị trí, tư thế, đài sen & thú cưng
+│   ├── AsteroidManager.js      # Ma thạch 3D, Active Recall Cloze masking & bảng nghĩa tiếng Việt
+│   └── ProjectileSystem.js     # Tia năng lượng, phi kiếm, muzzle firing & đạn bay
+│
 ├── combat/
-│   ├── TypingEngine.js         # Bộ gõ IME-Safe, xử lý Thần Thông thực chiến 5 cảnh giới & tính điểm
-│   └── BreakthroughFlow.js     # Luồng Độ Kiếp & chọn Thần Thông Roguelike khi thăng cấp
+│   ├── TypingEngine.js         # Bắt phím IME-safe, tính WPM, combo, tính sát thương
+│   └── BreakthroughFlow.js     # Xử lý độ kiếp thiên kiếp sấm sét & mở thiên phú
+│
 ├── effects/
-│   ├── RealmVFX.js             # Pháp trận dưới chân, hào quang cảnh giới & sương mù linh vân
-│   ├── ParticleEngine.js       # Hệ thống hạt linh khí, lá trúc, tàn lửa & tia sét
-│   └── FloatingText.js         # Chữ nổi thông báo sát thương, Thần Thông & từ vựng vừa trảm
+│   ├── ParticleEngine.js       # Hạt linh khí, tàn tro, sao băng
+│   ├── RealmVFX.js             # Hiệu ứng kiếm trận đặc thù 5 cảnh giới
+│   └── FloatingText.js         # Chữ sát thương, bạo kích, tu vi bay lên
+│
 └── ui/
-    ├── UIManager.js            # Quản lý Sảnh Chờ, Bảng Phong Thần, Động Phủ Ngọc Giản & HUD
-    ├── IPAToast.js             # Thẻ từ vựng IELTS + Phiên âm IPA + Phát âm chuẩn US/UK
+    ├── XianxiaIcons.js         # Thư viện SVG cổ phong (thay thế triệt để 100% emojis)
+    ├── UIManager.js            # Điều khiển HUD, Sảnh Chờ, Tàng Kinh Các & Modals
+    ├── IPAToast.js             # Thẻ hiển thị từ vựng, phiên âm IPA & Web Speech API
     ├── VirtualKeyboard.js      # Bàn phím phù thạch khảm ngọc cho Mobile & PC
     └── UnityBridge.js          # Cầu nối đồng bộ WebGL 2D (tùy chọn)
 ```
 
 ---
 
-## 5. ĐỀ XUẤT NÂNG CẤP HỌC THUẬT ("HỌC TIẾNG ANH TU TIÊN" CHUYÊN SÂU)
+## 5. HỆ THỐNG PHÁP MÔN TU LUYỆN & TÀNG KINH CÁC ĐÃ HOÀN TẤT (PEDAGOGY UPGRADE)
 
-Hiện tại người chơi mới đang **nhìn từ tiếng Anh và gõ lại từ tiếng Anh đó (Copy-Typing)**. Để biến game thành công cụ **luyện thi IELTS thực thụ** (giúp tăng thực chất điểm Reading, Listening, Writing), cần nâng cấp thêm **4 chế độ "Tu Luyện Ngữ Nghĩa"** sau:
+Hệ thống đã nâng cấp toàn diện cơ chế học thuật từ **Copy-Typing thuần túy** thành **Học Tiếng Anh Chủ Động Đa Phương Thức**:
 
-1. **Chế Độ "Thiên Kiếp Giải Nghĩa" (Active Recall Mode — Nhìn Nghĩa/Câu Khuyết Gõ Từ):**
-   - Thay vì luôn hiện sẵn chữ `RESILIENT` trên thiên thạch, với các thiên thạch tinh anh (hoặc từ cảnh giới Trúc Cơ trở lên), thiên thạch chỉ hiện **Nghĩa tiếng Việt + Chữ cái đầu** (`[ R _ _ _ _ _ _ _ _ ] — Kiên cường, bền bỉ`) hoặc một câu IELTS Reading khuyết từ (`She remained [ R _ _ _ _ _ _ _ _ ] despite the crisis`).
-   - Người chơi buộc phải **nhớ từ trong não (Active Recall)** để gõ ra — hiệu quả ghi nhớ từ vựng tăng gấp **5 lần** so với chỉ nhìn chữ chép lại!
-2. **Chế Độ "Thính Phong Kiếm" (IELTS Listening Dictation Meteors):**
-   - Thiên thạch **"Ẩn Hình Linh Thạch"** rơi xuống chỉ phát **âm thanh đọc từ vựng chuẩn UK/US** kèm phiên âm IPA (`/rɪˈzɪl.jənt/`), chữ viết bị sương mù che khuất.
-   - Người chơi phải **nghe âm thanh để gõ chính tả** (luyện đúng kỹ năng ăn điểm của IELTS Listening Part 1 & Part 4!).
-3. **Đại Yêu Thú "Đồng Nghĩa Tâm Ma" (IELTS Synonym / Collocation Boss Fight):**
-   - Cuối mỗi cảnh giới, xuất hiện **Cổ Thú Boss** mang một từ phổ thông (ví dụ: `IMPORTANT`). Để phá giáp Boss, người chơi phải gõ lần lượt 3 từ đồng nghĩa Band 7.0+ hiển thị trên 3 thanh kiếm hộ mệnh (`CRUCIAL`, `SIGNIFICANT`, `PARAMOUNT`).
-4. **Liên Kết Trực Tiếp Với Kho Flashcard Cá Nhân & Thuật Toán SRS (FSRS / SM-2):**
-   - Những từ người chơi **gõ sai nhiều lần** hoặc **để thiên thạch rơi trúng người** trong game sẽ tự động được gắn nhãn **"Tâm Ma Từ Vựng" (`Hard / Again`)** và đồng bộ thẳng vào bảng `user_vocabulary` (Flashcard Lab) của IELTS Oasis để nhắc ôn tập lại qua Chrome Extension Matcha Pet!
+1. **Pháp Môn 1 — "Ngộ Đạo Thông Linh" (Active Recall Cloze Mode):**
+   - Thiên thạch ma thạch chỉ hiển thị ký tự đầu/cuối, toàn bộ ký tự ở giữa bị ẩn bằng dấu phù ấn gạch dưới `_` (`[ R E _ _ _ _ E N T ]`).
+   - Phía dưới ma thạch hiển thị bảng gỗ mộc bản viền chu sa chứa **Nghĩa Tiếng Việt chính xác** của từ vựng.
+   - Người học buộc phải vận dụng **Active Recall (tái hiện từ vựng từ trí nhớ dài hạn)** dựa trên nghĩa tiếng Việt để gõ từng ký tự. Khi gõ đúng, phù ấn bích ngọc bừng sáng rực rỡ `#34D399`.
+2. **Pháp Môn 2 — "Trực Diện Trảm Ma" (Direct Typing Mode):**
+   - Chế độ gõ toàn diện toàn bộ ký tự từ vựng dưới áp lực thời gian để rèn luyện tốc độ WPM và phản xạ chính tả cơ bắp (Muscle Memory).
+3. **Pháp Môn 3 — "Thính Lôi Biện Âm" (Audio Dictation Mode):**
+   - Ma thạch phát âm thanh bản xứ qua Web Speech API kèm bảng phiên âm IPA (`Tiên Âm: /.../`), rèn luyện khả năng nhận diện âm thanh và chính tả chuẩn xác cho IELTS Listening Section 1 & 4.
+4. **Tàng Kinh Các (4 Chuyên Đề Từ Vựng IELTS Chuyên Sâu):**
+   - **`oxford_5000` (Cửu Chuyển Hỗn Độn Đan):** Toàn tập 5,900+ từ vựng cốt lõi CEFR A1-C1 phân theo 5 cảnh giới tu tiên.
+   - **`listening_1200` (Thính Lôi Trực Điểm):** 1,200 từ vựng Listening hay bẫy chính tả (*accommodation, mediterranean, conscientious, entrepreneur*).
+   - **`reading_academic` (Thánh Điển Tàng Thư):** Cambridge Reading Academic Band 7.5+ (*biodiversity, archaeological, stratification, photosynthesis*).
+   - **`flashcard_srs` (Bản Mệnh Linh Từ):** Sổ tay tự động gom các từ gõ sai để tôi luyện theo phương pháp lặp lại ngắt quãng (SRS).
+5. **Chuẩn Mực Giao Diện Cổ Phong — Không Sử Dụng Emoji Đơn Giản:**
+   - Triệt tiêu 100% các icon emoji thông thường (`⚔️`, `📜`, `✨`, `🗑️`, `⚡`, `🧧`, `✕`, `★`, `✓`).
+   - Thay thế bằng hệ thống vector SVG cổ điển sắc nét từ `XianxiaIcons.js`: Móng Mèo Tiên, Phi Kiếm Thanh Vân, Cuộn Trục Ngọc Giản, Đài Sen Kim Đan, Lôi Ấn Cửu Thiên, Lư Đồng Phong Ấn Hóa Vàng, và Dấu Triện Chu Sa.
 
 ---
 

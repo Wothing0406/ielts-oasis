@@ -29,7 +29,7 @@
       const headerBar = document.createElement("div");
       headerBar.className = "kb-seal-header";
       headerBar.innerHTML = `
-        <span class="kb-seal-title">◆ TRẬN PHÁP PHÙ THẠCH BÀN ◆</span>
+        <span class="kb-seal-title"><span class="seal-glyph-gold">[ 阵 ]</span> TRẬN PHÁP PHÙ THẠCH BÀN <span class="seal-glyph-gold">[ 盘 ]</span></span>
         <span class="kb-stun-badge" id="kbStunBadge">TÂM MA NHIỄU LOẠN</span>
       `;
       kbWrapper.appendChild(headerBar);

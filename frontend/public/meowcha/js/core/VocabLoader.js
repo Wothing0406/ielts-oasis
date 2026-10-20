@@ -154,8 +154,30 @@
     };
   }
 
-  function getRandomWords(bandIdx, n) {
+  function getRandomWords(bandIdx, n, deckId) {
     n = n || 12;
+    var M = root.Meowcha || {};
+    var activeDeck = deckId || (M.app && M.app.gameState && M.app.gameState.activeDeckId) || "oxford_5000";
+
+    // 1. Nếu chọn Ngọc Giản chuyên sâu (Listening 1200 / Reading Academic / Flashcard SRS)
+    if (activeDeck && activeDeck !== "oxford_5000" && M.TANG_KINH_DECKS) {
+      const specializedDeck = M.TANG_KINH_DECKS.find(d => d.id === activeDeck);
+      if (specializedDeck && specializedDeck.words && specializedDeck.words.length > 0) {
+        const pool = specializedDeck.words;
+        const result = [];
+        const used = {};
+        const attempts = pool.length * 2;
+        for (let i = 0; i < attempts && result.length < n; i++) {
+          const idx = Math.floor(Math.random() * pool.length);
+          if (!used[idx]) {
+            used[idx] = true;
+            result.push(pool[idx]);
+          }
+        }
+        if (result.length > 0) return result;
+      }
+    }
+
     var key = String(Math.max(0, Math.min(3, bandIdx)));
     var pool = CACHE[key];
     if (!pool || pool.length === 0) pool = _getStaticFallback(bandIdx);

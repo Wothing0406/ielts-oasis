@@ -67,6 +67,8 @@
 
       // Leaderboard Elements
       this.btnSubmitScorePantheon = document.getElementById("btnSubmitScorePantheon");
+      this.modeSelectorRow = document.getElementById("modeSelectorRow");
+      this.deckSelectorGrid = document.getElementById("deckSelectorGrid");
       this.pantheonPlayerSelfStats = document.getElementById("pantheonPlayerSelfStats");
 
       // State variables for Vocab Vault Modal
@@ -312,12 +314,46 @@
         };
       }
 
+      // Chọn Chế Độ Tu Luyện (CLOZE, DIRECT, AUDIO)
+      if (this.modeSelectorRow) {
+        this.modeSelectorRow.querySelectorAll(".mode-pill-btn").forEach(btn => {
+          btn.onclick = () => {
+            const mode = btn.getAttribute("data-mode");
+            this.selectGameMode(mode);
+          };
+        });
+      }
+
+      // Chọn Bộ Pháp Điển Tàng Kinh Các (oxford_5000, listening_1200, reading_academic, flashcard_srs)
+      if (this.deckSelectorGrid) {
+        this.deckSelectorGrid.querySelectorAll(".deck-card").forEach(card => {
+          card.onclick = () => {
+            const deckId = card.getAttribute("data-deck");
+            this.selectDeck(deckId);
+          };
+        });
+      }
+
       // Chọn Pháp Trận IELTS Band (0, 1, 2, 3)
       for (let i = 0; i < 4; i++) {
         const card = document.getElementById(`cardBand${i + 1}`);
         if (card) {
           card.onclick = () => this.selectBand(i);
         }
+      }
+
+      // Đồng bộ hiển thị Bộ Pháp Điển và Chế Độ Tu Luyện
+      if (this.modeSelectorRow) {
+        const curMode = s.gameMode || "CLOZE";
+        this.modeSelectorRow.querySelectorAll(".mode-pill-btn").forEach(btn => {
+          btn.classList.toggle("active-mode", btn.getAttribute("data-mode") === curMode);
+        });
+      }
+      if (this.deckSelectorGrid) {
+        const curDeck = s.activeDeckId || "oxford_5000";
+        this.deckSelectorGrid.querySelectorAll(".deck-card").forEach(card => {
+          card.classList.toggle("active-deck", card.getAttribute("data-deck") === curDeck);
+        });
       }
 
       this.updateMonolithLocks();
@@ -374,7 +410,7 @@
         }
       }
       this.audio.play("chime");
-      this.showStatus(`[ PHÁP TRẬN ] Đã chọn ${unlockReqs[bandIdx].name}`);
+      this.showStatus(`[ PHÁP TRẬN ] Đã chọn ${realmData.title}`);
     }
 
     showStatus(msg, durationMs = 2800) {
@@ -527,7 +563,7 @@
           const realmLabel = slot.title || slot.realm || slot.realmTitle || 'Luyện Khí Kỳ';
           const wordsLabel = slot.words !== undefined ? slot.words : (slot.wordsSlain || 0);
           const badgeHtml = isActive
-            ? `<span class="slot-badge slot-badge-active">★ ĐANG CHỌN</span>`
+            ? `<span class="slot-badge slot-badge-active"><svg width="11" height="11" viewBox="0 0 24 24" fill="#FDE047" stroke="#FDE047" stroke-width="1" style="vertical-align: middle; margin-right: 2px;"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/></svg> ĐANG CHỌN</span>`
             : `<span class="slot-badge slot-badge-idle">ĐÃ LƯU</span>`;
 
           let actionButtons = "";
@@ -538,7 +574,7 @@
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                   LƯU TIẾN TRÌNH
                 </button>
-                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" fill="#F87171" fill-opacity="0.12"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
               `;
             } else {
               actionButtons = `
@@ -546,7 +582,7 @@
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                   TIẾP TỤC
                 </button>
-                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+                <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" fill="#F87171" fill-opacity="0.12"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
               `;
             }
           } else {
@@ -555,7 +591,7 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 CHỌN & NẠP LẠI
               </button>
-              <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục">✕</button>
+              <button class="btn-slot-del" data-slot="${i}" title="Giải trừ cuộn trục"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" fill="#F87171" fill-opacity="0.12"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
             `;
           }
 
@@ -575,7 +611,7 @@
         } else {
           // Slot trống
           const badgeHtml = isActive
-            ? `<span class="slot-badge slot-badge-selected">★ ĐANG CHỌN</span>`
+            ? `<span class="slot-badge slot-badge-selected"><svg width="11" height="11" viewBox="0 0 24 24" fill="#FDE047" stroke="#FDE047" stroke-width="1" style="vertical-align: middle; margin-right: 2px;"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/></svg> ĐANG CHỌN</span>`
             : `<span class="slot-badge slot-badge-empty">TRỐNG</span>`;
 
           let actionButtons = "";
@@ -1419,7 +1455,7 @@
         if (activeT.length === 0) {
           talentsEl.innerHTML = `<span class="talent-tag-badge">Chưa ngưng tụ thần thông</span>`;
         } else {
-          talentsEl.innerHTML = activeT.map(t => `<span class="talent-tag-badge">❖ ${t}</span>`).join("");
+          talentsEl.innerHTML = activeT.map(t => `<span class="talent-tag-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" style="vertical-align: middle; margin-right: 3px;"><path d="M12 4 C10 8 10 14 12 18 C14 14 14 8 12 4 Z" fill="#F59E0B" fill-opacity="0.4"/><circle cx="12" cy="18.5" r="1.5" fill="#F59E0B"/></svg>${t}</span>`).join("");
         }
       }
 

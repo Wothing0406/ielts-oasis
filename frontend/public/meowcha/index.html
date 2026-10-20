@@ -859,6 +859,139 @@
           </div>
         </div>
 
+        
+        <!-- CỤM CHỌN PHÁP MÔN & TÀNG KINH CÁC (GAME MODE & DECK SELECTOR) -->
+        <div class="lobby-pedagogy-container">
+          <!-- Hàng 1: Pháp Môn Tu Luyện (Game Mode) -->
+          <div class="pedagogy-section">
+            <div class="pedagogy-header">
+              <div class="pedagogy-title-group">
+                <svg class="header-sword-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2">
+                  <polygon points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polygon>
+                  <line x1="13" y1="19" x2="19" y2="13"></line>
+                </svg>
+                <span>PHÁP MÔN TU LUYỆN • CƠ CHẾ KHẮC GHI</span>
+              </div>
+              <span class="pedagogy-subtitle">(Chọn phương thức rèn luyện tâm trí)</span>
+            </div>
+
+            <div class="mode-selector-row" id="modeSelectorRow">
+              <button class="mode-pill-btn active-mode" data-mode="CLOZE" title="Điền khuyết ký tự giữa dựa vào nghĩa tiếng Việt">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8" style="vertical-align: middle;">
+                  <path d="M19 17V5a2 2 0 0 0-2-2H4"></path>
+                  <path d="M8 21h12a2 2 0 0 0 2-2v-1.5a2.5 2.5 0 0 0-2.5-2.5H4"></path>
+                  <path d="M4 19a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z" fill="#FDE047" fill-opacity="0.15"></path>
+                  <line x1="7" y1="7" x2="15" y2="7"></line>
+                  <line x1="7" y1="11" x2="13" y2="11"></line>
+                </svg>
+                <div class="mode-pill-text">
+                  <span class="mode-name">NGỘ ĐẠO THÔNG LINH</span>
+                  <span class="mode-sub">Active Recall • Điền Khuyết</span>
+                </div>
+              </button>
+
+              <button class="mode-pill-btn" data-mode="DIRECT" title="Gõ trực tiếp toàn bộ ký tự từ vựng">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" style="vertical-align: middle;">
+                  <path d="M19 5 L9 15 L7 14 L5 16 L8 19 L10 17 L9 15 Z" fill="#38BDF8" fill-opacity="0.25"></path>
+                  <line x1="19" y1="5" x2="10" y2="14"></line>
+                  <circle cx="3" cy="21" r="1.2" fill="#38BDF8"></circle>
+                </svg>
+                <div class="mode-pill-text">
+                  <span class="mode-name">TRỰC DIỆN TRẢM MA</span>
+                  <span class="mode-sub">Direct Typing • Tốc Độ</span>
+                </div>
+              </button>
+
+              <button class="mode-pill-btn" data-mode="AUDIO" title="Nghe phát âm chuẩn bản xứ và gõ lại từ">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.8" style="vertical-align: middle;">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#A78BFA" fill-opacity="0.25"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <div class="mode-pill-text">
+                  <span class="mode-name">THÍNH LÔI BIỆN ÂM</span>
+                  <span class="mode-sub">Audio Dictation • Luyện Nghe</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hàng 2: Tàng Kinh Các (Word Decks) -->
+          <div class="pedagogy-section" style="margin-top: 6px;">
+            <div class="pedagogy-header">
+              <div class="pedagogy-title-group">
+                <svg class="header-sword-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="#FDE047" fill-opacity="0.15"></path>
+                </svg>
+                <span>TÀNG KINH CÁC • BỘ PHÁP ĐIỂN TỪ VỰNG</span>
+              </div>
+              <span class="pedagogy-subtitle">(Chuyên đề từ vựng IELTS chuyên sâu)</span>
+            </div>
+
+            <div class="deck-selector-grid" id="deckSelectorGrid">
+              <!-- Deck 1: Oxford 5000 -->
+              <div class="deck-card active-deck" data-deck="oxford_5000">
+                <div class="deck-icon-seal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="9" stroke-dasharray="3 2"></circle>
+                    <path d="M12 7v5l3 3"></path>
+                  </svg>
+                </div>
+                <div class="deck-meta">
+                  <div class="deck-title">OXFORD 5000</div>
+                  <div class="deck-level">CỐT LÕI A1 - C1</div>
+                  <div class="deck-desc">5,900+ từ vựng nền tảng toàn diện</div>
+                </div>
+              </div>
+
+              <!-- Deck 2: 1200 Cổ Tự Thính Âm -->
+              <div class="deck-card" data-deck="listening_1200">
+                <div class="deck-icon-seal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#38BDF8" fill-opacity="0.2"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                  </svg>
+                </div>
+                <div class="deck-meta">
+                  <div class="deck-title">1200 THÍNH ÂM</div>
+                  <div class="deck-level">SECTION 1 LISTENING</div>
+                  <div class="deck-desc">Diệt trừ bẫy chính tả thường gặp</div>
+                </div>
+              </div>
+
+              <!-- Deck 3: Cambridge 17-19 Academic -->
+              <div class="deck-card" data-deck="reading_academic">
+                <div class="deck-icon-seal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.8">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="deck-meta">
+                  <div class="deck-title">CAMBRIDGE 17-19</div>
+                  <div class="deck-level">ACADEMIC 7.5+</div>
+                  <div class="deck-desc">Cổ ngữ học thuật tinh hoa đề thi</div>
+                </div>
+              </div>
+
+              <!-- Deck 4: Sổ Tay Tái Hiện SRS -->
+              <div class="deck-card" data-deck="flashcard_srs">
+                <div class="deck-icon-seal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <div class="deck-meta">
+                  <div class="deck-title">TÁI HIỆN SRS</div>
+                  <div class="deck-level">SỔ TAY TÔI LUYỆN</div>
+                  <div class="deck-desc">Luyện lại từ sai và từ tâm đắc</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 4 TRỤ KIẾM / MA THẠCH PHÙ KHÔNG (CẢNH GIỚI IELTS BAND SELECTOR) -->
         <div class="lobby-monoliths-container">
           <div class="monolith-section-header">
@@ -1154,7 +1287,7 @@
               </svg>
               <span>TAM ĐẠI NGỌC GIẢN • TIÊN HIỆP LƯU TRỮ</span>
             </h2>
-            <button class="btn-modal-close" id="btnCloseSaves">✕</button>
+            <button class="btn-modal-close" id="btnCloseSaves" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
           </div>
           <div class="save-slots-grid" id="saveSlotsList">
             <!-- Render tự động từ SaveSystem.js -->
@@ -1208,13 +1341,9 @@
             class="modal-title"
             style="margin-bottom: 12px; justify-content: center"
           >
-            <span style="font-size: 13px; color: #f59e0b; margin-right: 6px"
-              >❖</span
-            >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>
             ĐỊNH THẦN TẠM DỪNG
-            <span style="font-size: 13px; color: #f59e0b; margin-left: 6px"
-              >❖</span
-            >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-left: 6px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>
           </h2>
           <p style="color: #fde68a; font-size: 13px; margin-bottom: 20px">
             Kiếm ý tạm lắng, nghỉ chân thưởng một chén tiên trà
@@ -1406,7 +1535,7 @@
               <span>KHO ĐAN DƯỢC • TỪ ĐIỂN OXFORD 5000</span>
               <span class="seal-glyph-gold">[ 藏 ]</span>
             </h2>
-            <button class="btn-modal-close" id="btnCloseVocabVault">✕</button>
+            <button class="btn-modal-close" id="btnCloseVocabVault" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
           </div>
 
           <!-- Subtitle & Search Filter Bar -->
@@ -1437,13 +1566,7 @@
                 placeholder="Tra cứu từ tiếng Anh hoặc nghĩa tiếng Việt..."
                 autocomplete="off"
               />
-              <button
-                id="btnVaultClearSearch"
-                class="vault-search-clear"
-                style="display: none"
-              >
-                ✕
-              </button>
+              <button id="btnVaultClearSearch" class="vault-search-clear" style="display: none" aria-label="Xóa"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
 
             <!-- Band / Realm Filter Tabs -->
@@ -1497,7 +1620,7 @@
               <span>BẢNG PHONG THẦN • THIÊN ĐẠO CHÍ TÔN</span>
               <span class="seal-glyph-red">[ 榜 ]</span>
             </h2>
-            <button class="btn-modal-close" id="btnClosePantheon">✕</button>
+            <button class="btn-modal-close" id="btnClosePantheon" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
           </div>
 
           <!-- Top 3 Podium Cards -->
@@ -1681,7 +1804,7 @@
                     >Tiểu Miêu Kiếm Sĩ</span
                   >
                   <span class="pantheon-auto-badge"
-                    >✓ TỰ ĐỘNG KHẮC BẢNG VÀNG</span
+                    ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 3px;"><polyline points="20 6 9 17 4 12"/></svg>TỰ ĐỘNG KHẮC BẢNG VÀNG</span
                   >
                 </div>
                 <span class="player-badge-stats" id="pantheonPlayerSelfStats"
@@ -1791,7 +1914,7 @@
           <!-- Danh sách thiên phú thần thông đã mở -->
           <div class="profile-talents-section">
             <div class="profile-sec-title">
-              ❖ THẦN THÔNG & ĐẠO QUẢ KHAI MỞ ❖
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>THẦN THÔNG & ĐẠO QUẢ KHAI MỞ<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-left: 4px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>
             </div>
             <div class="profile-talents-tags" id="profileModalTalentsList">
               <span class="talent-tag-badge">Chưa lĩnh ngộ thiên phú</span>
@@ -1829,7 +1952,7 @@
           class="modal-content-box confirm-xianxia-box animate-golden-ray"
           style="width: min(90%, 420px); text-align: center"
         >
-          <div class="confirm-cinnabar-seal">❖ TIÊN ĐẠO QUYẾT NGHỊ ❖</div>
+          <div class="confirm-cinnabar-seal"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#EF4444" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#EF4444"/></svg>TIÊN ĐẠO QUYẾT NGHỊ<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" style="vertical-align: middle; margin-left: 4px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#EF4444" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#EF4444"/></svg></div>
           <h3 class="confirm-title" id="confirmModalTitle">
             ĐẠO HỮU TẨY TỦY TRỌNG SINH?
           </h3>
@@ -1853,6 +1976,7 @@
     <!-- Scripts Data & Logic Modules -->
     <script src="./js/data/RealmsData.js?v=9.0"></script>
     <script src="./js/data/WordDecks.js?v=9.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=9.0"></script>
     <script src="./js/data/TalentsData.js?v=9.0"></script>
     <script src="./js/data/SpeechesData.js?v=9.0"></script>
 

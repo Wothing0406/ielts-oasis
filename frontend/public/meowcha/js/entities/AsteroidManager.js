@@ -149,12 +149,18 @@
       // RƠI TỪ ĐỈNH TRỜI: Xuất phát từ phía trên mép màn hình và trôi êm ái xuống đan điền
       const spawnY = -baseRadius - 15;
 
+      const M = root.Meowcha || {};
+      const appState = (M.app && M.app.gameState) || null;
+      const curMode = (appState && appState.gameMode) || "CLOZE";
+
       const asteroid = {
         id: Date.now() + Math.random(),
         word: word,
         ipa: wordItem.ipa || "/.../",
         meaning: wordItem.meaning || "",
         audio_url: wordItem.audio_url || "",
+        isCloze: curMode === "CLOZE",
+        isAudio: curMode === "AUDIO",
         archetype: asteroidType,
         asteroidType: asteroidType,
         damage: totalDamage,
@@ -479,12 +485,11 @@
           const cx = startCharX + c * charSpacing;
 
           if (c < ast.typedLen) {
-            // ĐÃ GÕ ĐÚNG: Kiếm khí Bích Ngọc rực sáng, sắc nét hoàn hảo (Không có vệt gạch làm mờ)
+            // ĐÃ GÕ ĐÚNG: Kiếm khí Bích Ngọc rực sáng
             ctx.save();
             ctx.fillStyle = "#34D399";
             ctx.shadowColor = "#10B981";
             ctx.shadowBlur = 12;
-            // Viền tối nhẹ để chữ nổi bật trên mọi hiệu ứng
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = "rgba(4, 30, 20, 0.85)";
             ctx.strokeText(letter, cx, runeY);
@@ -492,47 +497,76 @@
             ctx.restore();
 
           } else if (c === ast.typedLen) {
-            // KÝ TỰ MỤC TIÊU ĐANG GÕ: Rực lửa chu sa bừng sáng dữ dội
+            // KÝ TỰ MỤC TIÊU ĐANG GÕ
             ctx.save();
             const pulse = 1.0 + Math.sin(this.time * 12) * 0.12;
             ctx.translate(cx, runeY);
             ctx.scale(pulse, pulse);
 
-            // Viền tương phản
+            // Trong chế độ Ngộ Đạo (CLOZE), nếu là ký tự giữa từ chưa gõ, hiện ký tự nhấp nháy gợi ý
             ctx.lineWidth = 3;
             ctx.strokeStyle = "rgba(10, 5, 2, 0.9)";
             ctx.strokeText(letter, 0, 0);
 
-            // Hào quang rực lửa
             ctx.fillStyle = "#FDE047";
             ctx.shadowColor = "#EF4444";
             ctx.shadowBlur = 20;
             ctx.fillText(letter, 0, 0);
 
-            // Vòng phù ấn bao quanh ký tự đang gõ
             ctx.strokeStyle = "rgba(245, 158, 11, 0.9)";
             ctx.lineWidth = 1.6;
             ctx.beginPath();
             ctx.arc(0, 0, 13, 0, Math.PI * 2);
             ctx.stroke();
-
             ctx.restore();
 
           } else {
-            // KÝ TỰ CHƯA GÕ: Cổ phù hoàng kim sáng bóng, viền đen sắc nét
+            // KÝ TỰ CHƯA GÕ: Kiểm tra nếu ở chế độ Ngộ Đạo (Cloze Mask)
             ctx.save();
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = "rgba(10, 5, 2, 0.85)";
-            ctx.strokeText(letter, cx, runeY);
 
-            ctx.fillStyle = "#FEF3C7";
+            // Nếu là chế độ CLOZE và không phải chữ cái đầu/cuối: hiện dấu phong ấn '_'
+            const isMaskedInCloze = ast.isCloze && (c > 0 && c < word.length - 1);
+            const displayChar = isMaskedInCloze ? "_" : letter;
+
+            ctx.strokeText(displayChar, cx, runeY);
+            ctx.fillStyle = isMaskedInCloze ? "rgba(254, 243, 199, 0.65)" : "#FEF3C7";
             ctx.shadowColor = "rgba(245, 158, 11, 0.65)";
-            ctx.shadowBlur = 6;
-            ctx.fillText(letter, cx, runeY);
+            ctx.shadowBlur = isMaskedInCloze ? 4 : 6;
+            ctx.fillText(displayChar, cx, runeY);
             ctx.restore();
           }
         }
         ctx.restore();
+
+        // 5.5 CHÂN GIẢI NGHĨA TIẾNG VIỆT & PHIÊN ÂM IPA (MEANING & IPA BANNER)
+        if (ast.meaning && (ast.isCloze || ast.isAudio)) {
+          ctx.save();
+          const meanY = posY + ast.radius + (isMobileScreen ? 14 : 18);
+          ctx.font = isMobileScreen ? "700 11px 'Cinzel', sans-serif" : "700 12.5px 'Cinzel', 'Playfair Display', serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          const displayText = ast.isAudio ? (ast.ipa ? `Tiên Âm: ${ast.ipa}` : ast.meaning) : ast.meaning;
+          const textW = Math.min(260, ctx.measureText(displayText).width);
+
+          // Thẻ bài mộc bản nhỏ viền chu sa
+          ctx.fillStyle = "rgba(12, 6, 4, 0.82)";
+          ctx.strokeStyle = ast.isAudio ? "#38BDF8" : "rgba(245, 158, 11, 0.65)";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.roundRect(posX - textW / 2 - 8, meanY - 9, textW + 16, 18, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          // Chữ dịch nghĩa vàng kim / lam ngọc
+          ctx.fillStyle = ast.isAudio ? "#BAE6FD" : "#FEF3C7";
+          ctx.shadowColor = ast.isAudio ? "#0284C7" : "#F59E0B";
+          ctx.shadowBlur = 6;
+          ctx.fillText(displayText, posX, meanY);
+          ctx.restore();
+        }
 
         ctx.restore();
       }
