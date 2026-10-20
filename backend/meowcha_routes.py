@@ -79,7 +79,8 @@ def get_vocab_deck(
         query = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True)
 
         if band is not None:
-            query = query.filter(MeowchaVocab.band_level == band)
+            clamped_band = min(3, max(0, band))
+            query = query.filter(MeowchaVocab.band_level == clamped_band)
 
         if search and search.strip():
             kw = f"%{search.strip()}%"
