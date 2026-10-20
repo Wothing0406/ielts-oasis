@@ -7,6 +7,8 @@
 
   class MeowchaApp {
     constructor() {
+      root.Meowcha = root.Meowcha || {};
+      root.Meowcha.app = this;
       this.canvas = document.getElementById("gameCanvas");
       this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
@@ -132,7 +134,7 @@
       this.realmVFX = new M.RealmVFX(this.assets);
       this.floatingText = new M.FloatingText();
       this.cat = new M.CatCultivator(this.assets, this.realmVFX, this.animator);
-      this.asteroids = new M.AsteroidManager(this.assets);
+      this.asteroids = new M.AsteroidManager(this.assets, this.gameState);
       this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
@@ -299,6 +301,13 @@
     bindWindowEvents() {
       // Bàn phím phần cứng
       window.addEventListener("keydown", (e) => {
+        if (this.gameState.currentScene === "LOBBY") {
+          if (e.code === "Space" || e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            this.startBattle();
+            return;
+          }
+        }
         if (this.gameState.currentScene !== "BATTLE") return;
         if (e.key === "Escape") {
           this.ui.togglePause();
@@ -332,15 +341,20 @@
         }
       });
 
-      // Tự động mở khóa âm thanh khi người dùng tương tác lần đầu
-      const unlockAudio = () => {
+      // Tự động mở khóa âm thanh và phát khúc Cổ Cầm thiền định ngay khi tương tác ở sảnh
+      const unlockAudioAndStartBGM = () => {
         if (this.audio) {
+          this.audio.init();
           this.audio.unlockAudioContext();
+          if (this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
+            this.audio.startZenGuqin();
+          }
         }
       };
-      window.addEventListener("pointerdown", unlockAudio, { once: true });
-      window.addEventListener("keydown", unlockAudio, { once: true });
-      window.addEventListener("touchstart", unlockAudio, { once: true });
+      window.addEventListener("pointerdown", unlockAudioAndStartBGM);
+      window.addEventListener("keydown", unlockAudioAndStartBGM);
+      window.addEventListener("touchstart", unlockAudioAndStartBGM);
+      window.addEventListener("click", unlockAudioAndStartBGM);
 
       // Tự động co giãn canvas và chuyển đổi bàn phím ảo khi thay đổi kích thước màn hình
       window.addEventListener("resize", () => {
@@ -554,8 +568,15 @@
         targetMinLen = 10; targetMaxLen = 16; targetDeckIdx = 3;
       }
 
-      // Lấy từ vựng phù hợp từ kho
+      // Lấy từ vựng phù hợp từ kho (Hỗ trợ 4 Bộ Pháp Điển Tàng Kinh Các chuyên sâu)
       let sourceList = realmDecks[targetDeckIdx] || realmDecks[rIdx] || realmDecks[0] || [];
+      const curDeckId = this.gameState.activeDeckId || "oxford_5000";
+      if (curDeckId !== "oxford_5000" && M.TANG_KINH_DECKS) {
+        const specializedDeck = M.TANG_KINH_DECKS.find(d => d.id === curDeckId);
+        if (specializedDeck && specializedDeck.words && specializedDeck.words.length > 0) {
+          sourceList = specializedDeck.words;
+        }
+      }
       if (rIdx >= 4) {
         // Cảnh 4: Thần Cảnh Vô Cực - Ngẫu nhiên toàn bộ kho từ điển Oxford 5000
         const combined = [];
@@ -846,6 +867,7 @@
   // Khởi động khi DOM sẵn sàng
   window.addEventListener("DOMContentLoaded", () => {
     window.MeowchaGameInstance = new MeowchaApp();
+    root.Meowcha.app = window.MeowchaGameInstance;
     window.MeowchaGameInstance.init();
   });
 

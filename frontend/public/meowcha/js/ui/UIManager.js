@@ -327,13 +327,35 @@
         };
       }
 
-      // Nút Bật/Tắt Âm Thanh
+      // Nút Bật/Tắt Âm Thanh ở Sảnh & Trong Trận
       const btnToggleSound = document.getElementById("btnToggleSound");
+      const btnToggleSoundLobby = document.getElementById("btnToggleSoundLobby");
+      const soundStatusTextLobby = document.getElementById("soundStatusTextLobby");
+
+      const updateSoundUI = (isOn) => {
+        if (btnToggleSound) btnToggleSound.classList.toggle("muted", !isOn);
+        if (btnToggleSoundLobby) btnToggleSoundLobby.classList.toggle("muted", !isOn);
+        if (soundStatusTextLobby) soundStatusTextLobby.innerText = isOn ? "TIÊN NHẠC: BẬT" : "TIÊN NHẠC: TẮT";
+      };
+
+      if (btnToggleSoundLobby) {
+        btnToggleSoundLobby.onclick = () => {
+          if (this.audio) {
+            this.audio.init();
+            const isSoundOn = this.audio.toggleSound();
+            updateSoundUI(isSoundOn);
+            this.showStatus(isSoundOn ? "[ TIÊN NHẠC ] Đã khai mở khúc Cổ Cầm thiền định" : "[ TIÊN NHẠC ] Đã tĩnh âm");
+          }
+        };
+      }
       if (btnToggleSound) {
         btnToggleSound.onclick = () => {
-          const isSoundOn = this.audio.toggleSound();
-          btnToggleSound.classList.toggle("muted", !isSoundOn);
-          this.showStatus(isSoundOn ? "[ ÂM THANH ] Đã khai mở tiên nhạc" : "[ ÂM THANH ] Đã tĩnh âm");
+          if (this.audio) {
+            this.audio.init();
+            const isSoundOn = this.audio.toggleSound();
+            updateSoundUI(isSoundOn);
+            this.showStatus(isSoundOn ? "[ TIÊN NHẠC ] Đã khai mở khúc Cổ Cầm thiền định" : "[ TIÊN NHẠC ] Đã tĩnh âm");
+          }
         };
       }
 
@@ -864,12 +886,17 @@
     
     showCertificateModal() {
       if (!this.modalCertificate) return;
-      const dataUrl = this.generateCertificateCanvas();
-      if (this.certificateImgPreview && dataUrl) {
-        this.certificateImgPreview.src = dataUrl;
-      }
       this.modalCertificate.style.display = "flex";
-      this.audio.play("chime");
+      if (this.audio) this.audio.play("chime");
+
+      try {
+        const dataUrl = this.generateCertificateCanvas();
+        if (this.certificateImgPreview && dataUrl) {
+          this.certificateImgPreview.src = dataUrl;
+        }
+      } catch (err) {
+        console.warn("[UIManager] Lỗi render preview Chứng Đạo Kim Đồ:", err);
+      }
     }
 
     hideCertificateModal() {
@@ -1055,7 +1082,50 @@
       ctx.fillStyle = "#64748B";
       ctx.fillText("ieltsoasis.site/games/meowcha", 1115, 540);
 
-      return c.toDataURL("image/png");
+      try {
+        return c.toDataURL("image/png");
+      } catch (exportErr) {
+        console.warn("[Certificate] toDataURL thất bại (tainted canvas), tạo fallback:", exportErr);
+        return this.generateFallbackCertificateCanvas(s, realmData);
+      }
+    }
+
+    generateFallbackCertificateCanvas(s, realmData) {
+      const c = document.createElement("canvas");
+      c.width = 1200;
+      c.height = 630;
+      const ctx = c.getContext("2d");
+      if (!ctx) return "";
+
+      ctx.fillStyle = "#090D16";
+      ctx.fillRect(0, 0, 1200, 630);
+
+      ctx.strokeStyle = "#D4AF37";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(30, 30, 1140, 570);
+
+      ctx.textAlign = "center";
+      ctx.font = "900 36px 'Cinzel', serif";
+      ctx.fillStyle = "#FDE047";
+      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ • IELTS TIÊN HIỆP", 600, 140);
+
+      ctx.font = "700 22px 'Be Vietnam Pro', sans-serif";
+      ctx.fillStyle = "#38BDF8";
+      ctx.fillText(`ĐẠO HIỆU: ${(realmData.title || '').toUpperCase()} • ${realmData.name || 'Luyện Khí Kỳ'}`, 600, 220);
+
+      ctx.font = "900 28px 'Cinzel', serif";
+      ctx.fillStyle = "#FDE047";
+      ctx.fillText(`TU VI: ${(s.score || 0).toLocaleString()} PTS • ĐÃ TRẢM: ${s.wordsSlain || 0} TỪ VỰNG • TỐC ĐỘ: ${Math.round(s.wpm || 0)} WPM`, 600, 320);
+
+      ctx.font = "italic 16px 'Cinzel', serif";
+      ctx.fillStyle = "#CBD5E1";
+      ctx.fillText("“Ngụm trà đắng lắng ngàn kiếm ý • Chữ chữ khắc kim chứng đạo Bảng Vàng”", 600, 430);
+
+      ctx.font = "600 14px 'Cinzel', sans-serif";
+      ctx.fillStyle = "#64748B";
+      ctx.fillText("ieltsoasis.site/games/meowcha", 600, 520);
+
+      try { return c.toDataURL("image/png"); } catch (e) { return ""; }
     }
 
     showGameOverModal() {

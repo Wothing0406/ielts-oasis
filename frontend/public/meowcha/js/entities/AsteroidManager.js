@@ -210,7 +210,7 @@
       const spawnY = -baseRadius - 15;
 
       const M = root.Meowcha || {};
-      const appState = (M.app && M.app.gameState) || null;
+      const appState = this.gameState || (M.app && M.app.gameState) || null;
       const curMode = (appState && appState.gameMode) || "CLOZE";
 
       const asteroid = {
