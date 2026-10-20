@@ -598,7 +598,7 @@
           }
         }
         if (btnRestart) btnRestart.style.display = "inline-flex";
-        if (btnStart) btnStart.style.display = "none";
+        if (btnStart) btnStart.style.display = "flex";
       } else {
         if (btnContinue) btnContinue.style.display = "none";
         if (btnRestart) btnRestart.style.display = "none";
@@ -906,12 +906,34 @@
     downloadCertificatePNG() {
       const dataUrl = this.generateCertificateCanvas();
       if (!dataUrl) return;
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `Chung_Dao_Kim_Do_Cap${this.state.realmIdx || 0}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        const parts = dataUrl.split(',');
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `Chung_Dao_Kim_Do_Cap${(this.state && this.state.realmIdx) || 0}.png`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        }, 1200);
+      } catch (err) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `Chung_Dao_Kim_Do_Cap${(this.state && this.state.realmIdx) || 0}.png`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => document.body.removeChild(a), 500);
+      }
       this.showStatus("[ 符 ] Đã xuất Chứng Đạo Kim Đồ thành công!");
     }
 
@@ -935,7 +957,7 @@
       const ctx = c.getContext("2d");
       if (!ctx) return "";
 
-      const s = this.state;
+      const s = this.state || {};
       const realms = root.Meowcha?.CULTIVATION_REALMS || [];
       const realmData = realms[s.realmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ" };
 
@@ -978,7 +1000,6 @@
       ctx.textAlign = "center";
       ctx.font = "900 15px 'Cinzel', sans-serif";
       ctx.fillStyle = "#94A3B8";
-      ctx.letterSpacing = "2px";
       ctx.fillText("MEOW-CHA: VẠN KIẾM QUY TÔNG • TIÊN HIỆP TRÀ VIỆN", 600, 78);
 
       ctx.font = "900 36px 'Cinzel', serif";
@@ -988,33 +1009,171 @@
       ctx.fillText("CHỨNG ĐẠO KIM ĐỒ", 600, 126);
       ctx.shadowBlur = 0;
 
-      // 4. Khối bên trái: Avatar Miêu Tiên & Đài Sen
-      const catImg = document.getElementById("lobbyCatImg");
+      // 4. KHỐI BÊN TRÁI: ĐẠO QUẢ MIÊU TIÊN THẦN THÚ VECTƠ CHÂN THỰC (100% Vector Canvas)
+      const cx = 250, cy = 345;
       ctx.save();
+
+      // Vòng Bát Quái Tiên Luân phát sáng
+      ctx.strokeStyle = "rgba(253, 224, 71, 0.65)";
+      ctx.lineWidth = 2.5;
       ctx.shadowColor = "#F59E0B";
-      ctx.shadowBlur = 25;
-      ctx.strokeStyle = "rgba(253, 224, 71, 0.5)";
-      ctx.lineWidth = 2;
+      ctx.shadowBlur = 20;
       ctx.beginPath();
-      ctx.arc(260, 350, 140, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 130, 0, Math.PI * 2);
       ctx.stroke();
 
-      if (catImg && catImg.complete && catImg.naturalWidth > 0) {
-        ctx.drawImage(catImg, 140, 230, 240, 240);
-      } else {
-        // Fallback: Đài Sen & Dấu Chân Mèo Tiên
-        ctx.fillStyle = "#FDE047";
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 142, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Đài sen thần tiên
+      ctx.fillStyle = "rgba(16, 185, 129, 0.35)";
+      ctx.strokeStyle = "#34D399";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 90, 85, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Thanh ngọc phi kiếm bên trái & bên phải
+      [-110, 110].forEach((ox, sIdx) => {
+        ctx.save();
+        ctx.translate(cx + ox, cy - 10);
+        ctx.fillStyle = sIdx === 0 ? "#67E8F9" : "#FDE047";
+        ctx.shadowColor = sIdx === 0 ? "#0284C7" : "#F59E0B";
+        ctx.shadowBlur = 15;
         ctx.beginPath();
-        ctx.arc(260, 340, 60, 0, Math.PI * 2);
+        ctx.moveTo(0, -55);
+        ctx.lineTo(8, -40);
+        ctx.lineTo(6, 45);
+        ctx.lineTo(-6, 45);
+        ctx.lineTo(-8, -40);
+        ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#1E1B4B";
-        ctx.font = "900 24px 'Cinzel', serif";
-        ctx.textAlign = "center";
-        ctx.fillText("[ 仙 喵 ]", 260, 348);
-      }
+        ctx.fillStyle = "#D4AF37";
+        ctx.fillRect(-12, 45, 24, 5);
+        ctx.fillRect(-3, 50, 6, 20);
+        ctx.restore();
+      });
+
+      // Hai tai mèo
+      ctx.fillStyle = "#F8FAFC";
+      ctx.strokeStyle = "rgba(212, 175, 55, 0.7)";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 50, cy - 35);
+      ctx.lineTo(cx - 72, cy - 105);
+      ctx.lineTo(cx - 15, cy - 65);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx + 50, cy - 35);
+      ctx.lineTo(cx + 72, cy - 105);
+      ctx.lineTo(cx + 15, cy - 65);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Lòng tai hồng
+      ctx.fillStyle = "#F472B6";
+      ctx.beginPath();
+      ctx.moveTo(cx - 45, cy - 40);
+      ctx.lineTo(cx - 64, cy - 95);
+      ctx.lineTo(cx - 20, cy - 65);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx + 45, cy - 40);
+      ctx.lineTo(cx + 64, cy - 95);
+      ctx.lineTo(cx + 20, cy - 65);
+      ctx.closePath();
+      ctx.fill();
+
+      // Khuôn mặt mèo tròn bầu bĩnh
+      ctx.fillStyle = "#F8FAFC";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Ngọc Quan / Trâm Cài Tiên Đạo
+      ctx.fillStyle = "#FDE047";
+      ctx.beginPath();
+      ctx.moveTo(cx - 18, cy - 70);
+      ctx.lineTo(cx, cy - 88);
+      ctx.lineTo(cx + 18, cy - 70);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#38BDF8";
+      ctx.beginPath();
+      ctx.arc(cx, cy - 73, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ấn phù trán (Daoist Forehead Mark)
+      ctx.fillStyle = "#EF4444";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 25, 4.5, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Đôi mắt cười tiên miêu (^ ‿ ^)
+      ctx.strokeStyle = "#1E1B4B";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(cx - 26, cy, 14, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx + 26, cy, 14, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+
+      // Mũi tam giác hồng
+      ctx.fillStyle = "#FB7185";
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, cy + 12);
+      ctx.lineTo(cx + 5, cy + 12);
+      ctx.lineTo(cx, cy + 18);
+      ctx.closePath();
+      ctx.fill();
+
+      // Miệng cười
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(cx - 7, cy + 20, 7, 0, Math.PI * 0.9);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx + 7, cy + 20, 7, Math.PI * 0.1, Math.PI);
+      ctx.stroke();
+
+      // Má hồng đào
+      ctx.fillStyle = "rgba(251, 113, 133, 0.45)";
+      ctx.beginPath();
+      ctx.arc(cx - 42, cy + 15, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + 42, cy + 15, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Râu mèo 2 bên
+      ctx.strokeStyle = "#94A3B8";
+      ctx.lineWidth = 1.5;
+      [-1, 1].forEach(side => {
+        const bx = cx + side * 48;
+        ctx.beginPath(); ctx.moveTo(bx, cy + 8); ctx.lineTo(bx + side * 30, cy + 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx, cy + 16); ctx.lineTo(bx + side * 32, cy + 17); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx, cy + 24); ctx.lineTo(bx + side * 28, cy + 30); ctx.stroke();
+      });
+
       ctx.restore();
 
-      // 5. Khối bên phải: Bảng chiến tích tu chân
+      // 5. KHỐI BÊN PHẢI: BẢNG CHIẾN TÍCH TU CHÂN (CULTIVATION STATS)
       ctx.textAlign = "left";
       ctx.font = "900 24px 'Cinzel', serif";
       ctx.fillStyle = "#FEF3C7";
@@ -1085,47 +1244,9 @@
       try {
         return c.toDataURL("image/png");
       } catch (exportErr) {
-        console.warn("[Certificate] toDataURL thất bại (tainted canvas), tạo fallback:", exportErr);
-        return this.generateFallbackCertificateCanvas(s, realmData);
+        console.warn("[Certificate] toDataURL error:", exportErr);
+        return "";
       }
-    }
-
-    generateFallbackCertificateCanvas(s, realmData) {
-      const c = document.createElement("canvas");
-      c.width = 1200;
-      c.height = 630;
-      const ctx = c.getContext("2d");
-      if (!ctx) return "";
-
-      ctx.fillStyle = "#090D16";
-      ctx.fillRect(0, 0, 1200, 630);
-
-      ctx.strokeStyle = "#D4AF37";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(30, 30, 1140, 570);
-
-      ctx.textAlign = "center";
-      ctx.font = "900 36px 'Cinzel', serif";
-      ctx.fillStyle = "#FDE047";
-      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ • IELTS TIÊN HIỆP", 600, 140);
-
-      ctx.font = "700 22px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#38BDF8";
-      ctx.fillText(`ĐẠO HIỆU: ${(realmData.title || '').toUpperCase()} • ${realmData.name || 'Luyện Khí Kỳ'}`, 600, 220);
-
-      ctx.font = "900 28px 'Cinzel', serif";
-      ctx.fillStyle = "#FDE047";
-      ctx.fillText(`TU VI: ${(s.score || 0).toLocaleString()} PTS • ĐÃ TRẢM: ${s.wordsSlain || 0} TỪ VỰNG • TỐC ĐỘ: ${Math.round(s.wpm || 0)} WPM`, 600, 320);
-
-      ctx.font = "italic 16px 'Cinzel', serif";
-      ctx.fillStyle = "#CBD5E1";
-      ctx.fillText("“Ngụm trà đắng lắng ngàn kiếm ý • Chữ chữ khắc kim chứng đạo Bảng Vàng”", 600, 430);
-
-      ctx.font = "600 14px 'Cinzel', sans-serif";
-      ctx.fillStyle = "#64748B";
-      ctx.fillText("ieltsoasis.site/games/meowcha", 600, 520);
-
-      try { return c.toDataURL("image/png"); } catch (e) { return ""; }
     }
 
     showGameOverModal() {

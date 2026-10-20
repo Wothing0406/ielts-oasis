@@ -302,7 +302,9 @@
       // Bàn phím phần cứng
       window.addEventListener("keydown", (e) => {
         if (this.gameState.currentScene === "LOBBY") {
-          if (e.code === "Space" || e.key === " " || e.key === "Enter") {
+          // Không kích hoạt nếu đang mở các modal
+          const openModal = document.querySelector(".meowcha-modal-overlay[style*='display: flex']");
+          if (!openModal && (e.code === "Space" || e.key === " " || e.key === "Enter")) {
             e.preventDefault();
             this.startBattle();
             return;
@@ -313,8 +315,11 @@
           this.ui.togglePause();
           return;
         }
-        if (e.key.length === 1 && /[a-zA-Z]/i.test(e.key)) {
-          this.typing.processKey(e.key, this.canvas);
+        // Chuẩn hóa gõ phím tiếng Việt (Telex/VNI/Unikey) sang ký tự Latinh thuần túy
+        const rawKey = e.key;
+        const normalizedChar = rawKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d");
+        if (normalizedChar.length === 1 && /[a-zA-Z]/i.test(normalizedChar)) {
+          this.typing.processKey(normalizedChar, this.canvas);
         }
       });
 
@@ -444,7 +449,10 @@
       this.floatingText.clear();
       this.ui.showScene("LOBBY");
       this.ui.updateHUD();
-      this.audio.stopZenGuqin();
+      // Giữ nguyên khúc Cổ Cầm thiền định để sảnh chờ luôn có nhạc nền thanh tịnh
+      if (this.audio && this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
+        this.audio.startZenGuqin();
+      }
 
       if (this.vKeyboard) {
         this.vKeyboard.hide();
@@ -618,8 +626,18 @@
         candidatePool = matchedList;
       }
 
-      const wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
-      if (!wordItem) return;
+      let wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+      if (!wordItem) {
+        // Fallback kiên cố nếu danh sách tạm thời rỗng để game không bao giờ bị dừng
+        const fallbackWords = [
+          { word: "PEACE", ipa: "/piːs/", meaning: "Hòa bình, thanh tịnh", type: "noun" },
+          { word: "WISDOM", ipa: "/ˈwɪzdəm/", meaning: "Trí tuệ, thông thái", type: "noun" },
+          { word: "COURAGE", ipa: "/ˈkʌrɪdʒ/", meaning: "Lòng dũng cảm", type: "noun" },
+          { word: "CLARITY", ipa: "/ˈklærəti/", meaning: "Sự sáng suốt, rõ ràng", type: "noun" },
+          { word: "SERENITY", ipa: "/səˈrenəti/", meaning: "Sự tĩnh lặng, thanh bình", type: "noun" }
+        ];
+        wordItem = fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+      }
 
       // Đưa vào hàng đợi lịch sử để không lặp lại trong ít nhất 60 từ tiếp theo
       this.recentWordHistory.push(wordItem.word);
@@ -635,6 +653,13 @@
         targetDeckIdx,
         chosenType
       );
+
+      // Trong chế độ Thính Lôi Biện Âm (AUDIO): Phát âm từ vựng ngay khi ma thạch xuất hiện!
+      if (ast && ast.isAudio && this.typing) {
+        setTimeout(() => {
+          if (this.typing) this.typing.playWordAudio(ast);
+        }, 150);
+      }
     }
 
     gameLoop(now) {

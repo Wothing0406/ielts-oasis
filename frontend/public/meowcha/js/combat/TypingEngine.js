@@ -29,7 +29,7 @@
     processKey(char, canvas) {
       if (this.state.isGameOver || this.state.isPaused || this.state.catState === "BREAKTHROUGH") return;
 
-      const upper = char.toUpperCase();
+      const upper = (char || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").replace(/Đ/g, "D").toUpperCase();
       this.state.totalKeystrokes++;
 
       const activeList = this.asteroids.asteroids;
