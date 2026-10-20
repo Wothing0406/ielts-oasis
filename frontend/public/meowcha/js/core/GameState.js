@@ -73,6 +73,22 @@
       this.selectedBandIdx = 0;
       this.activeSlotId = this.activeSlotId || 1;
       this.pendingBreakthrough = false;
+
+      // Tụ Khí Tuyệt Kỹ Theo Cảnh Giới (Realm Passive Skill Gauge)
+      this.realmPassiveCharge = 0;
+      this.realmPassiveMax = 5;
+      this.chibiAttackFlash = 0;
+    }
+
+    getRealmPassiveConfig() {
+      const configs = [
+        { max: 5, name: "TRÚC PHONG TRÌ HOÃN", color: "#34D399" },
+        { max: 6, name: "SONG KIẾM HỢP BÍCH", color: "#38BDF8" },
+        { max: 5, name: "KIM LIÊN BẠO PHÁ", color: "#FBBF24" },
+        { max: 5, name: "NGUYÊN ANH LÔI KÍCH", color: "#C084FC" },
+        { max: 4, name: "CHÂN LONG PHỆ THIÊN", color: "#F59E0B" }
+      ];
+      return configs[Math.min(4, Math.max(0, this.realmIdx || 0))];
     }
 
     triggerStun(durationMs = 160) {
@@ -106,9 +122,12 @@
         }
         this.notify("stunEnd");
       }
-      // Giảm độ chói sấm sét
+      // Giảm độ chói sấm sét & hào quang Nguyên Anh Hộ Đạo
       if (this.screenFlash > 0) {
         this.screenFlash = Math.max(0, this.screenFlash - dt * 4.0);
+      }
+      if (this.chibiAttackFlash > 0) {
+        this.chibiAttackFlash = Math.max(0, this.chibiAttackFlash - dt * 2.5);
       }
     }
 

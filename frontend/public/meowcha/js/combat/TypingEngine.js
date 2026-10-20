@@ -4,7 +4,7 @@
  */
 (function(root) {
   class TypingEngine {
-    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null) {
+    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null, animator = null) {
       this.state = gameState;
       this.asteroids = asteroidManager;
       this.projectiles = projectileSystem;
@@ -13,6 +13,8 @@
       this.floatingText = floatingText;
       this.realmVFX = realmVFX;
       this.unityBridge = unityBridge;
+      this.animator = animator;
+      this.chibiAutoTimer = 0;
 
       this.currentTarget = null;
       this.onWordCompleted = null;
@@ -80,9 +82,24 @@
         const realmData = realms[this.state.realmIdx] || realms[0];
         this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, realmData.swordColor);
 
-        // Hiệu ứng tia lửa
+        // Hiệu ứng tia lửa & nội tại hàn băng Trúc Cơ
         this.particles.createHitSparks(target.x, target.y, realmData.swordColor, 8);
         this.audio.play("type");
+        if (this.state.realmIdx === 1) {
+          target.slowTimer = Math.max(target.slowTimer || 0, 1.2);
+          target.slowMult = 0.85;
+        }
+
+        // TÍCH TỤ KIẾM Ý & KÍCH HOẠT TUYỆT KỸ CẢNH GIỚI
+        const pCfg = this.state.getRealmPassiveConfig
+          ? this.state.getRealmPassiveConfig()
+          : { max: 5, name: "KIẾM Ý", color: "#34D399" };
+        this.state.realmPassiveMax = pCfg.max;
+        this.state.realmPassiveCharge = (this.state.realmPassiveCharge || 0) + 1;
+        if (this.state.realmPassiveCharge >= pCfg.max) {
+          this.state.realmPassiveCharge = 0;
+          this.triggerRealmPassiveSkill(target, canvas, catX, catY, isMobile);
+        }
 
         // KIỂM TRA ĐÃ TRẢM HOÀN TẤT TỪ HAY CHƯA
         if (target.typedLen >= target.word.length) {
@@ -181,7 +198,96 @@
       );
     }
 
+    triggerRealmPassiveSkill(target, canvas, catX, catY, isMobile) {
+      if (!target) return;
+      const rIdx = Math.min(4, Math.max(0, this.state.realmIdx || 0));
+
+      if (rIdx === 0) {
+        // Cảnh 0 (Luyện Khí): Trúc Phong Trì Hoãn - Làm chậm ma thạch 22% trong 2.8s
+        target.slowTimer = 2.8;
+        target.slowMult = 0.78;
+        if (this.animator) {
+          this.animator.spawnVFXClip("vfx_slash_r0_sheet", target.x, target.y, { size: 110, fps: 22, color: "#34D399" });
+        }
+        this.particles.createBambooLeaves(target.x, target.y, 6);
+        this.floatingText.add(target.x, target.y - 38, "[ 竹 ] TRÚC PHONG TRÌ HOÃN", "#34D399", isMobile ? 13 : 15);
+      } else if (rIdx === 1) {
+        // Cảnh 1 (Trúc Cơ): Song Kiếm Hợp Bích - Tự động khắc +1 cổ tự & đẩy lùi ma thạch 22px
+        if (target.typedLen < target.word.length) {
+          target.typedLen++;
+        }
+        target.y = Math.max(-target.radius, target.y - 22);
+        this.projectiles.spawnSkyStrike(target.x, target.y, 1);
+        if (this.animator) {
+          this.animator.spawnVFXClip("vfx_slash_r1_sheet", target.x, target.y, { size: 124, fps: 22, color: "#38BDF8" });
+        }
+        this.floatingText.add(target.x, target.y - 40, "[ 雙 ] SONG KIẾM TRẢM (+1 Tự)", "#38BDF8", isMobile ? 13 : 15);
+      } else if (rIdx === 2) {
+        // Cảnh 2 (Kim Đan): Kim Liên Bạo Phá - Tự động khắc +1 cổ tự, đẩy lùi 18px & +30 Tu Vi
+        if (target.typedLen < target.word.length) {
+          target.typedLen++;
+        }
+        target.y = Math.max(-target.radius, target.y - 18);
+        this.state.addScore(30);
+        this.projectiles.spawnSkyStrike(target.x, target.y, 2);
+        if (this.animator) {
+          this.animator.spawnVFXClip("vfx_slash_r2_sheet", target.x, target.y, { size: 128, fps: 22, color: "#FBBF24" });
+        }
+        this.floatingText.add(target.x, target.y - 42, "[ 丹 ] KIM LIÊN BẠO (+1 Tự • +30 Tu Vi)", "#FBBF24", isMobile ? 13 : 15);
+      } else if (rIdx === 3) {
+        // Cảnh 3 (Nguyên Anh): Nguyên Anh Lôi Kích - Tự động khắc +1 cổ tự & Định thân ma thạch 0.75s
+        if (target.typedLen < target.word.length) {
+          target.typedLen++;
+        }
+        target.freezeTimer = 0.75;
+        this.state.chibiAttackFlash = 1.0;
+        this.projectiles.spawnSkyStrike(target.x, target.y, 3);
+        if (this.animator) {
+          this.animator.spawnVFXClip("vfx_slash_r3_sheet", target.x, target.y, { size: 132, fps: 22, color: "#C084FC" });
+        }
+        this.floatingText.add(target.x, target.y - 42, "[ 雷 ] NGUYÊN ANH LÔI KÍCH (+1 Tự • Định Thân)", "#C084FC", isMobile ? 13 : 15);
+      } else if (rIdx >= 4) {
+        // Cảnh 4 (Độ Kiếp): Chân Long Phệ Thiên - Tự động khắc tới +2 cổ tự, đẩy lùi 32px & +50 Tu Vi
+        const carve = Math.min(2, Math.max(0, target.word.length - target.typedLen));
+        target.typedLen += carve;
+        target.y = Math.max(-target.radius, target.y - 32);
+        this.state.addScore(50);
+        this.projectiles.spawnSkyStrike(target.x, target.y, 4);
+        if (this.animator) {
+          this.animator.spawnVFXClip("vfx_slash_r4_sheet", target.x, target.y, { size: 142, fps: 24, color: "#F59E0B" });
+        }
+        this.floatingText.add(target.x, target.y - 45, `[ 龍 ] CHÂN LONG TRẢM (+${Math.max(1, carve)} Tự)`, "#F59E0B", isMobile ? 14 : 16);
+      }
+    }
+
     updateHazard(dt, canvas) {
+      // NGUYÊN ANH HỘ ĐẠO (Cảnh 3): Chibi Nguyên Anh tự động phóng Tử Điện Lôi Kích mỗi 3.2s
+      if (this.state.realmIdx === 3 && this.asteroids.asteroids.length > 0 && !this.state.isPaused && !this.state.isGameOver) {
+        this.chibiAutoTimer = (this.chibiAutoTimer || 0) + dt;
+        if (this.chibiAutoTimer >= 3.2) {
+          this.chibiAutoTimer = 0;
+          const ast = this.currentTarget && this.asteroids.asteroids.includes(this.currentTarget)
+            ? this.currentTarget
+            : this.asteroids.asteroids[0];
+          if (ast) {
+            const isMobile = canvas && (canvas.width <= 768 || canvas.height > canvas.width);
+            const catX = canvas ? canvas.width / 2 : 400;
+            const catY = canvas ? (isMobile ? canvas.height * 0.61 - 40 : canvas.height - 110) : 500;
+            this.state.chibiAttackFlash = 1.0;
+            this.projectiles.spawn(catX - 70, catY - 60, ast.x, ast.y, 3, "#C084FC");
+            this.projectiles.spawnSkyStrike(ast.x, ast.y, 3);
+            if (this.animator) {
+              this.animator.spawnVFXClip("vfx_slash_r3_sheet", ast.x, ast.y, { size: 120, fps: 22, color: "#C084FC" });
+            }
+            ast.freezeTimer = Math.max(ast.freezeTimer || 0, 0.6);
+            if (ast.typedLen < ast.word.length - 1) {
+              ast.typedLen++;
+              this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO LÔI KÍCH (+1 Tự)", "#C084FC", isMobile ? 12 : 14);
+            }
+          }
+        }
+      }
+
       if (!this.isLightningHazard) return;
 
       this.hazardTimer -= dt;
@@ -244,8 +350,27 @@
       const catX = canvas.width / 2;
       const catY = isMobile ? (canvas.height * 0.61 - 40) : (canvas.height - 110);
 
-      // 1. Phóng phi kiếm thần tốc từ Miêu Tôn xé toạc màn hình cắm vào thiên thạch
+      // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
       this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
+      this.projectiles.spawnSkyStrike(target.x, target.y, this.state.realmIdx);
+      if (this.animator) {
+        const rIdx = Math.min(4, Math.max(0, this.state.realmIdx || 0));
+        this.animator.spawnVFXClip(`vfx_slash_r${rIdx}_sheet`, target.x, target.y, {
+          size: 136,
+          fps: 22
+        });
+      }
+
+      // Nội tại Hồi Huyết Kim Đan (Cảnh 2: mỗi 4 từ hồi +3 HP) & Hộ Thuẫn Độ Kiếp (Cảnh 4: mỗi 5 từ +1 Khiên)
+      if (this.state.realmIdx === 2 && this.state.wordsSlain % 4 === 0 && this.state.hp < this.state.maxHp) {
+        this.state.hp = Math.min(this.state.maxHp, this.state.hp + 3);
+        this.state.notify("hp");
+        this.floatingText.add(catX, catY - 75, "[ 丹 ] KIM ĐAN HỒI HUYẾT (+3 HP)", "#34D399", isMobile ? 13 : 15);
+      } else if (this.state.realmIdx >= 4 && this.state.wordsSlain % 5 === 0 && (this.state.shieldCharges || 0) < 3) {
+        this.state.shieldCharges = (this.state.shieldCharges || 0) + 1;
+        this.state.notify("shield");
+        this.floatingText.add(catX, catY - 75, "[ 盾 ] CHÂN LONG HỘ THUẪN (+1)", "#FDE047", isMobile ? 13 : 15);
+      }
 
       // 2. Đại chiêu KIẾM KHÍ CHÉM NỔ MA THẠCH (Trảm đúng thì chỉ vung kiếm chém ma thạch, không đánh sét vào người)
       this.state.setCatState("ULTIMATE_BLAST", 350);

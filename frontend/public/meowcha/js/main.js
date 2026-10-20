@@ -39,7 +39,8 @@
         vfx_slash_r2_sheet: { src: "./sprites/vfx/slashes/slash_golden_sheet.png", img: new Image(), loaded: false },
         vfx_slash_r3_sheet: { src: "./sprites/vfx/slashes/slash_thunder_sheet.png", img: new Image(), loaded: false },
         vfx_slash_r4_sheet: { src: "./sprites/vfx/slashes/slash_dragon_sheet.png", img: new Image(), loaded: false },
-        vfx_impact_burst_sheet: { src: "./sprites/vfx/impacts/impact_burst_sheet.png", img: new Image(), loaded: false }
+        vfx_impact_burst_sheet: { src: "./sprites/vfx/impacts/impact_burst_sheet.png", img: new Image(), loaded: false },
+        chibi_companion: { src: "./sprites/characters/realm3_nascent_soul/chibi_companion.png", img: new Image(), loaded: false }
       };
 
       // Đăng ký động 5 Cảnh Giới Nhân Vật x 5 Trạng Thái (Ảnh đơn + Sprite Sheet đa frame)
@@ -79,7 +80,7 @@
       this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
-      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge);
+      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge, this.animator);
 
       this.ipaToast = null;
       this.vKeyboard = null;

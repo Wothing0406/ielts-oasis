@@ -4,9 +4,10 @@
  */
 (function (root) {
   class CatCultivator {
-    constructor(assets, realmVFX) {
+    constructor(assets, realmVFX, animator = null) {
       this.assets = assets;
       this.realmVFX = realmVFX;
+      this.animator = animator;
       this.time = 0;
     }
 
@@ -46,83 +47,11 @@
       const realmIdx = Math.min(4, Math.max(0, gameState.realmIdx));
       const catState = gameState.catState;
 
-      // 1. CHỌN SPRITE THEO CẢNH GIỚI NHÂN VẬT (BẢO LƯU DANH TÍNH)
-      let sprite = this.assets.cat_idle?.img;
-
-      if (catState === "DEFEATED" && this.assets.cat_defeated?.loaded) {
-        sprite = this.assets.cat_defeated.img;
-      } else if (catState === "HURT" && this.assets.cat_hurt?.loaded) {
-        // Khi bị đánh: Nếu là Luyện Khí dùng cat_hurt, các cảnh giới cao giữ hình thể cảnh giới kèm hiệu ứng chấn thương
-        if (realmIdx === 0) {
-          sprite = this.assets.cat_hurt.img;
-        } else if (realmIdx === 1) {
-          sprite = this.assets.cat_weak_attack?.loaded
-            ? this.assets.cat_weak_attack.img
-            : this.assets.cat_idle.img;
-        } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
-          sprite = this.assets.cat_golden_core.img;
-        } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
-          sprite = this.assets.cat_nascent_soul.img;
-        } else if (
-          realmIdx >= 4 &&
-          this.assets.cat_celestial_sovereign?.loaded
-        ) {
-          sprite = this.assets.cat_celestial_sovereign.img;
-        }
-      } else if (catState === "ULTIMATE_BLAST") {
-        if (realmIdx <= 1 && this.assets.cat_ultimate_blast?.loaded) {
-          sprite = this.assets.cat_ultimate_blast.img;
-        } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
-          sprite = this.assets.cat_golden_core.img;
-        } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
-          sprite = this.assets.cat_nascent_soul.img;
-        } else if (
-          realmIdx >= 4 &&
-          this.assets.cat_celestial_sovereign?.loaded
-        ) {
-          sprite = this.assets.cat_celestial_sovereign.img;
-        } else {
-          sprite = this.assets.cat_idle?.loaded
-            ? this.assets.cat_idle.img
-            : null;
-        }
-      } else if (catState === "WEAK_ATTACK") {
-        // TƯ THẾ XUẤT CHIÊU KHI GÕ PHÍM TRÚNG
-        if (realmIdx <= 1 && this.assets.cat_weak_attack?.loaded) {
-          sprite = this.assets.cat_weak_attack.img;
-        } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
-          sprite = this.assets.cat_golden_core.img;
-        } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
-          sprite = this.assets.cat_nascent_soul.img;
-        } else if (
-          realmIdx >= 4 &&
-          this.assets.cat_celestial_sovereign?.loaded
-        ) {
-          sprite = this.assets.cat_celestial_sovereign.img;
-        } else {
-          sprite = this.assets.cat_idle?.loaded
-            ? this.assets.cat_idle.img
-            : null;
-        }
-      } else {
-        // TƯ THẾ TĨNH TỌA THIỀN ĐỊNH (IDLE) CHUẨN CẢNH GIỚI
-        if (realmIdx >= 4 && this.assets.cat_celestial_sovereign?.loaded) {
-          sprite = this.assets.cat_celestial_sovereign.img; // Thái Thượng
-        } else if (realmIdx === 3 && this.assets.cat_nascent_soul?.loaded) {
-          sprite = this.assets.cat_nascent_soul.img; // Nguyên Anh
-        } else if (realmIdx === 2 && this.assets.cat_golden_core?.loaded) {
-          sprite = this.assets.cat_golden_core.img; // Kim Đan
-        } else if (realmIdx === 1) {
-          sprite = this.assets.cat_idle?.loaded
-            ? this.assets.cat_idle.img
-            : null;
-        } else {
-          sprite = this.assets.cat_idle?.loaded
-            ? this.assets.cat_idle.img
-            : null;
-        }
-      }
-
+      // 1. CHỌN SPRITE ĐỘNG ĐA KHUNG HÌNH THEO CẢNH GIỚI & TRẠNG THÁI (SPRITE ANIMATOR)
+      const animFrame = this.animator
+        ? this.animator.getCharacterFrame(realmIdx, catState)
+        : null;
+      const sprite = animFrame?.img || this.assets.cat_idle?.img;
       if (!sprite) return;
 
       ctx.save();
@@ -141,36 +70,23 @@
         this.realmVFX.drawRealm4(ctx, BASE_X, BASE_Y, drawY, catState);
       }
 
-      // 3. ĐUÔI TIÊN MÈO VE VẨY BỒNG BỀNH (CUTE VIBE)
-      ctx.save();
-      const tailBaseX = BASE_X + 28;
-      const tailBaseY = BASE_Y - 48;
-      const tailSway = Math.sin(t * 1.8) * 16;
-      const tailLift =
-        catState === "WEAK_ATTACK" ? -14 : catState === "HURT" ? 10 : 0;
-      ctx.strokeStyle = realmIdx >= 2 ? "#FEF08A" : "#FDE68A";
-      ctx.lineWidth = 9;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(tailBaseX, tailBaseY);
-      ctx.bezierCurveTo(
-        tailBaseX + 18,
-        tailBaseY - 12 + tailLift,
-        tailBaseX + 26 + tailSway,
-        tailBaseY - 32 + tailLift,
-        tailBaseX + 16 + tailSway,
-        tailBaseY - 48 + tailLift,
-      );
-      ctx.stroke();
-
-      // Chóp đuôi trắng muốt
-      ctx.strokeStyle = "#FFFDF5";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(tailBaseX + 24 + tailSway * 0.8, tailBaseY - 38 + tailLift);
-      ctx.lineTo(tailBaseX + 16 + tailSway, tailBaseY - 48 + tailLift);
-      ctx.stroke();
-      ctx.restore();
+      // 3. NGUYÊN ANH HỘ ĐẠO (CHIBI COMPANION CHO CẢNH GIỚI 3 - NGUYÊN ANH KỲ)
+      if (realmIdx === 3 && this.assets?.chibi_companion?.loaded) {
+        ctx.save();
+        const chibiSize = isMobile ? 54 : 74;
+        const chibiX = BASE_X - (isMobile ? 58 : 86) + Math.cos(t * 1.4) * 5;
+        const chibiY = drawY + (isMobile ? 8 : 14) + Math.sin(t * 2.2) * 7;
+        ctx.shadowColor = gameState.chibiAttackFlash > 0 ? "#FDE047" : "#C084FC";
+        ctx.shadowBlur = gameState.chibiAttackFlash > 0 ? 28 : 16;
+        ctx.drawImage(
+          this.assets.chibi_companion.img,
+          chibiX - chibiSize / 2,
+          chibiY - chibiSize / 2,
+          chibiSize,
+          chibiSize,
+        );
+        ctx.restore();
+      }
 
       // 4. BIẾN HÌNH ĐỘNG HỌC (SQUASH & STRETCH, LUNGE, RECOIL)
       let attackOffsetY = 0;
@@ -445,38 +361,20 @@
               : "drop-shadow(0 0 12px rgba(245, 158, 11, 0.75))";
       }
 
-      ctx.drawImage(sprite, drawX, drawY, renderSize, renderSize);
-
-      // 5. CUTE VIBE: ĐÔI MÁ HỒNG ĐÀO HOA
-      ctx.fillStyle = "rgba(255, 120, 150, 0.42)";
-      ctx.beginPath();
-      ctx.arc(BASE_X - 22, drawY + 88, 6.5, 0, Math.PI * 2);
-      ctx.arc(BASE_X + 22, drawY + 88, 6.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 6. CHỚP MẮT
-      if (catState === "HURT") {
-        ctx.strokeStyle = "#DC2626";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(BASE_X - 16, drawY + 76, 5, 0, Math.PI * 2);
-        ctx.arc(BASE_X + 16, drawY + 76, 5, 0, Math.PI * 2);
-        ctx.stroke();
+      if (animFrame && animFrame.isSheet) {
+        ctx.drawImage(
+          sprite,
+          animFrame.sx,
+          animFrame.sy,
+          animFrame.sw,
+          animFrame.sh,
+          drawX,
+          drawY,
+          renderSize,
+          renderSize,
+        );
       } else {
-        const isBlinking =
-          Math.floor(this.time * 1.5) % 6 === 0 &&
-          Math.sin(this.time * 15) > 0.6;
-        if (isBlinking && catState === "IDLE") {
-          ctx.strokeStyle = "#38240D";
-          ctx.lineWidth = 2.5;
-          ctx.lineCap = "round";
-          ctx.beginPath();
-          ctx.arc(BASE_X - 15, drawY + 76, 5, Math.PI, 0);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(BASE_X + 15, drawY + 76, 5, Math.PI, 0);
-          ctx.stroke();
-        }
+        ctx.drawImage(sprite, drawX, drawY, renderSize, renderSize);
       }
 
       ctx.restore();
@@ -516,6 +414,45 @@
         currentTarget,
         gameState,
       );
+
+      // 8.5 THANH TỤ KHÍ TUYỆT KỸ CẢNH GIỚI (REALM SKILL GAUGE)
+      if (gameState.getRealmPassiveConfig) {
+        const pCfg = gameState.getRealmPassiveConfig();
+        const curCharge = Math.min(pCfg.max, gameState.realmPassiveCharge || 0);
+        const barW = isMobile ? 96 : 124;
+        const barH = 5;
+        const barX = BASE_X - barW / 2;
+        const barY = BASE_Y - (isMobile ? 4 : 8);
+
+        ctx.save();
+        ctx.fillStyle = "rgba(10, 5, 18, 0.78)";
+        ctx.strokeStyle = "rgba(253, 224, 71, 0.45)";
+        ctx.lineWidth = 1;
+        ctx.fillRect(barX - 2, barY - 1, barW + 4, barH + 2);
+        ctx.strokeRect(barX - 2, barY - 1, barW + 4, barH + 2);
+
+        const segW = (barW - (pCfg.max - 1) * 2) / pCfg.max;
+        for (let s = 0; s < pCfg.max; s++) {
+          const sx = barX + s * (segW + 2);
+          if (s < curCharge) {
+            ctx.fillStyle = pCfg.color;
+            ctx.shadowColor = pCfg.color;
+            ctx.shadowBlur = 8;
+          } else {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+            ctx.shadowBlur = 0;
+          }
+          ctx.fillRect(sx, barY, segW, barH);
+        }
+
+        ctx.font = isMobile ? "bold 8.5px 'Cinzel', serif" : "bold 9.5px 'Cinzel', serif";
+        ctx.fillStyle = pCfg.color;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 4;
+        ctx.fillText(pCfg.name, BASE_X, barY + (isMobile ? 12 : 14));
+        ctx.restore();
+      }
 
       // 9. VÒNG SAO HOA MẮT KHI BỊ CHOÁNG (STUN DIZZY RUNES)
       if (gameState.isStunned || gameState.catState === "HURT") {
@@ -654,6 +591,70 @@
         ctx.lineTo(targetX, targetY);
         ctx.stroke();
 
+        // 3.5 TUYỆT KỸ TIA BẮN ĐẶC TRƯNG TỪNG CẢNH GIỚI (REALM-SPECIFIC BEAM SIGNATURES)
+        if (realmIdx === 1) {
+          // Trúc Cơ: Song Kiếm Hàn Băng Xoắn Kép (Twin Frost Helix)
+          ctx.strokeStyle = "#67E8F9";
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          for (let step = 0; step <= 16; step++) {
+            const u = step / 16;
+            const hw = Math.sin(u * Math.PI * 4 - this.time * 18) * (isMobile ? 7 : 12);
+            const hx = swordTipX + (targetX - swordTipX) * u + perpX * hw;
+            const hy = swordTipY + (targetY - swordTipY) * u + perpY * hw;
+            if (step === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.stroke();
+        } else if (realmIdx === 2) {
+          // Kim Đan: Hỏa Liên Nhật Viêm Trụ (Solar Core Pulse Rings)
+          ctx.strokeStyle = "#FEF08A";
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.moveTo(swordTipX, swordTipY);
+          ctx.lineTo(targetX, targetY);
+          ctx.stroke();
+        } else if (realmIdx === 3) {
+          // Nguyên Anh: Tử Điện Lôi Mạch (Jagged Lightning Chain + Chibi Companion Tether)
+          ctx.strokeStyle = "#E9D5FF";
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(swordTipX, swordTipY);
+          for (let z = 1; z <= 8; z++) {
+            const u = z / 8;
+            const jit = z < 8 ? (Math.sin(this.time * 35 + z * 4.1) * 10) : 0;
+            ctx.lineTo(
+              swordTipX + (targetX - swordTipX) * u + perpX * jit,
+              swordTipY + (targetY - swordTipY) * u + perpY * jit,
+            );
+          }
+          ctx.stroke();
+
+          // Tia lôi điện phụ từ Chibi Nguyên Anh Hộ Đạo bên vai trái
+          const chibiX = baseX - (isMobile ? 58 : 86);
+          const chibiY = baseY - (isMobile ? 105 : 148);
+          ctx.strokeStyle = gameState.chibiAttackFlash > 0 ? "#FDE047" : "rgba(192, 132, 252, 0.65)";
+          ctx.lineWidth = gameState.chibiAttackFlash > 0 ? 3.0 : 1.5;
+          ctx.beginPath();
+          ctx.moveTo(chibiX, chibiY);
+          ctx.quadraticCurveTo((chibiX + targetX) / 2, (chibiY + targetY) / 2 - 24, targetX, targetY);
+          ctx.stroke();
+        } else if (realmIdx >= 4) {
+          // Độ Kiếp: Chân Long Đế Quang Mạch (Coiling Golden Dragon Spine Wave)
+          ctx.strokeStyle = "#FDE047";
+          ctx.lineWidth = 3.0;
+          ctx.beginPath();
+          for (let step = 0; step <= 20; step++) {
+            const u = step / 20;
+            const dw = Math.sin(u * Math.PI * 5 - this.time * 22) * (isMobile ? 9 : 15);
+            const dx = swordTipX + (targetX - swordTipX) * u + perpX * dw;
+            const dy = swordTipY + (targetY - swordTipY) * u + perpY * dw;
+            if (step === 0) ctx.moveTo(dx, dy);
+            else ctx.lineTo(dx, dy);
+          }
+          ctx.stroke();
+        }
+
         // 4. VÒNG LINH PHÙ XOAY TRÒN CHẠY DỌC THEO TIA BẮN (TRAVELING RUNIC RINGS)
         const ringProgress = (this.time * 2.2) % 1.0;
         for (let r = 0; r < 3; r++) {
@@ -787,8 +788,10 @@
             this.assets.prop_bamboo_sword.img) ||
           null;
       } else if (realmIdx === 2) {
-        // Cảnh 2 (Kim Đan): Kim Đan Trảm Tiên Kiếm (Ngọc kiếm mạ hoàng kim)
+        // Cảnh 2 (Kim Đan): Kim Đan Bát Quái Kiếm (Hoàng Kim Phi Kiếm)
         swordImg =
+          (this.assets?.prop_golden_sword?.loaded &&
+            this.assets.prop_golden_sword.img) ||
           (this.assets?.prop_jade_sword?.loaded &&
             this.assets.prop_jade_sword.img) ||
           null;
@@ -823,12 +826,18 @@
           const drawW = Math.round(185 * (drawH / 280));
           ctx.rotate(1.322);
           ctx.drawImage(swordImg, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
-        } else if (realmIdx === 1 || realmIdx === 2) {
-          // Lam Ngọc Kiếm / Kim Đan Kiếm (190x280) nghiêng -74.2° -> xoay +1.295 rad
+        } else if (realmIdx === 1) {
+          // Lam Ngọc Kiếm (190x280) nghiêng -74.2° -> xoay +1.295 rad
           const drawH = swordLen;
           const drawW = Math.round(190 * (drawH / 280));
           ctx.rotate(1.295);
           ctx.drawImage(swordImg, -drawW / 2, -drawH / 2 + 10, drawW, drawH);
+        } else if (realmIdx === 2) {
+          // Kim Đan Bát Quái Kiếm (190x280) mũi hướng lên -90° -> xoay +PI/2 rad
+          const drawH = swordLen + 4;
+          const drawW = Math.round(190 * (drawH / 280));
+          ctx.rotate(Math.PI / 2);
+          ctx.drawImage(swordImg, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
         } else if (realmIdx === 3) {
           // Cửu Thiên Thần Lôi Kiếm (256x256) nghiêng -50.1° -> xoay +0.875 rad
           const drawSize = swordLen;

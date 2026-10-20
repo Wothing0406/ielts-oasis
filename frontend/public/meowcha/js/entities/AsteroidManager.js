@@ -180,6 +180,9 @@
         rot: (asteroidType === "ice" || asteroidType === "void") ? (fallAngle - (3 * Math.PI) / 4) : (fallAngle - Math.PI / 4),
         rotSpeed: (Math.random() - 0.5) * 0.08,
         hitReaction: 0,
+        slowTimer: 0,
+        slowMult: 1.0,
+        freezeTimer: 0,
         trail: [] // Hạt đuôi bụi linh khí pixel
       };
 
@@ -194,10 +197,18 @@
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
-        ast.x += ast.vx * 60 * dt;
+        let statusSpeedMult = 1.0;
+        if (ast.freezeTimer && ast.freezeTimer > 0) {
+          ast.freezeTimer = Math.max(0, ast.freezeTimer - dt);
+          statusSpeedMult = 0.0; // Định thân hoàn toàn bởi Nguyên Anh Lôi Kích
+        } else if (ast.slowTimer && ast.slowTimer > 0) {
+          ast.slowTimer = Math.max(0, ast.slowTimer - dt);
+          statusSpeedMult = ast.slowMult || 0.78; // Trì hoãn tốc độ rơi bởi Trúc Phong / Hàn Băng
+        }
+        ast.x += ast.vx * 60 * dt * statusSpeedMult;
         // Khi bị sấm đánh (thiên kiếp sét): Ma thạch bị lôi đình thúc đẩy, tốc độ rơi tăng vọt (+45%) tạo áp lực thử thách
         const gravMult = isLightningHazard ? 1.45 : 1.0;
-        ast.y += ast.vy * 60 * dt * gravMult;
+        ast.y += ast.vy * 60 * dt * gravMult * statusSpeedMult;
         ast.vy += dt * 0.002; // Gia tốc vi mô cực êm
         // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
         ast.fallAngle = Math.atan2(ast.vy, ast.vx);
@@ -395,6 +406,28 @@
         // 4.5 TỬ ĐIỆN LÔI KIẾP QUANH MA THẠCH (LIGHTNING HAZARD CORONA)
         // Khi bị sét đánh: Tia điện chớp giật quanh khối đá, báo hiệu ma thạch gia tốc rơi nhanh
         // ============================================================
+        if (ast.freezeTimer && ast.freezeTimer > 0) {
+          ctx.save();
+          ctx.strokeStyle = "#C084FC";
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#A855F7";
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(posX, posY, ast.radius * 1.18, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        } else if (ast.slowTimer && ast.slowTimer > 0) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.arc(posX, posY, ast.radius * 1.12, this.time * 2, this.time * 2 + Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
         if (this.isLightningHazard) {
           ctx.save();
           ctx.strokeStyle = Math.random() < 0.6 ? "#FDE047" : "#38BDF8";

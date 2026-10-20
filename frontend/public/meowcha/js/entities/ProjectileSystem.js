@@ -9,8 +9,9 @@
  */
 (function(root) {
   class ProjectileSystem {
-    constructor(assets) {
+    constructor(assets, animator = null) {
       this.assets = assets || {};
+      this.animator = animator || null;
       this.projectiles = [];
       this.skyStrikes = []; // Đòn sấm sét từ đỉnh trời / Long kiếm giáng thế khi kết liễu từ
       this.shockwaves = []; // Sóng xung kích kiếm quang bung tròn khi va chạm
@@ -24,6 +25,13 @@
     }
 
     spawnShockwave(x, y, color = "#FDE047") {
+      if (this.animator) {
+        this.animator.spawnVFXClip("vfx_impact_burst_sheet", x, y, {
+          size: 88,
+          fps: 22,
+          color: color
+        });
+      }
       this.shockwaves.push({
         x: x,
         y: y,
@@ -412,14 +420,15 @@
           ctx.shadowColor = "#F59E0B";
           ctx.shadowBlur = 25;
 
-          const jadeImg = this.assets?.prop_jade_sword?.loaded ? this.assets.prop_jade_sword.img : null;
-          if (jadeImg) {
+          const goldenSwordImg = (this.assets?.prop_golden_sword?.loaded && this.assets.prop_golden_sword.img) ||
+                                 (this.assets?.prop_jade_sword?.loaded && this.assets.prop_jade_sword.img) || null;
+          if (goldenSwordImg) {
             ctx.imageSmoothingEnabled = false;
             const drawH = 52;
             const drawW = Math.round(190 * (drawH / 280)); // 35px
             ctx.save();
-            ctx.rotate(1.295);
-            ctx.drawImage(jadeImg, -drawW / 2, -drawH / 2 + 10, drawW, drawH);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(goldenSwordImg, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
             ctx.restore();
           } else {
             ctx.fillStyle = "rgba(120, 53, 15, 0.95)";
