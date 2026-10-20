@@ -49,6 +49,13 @@
       // Modals
       this.modalSaves = document.getElementById("modalSaveSlots");
       this.modalBreakthrough = document.getElementById("modalBreakthrough");
+      this.modalCertificate = document.getElementById("modalCertificate");
+      this.certificateImgPreview = document.getElementById("certificateImgPreview");
+      this.btnDownloadCertificate = document.getElementById("btnDownloadCertificate");
+      this.btnCopyShareLink = document.getElementById("btnCopyShareLink");
+      this.btnCloseCertificate = document.getElementById("btnCloseCertificate");
+      this.btnExportCertGameOver = document.getElementById("btnExportCertGameOver");
+      this.btnOpenCertLobby = document.getElementById("btnOpenCertLobby");
       this.modalPause = document.getElementById("modalPause");
       this.modalGameOver = document.getElementById("modalGameOver");
       this.modalPantheon = document.getElementById("modalPantheon");
@@ -81,6 +88,22 @@
 
     bindEvents() {
       // Nút mở / đóng Kho Đan Dược
+      if (this.btnExportCertGameOver) {
+        this.btnExportCertGameOver.onclick = () => this.showCertificateModal();
+      }
+      if (this.btnOpenCertLobby) {
+        this.btnOpenCertLobby.onclick = () => this.showCertificateModal();
+      }
+      if (this.btnCloseCertificate) {
+        this.btnCloseCertificate.onclick = () => this.hideCertificateModal();
+      }
+      if (this.btnDownloadCertificate) {
+        this.btnDownloadCertificate.onclick = () => this.downloadCertificatePNG();
+      }
+      if (this.btnCopyShareLink) {
+        this.btnCopyShareLink.onclick = () => this.copyShareLink();
+      }
+
       if (this.btnOpenVocabVault) {
         this.btnOpenVocabVault.onclick = () => this.showVocabVaultModal();
       }

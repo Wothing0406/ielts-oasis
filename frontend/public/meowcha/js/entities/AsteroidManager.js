@@ -11,6 +11,66 @@
       this.time = 0;
     }
 
+    spawnBoss(bossConfig, canvasWidth) {
+      if (!bossConfig) return null;
+      const cW = canvasWidth || this.canvasWidth || 800;
+      const isMobile = cW <= 600;
+      const firstShield = bossConfig.shields[0];
+      const word = firstShield.word.toUpperCase();
+      const radius = isMobile ? 56 : 74;
+
+      const craggyPoints = [];
+      const numVertices = 16;
+      for (let i = 0; i < numVertices; i++) {
+        const ang = (i / numVertices) * Math.PI * 2;
+        const radOffset = (Math.random() - 0.5) * 14;
+        craggyPoints.push({ angle: ang, r: radius + radOffset });
+      }
+
+      const boss = {
+        id: "BOSS_" + Date.now(),
+        isBoss: true,
+        bossTitle: bossConfig.bossTitle,
+        baseWord: bossConfig.baseWord,
+        baseMeaning: bossConfig.baseMeaning,
+        shields: bossConfig.shields,
+        currentShieldIdx: 0,
+        totalShields: bossConfig.shields.length,
+        word: word,
+        ipa: firstShield.ipa,
+        meaning: firstShield.meaning,
+        isCloze: false,
+        isAudio: false,
+        x: cW / 2,
+        y: -radius - 20,
+        targetY: isMobile ? 120 : 155,
+        vx: 0,
+        vy: 0.22,
+        fallAngle: Math.PI / 2,
+        radius: radius,
+        coreColor: "#DC2626",
+        glowColor: "#F59E0B",
+        runeColor: "#FEF08A",
+        trailColors: ["#EF4444", "#F59E0B", "#FDE047", "#991B1B"],
+        damage: 15,
+        bandIdx: 3,
+        typedLen: 0,
+        wobbleSeed: 0,
+        wobbleSpeed: 1.8,
+        rot: 0,
+        rotSpeed: 0.012,
+        hitReaction: 0,
+        slowTimer: 0,
+        freezeTimer: 0,
+        trail: [],
+        craggyPoints: craggyPoints,
+        veins: []
+      };
+
+      this.asteroids.push(boss);
+      return boss;
+    }
+
     clear() {
       this.asteroids = [];
     }
@@ -211,6 +271,17 @@
           ast.slowTimer = Math.max(0, ast.slowTimer - dt);
           statusSpeedMult = ast.slowMult || 0.78; // Trì hoãn tốc độ rơi bởi Trúc Phong / Hàn Băng
         }
+        if (ast.isBoss) {
+          if (ast.y < ast.targetY) {
+            ast.y += ast.vy * 60 * dt;
+          } else {
+            ast.y = ast.targetY + Math.sin(this.time * 2.2) * 6;
+            ast.x = (cWidth / 2) + Math.cos(this.time * 1.5) * 18;
+          }
+          ast.rot += ast.rotSpeed;
+          continue;
+        }
+
         ast.x += ast.vx * 60 * dt * statusSpeedMult;
         // Khi bị sấm đánh (thiên kiếp sét): Ma thạch bị lôi đình thúc đẩy, tốc độ rơi tăng vọt (+45%) tạo áp lực thử thách
         const gravMult = isLightningHazard ? 1.45 : 1.0;

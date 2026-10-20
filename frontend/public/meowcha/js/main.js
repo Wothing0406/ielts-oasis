@@ -136,7 +136,7 @@
       this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
-      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge, this.animator);
+      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge, this.animator, this.saveSystem);
 
       this.ipaToast = null;
       this.vKeyboard = null;
@@ -185,7 +185,7 @@
         this.saveSystem.saveGame(currentSlot, this.gameState);
 
         // Kiểm tra điều kiện đột phá
-        const triggered = this.breakthrough.checkProgress();
+        const triggered = this.breakthrough.checkProgress(this.asteroids);
         if (!triggered) {
           // Lên lịch sinh từ tiếp theo
           setTimeout(() => this.spawnWord(), 600);
@@ -193,6 +193,14 @@
       };
 
       // Callback hiển thị bảng thiên phú đột phá
+      this.breakthrough.onSpawnBoss = (bossPool, newRealmIdx) => {
+        const bossAst = this.asteroids.spawnBoss(bossPool, this.canvas.width);
+        this.typing.currentTarget = bossAst;
+        this.typing.onBossDefeated = () => {
+          this.breakthrough.onBossSlain(newRealmIdx);
+        };
+      };
+
       this.breakthrough.onShowTalentModal = (talents, targetRealm) => {
         // ĐÓNG BĂNG TRẬN CHIẾN & QUÉT SẠCH MA THẠCH ĐANG RƠI ĐỂ NGƯỜI CHƠI KHÔNG BỊ MẤT MÁU OAN
         this.gameState.isPaused = true;
@@ -680,6 +688,9 @@
       const bottomThreshold = isMobile ? (this.canvas.height * 0.61 - 15) : (this.canvas.height - 120);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
+        if (this.saveSystem && !missedAst.isBoss) {
+          this.saveSystem.recordWeaknessWord(missedAst);
+        }
         // Ma thạch đập vào đan điền: Sát thương phân cấp theo loại ma thạch
         const baseDmg = missedAst.damage || (missedAst.asteroidType === 'thunder' ? 22 : missedAst.asteroidType === 'void' ? 16 : missedAst.asteroidType === 'fire' ? 12 : 8);
         const damage = Math.max(5, baseDmg);

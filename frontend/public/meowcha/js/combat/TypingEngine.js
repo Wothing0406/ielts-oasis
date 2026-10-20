@@ -4,7 +4,9 @@
  */
 (function(root) {
   class TypingEngine {
-    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null, animator = null) {
+    constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null, animator = null, saveSystem = null) {
+      this.saveSystem = saveSystem;
+      this.onBossDefeated = null;
       this.state = gameState;
       this.asteroids = asteroidManager;
       this.projectiles = projectileSystem;
@@ -79,7 +81,7 @@
 
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
-        const realmData = realms[this.state.realmIdx] || realms[0];
+        const realmData = realms[this.state.realmIdx] || realms[0] || { swordColor: "#67E8F9" };
         this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, realmData.swordColor);
 
         // Hiệu ứng tia lửa & nội tại hàn băng Trúc Cơ
@@ -113,6 +115,9 @@
       } else {
         // GÕ NHẦM (KHÔNG CÓ TỪ NÀO TRÊN MÀN HÌNH KHỚP PHÍM)
         this.mistakeStreak++;
+        if (this.mistakeStreak >= 2 && this.currentTarget && this.saveSystem && !this.currentTarget.isBoss) {
+          this.saveSystem.recordWeaknessWord(this.currentTarget);
+        }
         this.state.combo = 0;
         this.state.typoCount++;
         this.audio.play("hurt");
@@ -337,6 +342,56 @@
     }
 
     handleWordSlain(target, canvas) {
+      if (target.isBoss) {
+        this.playWordAudio(target);
+        this.state.wordsSlain++;
+        this.state.combo++;
+        target.currentShieldIdx++;
+        const isMob = canvas.width <= 768 || (canvas.height > canvas.width);
+
+        if (target.currentShieldIdx < target.totalShields) {
+          // Phá vỡ hộ thuẫn hiện tại, chuyển sang từ đồng nghĩa tiếp theo!
+          const nextShield = target.shields[target.currentShieldIdx];
+          target.word = nextShield.word.toUpperCase();
+          target.ipa = nextShield.ipa;
+          target.meaning = nextShield.meaning;
+          target.typedLen = 0;
+          this.currentTarget = null;
+
+          this.audio.play("shatter");
+          this.audio.play("chime");
+          this.state.screenShake = 16;
+          this.particles.createExplosion(target.x, target.y, "#F59E0B", 36);
+          this.particles.createPixelShards(target.x, target.y, ["#F59E0B", "#EF4444", "#FEF08A"], 24);
+          this.floatingText.add(target.x, target.y - 70, `[ 破 ] PHÁ HỘ THUẪN ${target.currentShieldIdx}/${target.totalShields}!`, "#FDE047", isMob ? 15 : 18);
+          if (this.animator) {
+            this.animator.spawnVFXClip("vfx_slash_r4_sheet", target.x, target.y, { size: 160, fps: 24, color: "#EF4444" });
+          }
+          return;
+        } else {
+          // ĐÃ PHÁ HẾT CẢ 3 HỘ THUẪN: BOSS TÂM MA BỊ TIÊU DIỆT HOÀN TOÀN!
+          this.audio.play("explosion");
+          this.audio.play("chime");
+          this.state.screenShake = 24;
+          this.particles.createExplosion(target.x, target.y, "#FDE047", 64);
+          this.particles.createPixelShards(target.x, target.y, ["#FDE047", "#EF4444", "#38BDF8", "#34D399"], 60);
+          this.floatingText.addCelestialEdict(
+            canvas.width,
+            "[ 悟 • ĐẠI ĐẠO QUẢ ]",
+            `Trảm diệt Tâm Ma thành công! Đột phá cảnh giới!`,
+            "purified"
+          );
+
+          const bIdx = this.asteroids.asteroids.indexOf(target);
+          if (bIdx !== -1) this.asteroids.asteroids.splice(bIdx, 1);
+          this.currentTarget = null;
+
+          if (this.onBossDefeated) {
+            this.onBossDefeated(target);
+          }
+          return;
+        }
+      }
       // 1. PHÁT ÂM TỨC THÌ (ZERO DELAY): Kích hoạt ngay tại khoảnh khắc vừa gõ xong ký tự cuối cùng
       this.playWordAudio(target);
 

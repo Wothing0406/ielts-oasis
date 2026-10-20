@@ -4215,3 +4215,43 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+
+/* ========================================================= */
+/* MODAL CHỨNG ĐẠO KIM ĐỒ (CULTIVATION CERTIFICATE) */
+/* ========================================================= */
+.certificate-modal-box {
+  width: min(94%, 720px);
+  text-align: center;
+  background: radial-gradient(circle at 50% 20%, rgba(20, 30, 48, 0.96) 0%, rgba(8, 12, 20, 0.98) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.55);
+  box-shadow: 0 0 35px rgba(212, 175, 55, 0.25);
+  padding: 16px 20px;
+}
+
+.certificate-preview-wrap {
+  width: 100%;
+  margin: 12px 0 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: #020617;
+}
+
+.certificate-img-preview {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.certificate-actions-bar {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .certificate-actions-bar {
+    flex-direction: column;
+  }
+}

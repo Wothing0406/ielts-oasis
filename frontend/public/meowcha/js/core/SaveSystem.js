@@ -8,6 +8,77 @@
   class SaveSystem {
     constructor() {
       this.slots = this.loadLocalSlots();
+      this.syncSrsDeck();
+    }
+
+    syncSrsDeck() {
+      try {
+        const words = this.getWeaknessWords();
+        const M = root.Meowcha || {};
+        if (M.TANG_KINH_DECKS && Array.isArray(M.TANG_KINH_DECKS)) {
+          const srsDeck = M.TANG_KINH_DECKS.find(d => d.id === "flashcard_srs");
+          if (srsDeck) {
+            srsDeck.words = words.length > 0 ? words : [
+              { word: "PERSEVERE", ipa: "/ˌpɜː.sɪˈvɪər/", type: "verb", meaning: "Kiên trì bền bỉ vượt nghịch cảnh" },
+              { word: "RESILIENT", ipa: "/rɪˈzɪl.jənt/", type: "adj", meaning: "Kiên cường dẻo dai trước thử thách" },
+              { word: "TRANSCEND", ipa: "/trænˈsend/", type: "verb", meaning: "Vượt qua giới hạn, phi thăng" }
+            ];
+            srsDeck.wordsCount = srsDeck.words.length;
+          }
+        }
+      } catch (e) {
+        console.warn("[SaveSystem.syncSrsDeck] Lỗi khởi tạo SRS deck:", e);
+      }
+    }
+
+    recordWeaknessWord(wordItem) {
+      if (!wordItem || !wordItem.word) return;
+      try {
+        const key = "meowcha_srs_weaknesses";
+        const raw = localStorage.getItem(key);
+        let list = raw ? JSON.parse(raw) : [];
+        const wordUpper = wordItem.word.toUpperCase();
+        const existing = list.find(w => w.word === wordUpper);
+        if (existing) {
+          existing.missCount = (existing.missCount || 1) + 1;
+          existing.lastMissed = Date.now();
+        } else {
+          list.push({
+            word: wordUpper,
+            ipa: wordItem.ipa || "/.../",
+            meaning: wordItem.meaning || "",
+            type: wordItem.type || "vocab",
+            missCount: 1,
+            lastMissed: Date.now()
+          });
+        }
+        if (list.length > 200) list = list.slice(-200);
+        localStorage.setItem(key, JSON.stringify(list));
+        this.syncSrsDeck();
+
+        if (typeof fetch !== "undefined") {
+          fetch("/api/vocabulary", {
+            method: "POST",
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify({
+              word: wordUpper,
+              definition: wordItem.meaning,
+              ipa: wordItem.ipa,
+              tag: "meowcha_weakness"
+            })
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.warn("[SaveSystem.recordWeaknessWord] Không thể ghi từ yếu:", e);
+      }
+    }
+
+    getWeaknessWords() {
+      try {
+        const raw = localStorage.getItem("meowcha_srs_weaknesses");
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return [];
     }
 
     getDefaultSlot(slotId) {
