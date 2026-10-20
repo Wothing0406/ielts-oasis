@@ -165,6 +165,12 @@ Hệ thống đã nâng cấp toàn diện cơ chế học thuật từ **Copy-T
 5. **Chuẩn Mực Giao Diện Cổ Phong — Không Sử Dụng Emoji Đơn Giản:**
    - Triệt tiêu 100% các icon emoji thông thường (`⚔️`, `📜`, `✨`, `🗑️`, `⚡`, `🧧`, `✕`, `★`, `✓`).
    - Thay thế bằng hệ thống vector SVG cổ điển sắc nét từ `XianxiaIcons.js`: Móng Mèo Tiên, Phi Kiếm Thanh Vân, Cuộn Trục Ngọc Giản, Đài Sen Kim Đan, Lôi Ấn Cửu Thiên, Lư Đồng Phong Ấn Hóa Vàng, và Dấu Triện Chu Sa.
+6. **Đại Yêu Thú Boss "Tâm Ma Khảo Nghiệm" (IELTS Synonym Boss Fight):**
+   - Khi người chơi tích lũy đủ Tu Vi để đột phá cảnh giới, Đại Yêu Thú Boss Tâm Ma sẽ giáng thế mang theo một từ gốc IELTS (ví dụ: `DIFFICULT`, `IMPORTANT`, `DANGEROUS`, `CHANGE`). Người chơi phải trảm vỡ lần lượt **3 lớp hộ thuẫn tương ứng với 3 từ đồng nghĩa Band 7.5+** (ví dụ: `ARDUOUS` -> `FORMIDABLE` -> `DEMANDING`) để phá giáp, tiêu diệt Tâm Ma và chính thức phi thăng cảnh giới mới.
+7. **Trình Xuất "Chứng Đạo Đồ" (Shareable Cultivation Certificate PNG Generator):**
+   - Tích hợp công cụ Canvas 2D xuất thẻ bài tổng kết **Chứng Đạo Kim Đồ (1200×630px Canvas PNG)** đạt chuẩn tỷ lệ chia sẻ mạng xã hội (Facebook, Twitter/X, Discord) hiển thị chân dung Miêu Tiên theo cảnh giới, Đạo hiệu, Điểm Tu Vi, Kiếm tốc WPM, Số từ IELTS đã trảm, Dấu triện Chu Sa và liên kết tỷ thí. Hỗ trợ tải ảnh PNG trực tiếp và sao chép link thách đấu.
+8. **Đồng Bộ Hai Chiều Với Kho Flashcard SRS của IELTS Oasis:**
+   - Mọi từ vựng gõ sai liên tiếp hoặc để thiên thạch chạm đáy đan điền đều tự động được ghi nhận vào kho `meowcha_srs_weaknesses` (đồng bộ ngầm lên `/api/vocabulary` với tag `#meowcha_weakness`). Bộ đề **Bản Mệnh Linh Từ (`flashcard_srs`)** trong Tàng Kinh Các sẽ ưu tiên lấy danh sách này để người chơi tôi luyện lặp lại ngắt quãng (Spaced Repetition).
 
 ---
 
