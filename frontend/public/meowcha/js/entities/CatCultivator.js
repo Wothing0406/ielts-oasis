@@ -591,6 +591,46 @@
         ctx.lineTo(targetX, targetY);
         ctx.stroke();
 
+        // 3.4 SPRITE TIA BẮN PIXEL ART ĐỘC BẢN TỪNG NHÂN VẬT (AUTHENTIC CHARACTER BEAM SPRITE)
+        const beamSheetAsset = this.assets && this.assets[`char_r${realmIdx}_beam_sheet`];
+        const beamSingleAsset = this.assets && this.assets[`char_r${realmIdx}_beam`];
+        if ((beamSheetAsset && beamSheetAsset.loaded) || (beamSingleAsset && beamSingleAsset.loaded)) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(swordTipX, swordTipY);
+          ctx.rotate(swordAngle);
+          const beamH = (isMobile ? 36 : 54) * (1.0 + keyPulse * 0.35);
+          ctx.globalAlpha = Math.min(1.0, 0.82 + keyPulse * 0.18);
+          ctx.shadowColor = curSwordColor;
+          ctx.shadowBlur = 18 + keyPulse * 12;
+
+          if (beamSheetAsset && beamSheetAsset.loaded) {
+            const frameIdx = Math.floor(this.time * 14) % 4;
+            const fw = Math.floor(beamSheetAsset.img.width / 4);
+            const fh = beamSheetAsset.img.height;
+            ctx.drawImage(
+              beamSheetAsset.img,
+              frameIdx * fw,
+              0,
+              fw,
+              fh,
+              0,
+              -beamH / 2,
+              distToTarget,
+              beamH
+            );
+          } else if (beamSingleAsset && beamSingleAsset.loaded) {
+            ctx.drawImage(
+              beamSingleAsset.img,
+              0,
+              -beamH / 2,
+              distToTarget,
+              beamH
+            );
+          }
+          ctx.restore();
+        }
+
         // 3.5 TUYỆT KỸ TIA BẮN ĐẶC TRƯNG TỪNG CẢNH GIỚI (REALM-SPECIFIC BEAM SIGNATURES)
         if (realmIdx === 1) {
           // Trúc Cơ: Song Kiếm Hàn Băng Xoắn Kép (Twin Frost Helix)

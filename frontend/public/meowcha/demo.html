@@ -884,7 +884,7 @@
           <div class="absolute inset-2 rounded-full border border-dashed border-[#789262]/40 animate-spin [animation-duration:30s]"></div>
           
           <!-- Hình ảnh Miêu Tiên Nhân vật chính -->
-          <img src="./sprites/cat_idle.png" id="lobbyCatImg" alt="Miêu Tiên Tọa Thiền" class="w-32 h-32 sm:w-36 sm:h-36 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)] transition-transform hover:scale-105 duration-300">
+          <img src="./sprites/characters/realm0_qi_refining/poses/idle.png" id="lobbyCatImg" alt="Miêu Tiên Tọa Thiền" class="w-32 h-32 sm:w-36 sm:h-36 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)] transition-transform hover:scale-105 duration-300">
           
           <!-- Chén trà bốc khói phía góc -->
           <div class="absolute bottom-2 right-4 p-2 bg-[#281a11]/90 rounded-full border border-[#98b06f] shadow flex items-center justify-center tea-steam">
@@ -1113,7 +1113,7 @@
     <!-- Cụm Trái: Mini Profile & Cảnh Giới & HP Bar -->
     <div class="flex items-center gap-2.5">
       <div class="relative w-11 h-11 rounded bg-wood-dark border-2 border-wood-warm overflow-hidden p-0.5 shrink-0 shadow">
-        <img src="./sprites/cat_idle.png" id="battleCatAvatar" class="w-full h-full object-contain" alt="Miêu Tiên">
+        <img src="./sprites/characters/realm0_qi_refining/poses/idle.png" id="battleCatAvatar" class="w-full h-full object-contain" alt="Miêu Tiên">
       </div>
       <div class="flex flex-col min-w-0">
         <div class="flex items-center gap-1.5">
@@ -1467,20 +1467,20 @@
     // 2. ASSET MANAGER
     // ==========================================
     const assets = {
-      bg: { src: "./bg_study_sanctuary.jpg", img: null, loaded: false },
+      bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: null, loaded: false },
       pantheon: { src: "./pixel_pantheon_clean.jpg", img: null, loaded: false },
-      cat_idle: { src: "./sprites/cat_idle.png", img: null, loaded: false },
-      cat_weak_attack: { src: "./sprites/cat_weak_attack.png", img: null, loaded: false },
-      cat_ultimate_blast: { src: "./sprites/cat_ultimate_blast.png", img: null, loaded: false },
-      cat_hurt: { src: "./sprites/cat_hurt.png", img: null, loaded: false },
-      cat_defeated: { src: "./sprites/cat_defeated.png", img: null, loaded: false },
-      cat_golden_core: { src: "./sprites/cat_golden_core.png", img: null, loaded: false },
-      cat_nascent_soul: { src: "./sprites/cat_nascent_soul.png", img: null, loaded: false },
-      cat_celestial_sovereign: { src: "./sprites/cat_celestial_sovereign.png", img: null, loaded: false },
-      prop_jade_sword: { src: "./sprites/prop_jade_sword.png", img: null, loaded: false },
-      prop_asteroid: { src: "./sprites/prop_asteroid.png", img: null, loaded: false },
-      prop_sword_slash: { src: "./sprites/prop_sword_slash.png", img: null, loaded: false },
-      prop_tea_explosion: { src: "./sprites/prop_tea_explosion.png", img: null, loaded: false }
+      cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: null, loaded: false },
+      cat_weak_attack: { src: "./sprites/characters/realm0_qi_refining/poses/attack.png", img: null, loaded: false },
+      cat_ultimate_blast: { src: "./sprites/characters/realm0_qi_refining/poses/ultimate.png", img: null, loaded: false },
+      cat_hurt: { src: "./sprites/characters/realm0_qi_refining/poses/hurt.png", img: null, loaded: false },
+      cat_defeated: { src: "./sprites/characters/realm0_qi_refining/poses/defeated.png", img: null, loaded: false },
+      cat_golden_core: { src: "./sprites/characters/realm2_golden_core/poses/idle.png", img: null, loaded: false },
+      cat_nascent_soul: { src: "./sprites/characters/realm3_nascent_soul/poses/idle.png", img: null, loaded: false },
+      cat_celestial_sovereign: { src: "./sprites/characters/realm4_tribulation/poses/idle.png", img: null, loaded: false },
+      prop_jade_sword: { src: "./sprites/characters/realm1_foundation/weapon/sword.png", img: null, loaded: false },
+      prop_asteroid: { src: "./sprites/asteroids/ice.png", img: null, loaded: false },
+      prop_sword_slash: { src: "./sprites/characters/realm0_qi_refining/vfx/slash.png", img: null, loaded: false },
+      prop_tea_explosion: { src: "./sprites/maps/tea_explosion.png", img: null, loaded: false }
     };
 
     let loadedCount = 0;
@@ -5250,11 +5250,11 @@
       const battleCatAvatar = document.getElementById("battleCatAvatar");
       if (battleCatAvatar) {
         const realmSprites = [
-          "./sprites/cat_idle.png",
-          "./sprites/cat_weak_attack.png",
-          "./sprites/cat_golden_core.png",
-          "./sprites/cat_nascent_soul.png",
-          "./sprites/cat_celestial_sovereign.png"
+          "./sprites/characters/realm0_qi_refining/poses/idle.png",
+          "./sprites/characters/realm0_qi_refining/poses/attack.png",
+          "./sprites/characters/realm2_golden_core/poses/idle.png",
+          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
+          "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         battleCatAvatar.src = realmSprites[currentRealmIdx] || realmSprites[0];
       }
@@ -5436,11 +5436,11 @@
       const lobbyCatImg = document.getElementById("lobbyCatImg");
       if (lobbyCatImg) {
         const realmSprites = [
-          "./sprites/cat_idle.png",
-          "./sprites/cat_weak_attack.png",
-          "./sprites/cat_golden_core.png",
-          "./sprites/cat_nascent_soul.png",
-          "./sprites/cat_celestial_sovereign.png"
+          "./sprites/characters/realm0_qi_refining/poses/idle.png",
+          "./sprites/characters/realm0_qi_refining/poses/attack.png",
+          "./sprites/characters/realm2_golden_core/poses/idle.png",
+          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
+          "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         lobbyCatImg.src = realmSprites[currentRealmIdx] || realmSprites[0];
       }

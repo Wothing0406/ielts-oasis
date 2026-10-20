@@ -10,40 +10,35 @@
       this.canvas = document.getElementById("gameCanvas");
       this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
-      // Khởi tạo Asset Loader (Hỗ trợ cả đường dẫn phân tầng mới & tương thích ngược)
+      // Khởi tạo Asset Loader theo cấu trúc thư mục phân tầng chuẩn (characters/, asteroids/, maps/)
       this.assets = {
-        bg: { src: "./bg_study_sanctuary.jpg", img: new Image(), loaded: false },
-        cat_idle: { src: "./sprites/cat_idle.png", img: new Image(), loaded: false },
-        cat_weak_attack: { src: "./sprites/cat_weak_attack.png", img: new Image(), loaded: false },
-        cat_golden_core: { src: "./sprites/cat_golden_core.png", img: new Image(), loaded: false },
-        cat_nascent_soul: { src: "./sprites/cat_nascent_soul.png", img: new Image(), loaded: false },
-        cat_celestial_sovereign: { src: "./sprites/cat_celestial_sovereign.png", img: new Image(), loaded: false },
-        cat_hurt: { src: "./sprites/cat_hurt.png", img: new Image(), loaded: false },
-        cat_defeated: { src: "./sprites/cat_defeated.png", img: new Image(), loaded: false },
-        cat_ultimate_blast: { src: "./sprites/cat_ultimate_blast.png", img: new Image(), loaded: false },
+        bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: new Image(), loaded: false },
+        cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: new Image(), loaded: false },
+        cat_weak_attack: { src: "./sprites/characters/realm0_qi_refining/poses/attack.png", img: new Image(), loaded: false },
+        cat_golden_core: { src: "./sprites/characters/realm2_golden_core/poses/idle.png", img: new Image(), loaded: false },
+        cat_nascent_soul: { src: "./sprites/characters/realm3_nascent_soul/poses/idle.png", img: new Image(), loaded: false },
+        cat_celestial_sovereign: { src: "./sprites/characters/realm4_tribulation/poses/idle.png", img: new Image(), loaded: false },
+        cat_hurt: { src: "./sprites/characters/realm0_qi_refining/poses/hurt.png", img: new Image(), loaded: false },
+        cat_defeated: { src: "./sprites/characters/realm0_qi_refining/poses/defeated.png", img: new Image(), loaded: false },
+        cat_ultimate_blast: { src: "./sprites/characters/realm0_qi_refining/poses/ultimate.png", img: new Image(), loaded: false },
         prop_asteroid: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
         prop_asteroid_ice: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
         prop_asteroid_fire: { src: "./sprites/asteroids/fire.png", img: new Image(), loaded: false },
         prop_asteroid_void: { src: "./sprites/asteroids/void.png", img: new Image(), loaded: false },
         prop_asteroid_thunder: { src: "./sprites/asteroids/thunder.png", img: new Image(), loaded: false },
-        prop_bamboo_sword: { src: "./sprites/weapons/bamboo_sword.png", img: new Image(), loaded: false },
-        prop_jade_sword: { src: "./sprites/weapons/jade_sword.png", img: new Image(), loaded: false },
-        prop_golden_sword: { src: "./sprites/weapons/golden_bagua_sword.png", img: new Image(), loaded: false },
-        sword_realm3_thunder: { src: "./sprites/weapons/thunder_sword.png", img: new Image(), loaded: false },
-        sword_realm4_dragon: { src: "./sprites/weapons/dragon_sword.png", img: new Image(), loaded: false },
-        prop_sword_slash: { src: "./sprites/vfx/slashes/sword_slash.png", img: new Image(), loaded: false },
-        prop_tea_explosion: { src: "./sprites/vfx/impacts/tea_explosion.png", img: new Image(), loaded: false },
-        prop_mystic_cloud: { src: "./sprites/environment/mystic_cloud.png", img: new Image(), loaded: false },
-        vfx_slash_r0_sheet: { src: "./sprites/vfx/slashes/slash_bamboo_sheet.png", img: new Image(), loaded: false },
-        vfx_slash_r1_sheet: { src: "./sprites/vfx/slashes/slash_jade_x_sheet.png", img: new Image(), loaded: false },
-        vfx_slash_r2_sheet: { src: "./sprites/vfx/slashes/slash_golden_sheet.png", img: new Image(), loaded: false },
-        vfx_slash_r3_sheet: { src: "./sprites/vfx/slashes/slash_thunder_sheet.png", img: new Image(), loaded: false },
-        vfx_slash_r4_sheet: { src: "./sprites/vfx/slashes/slash_dragon_sheet.png", img: new Image(), loaded: false },
-        vfx_impact_burst_sheet: { src: "./sprites/vfx/impacts/impact_burst_sheet.png", img: new Image(), loaded: false },
-        chibi_companion: { src: "./sprites/characters/realm3_nascent_soul/chibi_companion.png", img: new Image(), loaded: false }
+        prop_bamboo_sword: { src: "./sprites/characters/realm0_qi_refining/weapon/sword.png", img: new Image(), loaded: false },
+        prop_jade_sword: { src: "./sprites/characters/realm1_foundation/weapon/sword.png", img: new Image(), loaded: false },
+        prop_golden_sword: { src: "./sprites/characters/realm2_golden_core/weapon/sword.png", img: new Image(), loaded: false },
+        sword_realm3_thunder: { src: "./sprites/characters/realm3_nascent_soul/weapon/sword.png", img: new Image(), loaded: false },
+        sword_realm4_dragon: { src: "./sprites/characters/realm4_tribulation/weapon/sword.png", img: new Image(), loaded: false },
+        prop_sword_slash: { src: "./sprites/characters/realm0_qi_refining/vfx/slash.png", img: new Image(), loaded: false },
+        prop_tea_explosion: { src: "./sprites/maps/tea_explosion.png", img: new Image(), loaded: false },
+        prop_mystic_cloud: { src: "./sprites/maps/mystic_cloud.png", img: new Image(), loaded: false },
+        vfx_impact_burst_sheet: { src: "./sprites/maps/impact_burst_sheet.png", img: new Image(), loaded: false },
+        chibi_companion: { src: "./sprites/characters/realm3_nascent_soul/poses/chibi_companion.png", img: new Image(), loaded: false }
       };
 
-      // Đăng ký động 5 Cảnh Giới Nhân Vật x 5 Trạng Thái (Ảnh đơn + Sprite Sheet đa frame)
+      // Đăng ký động 5 Cảnh Giới Nhân Vật (Poses + Sheets + Weapon + Beam + VFX riêng cho từng nhân vật)
       const realmFolders = [
         "realm0_qi_refining",
         "realm1_foundation",
@@ -55,16 +50,57 @@
       realmFolders.forEach((folder, rIdx) => {
         stateKeys.forEach((st) => {
           this.assets[`char_r${rIdx}_${st}`] = {
-            src: `./sprites/characters/${folder}/${st}.png`,
+            src: `./sprites/characters/${folder}/poses/${st}.png`,
             img: new Image(),
             loaded: false
           };
           this.assets[`char_r${rIdx}_${st}_sheet`] = {
-            src: `./sprites/characters/${folder}/${st}_sheet.png`,
+            src: `./sprites/characters/${folder}/sheets/${st}_sheet.png`,
             img: new Image(),
             loaded: false
           };
         });
+        // Vũ khí, đạn phi kiếm, tia bắn & hiệu ứng chém riêng của từng nhân vật
+        this.assets[`char_r${rIdx}_sword`] = {
+          src: `./sprites/characters/${folder}/weapon/sword.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_sword_sheet`] = {
+          src: `./sprites/characters/${folder}/weapon/sword_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_projectile`] = {
+          src: `./sprites/characters/${folder}/weapon/projectile.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_projectile_sheet`] = {
+          src: `./sprites/characters/${folder}/weapon/projectile_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_beam`] = {
+          src: `./sprites/characters/${folder}/beam/beam.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_beam_sheet`] = {
+          src: `./sprites/characters/${folder}/beam/beam_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_slash`] = {
+          src: `./sprites/characters/${folder}/vfx/slash.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`vfx_slash_r${rIdx}_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/slash_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
       });
 
       // Các hệ thống con

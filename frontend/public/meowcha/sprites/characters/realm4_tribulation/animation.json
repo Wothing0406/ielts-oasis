@@ -1,53 +1,82 @@
 {
-  "schema": "agent-sprite-forge.animation.v3",
-  "realmId": 4,
-  "title": "Vạn Kiếm Chí Tôn",
-  "cellSize": [
-    360,
-    360
-  ],
-  "clips": {
+  "realmIndex": 4,
+  "folder": "realm4_tribulation",
+  "name": "Vạn Kiếm Chí Tôn",
+  "title": "Độ Kiếp Kỳ",
+  "poses": {
+    "idle": "./poses/idle.png",
+    "attack": "./poses/attack.png",
+    "ultimate": "./poses/ultimate.png",
+    "hurt": "./poses/hurt.png",
+    "defeated": "./poses/defeated.png"
+  },
+  "sheets": {
     "idle": {
-      "sheet": "idle_sheet.png",
-      "frames": 6,
+      "file": "./sheets/idle_sheet.png",
+      "frames": 4,
       "fps": 8,
       "loop": true
     },
     "attack": {
-      "sheet": "attack_sheet.png",
+      "file": "./sheets/attack_sheet.png",
       "frames": 4,
-      "fps": 18,
-      "loop": false,
-      "events": [
-        {
-          "frame": 1,
-          "name": "hit"
-        }
-      ]
+      "fps": 8,
+      "loop": false
     },
     "ultimate": {
-      "sheet": "ultimate_sheet.png",
-      "frames": 6,
-      "fps": 14,
-      "loop": false,
-      "events": [
-        {
-          "frame": 2,
-          "name": "ultimate_burst"
-        }
-      ]
+      "file": "./sheets/ultimate_sheet.png",
+      "frames": 4,
+      "fps": 8,
+      "loop": true
     },
     "hurt": {
-      "sheet": "hurt_sheet.png",
+      "file": "./sheets/hurt_sheet.png",
       "frames": 4,
-      "fps": 14,
+      "fps": 8,
       "loop": false
     },
     "defeated": {
-      "sheet": "defeated_sheet.png",
+      "file": "./sheets/defeated_sheet.png",
       "frames": 4,
-      "fps": 6,
+      "fps": 8,
+      "loop": false
+    }
+  },
+  "weapon": {
+    "name": "Chân Long Đế Kiếm",
+    "sword": "./weapon/sword.png",
+    "swordSheet": {
+      "file": "./weapon/sword_sheet.png",
+      "frames": 4,
+      "fps": 10,
       "loop": true
+    },
+    "projectile": "./weapon/projectile.png",
+    "projectileSheet": {
+      "file": "./weapon/projectile_sheet.png",
+      "frames": 4,
+      "fps": 14,
+      "loop": true
+    }
+  },
+  "beam": {
+    "name": "Chân Long Đế Quang Mạch",
+    "sprite": "./beam/beam.png",
+    "sheet": {
+      "file": "./beam/beam_sheet.png",
+      "frames": 4,
+      "fps": 16,
+      "loop": true
+    }
+  },
+  "vfx": {
+    "name": "Chân Long Phệ Thiên Trảm",
+    "slash": "./vfx/slash.png",
+    "slashSheet": {
+      "file": "./vfx/slash_sheet.png",
+      "frames": 4,
+      "fps": 16,
+      "loop": false
     }
   }
 }

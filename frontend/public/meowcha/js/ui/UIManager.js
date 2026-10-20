@@ -447,11 +447,11 @@
       const lobbyCatImg = document.getElementById("lobbyCatImg");
       if (lobbyCatImg) {
         const avatars = [
-          "./sprites/characters/realm0_qi_refining/idle.png",
-          "./sprites/characters/realm1_foundation/idle.png",
-          "./sprites/characters/realm2_golden_core/idle.png",
-          "./sprites/characters/realm3_nascent_soul/idle.png",
-          "./sprites/characters/realm4_tribulation/idle.png"
+          "./sprites/characters/realm0_qi_refining/poses/idle.png",
+          "./sprites/characters/realm1_foundation/poses/idle.png",
+          "./sprites/characters/realm2_golden_core/poses/idle.png",
+          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
+          "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         lobbyCatImg.src = avatars[Math.min(4, s.realmIdx)] || avatars[0];
       }
@@ -1005,7 +1005,7 @@
           let avatar = u.discord_avatar || u.avatar_url || u.avatar || u.image || "";
           return {
             name: name || "Tiểu Miêu Kiếm Sĩ",
-            avatar: avatar || "./sprites/cat_idle.png",
+            avatar: avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png",
             token: token || "",
             isLoggedIn: true
           };
@@ -1016,7 +1016,7 @@
       let fallbackToken = localStorage.getItem("oasis_token") || "";
       return {
         name: localName,
-        avatar: "./sprites/cat_idle.png",
+        avatar: "./sprites/characters/realm0_qi_refining/poses/idle.png",
         token: fallbackToken,
         isLoggedIn: false
       };
@@ -1153,7 +1153,7 @@
       const user = this.getLoggedInUser();
       const selfAvatarEl = document.getElementById("pantheonSelfAvatar");
       const selfNameEl = document.getElementById("pantheonSelfName");
-      if (selfAvatarEl) selfAvatarEl.src = user.avatar || "./sprites/cat_idle.png";
+      if (selfAvatarEl) selfAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
       if (selfNameEl) selfNameEl.innerText = user.name;
 
       if (this.pantheonPlayerSelfStats) {
@@ -1236,11 +1236,11 @@
 
       const getAvatarByRealm = (realmName, score) => {
         const avatars = [
-          "./sprites/characters/realm0_qi_refining/idle.png",
-          "./sprites/characters/realm1_foundation/idle.png",
-          "./sprites/characters/realm2_golden_core/idle.png",
-          "./sprites/characters/realm3_nascent_soul/idle.png",
-          "./sprites/characters/realm4_tribulation/idle.png"
+          "./sprites/characters/realm0_qi_refining/poses/idle.png",
+          "./sprites/characters/realm1_foundation/poses/idle.png",
+          "./sprites/characters/realm2_golden_core/poses/idle.png",
+          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
+          "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         if (!realmName) return avatars[0];
         const rLower = String(realmName).toLowerCase();
@@ -1340,7 +1340,7 @@
           <div class="pantheon-row ${rowClass}">
             <span class="rank-col">${badgeHtml}</span>
             <span class="name-col" title="${item.player_name}">
-              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" onerror="this.src='./sprites/cat_idle.png'" />
+              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" onerror="this.src='./sprites/characters/realm0_qi_refining/poses/idle.png'" />
               <span class="name-text">${item.player_name || 'Vô Danh Tiên Khách'}</span>
             </span>
             <span class="realm-col">${item.realm || 'Luyện Khí Kỳ'}</span>
@@ -1375,11 +1375,11 @@
       const avatarEl = document.getElementById("profileModalAvatar");
       if (avatarEl) {
         const avatars = [
-          "./sprites/characters/realm0_qi_refining/idle.png",
-          "./sprites/characters/realm1_foundation/idle.png",
-          "./sprites/characters/realm2_golden_core/idle.png",
-          "./sprites/characters/realm3_nascent_soul/idle.png",
-          "./sprites/characters/realm4_tribulation/idle.png"
+          "./sprites/characters/realm0_qi_refining/poses/idle.png",
+          "./sprites/characters/realm1_foundation/poses/idle.png",
+          "./sprites/characters/realm2_golden_core/poses/idle.png",
+          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
+          "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         avatarEl.src = avatars[Math.min(4, this.state.realmIdx)] || avatars[0];
       }

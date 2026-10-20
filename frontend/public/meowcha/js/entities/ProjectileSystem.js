@@ -305,6 +305,51 @@
 
         const realm = p.realmIdx;
 
+        // VẼ TIA BẮN PIXEL ART & ĐẠN KIẾM KHÍ ĐỘC BẢN CỦA TỪNG NHÂN VẬT DỌC THEO ĐƯỜNG BAY
+        const charBeamSheet = this.assets && this.assets[`char_r${realm}_beam_sheet`];
+        const charBeamImg = this.assets && this.assets[`char_r${realm}_beam`];
+        const charProjSheet = this.assets && this.assets[`char_r${realm}_projectile_sheet`];
+        const charProjImg = this.assets && this.assets[`char_r${realm}_projectile`];
+
+        if ((charBeamSheet && charBeamSheet.loaded) || (charBeamImg && charBeamImg.loaded)) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.globalAlpha = 0.85;
+          const tailLen = p.isUltimate ? 135 : 95;
+          const tailH = p.isUltimate ? 52 : 38;
+          if (charBeamSheet && charBeamSheet.loaded) {
+            const fIdx = Math.floor(this.time * 16) % 4;
+            const fw = Math.floor(charBeamSheet.img.width / 4);
+            const fh = charBeamSheet.img.height;
+            ctx.drawImage(charBeamSheet.img, fIdx * fw, 0, fw, fh, -tailLen, -tailH / 2, tailLen, tailH);
+          } else {
+            ctx.drawImage(charBeamImg.img, -tailLen, -tailH / 2, tailLen, tailH);
+          }
+          ctx.restore();
+        }
+
+        if ((charProjSheet && charProjSheet.loaded) || (charProjImg && charProjImg.loaded)) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 20;
+          const projW = p.isUltimate ? 88 : 68;
+          const projH = p.isUltimate ? 50 : 38;
+          if (charProjSheet && charProjSheet.loaded) {
+            const fIdx = Math.floor(this.time * 16) % 4;
+            const fw = Math.floor(charProjSheet.img.width / 4);
+            const fh = charProjSheet.img.height;
+            ctx.drawImage(charProjSheet.img, fIdx * fw, 0, fw, fh, -projW * 0.45, -projH / 2, projW, projH);
+          } else {
+            ctx.drawImage(charProjImg.img, -projW * 0.45, -projH / 2, projW, projH);
+          }
+          ctx.restore();
+        }
+
         if (realm === 0) {
           // ============================================================
           // CHIÊU 0 - LUYỆN KHÍ: THANH TRÚC KIẾM KHÍ (PIXEL ART BAMBOO SWORD)

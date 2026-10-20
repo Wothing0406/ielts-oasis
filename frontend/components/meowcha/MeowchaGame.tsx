@@ -331,17 +331,17 @@ export const MeowchaGame: React.FC<{
 
     // Preload sprites
     const assetList: { key: string; src: string }[] = [
-      { key: "bg", src: "/meowcha/bg_study_sanctuary.jpg" },
-      { key: "cat_idle", src: "/meowcha/sprites/cat_idle.png" },
-      { key: "cat_golden_core", src: "/meowcha/sprites/cat_golden_core.png" },
-      { key: "cat_nascent_soul", src: "/meowcha/sprites/cat_nascent_soul.png" },
-      { key: "cat_celestial_sovereign", src: "/meowcha/sprites/cat_celestial_sovereign.png" },
-      { key: "cat_hurt", src: "/meowcha/sprites/cat_hurt.png" },
-      { key: "cat_defeated", src: "/meowcha/sprites/cat_defeated.png" },
-      { key: "cat_attack", src: "/meowcha/sprites/cat_weak_attack.png" },
+      { key: "bg", src: "/meowcha/sprites/maps/bg_study_sanctuary.jpg" },
+      { key: "cat_idle", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png" },
+      { key: "cat_golden_core", src: "/meowcha/sprites/characters/realm2_golden_core/poses/idle.png" },
+      { key: "cat_nascent_soul", src: "/meowcha/sprites/characters/realm3_nascent_soul/poses/idle.png" },
+      { key: "cat_celestial_sovereign", src: "/meowcha/sprites/characters/realm4_tribulation/poses/idle.png" },
+      { key: "cat_hurt", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/hurt.png" },
+      { key: "cat_defeated", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/defeated.png" },
+      { key: "cat_attack", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/attack.png" },
       { key: "prop_asteroid", src: "/meowcha/sprites/asteroids/ice.png" },
-      { key: "prop_slash", src: "/meowcha/sprites/vfx/slashes/sword_slash.png" },
-      { key: "prop_explosion", src: "/meowcha/sprites/vfx/impacts/tea_explosion.png" }
+      { key: "prop_slash", src: "/meowcha/sprites/characters/realm0_qi_refining/vfx/slash.png" },
+      { key: "prop_explosion", src: "/meowcha/sprites/maps/tea_explosion.png" }
     ];
     const realmFolders = [
       "realm0_qi_refining",
@@ -354,7 +354,7 @@ export const MeowchaGame: React.FC<{
       ["idle", "attack", "ultimate", "hurt", "defeated"].forEach((st) => {
         assetList.push({
           key: `char_r${rIdx}_${st}`,
-          src: `/meowcha/sprites/characters/${folder}/${st}.png`
+          src: `/meowcha/sprites/characters/${folder}/poses/${st}.png`
         });
       });
     });
@@ -1335,7 +1335,7 @@ export const MeowchaGame: React.FC<{
 
             {/* Cat sprite sitting on jade sword */}
             <img
-              src="/meowcha/sprites/cat_idle.png"
+              src="/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png"
               alt="Miêu Tiên Tọa Thiền"
               className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)] transition-transform hover:scale-105 duration-300 z-10"
             />
@@ -1413,7 +1413,7 @@ export const MeowchaGame: React.FC<{
         {/* Left: Avatar, Realm & HP Bar */}
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-lg bg-[#2c1a0f] border border-[#6d4a1b] p-0.5 overflow-hidden shadow">
-            <img src="/meowcha/sprites/cat_idle.png" alt="Miêu Tiên" className="w-full h-full object-contain" />
+            <img src="/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png" alt="Miêu Tiên" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">

@@ -41,20 +41,20 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
   useEffect(() => {
     let loadedCount = 0;
     const requiredImages: Record<string, string> = {
-      bg: "/meowcha/bg_study_sanctuary.jpg",
-      cat_idle: "/meowcha/sprites/cat_idle.png",
-      cat_weak: "/meowcha/sprites/cat_weak_attack.png",
-      cat_golden: "/meowcha/sprites/cat_golden_core.png",
-      cat_nascent: "/meowcha/sprites/cat_nascent_soul.png",
-      cat_celestial: "/meowcha/sprites/cat_celestial_sovereign.png",
-      cat_blast: "/meowcha/sprites/cat_ultimate_blast.png",
-      cat_hurt: "/meowcha/sprites/cat_hurt.png",
-      cat_defeated: "/meowcha/sprites/cat_defeated.png",
-      prop_asteroid: "/meowcha/sprites/prop_asteroid.png",
-      prop_bamboo_sword: "/meowcha/sprites/prop_bamboo_sword.png",
-      prop_jade_sword: "/meowcha/sprites/prop_jade_sword.png",
-      prop_sword_slash: "/meowcha/sprites/vfx/slashes/sword_slash.png",
-      prop_tea_explosion: "/meowcha/sprites/vfx/impacts/tea_explosion.png"
+      bg: "/meowcha/sprites/maps/bg_study_sanctuary.jpg",
+      cat_idle: "/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png",
+      cat_weak: "/meowcha/sprites/characters/realm0_qi_refining/poses/attack.png",
+      cat_golden: "/meowcha/sprites/characters/realm2_golden_core/poses/idle.png",
+      cat_nascent: "/meowcha/sprites/characters/realm3_nascent_soul/poses/idle.png",
+      cat_celestial: "/meowcha/sprites/characters/realm4_tribulation/poses/idle.png",
+      cat_blast: "/meowcha/sprites/characters/realm0_qi_refining/poses/ultimate.png",
+      cat_hurt: "/meowcha/sprites/characters/realm0_qi_refining/poses/hurt.png",
+      cat_defeated: "/meowcha/sprites/characters/realm0_qi_refining/poses/defeated.png",
+      prop_asteroid: "/meowcha/sprites/asteroids/ice.png",
+      prop_bamboo_sword: "/meowcha/sprites/characters/realm0_qi_refining/weapon/sword.png",
+      prop_jade_sword: "/meowcha/sprites/characters/realm1_foundation/weapon/sword.png",
+      prop_sword_slash: "/meowcha/sprites/characters/realm0_qi_refining/vfx/slash.png",
+      prop_tea_explosion: "/meowcha/sprites/maps/tea_explosion.png"
     };
     const realmFolders = [
       "realm0_qi_refining",
@@ -65,7 +65,7 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
     ];
     realmFolders.forEach((folder, rIdx) => {
       ["idle", "attack", "ultimate", "hurt", "defeated"].forEach((st) => {
-        requiredImages[`char_r${rIdx}_${st}`] = `/meowcha/sprites/characters/${folder}/${st}.png`;
+        requiredImages[`char_r${rIdx}_${st}`] = `/meowcha/sprites/characters/${folder}/poses/${st}.png`;
       });
     });
 

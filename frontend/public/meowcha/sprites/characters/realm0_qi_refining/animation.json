@@ -1,53 +1,82 @@
 {
-  "schema": "agent-sprite-forge.animation.v3",
-  "realmId": 0,
-  "title": "Luyện Khí Tiểu Miêu",
-  "cellSize": [
-    360,
-    360
-  ],
-  "clips": {
+  "realmIndex": 0,
+  "folder": "realm0_qi_refining",
+  "name": "Linh Trà Đạo Miêu",
+  "title": "Luyện Khí Kỳ",
+  "poses": {
+    "idle": "./poses/idle.png",
+    "attack": "./poses/attack.png",
+    "ultimate": "./poses/ultimate.png",
+    "hurt": "./poses/hurt.png",
+    "defeated": "./poses/defeated.png"
+  },
+  "sheets": {
     "idle": {
-      "sheet": "idle_sheet.png",
-      "frames": 6,
+      "file": "./sheets/idle_sheet.png",
+      "frames": 4,
       "fps": 8,
       "loop": true
     },
     "attack": {
-      "sheet": "attack_sheet.png",
+      "file": "./sheets/attack_sheet.png",
       "frames": 4,
-      "fps": 18,
-      "loop": false,
-      "events": [
-        {
-          "frame": 1,
-          "name": "hit"
-        }
-      ]
+      "fps": 8,
+      "loop": false
     },
     "ultimate": {
-      "sheet": "ultimate_sheet.png",
-      "frames": 6,
-      "fps": 14,
-      "loop": false,
-      "events": [
-        {
-          "frame": 2,
-          "name": "ultimate_burst"
-        }
-      ]
+      "file": "./sheets/ultimate_sheet.png",
+      "frames": 4,
+      "fps": 8,
+      "loop": true
     },
     "hurt": {
-      "sheet": "hurt_sheet.png",
+      "file": "./sheets/hurt_sheet.png",
       "frames": 4,
-      "fps": 14,
+      "fps": 8,
       "loop": false
     },
     "defeated": {
-      "sheet": "defeated_sheet.png",
+      "file": "./sheets/defeated_sheet.png",
       "frames": 4,
-      "fps": 6,
+      "fps": 8,
+      "loop": false
+    }
+  },
+  "weapon": {
+    "name": "Thanh Trúc Linh Kiếm",
+    "sword": "./weapon/sword.png",
+    "swordSheet": {
+      "file": "./weapon/sword_sheet.png",
+      "frames": 4,
+      "fps": 10,
       "loop": true
+    },
+    "projectile": "./weapon/projectile.png",
+    "projectileSheet": {
+      "file": "./weapon/projectile_sheet.png",
+      "frames": 4,
+      "fps": 14,
+      "loop": true
+    }
+  },
+  "beam": {
+    "name": "Thanh Trúc Phong Tuyến",
+    "sprite": "./beam/beam.png",
+    "sheet": {
+      "file": "./beam/beam_sheet.png",
+      "frames": 4,
+      "fps": 16,
+      "loop": true
+    }
+  },
+  "vfx": {
+    "name": "Thanh Trúc Trảm",
+    "slash": "./vfx/slash.png",
+    "slashSheet": {
+      "file": "./vfx/slash_sheet.png",
+      "frames": 4,
+      "fps": 16,
+      "loop": false
     }
   }
 }
