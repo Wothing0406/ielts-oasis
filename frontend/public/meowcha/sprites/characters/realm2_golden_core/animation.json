@@ -1,0 +1,53 @@
+{
+  "schema": "agent-sprite-forge.animation.v3",
+  "realmId": 2,
+  "title": "Kim Đan Chân Nhân",
+  "cellSize": [
+    360,
+    360
+  ],
+  "clips": {
+    "idle": {
+      "sheet": "idle_sheet.png",
+      "frames": 6,
+      "fps": 8,
+      "loop": true
+    },
+    "attack": {
+      "sheet": "attack_sheet.png",
+      "frames": 4,
+      "fps": 18,
+      "loop": false,
+      "events": [
+        {
+          "frame": 1,
+          "name": "hit"
+        }
+      ]
+    },
+    "ultimate": {
+      "sheet": "ultimate_sheet.png",
+      "frames": 6,
+      "fps": 14,
+      "loop": false,
+      "events": [
+        {
+          "frame": 2,
+          "name": "ultimate_burst"
+        }
+      ]
+    },
+    "hurt": {
+      "sheet": "hurt_sheet.png",
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    },
+    "defeated": {
+      "sheet": "defeated_sheet.png",
+      "frames": 4,
+      "fps": 6,
+      "loop": true
+    }
+  }
+}
