@@ -4937,3 +4937,1029 @@
     gap: 8px;
   }
 }
+
+
+/* ============================================================
+   LOBBY CẢNH GIỚI V10.3: TIÊN ĐẠO TRÀ VIỆN & PHÁP MÔN TRẬN ĐỒ
+   ============================================================ */
+
+/* 1. TOP BAR & PHONG LINH NGỌC BỘI */
+.lobby-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(10, 15, 24, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  position: relative;
+  z-index: 20;
+}
+
+.tea-leaf-insignia {
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+}
+
+.windchime-medallion {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+
+.windchime-medallion::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  width: 1.5px;
+  height: 8px;
+  background: linear-gradient(to bottom, #DC2626, #FDE047);
+}
+
+.medallion-disc {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #064E3B 0%, #022C22 100%);
+  border: 1.5px solid #10B981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35), inset 0 0 6px rgba(253, 224, 71, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FDE047;
+  transition: all 0.25s ease;
+}
+
+.windchime-medallion:hover .medallion-disc {
+  transform: translateY(-2px) scale(1.08);
+  border-color: #FDE047;
+  box-shadow: 0 0 16px rgba(253, 224, 71, 0.6);
+  color: #FFF;
+}
+
+.medallion-label {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 10px;
+  font-weight: 700;
+  color: #D1D5DB;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.windchime-medallion:hover .medallion-label {
+  color: #FDE047;
+}
+
+/* 2. CULTIVATION TEA-STATION (NO RIGID CARD BOX!) */
+.cultivation-tea-station {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 15;
+  margin: 6px auto 10px;
+}
+
+/* Biển Ngọc Bài Treo Trên Không Gian */
+.hanging-jade-title-plaque {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 6px;
+  z-index: 12;
+}
+
+.plaque-suspension-cords {
+  display: flex;
+  justify-content: space-between;
+  width: 180px;
+  height: 12px;
+}
+
+.plaque-cord {
+  width: 1.5px;
+  height: 12px;
+  background: linear-gradient(to bottom, #DC2626, #B45309);
+  position: relative;
+}
+
+.plaque-cord::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #FDE047;
+  box-shadow: 0 0 4px #FDE047;
+}
+
+.plaque-body {
+  position: relative;
+  background: radial-gradient(circle at 50% 20%, #064E3B 0%, #022C22 80%, #011C15 100%);
+  border: 1.8px solid #10B981;
+  outline: 1.5px solid #D97706;
+  outline-offset: -4px;
+  border-radius: 12px;
+  padding: 6px 20px 8px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.plaque-vermilion-seal {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  background: #DC2626;
+  border: 1px solid #FDE047;
+  border-radius: 4px;
+  color: #FDE047;
+  font-family: serif;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+}
+
+.plaque-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.plaque-quote-silk {
+  font-size: 11px;
+  color: #FDE68A;
+  font-style: italic;
+  margin-top: 3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* ĐÀI ĐÁ PHÙ KHÔNG */
+.floating-stone-pavilion {
+  position: relative;
+  width: 240px;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 6px 0 12px;
+}
+
+.floating-stone-pavilion .bagua-ring-spin {
+  position: absolute;
+  top: 15px;
+  width: 170px;
+  height: 170px;
+  z-index: 1;
+  opacity: 0.55;
+}
+
+.lotus-cushion-base {
+  position: absolute;
+  bottom: 22px;
+  width: 150px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #1F2937 0%, #111827 70%, transparent 100%);
+  border-bottom: 3px solid #064E3B;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.95), 0 0 20px rgba(16, 185, 129, 0.3);
+  z-index: 2;
+}
+
+.mist-cloud-cluster {
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.mist-puff {
+  width: 50px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(167, 243, 208, 0.3) 0%, rgba(52, 211, 153, 0.1) 60%, transparent 100%);
+  filter: blur(4px);
+  animation: mistDrift 6s ease-in-out infinite alternate;
+}
+.mist-puff.puff-2 { animation-delay: -2s; width: 65px; }
+.mist-puff.puff-3 { animation-delay: -4s; width: 45px; }
+
+@keyframes mistDrift {
+  0% { transform: translateY(0) scale(1); opacity: 0.4; }
+  100% { transform: translateY(-8px) scale(1.15); opacity: 0.8; }
+}
+
+.floating-stone-pavilion .lobby-cat-avatar {
+  position: relative;
+  z-index: 4;
+  width: 105px;
+  height: 105px;
+  margin-bottom: 22px;
+}
+
+/* Bàn trà gỗ hương */
+.wooden-tea-table {
+  position: absolute;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.table-surface {
+  width: 110px;
+  height: 16px;
+  background: linear-gradient(to bottom, #451A03 0%, #291204 100%);
+  border: 1px solid #78350F;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.table-legs {
+  display: flex;
+  justify-content: space-between;
+  width: 90px;
+}
+.table-leg {
+  width: 6px;
+  height: 12px;
+  background: #291204;
+  border: 1px solid #78350F;
+}
+
+.steaming-teapot-set {
+  position: absolute;
+  top: -24px;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+}
+
+.anime-tea-steam-svg {
+  width: 44px;
+  height: 33px;
+  overflow: visible;
+}
+
+.steam-cloud-1 {
+  animation: steamRise 3s ease-in-out infinite;
+}
+.steam-cloud-2 {
+  animation: steamRise 3s ease-in-out infinite 1.5s;
+}
+
+@keyframes steamRise {
+  0% { transform: translateY(0); opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { transform: translateY(-8px); opacity: 0; }
+}
+
+/* Linh Thú Hộ Đạo: Mèo Xanh Có Cánh Trên Gối Mây */
+.mascot-cloud-cushion {
+  position: absolute;
+  right: -25px;
+  bottom: 24px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.golden-cloud-pillow {
+  position: absolute;
+  bottom: 0;
+  width: 48px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #FDE047 0%, #D97706 70%, transparent 100%);
+  filter: blur(2px);
+  opacity: 0.7;
+}
+
+.winged-cat-mascot-svg {
+  width: 42px;
+  height: 34px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8));
+  animation: mascotBreathe 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes mascotBreathe {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+/* 3. NÚT ĐỘ KIẾP LỆNH BÀI PHI KIẾM & COMPACT STAT PILLS */
+.lobby-cta-sword-area {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sword-talisman-cta {
+  width: 100%;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+}
+
+.sword-talisman-cta.main-battle-start {
+  background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 50%, #450A0A 100%);
+  border: 2px solid #FDE047;
+  outline: 1.5px solid #D97706;
+  outline-offset: -4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+.sword-talisman-cta.main-battle-start:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 28px rgba(245, 158, 11, 0.65);
+}
+
+.sword-talisman-cta.continue-mode {
+  background: linear-gradient(135deg, #065F46 0%, #047857 50%, #022C22 100%);
+  border: 2px solid #34D399;
+  outline: 1.5px solid #10B981;
+  outline-offset: -4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.sword-cta-hilt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sword-cta-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.sword-cta-main {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #FDE047;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+}
+
+.sword-cta-sub {
+  font-size: 10px;
+  color: #FDE68A;
+  margin-top: 1px;
+}
+
+.sword-cta-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sword-talisman-restart {
+  background: rgba(30, 20, 15, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 6px;
+  padding: 6px 16px;
+  color: #FDE047;
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sword-talisman-restart:hover {
+  background: rgba(69, 26, 3, 0.95);
+  border-color: #FDE047;
+  transform: translateY(-1px);
+}
+
+/* COMPACT STAT PILLS */
+.compact-stat-pills {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.stat-pill {
+  flex: 1;
+  max-width: 220px;
+  height: 32px;
+  background: radial-gradient(circle at 50% 20%, #064E3B 0%, #022C22 100%);
+  border: 1.2px solid #10B981;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 0 6px rgba(16, 185, 129, 0.25);
+}
+
+.pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pill-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #E5E7EB;
+}
+
+.pill-label {
+  color: #9CA3AF;
+  font-size: 10.5px;
+}
+
+.pill-val {
+  color: #FDE047;
+  font-weight: 800;
+}
+
+.pill-mini-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 0.5px solid rgba(16, 185, 129, 0.4);
+  margin-left: 4px;
+}
+
+.pill-mini-fill {
+  height: 100%;
+  background: linear-gradient(to right, #10B981, #34D399);
+  transition: width 0.3s ease;
+}
+
+/* 4. REFINED ORGANIC SHELVES IN LOBBY */
+.lobby-organic-shelves {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px auto 16px;
+}
+
+.shelf-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shelf-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.shelf-title {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 12px;
+  font-weight: 800;
+  color: #FDE047;
+  letter-spacing: 0.6px;
+}
+
+.shelf-sub {
+  font-size: 10px;
+  color: #94A3B8;
+}
+
+/* Shelf 1: 3 Hanging Jade Plaques */
+.shelf-plaques-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.hanging-jade-plaque {
+  position: relative;
+  background: radial-gradient(circle at 50% 15%, #1E293B 0%, #0F172A 100%);
+  border: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-align: left;
+}
+
+.hanging-jade-plaque:hover {
+  transform: translateY(-2px);
+  border-color: #FDE047;
+  background: radial-gradient(circle at 50% 15%, #334155 0%, #0F172A 100%);
+}
+
+.hanging-jade-plaque.active-mode {
+  background: radial-gradient(circle at 50% 15%, #064E3B 0%, #022C22 100%);
+  border: 1.8px solid #10B981;
+  outline: 1px solid #FDE047;
+  outline-offset: -3px;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45);
+}
+
+.plaque-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plaque-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.plaque-name {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 12px;
+  font-weight: 800;
+  color: #E2E8F0;
+}
+
+.hanging-jade-plaque.active-mode .plaque-name {
+  color: #FDE047;
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.plaque-desc {
+  font-size: 9.5px;
+  color: #94A3B8;
+}
+
+/* Shelf 2: 4 Miniature Bamboo Scrolls & Books */
+.shelf-scrolls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mini-scroll-item {
+  position: relative;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.2px solid rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.mini-scroll-item:hover {
+  transform: translateY(-2px);
+  border-color: #38BDF8;
+}
+
+.mini-scroll-item.active-deck {
+  border-color: #34D399;
+  background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.mini-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-bottom: 2px;
+}
+.mini-badge.gold { background: rgba(245, 158, 11, 0.25); color: #FDE047; }
+.mini-badge.cyan { background: rgba(56, 189, 248, 0.25); color: #7DD3FC; }
+.mini-badge.purple { background: rgba(168, 85, 247, 0.25); color: #C084FC; }
+.mini-badge.emerald { background: rgba(16, 185, 129, 0.25); color: #6EE7B7; }
+
+.mini-title {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.mini-scroll-item.active-deck .mini-title {
+  color: #FDE047;
+}
+
+.mini-sub {
+  font-size: 9px;
+  color: #94A3B8;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   5. BATTLE SETUP MODAL (TARGET IMAGE 4 REDESIGN)
+   ============================================================ */
+.battle-setup-modal-box {
+  position: relative;
+  width: min(95vw, 740px);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: radial-gradient(circle at 50% 15%, #24140A 0%, #170C05 60%, #0A0502 100%);
+  border: 3.5px solid #B45309;
+  outline: 4px solid #451A03;
+  outline-offset: -7px;
+  border-radius: 14px;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(180, 83, 9, 0.45);
+  padding: 18px 20px 24px;
+}
+
+/* 4 Brass Cloud Corners */
+.modal-brass-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  z-index: 10;
+  pointer-events: none;
+}
+.modal-brass-corner.top-left { top: 2px; left: 2px; }
+.modal-brass-corner.top-right { top: 2px; right: 2px; }
+.modal-brass-corner.bottom-left { bottom: 2px; left: 2px; }
+.modal-brass-corner.bottom-right { bottom: 2px; right: 2px; }
+
+/* Silk Ribbon Banner with Paper Lanterns */
+.battle-setup-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 12px;
+  padding: 4px 0;
+}
+
+.hanging-paper-lantern {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: lanternSway 3s ease-in-out infinite alternate;
+}
+.lantern-left { animation-delay: -1.5s; }
+
+@keyframes lanternSway {
+  0% { transform: rotate(-4deg); }
+  100% { transform: rotate(4deg); }
+}
+
+.lantern-cord {
+  width: 1.5px;
+  height: 10px;
+  background: #FDE047;
+}
+
+.lantern-body {
+  width: 18px;
+  height: 22px;
+  background: radial-gradient(circle, #EF4444 0%, #991B1B 100%);
+  border: 1px solid #FDE047;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  position: relative;
+}
+
+.lantern-tassel {
+  position: absolute;
+  bottom: -6px;
+  left: 7.5px;
+  width: 3px;
+  height: 6px;
+  background: #FDE047;
+}
+
+.banner-silk-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.silk-title-box {
+  background: linear-gradient(to right, #7F1D1D 0%, #991B1B 50%, #7F1D1D 100%);
+  border-top: 1.5px solid #FDE047;
+  border-bottom: 1.5px solid #FDE047;
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+
+.modal-title-xianxia {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 16px;
+  font-weight: 900;
+  color: #FDE047;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+  margin: 0;
+}
+
+/* SECTION I: 3 HANGING JADE SECT MEDALLIONS */
+.setup-mode-card.jade-medallion-card {
+  position: relative;
+  background: radial-gradient(circle at 50% 10%, #1A110A 0%, #0E0804 100%);
+  border: 2px solid #854D0E;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.setup-mode-card.jade-medallion-card:hover {
+  border-color: #FDE047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.9), 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.setup-mode-card.jade-medallion-card.active-mode {
+  background: radial-gradient(circle at 50% 10%, #064E3B 0%, #022C22 100%);
+  border: 2px solid #10B981;
+  outline: 1.5px solid #FDE047;
+  outline-offset: -4px;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.5), inset 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.medallion-body-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.setup-card-icon-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.active-sword-spark {
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+  animation: swordSparkPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes swordSparkPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6)); }
+  100% { transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(253, 224, 71, 0.9)); }
+}
+
+.setup-card-check-stamp {
+  display: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  background: #DC2626;
+  border: 1px solid #FDE047;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.8);
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-mode-card.active-mode .setup-card-check-stamp {
+  display: flex;
+}
+
+.stamp-txt {
+  font-family: serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #FDE047;
+}
+
+/* SECTION II: 4 MINIATURE BAMBOO SCROLLS & BOOKS */
+.setup-deck-card.modal-bamboo-scroll,
+.setup-deck-card.modal-indigo-scroll,
+.setup-deck-card.modal-leather-book,
+.setup-deck-card.modal-paw-scroll {
+  position: relative;
+  background: radial-gradient(circle at 50% 10%, #1A110A 0%, #0E0804 100%);
+  border: 1.5px solid #854D0E;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.setup-deck-card:hover {
+  transform: translateY(-2px);
+  border-color: #FDE047;
+}
+
+.setup-deck-card.active-deck {
+  border-color: #34D399;
+  background: radial-gradient(circle at 50% 10%, #064E3B 0%, #022C22 100%);
+  outline: 1.5px solid #FDE047;
+  outline-offset: -3px;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.45);
+}
+
+.deck-badge-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.vermilion-75-seal {
+  background: #DC2626;
+  border: 1px solid #FDE047;
+  color: #FDE047;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* SECTION III: JADE COMM SLAB (NGỌC GIẢN TRUYỀN ÂM) */
+.setup-footer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.jade-comm-slab {
+  background: rgba(6, 78, 59, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid #10B981;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: inset 0 0 14px rgba(16, 185, 129, 0.2), 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.jade-slab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.jade-slab-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jade-slab-label {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #6EE7B7;
+  letter-spacing: 0.5px;
+}
+
+.jade-spirit-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: #A7F3D0;
+}
+
+.spirit-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34D399;
+  box-shadow: 0 0 8px #34D399;
+}
+
+.jade-slab-body {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #FDE047;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  margin-top: 6px;
+}
+
+/* CELESTIAL SWORD LAUNCH BUTTONS */
+.sword-token-btn {
+  width: 100%;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+}
+
+.sword-token-btn.launch-flame {
+  background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 50%, #450A0A 100%);
+  border: 2px solid #FDE047;
+  outline: 1.5px solid #D97706;
+  outline-offset: -4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 24px rgba(245, 158, 11, 0.5);
+}
+
+.sword-token-btn.launch-flame:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 32px rgba(245, 158, 11, 0.75);
+}
+
+.sword-token-btn.continue-green {
+  background: linear-gradient(135deg, #065F46 0%, #047857 50%, #022C22 100%);
+  border: 2px solid #34D399;
+  outline: 1.5px solid #10B981;
+  outline-offset: -4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.sword-token-btn.restart-crimson {
+  background: linear-gradient(135deg, #450A0A 0%, #7F1D1D 100%);
+  border: 1.5px solid #F87171;
+  color: #FCA5A5;
+}
+
+.sword-token-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.sword-token-main {
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 15.5px;
+  font-weight: 900;
+  color: #FDE047;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+}
+
+.sword-token-sub {
+  font-size: 10px;
+  color: #FDE68A;
+  margin-top: 1px;
+}
+
+.sword-token-mode-tag {
+  font-size: 11px;
+  color: #34D399;
+  margin-left: 6px;
+}

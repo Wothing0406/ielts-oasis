@@ -544,13 +544,29 @@
           }
           if (actionsRow) {
             actionsRow.innerHTML = `
-              <button class="setup-btn-continue" id="btnSetupContinue">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span>TIẾP TỤC TU LUYỆN (${(modeData.score || 0).toLocaleString()} Tu Vi)</span>
+              <button class="sword-token-btn continue-green" id="btnSetupContinue">
+                <div class="sword-token-hilt">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.2">
+                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"></path>
+                    <path d="M13 19l6-6"></path>
+                  </svg>
+                </div>
+                <div class="sword-token-content">
+                  <span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC TU LUYỆN</span>
+                  <span class="sword-token-sub">${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'}</span>
+                </div>
+                <div class="sword-token-tip">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </div>
               </button>
-              <button class="setup-btn-restart" id="btnSetupRestart">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                <span>TẨY TỦY TRÙNG TU (CHƠI LẠI TỪ CẤP 0)</span>
+              <button class="sword-token-btn restart-crimson" id="btnSetupRestart">
+                <div class="sword-token-hilt">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </div>
+                <div class="sword-token-content">
+                  <span class="sword-token-main" style="color: #FCA5A5">TẨY TỦY TRÙNG TU</span>
+                  <span class="sword-token-sub">Chơi lại từ Cấp 0</span>
+                </div>
               </button>
             `;
 
@@ -587,9 +603,27 @@
           }
           if (actionsRow) {
             actionsRow.innerHTML = `
-              <button class="setup-btn-start-fresh" id="btnSetupStartFresh">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span>BẮT ĐẦU ĐỘ KIẾP NGAY (${mName.toUpperCase()})</span>
+              <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
+                <div class="sword-token-glow"></div>
+                <div class="sword-token-hilt">
+                  <svg class="sword-pommel-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2">
+                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"></path>
+                    <path d="M13 19l6-6"></path>
+                    <circle cx="4.5" cy="4.5" r="1.5" fill="#FDE047"/>
+                  </svg>
+                </div>
+                <div class="sword-token-content">
+                  <div class="sword-token-title-row">
+                    <span class="sword-token-main">BẮT ĐẦU ĐỘ KIẾP NGAY</span>
+                    <span class="sword-token-mode-tag">${mName.toUpperCase()}</span>
+                  </div>
+                  <span class="sword-token-sub">✦ Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến ✦</span>
+                </div>
+                <div class="sword-token-tip">
+                  <svg class="molten-fire-svg animated-pulse" width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B" stroke="#FDE047" stroke-width="1.8">
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                  </svg>
+                </div>
               </button>
             `;
 
@@ -770,7 +804,7 @@
       const btnContinue = document.getElementById("btnContinueBattle");
       const btnRestart = document.getElementById("btnRestartGame");
       const continueSub = document.getElementById("continueBattleSub");
-      const startBtnText = btnStart ? (btnStart.querySelector(".btn-xianxia-text") || btnStart) : null;
+      const startBtnText = btnStart ? (btnStart.querySelector(".sword-cta-main") || btnStart.querySelector(".btn-xianxia-text") || btnStart.querySelector(".cta-title") || btnStart) : null;
 
       const curMode = (this.state && this.state.gameMode) || "DIRECT";
       const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
