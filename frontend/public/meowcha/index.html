@@ -23,10 +23,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.1" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.1" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.1" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.1" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.2" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.2" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.2" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.2" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -1239,7 +1239,7 @@
               <button
                 class="hud-talisman-btn crimson"
                 id="btnQuickRestartHUD"
-                title="Chơi Lại Từ Đầu (Tẩy Tủy)"
+                title="Đổi Pháp Môn / Chơi Lại Từ Đầu"
               >
                 <span class="seal-box-talisman seal-red">[ 丹 ]</span>
                 <span class="talisman-btn-label">TẨY TỦY</span>
@@ -1280,37 +1280,31 @@
           </div>
 
           <div class="sect-hud-bottom-row">
-            <!-- Hiển thị Khí Huyết Mệnh Đan & Mini HP Bar Ngọc Bích -->
+            <!-- Hiển thị Khí Huyết Mệnh Đan & Ống Tiên Đan Ngọc Bích (Jade Elixir Vial) -->
             <div class="sect-hp-container">
-              <span class="sect-glyph glyph-red" title="Khí Huyết Mệnh Thể"
-                >[命]</span
-              >
+              <span class="sect-glyph glyph-red" title="Khí Huyết Mệnh Thể">[命]</span>
               <span class="hp-label-title">MỆNH:</span>
               <span id="hudHpText" class="hp-val-text">50 / 50</span>
-              <div class="hp-mini-track">
+              <div class="hp-mini-track hp-elixir-tube">
+                <div class="tube-cap left"></div>
                 <div class="hp-fill" id="hudHpBar" style="width: 100%"></div>
+                <div class="tube-cap right"></div>
               </div>
             </div>
             <!-- Hiển thị Tu Vi Điểm, Cổ Ngữ Trảm Ma, Tốc Độ WPM Cổ Phong -->
             <div class="sect-stats-inline">
               <span class="stat-mini gold">
-                <span class="sect-glyph glyph-gold" title="Kim Đan Tu Vi"
-                  >[丹]</span
-                >
+                <span class="sect-glyph glyph-gold" title="Kim Đan Tu Vi">[丹]</span>
                 <span class="stat-txt">Tu Vi:</span>
                 <b id="hudScore" class="gold-num">0</b>
               </span>
               <span class="stat-mini cyan">
-                <span class="sect-glyph glyph-cyan" title="Cổ Ngữ Trảm Ma"
-                  >[斩]</span
-                >
+                <span class="sect-glyph glyph-cyan" title="Cổ Ngữ Trảm Ma">[斩]</span>
                 <span class="stat-txt">Trảm:</span>
                 <b id="hudWords" class="cyan-num">0</b>
               </span>
               <span class="stat-mini green" id="hudWpmWrap">
-                <span class="sect-glyph glyph-green" title="Thần Hành Phong Độn"
-                  >[遁]</span
-                >
+                <span class="sect-glyph glyph-green" title="Thần Hành Phong Độn">[遁]</span>
                 <b id="hudWpm">0 WPM</b>
               </span>
             </div>
@@ -1328,27 +1322,53 @@
 
         <!-- BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD) -->
         <div class="sword-altar-hud" id="swordIntentBox">
-          <div class="altar-badge-plaque">
-            <span class="plaque-rune">❖</span>
-            <span class="plaque-text" id="swordAltarModeLabel">KIẾM QUYẾT ĐÀI • GÕ CỔ NGỮ ĐỂ XUẤT PHI KIẾM</span>
-            <span class="plaque-rune">❖</span>
+          <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong Viền Vàng Uốn Lượn -->
+          <div class="altar-ribbon-banner" id="swordAltarRibbon">
+            <span class="ribbon-tail-l"></span>
+            <span class="ribbon-text" id="swordAltarModeLabel">✦ ĐANG XUẤT CHIÊU • NGỘ ĐẠO ĐÀI • ACTIVE RECALL ✦</span>
+            <span class="ribbon-tail-r"></span>
           </div>
-          <div class="altar-seal-wing left">
-            <span class="altar-trigram">☰</span>
-            <span class="intent-seal" id="swordIntentSealBadge">KIẾM Ý</span>
-          </div>
-          <div class="altar-core-panel">
-            <div class="altar-word-display" id="swordIntentText">
-              <span class="altar-idle-msg">❖ NHÌN MA THẠCH BAY TRÊN TRỜI • GÕ PHÍM ĐỂ TRẢM MA ❖</span>
+
+          <!-- Tả Hộ Pháp: Tượng Rồng Đá Cổ + Âm Dương Bát Quái + Nút Kiếm Ý Rực Lửa -->
+          <div class="altar-guardian left">
+            <svg class="dragon-guardian-svg" width="36" height="36" viewBox="0 0 64 64" fill="none">
+              <path d="M12 48C18 36 28 32 38 28C48 24 54 16 52 8C50 6 44 8 40 14C36 10 30 12 28 16C24 16 20 20 18 26C14 28 10 34 8 42C6 50 10 52 12 48Z" fill="#78716C" stroke="#D4AF37" stroke-width="1.8"/>
+              <circle cx="44" cy="12" r="2.5" fill="#EF4444"/>
+            </svg>
+            <div class="altar-yinyang-seal" title="Lưỡng Nghi Âm Dương">
+              <span class="yinyang-glyph">☯</span>
             </div>
-            <div class="altar-meaning-display" id="swordTargetMeaning"></div>
-            <div class="altar-gauge-track">
-              <div class="altar-gauge-fill" id="swordTargetGauge" style="width: 0%"></div>
+            <div class="intent-seal-flame" id="swordIntentSealBadge">
+              <span class="flame-icon">🔥</span>
+              <span class="flame-text">KIẾM Ý</span>
             </div>
           </div>
-          <div class="altar-seal-wing right">
+
+          <!-- Tâm Điểm: Cuộn Thư Hoàng Kim Cổ Phong (Parchment Scroll) -->
+          <div class="altar-parchment-scroll">
+            <div class="parchment-roller left"></div>
+            <div class="parchment-body">
+              <div class="altar-word-display" id="swordIntentText">
+                <span class="altar-idle-msg">❖ NHÌN MA THẠCH BAY TRÊN TRỜI • GÕ PHÍM ĐỂ TRẢM MA ❖</span>
+              </div>
+              <div class="altar-meaning-display" id="swordTargetMeaning"></div>
+              <div class="altar-gauge-track">
+                <div class="altar-gauge-fill" id="swordTargetGauge" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="parchment-roller right"></div>
+          </div>
+
+          <!-- Hữu Hộ Pháp: Bộ Đếm Phù Văn + Vòng Bát Quái + Tượng Rồng Hộ Vệ -->
+          <div class="altar-guardian right">
             <span class="altar-counter" id="swordTargetCounter">0/0</span>
-            <span class="altar-trigram">☷</span>
+            <div class="altar-yinyang-seal" title="Bát Quái Cương Trận">
+              <span class="yinyang-glyph">☰☷</span>
+            </div>
+            <svg class="dragon-guardian-svg flip-x" width="36" height="36" viewBox="0 0 64 64" fill="none">
+              <path d="M12 48C18 36 28 32 38 28C48 24 54 16 52 8C50 6 44 8 40 14C36 10 30 12 28 16C24 16 20 20 18 26C14 28 10 34 8 42C6 50 10 52 12 48Z" fill="#78716C" stroke="#D4AF37" stroke-width="1.8"/>
+              <circle cx="44" cy="12" r="2.5" fill="#EF4444"/>
+            </svg>
           </div>
         </div>
 
@@ -1363,6 +1383,102 @@
 
       <!-- TOAST NGỌC GIẢN TRUYỀN CÔNG PHIÊN ÂM IPA (đặt ngoài battleView để tránh bị clip) -->
       <div id="ipaToastContainer"></div>
+
+      <!-- ========================================================= -->
+      <!-- 2.5 HỘP THOẠI THIẾT LẬP CHIẾN TRƯỜNG & CHỌN CHẾ ĐỘ / ĐỘ KHÓ -->
+      <!-- ========================================================= -->
+      <div class="meowcha-modal-overlay" id="modalBattleSetup">
+        <div class="modal-content-box battle-setup-modal-box">
+          <div class="modal-header">
+            <h2 class="modal-title">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>TIÊN ĐẠO TRẬN ĐỒ • THIẾT LẬP CHIẾN TRƯỜNG</span>
+            </h2>
+            <button class="btn-modal-close" id="btnCloseBattleSetup" aria-label="Đóng">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <div class="battle-setup-body">
+            <!-- MỤC 1: CHỌN PHÁP MÔN TU LUYỆN -->
+            <div class="setup-section-block">
+              <div class="setup-section-header">
+                <span class="setup-sec-num">I</span>
+                <span class="setup-sec-title">CHỌN PHÁP MÔN TU LUYỆN (CƠ CHẾ RÈN TÂM TRÍ)</span>
+              </div>
+              <div class="setup-modes-grid" id="setupModeGrid">
+                <div class="setup-mode-card" data-mode="CLOZE">
+                  <div class="setup-card-icon">📖</div>
+                  <div class="setup-card-info">
+                    <div class="setup-card-name">NGỘ ĐẠO THÔNG LINH</div>
+                    <div class="setup-card-sub">Active Recall • Điền khuyết (Gợi ý chữ đầu & chữ cuối)</div>
+                  </div>
+                  <div class="setup-card-check">✔</div>
+                </div>
+                <div class="setup-mode-card" data-mode="DIRECT">
+                  <div class="setup-card-icon">⚔️</div>
+                  <div class="setup-card-info">
+                    <div class="setup-card-name">TRỰC DIỆN TRẢM MA</div>
+                    <div class="setup-card-sub">Direct Typing • Tốc độ phản xạ & Luyện gõ phím nhanh</div>
+                  </div>
+                  <div class="setup-card-check">✔</div>
+                </div>
+                <div class="setup-mode-card" data-mode="AUDIO">
+                  <div class="setup-card-icon">🔊</div>
+                  <div class="setup-card-info">
+                    <div class="setup-card-name">THÍNH LÔI BIỆN ÂM</div>
+                    <div class="setup-card-sub">Audio Dictation • Luyện nghe & chép chính tả chuẩn</div>
+                  </div>
+                  <div class="setup-card-check">✔</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MỤC 2: CHỌN TÀNG KINH CÁC (ĐỘ KHÓ & TỪ VỰNG) -->
+            <div class="setup-section-block">
+              <div class="setup-section-header">
+                <span class="setup-sec-num">II</span>
+                <span class="setup-sec-title">CHỌN BỘ TÀNG KINH CÁC (ĐỘ KHÓ TỪ VỰNG IELTS)</span>
+              </div>
+              <div class="setup-decks-grid" id="setupDeckGrid">
+                <div class="setup-deck-card" data-deck="oxford_5000">
+                  <div class="setup-deck-badge">TOÀN DIỆN</div>
+                  <div class="setup-deck-title">OXFORD 5000</div>
+                  <div class="setup-deck-desc">5,946 từ cốt lõi A1 - C1 phân tầng 5 cảnh giới</div>
+                </div>
+                <div class="setup-deck-card" data-deck="listening_1200">
+                  <div class="setup-deck-badge">LISTENING</div>
+                  <div class="setup-deck-title">1200 THÍNH ÂM</div>
+                  <div class="setup-deck-desc">Chuyên trị bẫy chính tả Section 1 IELTS</div>
+                </div>
+                <div class="setup-deck-card" data-deck="reading_academic">
+                  <div class="setup-deck-badge">ACADEMIC 7.5+</div>
+                  <div class="setup-deck-title">CAMBRIDGE 17-19</div>
+                  <div class="setup-deck-desc">Cổ ngữ học thuật tinh hoa trích từ đề thi thực chiến</div>
+                </div>
+                <div class="setup-deck-card" data-deck="flashcard_srs">
+                  <div class="setup-deck-badge">SỔ TAY CÁ NHÂN</div>
+                  <div class="setup-deck-title">TÁI HIỆN SRS</div>
+                  <div class="setup-deck-desc">Luyện lại những từ từng bị gõ sai hoặc mất máu</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MỤC 3: HÀNH TRÌNH TU LUYỆN -->
+            <div class="setup-section-block setup-journey-box">
+              <div class="setup-journey-header">
+                <span class="setup-journey-status-label">TIẾN TRÌNH PHÁP MÔN NÀY TRONG NGỌC GIẢN:</span>
+                <span class="setup-journey-detail" id="setupJourneyDetail">Cấp 0 • 0 Tu Vi</span>
+              </div>
+              <div class="setup-actions-row" id="setupActionsRow">
+                <!-- Nút Tiếp Tục (nếu có save) và Nút Chơi Lại Từ Đầu / Nút Bắt Đầu Mới -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- ========================================================= -->
       <!-- 3. HỘP THOẠI LƯU TRỮ NGỌC GIẢN (SAVE SLOTS MODAL) -->
@@ -2127,35 +2243,35 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=10.1"></script>
-    <script src="./js/data/WordDecks.js?v=10.1"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=10.1"></script>
-    <script src="./js/data/TalentsData.js?v=10.1"></script>
-    <script src="./js/data/SpeechesData.js?v=10.1"></script>
+    <script src="./js/data/RealmsData.js?v=10.2"></script>
+    <script src="./js/data/WordDecks.js?v=10.2"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=10.2"></script>
+    <script src="./js/data/TalentsData.js?v=10.2"></script>
+    <script src="./js/data/SpeechesData.js?v=10.2"></script>
 
-    <script src="./js/core/AudioManager.js?v=10.1"></script>
-    <script src="./js/core/SaveSystem.js?v=10.1"></script>
-    <script src="./js/core/GameState.js?v=10.1"></script>
-    <script src="./js/core/SpriteAnimator.js?v=10.1"></script>
+    <script src="./js/core/AudioManager.js?v=10.2"></script>
+    <script src="./js/core/SaveSystem.js?v=10.2"></script>
+    <script src="./js/core/GameState.js?v=10.2"></script>
+    <script src="./js/core/SpriteAnimator.js?v=10.2"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=10.1"></script>
-    <script src="./js/effects/RealmVFX.js?v=10.1"></script>
-    <script src="./js/effects/FloatingText.js?v=10.1"></script>
+    <script src="./js/effects/ParticleEngine.js?v=10.2"></script>
+    <script src="./js/effects/RealmVFX.js?v=10.2"></script>
+    <script src="./js/effects/FloatingText.js?v=10.2"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=10.1"></script>
-    <script src="./js/entities/AsteroidManager.js?v=10.1"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=10.1"></script>
+    <script src="./js/entities/CatCultivator.js?v=10.2"></script>
+    <script src="./js/entities/AsteroidManager.js?v=10.2"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=10.2"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=10.1"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=10.1"></script>
+    <script src="./js/combat/TypingEngine.js?v=10.2"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=10.2"></script>
 
-    <script src="./js/ui/IPAToast.js?v=10.1"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=10.1"></script>
-    <script src="./js/ui/UnityBridge.js?v=10.1"></script>
-    <script src="./js/core/VocabLoader.js?v=10.1"></script>
-    <script src="./js/ui/UIManager.js?v=10.1"></script>
+    <script src="./js/ui/IPAToast.js?v=10.2"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=10.2"></script>
+    <script src="./js/ui/UnityBridge.js?v=10.2"></script>
+    <script src="./js/core/VocabLoader.js?v=10.2"></script>
+    <script src="./js/ui/UIManager.js?v=10.2"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=10.1"></script>
+    <script src="./js/main.js?v=10.2"></script>
   </body>
 </html>

@@ -426,15 +426,183 @@
         ctx.restore();
 
         // ============================================================
-        // 4. MA THẠCH HUYỀN THIÊN PIXEL ART CHÂN THỰC (AUTHENTIC PIXEL SPRITE)
+        // 4. CUỘN THƯ BÍ KÍP PHÁP BẢO TIÊN ĐẠO (CONSOLIDATED CELESTIAL SCROLL)
+        // Hợp nhất toàn bộ: Ma Thạch Nguyên Tố, Dải Lụa Tiêu Đề, Ký Tự Gõ, và Dải Giải Nghĩa
         // ============================================================
         ctx.save();
-        ctx.translate(posX, posY);
-        ctx.rotate(ast.rot);
+        const word = ast.word;
+        const isMobileScreen = (ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768);
+        const M = root.Meowcha || {};
+        const isTarget = (ast.typedLen > 0) || (M.app && M.app.typing && M.app.typing.currentTarget === ast);
 
-        // Đổ bóng hào quang ma vật rực lửa
-        ctx.shadowColor = ast.hitReaction > 0 ? "#FFFFFF" : ast.glowColor;
-        ctx.shadowBlur = ast.hitReaction > 0 ? 32 : 20;
+        // 4.1 XÁC ĐỊNH NỘI DUNG TIÊU ĐỀ & CHÂN GIẢI NGHĨA
+        let topTitle = "✦ ⚔️ TRẢM MA PHÙ TRIỆU ✦";
+        let bottomText = ast.meaning ? `📖 ${ast.meaning}${ast.ipa ? ' • ' + ast.ipa : ''}` : (ast.ipa || '');
+
+        if (ast.isAudio) {
+          topTitle = "✦ 🔊 LẮNG NGHE TIÊN ÂM ✦";
+          bottomText = `🔊 Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
+        } else if (ast.isCloze) {
+          topTitle = "✦ 📖 NGỘ ĐẠO BÍ KÍP ✦";
+          bottomText = `📖 ${ast.meaning || 'Ngộ đạo'} • [${word.length} Ký Tự]`;
+        }
+
+        // 4.2 TÍNH TOÁN KÍCH THƯỚC CUỘN THƯ VỪA VẶN MỌI NỘI DUNG
+        ctx.font = isMobileScreen ? "700 11.5px 'Be Vietnam Pro', sans-serif" : "700 13px 'Be Vietnam Pro', sans-serif";
+        const bottomTextMetrics = ctx.measureText(bottomText).width;
+        const charSpacing = isMobileScreen ? 19 : 23;
+        const wordWidth = word.length * charSpacing;
+
+        const minW = isMobileScreen ? 185 : 225;
+        const maxW = isMobileScreen ? 310 : 380;
+        const scrollW = Math.max(minW, Math.min(maxW, Math.max(bottomTextMetrics + 36, wordWidth + 60)));
+        const scrollH = isMobileScreen ? 88 : 98;
+        const sx = posX - scrollW / 2;
+        const sy = posY - scrollH / 2;
+
+        // 4.3 ĐỔ BÓNG HÀO QUANG CUỘN THƯ
+        ctx.shadowColor = ast.hitReaction > 0 ? "#FFFFFF" : (isTarget ? "#F59E0B" : "rgba(0, 0, 0, 0.75)");
+        ctx.shadowBlur = ast.hitReaction > 0 ? 28 : (isTarget ? 20 : 12);
+
+        // 4.4 THÂN CUỘN THƯ HOÀNG KIM CỔ PHONG (AGED GOLDEN PARCHMENT)
+        const pGrad = ctx.createLinearGradient(sx, sy, sx, sy + scrollH);
+        pGrad.addColorStop(0, "rgba(225, 198, 142, 0.96)");
+        pGrad.addColorStop(0.12, "rgba(252, 246, 224, 0.95)");
+        pGrad.addColorStop(0.5, "rgba(246, 237, 204, 0.94)");
+        pGrad.addColorStop(0.88, "rgba(238, 222, 180, 0.95)");
+        pGrad.addColorStop(1, "rgba(206, 172, 114, 0.97)");
+
+        ctx.fillStyle = pGrad;
+        ctx.beginPath();
+        ctx.roundRect(sx, sy, scrollW, scrollH, 7);
+        ctx.fill();
+
+        // Viền kép hoàng kim cổ phong
+        ctx.strokeStyle = isTarget ? "#F59E0B" : "rgba(180, 130, 45, 0.95)";
+        ctx.lineWidth = isTarget ? 2.2 : 1.6;
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(254, 240, 138, 0.65)";
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(sx + 2, sy + 2, scrollW - 4, scrollH - 4, 5);
+        ctx.stroke();
+
+        // 4.5 HAI TRỤC CUỘN NGỌC BÍCH HOÀNG KIM (JADE & GOLD VERTICAL ROLLERS)
+        // Trục cuốn bên trái
+        const rollerW = 7;
+        const rollerH = scrollH + 12;
+        const rollerY = sy - 6;
+
+        const leftRollerGrad = ctx.createLinearGradient(sx - rollerW + 1, 0, sx + 1, 0);
+        leftRollerGrad.addColorStop(0, "#064E3B");
+        leftRollerGrad.addColorStop(0.45, "#10B981");
+        leftRollerGrad.addColorStop(1, "#064E3B");
+
+        ctx.fillStyle = leftRollerGrad;
+        ctx.fillRect(sx - rollerW + 1, rollerY, rollerW, rollerH);
+        ctx.strokeStyle = "#D4AF37";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(sx - rollerW + 1, rollerY, rollerW, rollerH);
+
+        // Nắp chụp vàng hai đầu trục trái
+        ctx.fillStyle = "#FDE047";
+        ctx.beginPath();
+        ctx.arc(sx - rollerW / 2 + 1, rollerY, 4.5, 0, Math.PI * 2);
+        ctx.arc(sx - rollerW / 2 + 1, rollerY + rollerH, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Dây tua rua đỏ bên trái
+        ctx.strokeStyle = "#DC2626";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(sx - rollerW / 2 + 1, rollerY + rollerH + 4);
+        ctx.lineTo(sx - rollerW / 2 + 1, rollerY + rollerH + 14);
+        ctx.stroke();
+        ctx.fillStyle = "#FDE047";
+        ctx.beginPath();
+        ctx.arc(sx - rollerW / 2 + 1, rollerY + rollerH + 15, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trục cuốn bên phải
+        const rightRollerX = sx + scrollW - 1;
+        const rightRollerGrad = ctx.createLinearGradient(rightRollerX, 0, rightRollerX + rollerW, 0);
+        rightRollerGrad.addColorStop(0, "#064E3B");
+        rightRollerGrad.addColorStop(0.45, "#10B981");
+        rightRollerGrad.addColorStop(1, "#064E3B");
+
+        ctx.fillStyle = rightRollerGrad;
+        ctx.fillRect(rightRollerX, rollerY, rollerW, rollerH);
+        ctx.strokeStyle = "#D4AF37";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rightRollerX, rollerY, rollerW, rollerH);
+
+        // Nắp chụp vàng hai đầu trục phải
+        ctx.fillStyle = "#FDE047";
+        ctx.beginPath();
+        ctx.arc(rightRollerX + rollerW / 2, rollerY, 4.5, 0, Math.PI * 2);
+        ctx.arc(rightRollerX + rollerW / 2, rollerY + rollerH, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Dây tua rua đỏ bên phải
+        ctx.strokeStyle = "#DC2626";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(rightRollerX + rollerW / 2, rollerY + rollerH + 4);
+        ctx.lineTo(rightRollerX + rollerW / 2, rollerY + rollerH + 14);
+        ctx.stroke();
+        ctx.fillStyle = "#FDE047";
+        ctx.beginPath();
+        ctx.arc(rightRollerX + rollerW / 2, rollerY + rollerH + 15, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4.6 DẢI LỤA ĐỎ TIÊU ĐỀ TÍCH HỢP Ở ĐỈNH CUỘN THƯ (INTEGRATED TOP RED SILK BANNER)
+        const topBannerH = isMobileScreen ? 18 : 20;
+        const topBannerW = scrollW - 14;
+        const topBannerX = sx + 7;
+        const topBannerY = sy + 4;
+
+        const silkGrad = ctx.createLinearGradient(topBannerX, 0, topBannerX + topBannerW, 0);
+        silkGrad.addColorStop(0, "#7F1D1D");
+        silkGrad.addColorStop(0.25, "#991B1B");
+        silkGrad.addColorStop(0.5, "#B91C1C");
+        silkGrad.addColorStop(0.75, "#991B1B");
+        silkGrad.addColorStop(1, "#7F1D1D");
+
+        ctx.fillStyle = silkGrad;
+        ctx.beginPath();
+        ctx.roundRect(topBannerX, topBannerY, topBannerW, topBannerH, 4);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.font = isMobileScreen ? "800 10px 'Cinzel', serif" : "800 11px 'Cinzel', serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#FEF08A";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+        ctx.shadowBlur = 3;
+        ctx.fillText(topTitle, posX, topBannerY + topBannerH / 2);
+
+        // 4.7 TÂM ĐIỂM: MA THẠCH NGUYÊN TỐ & VÒNG BÁT QUÁI PHÙ ẤN
+        const cy = sy + scrollH / 2 + 1;
+
+        // Vòng Bát Quái Cổ Trận mờ ảo
+        ctx.save();
+        ctx.strokeStyle = "rgba(180, 130, 45, 0.28)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(posX, cy, scrollH * 0.32, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Khối Ma Thạch nguyên tố lồng tinh tế trong tâm cuộn thư
+        ctx.save();
+        ctx.translate(posX, cy);
+        ctx.rotate(ast.rot);
 
         let spriteImg = null;
         if (ast.asteroidType === "ice") {
@@ -455,123 +623,47 @@
                       (this.assets?.prop_asteroid_ice?.loaded && this.assets.prop_asteroid_ice.img) || null;
         }
 
+        const rockSize = scrollH * 0.54;
         if (spriteImg) {
-          ctx.imageSmoothingEnabled = false; // Chuẩn Retro Pixel Art
-          const size = ast.radius * 2.35;
-          ctx.drawImage(spriteImg, -size / 2, -size / 2, size, size);
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(spriteImg, -rockSize / 2, -rockSize / 2, rockSize, rockSize);
         } else {
-          // Graceful fallback nếu ảnh mạng tải chậm (KHÔNG BAO GIỜ VẼ ĐA GIÁC THÔ SỢI CAM)
-          const rockGrad = ctx.createRadialGradient(-ast.radius * 0.25, -ast.radius * 0.25, 4, 0, 0, ast.radius * 1.05);
+          ctx.globalAlpha = 0.45;
+          const rockGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, rockSize / 2);
           rockGrad.addColorStop(0, ast.runeColor || "#FEF08A");
-          rockGrad.addColorStop(0.35, ast.coreColor || "#F97316");
-          rockGrad.addColorStop(0.75, "#180C06");
-          rockGrad.addColorStop(1, "#0A0503");
-
+          rockGrad.addColorStop(0.7, ast.coreColor || "#F97316");
+          rockGrad.addColorStop(1, "transparent");
           ctx.fillStyle = rockGrad;
           ctx.beginPath();
-          ctx.arc(0, 0, ast.radius, 0, Math.PI * 2);
+          ctx.arc(0, 0, rockSize / 2, 0, Math.PI * 2);
           ctx.fill();
-
-          ctx.strokeStyle = ast.glowColor || ast.coreColor;
-          ctx.lineWidth = 2.0;
-          ctx.stroke();
         }
+        ctx.restore();
 
-        ctx.restore(); // Thoát khỏi phép xoay khối đá
-
-        // ============================================================
-        // 4.5 TỬ ĐIỆN LÔI KIẾP QUANH MA THẠCH (LIGHTNING HAZARD CORONA)
-        // Khi bị sét đánh: Tia điện chớp giật quanh khối đá, báo hiệu ma thạch gia tốc rơi nhanh
-        // ============================================================
-        if (ast.freezeTimer && ast.freezeTimer > 0) {
-          ctx.save();
-          ctx.strokeStyle = "#C084FC";
-          ctx.lineWidth = 2.4;
-          ctx.shadowColor = "#A855F7";
-          ctx.shadowBlur = 18;
-          ctx.beginPath();
-          ctx.arc(posX, posY, ast.radius * 1.18, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        } else if (ast.slowTimer && ast.slowTimer > 0) {
-          ctx.save();
-          ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
-          ctx.lineWidth = 1.8;
-          ctx.setLineDash([5, 4]);
-          ctx.beginPath();
-          ctx.arc(posX, posY, ast.radius * 1.12, this.time * 2, this.time * 2 + Math.PI * 2);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.restore();
-        }
-
-        if (this.isLightningHazard) {
-          ctx.save();
-          ctx.strokeStyle = Math.random() < 0.6 ? "#FDE047" : "#38BDF8";
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = "#FDE047";
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
-          const arcR = ast.radius * 1.32;
-          const arcSteps = 7;
-          for (let s = 0; s <= arcSteps; s++) {
-            const a = (s / arcSteps) * Math.PI * 2;
-            const jx = posX + Math.cos(a) * (arcR + (Math.random() - 0.5) * 15);
-            const jy = posY + Math.sin(a) * (arcR + (Math.random() - 0.5) * 15);
-            if (s === 0) ctx.moveTo(jx, jy);
-            else ctx.lineTo(jx, jy);
-          }
-          ctx.closePath();
-          ctx.stroke();
-          ctx.restore();
-        }
-
-        // ============================================================
-        // 5. CỔ PHÙ KHẮC KIM (CARVED SACRED RUNES - KHÔNG CÓ KHUNG GIẤY THẺ)
-        // ============================================================
+        // 4.8 KÝ TỰ CỔ PHÙ TRẢM MA (CARVED SACRED RUNES)
+        // Hiển thị trực diện trên giấy cổ với độ tương phản cao, rõ nét tuyệt đối
         ctx.save();
-        const word = ast.word;
-        const isMobileScreen = (ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768);
-        const charSpacing = isMobileScreen ? 18 : 22;
-        const totalWordW = word.length * charSpacing;
-        const startCharX = posX - totalWordW / 2 + charSpacing / 2;
-        const runeY = posY;
-
-        // Đệm hào quang kiếm ý mờ bảo hộ chữ
-        const bgGlowGrad = ctx.createRadialGradient(posX, runeY, 10, posX, runeY, totalWordW / 1.6);
-        bgGlowGrad.addColorStop(0, "rgba(10, 5, 18, 0.75)");
-        bgGlowGrad.addColorStop(0.8, "rgba(10, 5, 18, 0.35)");
-        bgGlowGrad.addColorStop(1, "transparent");
-        ctx.fillStyle = bgGlowGrad;
-        ctx.beginPath();
-        ctx.ellipse(posX, runeY, totalWordW / 1.8 + 14, isMobileScreen ? 20 : 24, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = isMobileScreen ? "900 18px 'Cinzel', serif" : "900 22px 'Cinzel', 'Playfair Display', serif";
+        ctx.font = isMobileScreen ? "900 18.5px 'Cinzel', serif" : "900 22.5px 'Cinzel', 'Playfair Display', serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+
+        const startCharX = posX - (word.length * charSpacing) / 2 + charSpacing / 2;
+        const runeY = cy - 1;
 
         for (let c = 0; c < word.length; c++) {
           const letter = word[c];
           const cx = startCharX + c * charSpacing;
 
           if (c < ast.typedLen) {
-            // ĐÃ GÕ ĐÚNG KÝ TỰ: Hiển thị chữ cái thật bừng sáng
+            // ĐÃ GÕ ĐÚNG: Hiện chữ cái thật rực rỡ ngọc bích
             ctx.save();
-            if (ast.isAudio) {
-              ctx.fillStyle = "#E0E7FF";
-              ctx.shadowColor = "#818CF8";
-            } else if (ast.isCloze) {
-              ctx.fillStyle = "#A7F3D0";
-              ctx.shadowColor = "#10B981";
-            } else {
-              ctx.fillStyle = "#34D399";
-              ctx.shadowColor = "#10B981";
-            }
-            ctx.shadowBlur = 14;
             ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(4, 30, 20, 0.9)";
+            ctx.strokeStyle = "rgba(4, 30, 20, 0.95)";
             ctx.strokeText(letter, cx, runeY);
+
+            ctx.fillStyle = "#059669";
+            ctx.shadowColor = "#10B981";
+            ctx.shadowBlur = 10;
             ctx.fillText(letter, cx, runeY);
             ctx.restore();
 
@@ -582,64 +674,69 @@
             ctx.translate(cx, runeY);
             ctx.scale(pulse, pulse);
 
-            // PHÂN BIỆT RÕ 3 PHÁP MÔN:
-            // 1. DIRECT: Hiện chữ cái thật nhấp nháy vàng kim
-            // 2. CLOZE: Ký tự đầu tiên (khi chưa gõ chữ nào) hiện chữ để làm điểm tựa; các ký tự sau TUYỆT ĐỐI GIẤU KÍN bằng phù ấn "✦"
-            // 3. AUDIO: TUYỆT ĐỐI GIẤU KÍN TOÀN BỘ bằng phù ấn lôi âm "✦" để buộc người chơi phải nghe âm thanh!
             let targetChar = letter;
-            let targetColor = "#FDE047";
-            let targetGlow = "#EF4444";
+            let targetColor = "#D97706";
+            let targetGlow = "#F59E0B";
 
             if (ast.isAudio) {
               targetChar = "✦";
-              targetColor = "#C084FC";
+              targetColor = "#7C3AED";
               targetGlow = "#A855F7";
             } else if (ast.isCloze) {
-              if (c === 0 && ast.typedLen === 0) {
+              // CLOZE: Chữ đầu hoặc chữ cuối hiện làm điểm tựa
+              if (c === 0 || (c === word.length - 1 && word.length >= 3)) {
                 targetChar = letter;
-                targetColor = "#FDE047";
+                targetColor = "#B45309";
                 targetGlow = "#F59E0B";
               } else {
                 targetChar = "✦";
-                targetColor = "#34D399";
-                targetGlow = "#059669";
+                targetColor = "#0D9488";
+                targetGlow = "#14B8A6";
               }
             }
 
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "rgba(10, 5, 2, 0.9)";
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "rgba(69, 26, 3, 0.95)";
             ctx.strokeText(targetChar, 0, 0);
 
             ctx.fillStyle = targetColor;
             ctx.shadowColor = targetGlow;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 14;
             ctx.fillText(targetChar, 0, 0);
 
-            ctx.strokeStyle = targetColor;
+            // Vòng tròn kiếm khí nhắm mục tiêu
+            ctx.strokeStyle = targetGlow;
             ctx.lineWidth = 1.6;
             ctx.beginPath();
-            ctx.arc(0, 0, 13, 0, Math.PI * 2);
+            ctx.arc(0, 0, 12, 0, Math.PI * 2);
             ctx.stroke();
             ctx.restore();
 
           } else {
             // KÝ TỰ CHƯA GÕ (c > ast.typedLen)
             ctx.save();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(10, 5, 2, 0.85)";
+            ctx.lineWidth = 2.2;
+            ctx.strokeStyle = "rgba(69, 26, 3, 0.85)";
 
             let displayChar = letter;
-            let fillCol = "#FEF3C7";
-            let glowCol = "rgba(245, 158, 11, 0.65)";
+            let fillCol = "#1E293B";
+            let glowCol = "rgba(0, 0, 0, 0.4)";
 
             if (ast.isAudio) {
               displayChar = "✦";
-              fillCol = "rgba(192, 132, 252, 0.65)";
-              glowCol = "rgba(168, 85, 247, 0.6)";
+              fillCol = "rgba(124, 58, 237, 0.85)";
+              glowCol = "rgba(168, 85, 247, 0.5)";
             } else if (ast.isCloze) {
-              displayChar = "✦";
-              fillCol = "rgba(110, 231, 183, 0.65)";
-              glowCol = "rgba(16, 185, 129, 0.6)";
+              // CLOZE: KÝ TỰ CUỐI CÙNG LUÔN HIỆN LÀM GỢI Ý CHỐT ĐUÔI NẾU TỪ >= 3 CHỮ!
+              if (c === word.length - 1 && word.length >= 3) {
+                displayChar = letter;
+                fillCol = "#B45309";
+                glowCol = "rgba(245, 158, 11, 0.6)";
+              } else {
+                displayChar = "✦";
+                fillCol = "rgba(13, 148, 136, 0.85)";
+                glowCol = "rgba(20, 184, 166, 0.5)";
+              }
             }
 
             ctx.strokeText(displayChar, cx, runeY);
@@ -647,78 +744,96 @@
             ctx.shadowColor = glowCol;
             ctx.shadowBlur = 6;
             ctx.fillText(displayChar, cx, runeY);
+
+            // Gạch chân ký tự cuối để người chơi nhận diện đây là chữ cái gợi ý
+            if (ast.isCloze && c === word.length - 1 && word.length >= 3) {
+              ctx.strokeStyle = "#B45309";
+              ctx.lineWidth = 1.4;
+              ctx.beginPath();
+              ctx.moveTo(cx - 7, runeY + 11);
+              ctx.lineTo(cx + 7, runeY + 11);
+              ctx.stroke();
+            }
             ctx.restore();
           }
         }
         ctx.restore();
 
-        // 5.4 HIỆU ỨNG SÓNG ÂM ĐẶC QUYỀN CHO CHẾ ĐỘ THÍNH LÔI BIỆN ÂM (AUDIO MODE)
-        if (ast.isAudio) {
+        // 4.9 DẢI ĐẾ SẪM MÀU TRANG NHÃ CHỨA PHIÊN ÂM & NGHĨA (INTEGRATED BOTTOM BANNER)
+        const btmBannerH = isMobileScreen ? 20 : 22;
+        const btmBannerW = scrollW - 14;
+        const btmBannerX = sx + 7;
+        const btmBannerY = sy + scrollH - btmBannerH - 4;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+        ctx.beginPath();
+        ctx.roundRect(btmBannerX, btmBannerY, btmBannerW, btmBannerH, 4);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(212, 175, 55, 0.55)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.font = isMobileScreen ? "700 11px 'Be Vietnam Pro', sans-serif" : "700 12.5px 'Be Vietnam Pro', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        let btmTextColor = "#FDE047";
+        if (ast.isAudio) btmTextColor = "#38BDF8";
+        else if (ast.isCloze) btmTextColor = "#34D399";
+
+        ctx.fillStyle = btmTextColor;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 3;
+        ctx.fillText(bottomText, posX, btmBannerY + btmBannerH / 2);
+
+        // 4.10 LINH THÚ HỘ ĐẠO (PLAYFUL GREEN CHIBI CAT COMPANION ON ACTIVE SCROLL)
+        if (isTarget) {
           ctx.save();
-          const wavePulse1 = ((this.time * 2.2) % 1);
-          const wavePulse2 = ((this.time * 2.2 + 0.5) % 1);
-          const r1 = ast.radius + wavePulse1 * 26;
-          const r2 = ast.radius + wavePulse2 * 26;
+          const catX = sx + scrollW + 2;
+          const catY = sy + scrollH - 4;
+          const catBob = Math.sin(this.time * 6) * 3;
 
-          ctx.strokeStyle = `rgba(168, 85, 247, ${Math.max(0, 0.8 - wavePulse1)})`;
-          ctx.lineWidth = 2;
+          // Đám mây vàng bồng bềnh nâng linh thú
+          ctx.fillStyle = "rgba(253, 224, 71, 0.85)";
+          ctx.shadowColor = "#F59E0B";
+          ctx.shadowBlur = 10;
           ctx.beginPath();
-          ctx.arc(posX, posY, r1, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.ellipse(catX + 4, catY + catBob + 6, 12, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
 
-          ctx.strokeStyle = `rgba(56, 189, 248, ${Math.max(0, 0.7 - wavePulse2)})`;
-          ctx.lineWidth = 1.5;
+          // Thân mèo ngọc bích cute vẫy tay
+          ctx.fillStyle = "#10B981";
+          ctx.strokeStyle = "#064E3B";
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.arc(posX, posY, r2, 0, Math.PI * 2);
-          ctx.stroke();
-
-          ctx.font = "700 12px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillStyle = "#A78BFA";
-          ctx.fillText("🔊 LẮNG NGHE TIÊN ÂM", posX, posY - ast.radius - 12);
-          ctx.restore();
-        }
-
-        // 5.5 CHÂN GIẢI NGHĨA TIẾNG VIỆT & PHIÊN ÂM IPA (MEANING & IPA BANNER)
-        if (ast.meaning || ast.isAudio) {
-          ctx.save();
-          const meanY = posY + ast.radius + (isMobileScreen ? 18 : 22);
-          ctx.font = isMobileScreen ? "700 13px 'Be Vietnam Pro', sans-serif" : "700 14.5px 'Be Vietnam Pro', sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-
-          let displayText = ast.meaning;
-          let boxBorder = "rgba(245, 158, 11, 0.85)";
-          let textColor = "#FEF08A";
-
-          if (ast.isAudio) {
-            displayText = `🔊 TAB: Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
-            boxBorder = "#A855F7";
-            textColor = "#E0E7FF";
-          } else if (ast.isCloze) {
-            displayText = `📖 ${ast.meaning} • [${word.length} Ký Tự]`;
-            boxBorder = "#10B981";
-            textColor = "#A7F3D0";
-          }
-
-          const textW = Math.min(320, ctx.measureText(displayText).width);
-
-          // Thẻ bài mộc bản ngọc bích viền hoàng kim
-          ctx.fillStyle = "rgba(8, 20, 14, 0.92)";
-          ctx.strokeStyle = boxBorder;
-          ctx.lineWidth = 1.5;
-          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.roundRect(posX - textW / 2 - 12, meanY - 11, textW + 24, 23, 6);
+          ctx.arc(catX + 4, catY + catBob, 8, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
-          // Chữ dịch nghĩa vàng kim sáng rõ, không lỗi font
-          ctx.fillStyle = textColor;
-          ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
-          ctx.shadowBlur = 3;
-          ctx.fillText(displayText, posX, meanY);
+          // Hai tai mèo
+          ctx.beginPath();
+          ctx.moveTo(catX - 1, catY + catBob - 6);
+          ctx.lineTo(catX + 1, catY + catBob - 12);
+          ctx.lineTo(catX + 4, catY + catBob - 6);
+          ctx.moveTo(catX + 4, catY + catBob - 6);
+          ctx.lineTo(catX + 7, catY + catBob - 12);
+          ctx.lineTo(catX + 9, catY + catBob - 6);
+          ctx.fill();
+          ctx.stroke();
+
+          // Mắt và má hồng
+          ctx.fillStyle = "#064E3B";
+          ctx.beginPath();
+          ctx.arc(catX + 2, catY + catBob - 1, 1, 0, Math.PI * 2);
+          ctx.arc(catX + 6, catY + catBob - 1, 1, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#F43F5E";
+          ctx.beginPath();
+          ctx.arc(catX, catY + catBob + 2, 1.2, 0, Math.PI * 2);
+          ctx.arc(catX + 8, catY + catBob + 2, 1.2, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
         }
 

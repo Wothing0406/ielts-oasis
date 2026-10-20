@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 export const dynamic = 'force-dynamic';
 
 export default function MeowchaGamePage() {
-  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.1");
+  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.2");
 
   useEffect(() => {
     try {

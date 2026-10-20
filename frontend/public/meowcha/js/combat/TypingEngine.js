@@ -646,17 +646,17 @@
       const curMode = (this.state && this.state.gameMode) || "DIRECT";
 
       const plaqueTitles = {
-        DIRECT: "KIẾM QUYẾT ĐÀI • TRỰC DIỆN TRẢM MA",
-        CLOZE:  "NGỘ ĐẠO ĐÀI • ACTIVE RECALL (ĐIỀN THEO NGHĨA)",
-        AUDIO:  "THÍNH LÔI ĐÀI • AUDIO DICTATION (NGHE & GÕ LẠI)"
+        DIRECT: "TRỰC DIỆN TRẢM MA • TỐC ĐỘ",
+        CLOZE:  "NGỘ ĐẠO ĐÀI • ACTIVE RECALL",
+        AUDIO:  "THÍNH LÔI ĐÀI • AUDIO DICTATION"
       };
 
       if (!target || !target.word) {
-        if (plaqueEl) plaqueEl.innerText = plaqueTitles[curMode] || plaqueTitles.DIRECT;
+        if (plaqueEl) plaqueEl.innerText = `✦ KIẾM QUYẾT ĐÀI • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} ✦`;
         if (intentEl) {
           const idleMsgs = {
             DIRECT: "❖ TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM ❖",
-            CLOZE:  "❖ NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ ẤN ❖",
+            CLOZE:  "❖ NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ CƠ ❖",
             AUDIO:  "❖ THÍNH LÔI BIỆN ÂM • LẮNG NGHE TIÊN ÂM (PHÍM TAB ĐỂ NGHE LẠI) ❖"
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
@@ -667,38 +667,64 @@
         return;
       }
 
-      if (plaqueEl) plaqueEl.innerText = `ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT}`;
+      if (plaqueEl) plaqueEl.innerText = `✦ ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} ✦`;
 
       const word = target.word;
       const typed = Math.min(target.typedLen, word.length);
-      const typedPart = word.substring(0, typed);
-      const untypedLen = word.length - typed;
       const pct = Math.round((typed / word.length) * 100);
 
-      // XỬ LÝ HIỂN THỊ KIẾM ĐÀI KHÁC BIỆT THEO 3 PHÁP MÔN:
-      // 1. DIRECT: Hiện chữ cái chưa gõ bình thường
-      // 2. CLOZE: Ký tự chưa gõ hiển thị phù ấn "✦ ", TUYỆT ĐỐI KHÔNG LỘ ĐÁP ÁN!
-      // 3. AUDIO: Ký tự chưa gõ hiển thị phù ấn "✦ " và có nút Loa nghe lại
-      let displayUntyped = word.substring(typed);
-      if (curMode === "CLOZE" || curMode === "AUDIO") {
-        displayUntyped = untypedLen > 0 ? "✦ ".repeat(untypedLen).trim() : "";
+      // XỬ LÝ HIỂN THỊ CHỮ GÕ & CHỮ CHƯA GÕ TRÊN CUỘN THƯ BÍ KÍP:
+      let wordDisplayHtml = "";
+
+      if (curMode === "CLOZE") {
+        // CHẾ ĐỘ NGỘ ĐẠO THÔNG LINH (ACTIVE RECALL):
+        // 1. Chữ đã gõ: Hiện màu xanh ngọc phát sáng
+        // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu
+        // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ
+        // 4. Các ký tự ở giữa chưa gõ: Hiển thị phù ấn bí mật "✦ "
+        for (let i = 0; i < word.length; i++) {
+          if (i < typed) {
+            wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
+          } else if (i === 0 && typed === 0) {
+            wordDisplayHtml += `<span class="altar-hint-char" style="color:#D97706">${word[0]}</span> `;
+          } else if (i === word.length - 1 && word.length >= 3) {
+            wordDisplayHtml += `<span class="altar-hint-char">${word[i]}</span> `;
+          } else {
+            wordDisplayHtml += `<span class="altar-untyped-txt">✦ </span>`;
+          }
+        }
+      } else if (curMode === "AUDIO") {
+        // CHẾ ĐỘ THÍNH LÔI BIỆN ÂM (AUDIO DICTATION):
+        // Chữ chưa gõ giấu kín bằng phù ấn "✦ "
+        for (let i = 0; i < word.length; i++) {
+          if (i < typed) {
+            wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
+          } else {
+            wordDisplayHtml += `<span class="altar-untyped-txt">✦ </span>`;
+          }
+        }
+      } else {
+        // CHẾ ĐỘ TRỰC DIỆN TRẢM MA (DIRECT TYPING):
+        const typedPart = word.substring(0, typed);
+        const untypedPart = word.substring(typed);
+        wordDisplayHtml = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${untypedPart}</span>`;
       }
 
       if (intentEl) {
-        intentEl.innerHTML = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${displayUntyped}</span>`;
+        intentEl.innerHTML = wordDisplayHtml.trim();
       }
 
       if (meaningEl) {
         if (curMode === "AUDIO") {
           meaningEl.innerHTML = `
-            <span style="color: #A78BFA; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
+            <span style="color: #7C3AED; font-weight: 700; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
               🔊 [TIÊN ÂM: ${target.ipa || '/.../'}] • Bấm TAB để nghe lại
             </span>
           `;
         } else if (curMode === "CLOZE") {
-          meaningEl.innerHTML = `<span style="color: #A7F3D0; font-weight: 700;">📖 NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
+          meaningEl.innerHTML = `<span style="color: #065F46; font-weight: 800;">📖 NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
         } else {
-          meaningEl.innerText = target.meaning || target.definition || "";
+          meaningEl.innerText = `📖 ${target.meaning || target.definition || ""}`;
         }
       }
 

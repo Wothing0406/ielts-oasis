@@ -184,18 +184,12 @@
           this.submitScoreToPantheon();
         };
       }
-      // Nút bắt đầu độ kiếp ở Lobby (Khởi đầu hoặc Trọng Tu theo đúng Pháp Môn)
+      // Nút bắt đầu độ kiếp ở Lobby -> Mở Bảng Thiết Lập Chiến Trường
       const btnStart = document.getElementById("btnStartBattle");
       if (btnStart) {
         btnStart.onclick = () => {
-          this.audio.play("slash");
-          const curMode = (this.state && this.state.gameMode) || "DIRECT";
-          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
-          const hasModeProgress = this.saveSystem.hasActiveSaveForMode(curMode, curSlotId);
-          if (!hasModeProgress) {
-            this.state.resetForNewMode(curMode);
-          }
-          if (this.onStartBattle) this.onStartBattle();
+          this.audio.play("chime");
+          this.openBattleSetupModal();
         };
       }
 
@@ -251,16 +245,11 @@
         };
       }
 
-      // NÚT TẨY TỦY CHƠI LẠI NHANH TRÊN HUD [ 丹 ]
+      // NÚT TẨY TỦY / ĐỔI PHÁP MÔN NHANH TRÊN HUD [ 丹 ]
       if (this.btnQuickRestartHUD) {
         this.btnQuickRestartHUD.onclick = () => {
-          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Toàn bộ ma thạch sẽ tan biến và bắt đầu lại từ Luyện Khí Kỳ. Đạo hữu chắc chắn?", () => {
-            this.performPurificationRebirth(() => {
-              this.audio.play("chime");
-              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã vinh danh Bảng Phong Thần! Khởi tạo lại trận đấu thành công!");
-              if (this.onRestartBattle) this.onRestartBattle();
-            });
-          });
+          this.audio.play("chime");
+          this.openBattleSetupModal();
         };
       }
 
@@ -514,6 +503,143 @@
       };
       if (this.audio) this.audio.play('chime');
       this.showStatus(`[ TÀNG KINH CÁC ] Đã chọn ${deckNames[deckId] || deckId}`);
+    }
+
+    openBattleSetupModal() {
+      const modal = document.getElementById("modalBattleSetup");
+      if (!modal) return;
+
+      const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+      let selectedMode = (this.state && this.state.gameMode) || "CLOZE";
+      let selectedDeck = (this.state && this.state.activeDeckId) || "oxford_5000";
+
+      const updateSetupUI = () => {
+        // Highlight mode cards
+        modal.querySelectorAll(".setup-mode-card").forEach(card => {
+          card.classList.toggle("active-mode", card.getAttribute("data-mode") === selectedMode);
+        });
+
+        // Highlight deck cards
+        modal.querySelectorAll(".setup-deck-card").forEach(card => {
+          card.classList.toggle("active-deck", card.getAttribute("data-deck") === selectedDeck);
+        });
+
+        // Kiểm tra xem slot hiện tại đã có dữ liệu lưu của pháp môn này chưa
+        const modeData = this.saveSystem && this.saveSystem.getSlotModeData && this.saveSystem.getSlotModeData(curSlotId, selectedMode);
+        const hasProgress = Boolean(modeData && modeData.isOccupied && modeData.hp > 0 && (modeData.score > 0 || modeData.realmIdx > 0 || modeData.words > 0));
+
+        const detailEl = document.getElementById("setupJourneyDetail");
+        const actionsRow = document.getElementById("setupActionsRow");
+
+        const modeLabels = {
+          CLOZE: "Ngộ Đạo Thông Linh",
+          DIRECT: "Trực Diện Trảm Ma",
+          AUDIO: "Thính Lôi Biện Âm"
+        };
+        const mName = modeLabels[selectedMode] || selectedMode;
+
+        if (hasProgress) {
+          if (detailEl) {
+            detailEl.innerHTML = `<span style="color:#10B981">Đang Lưu Đạo Quả:</span> Cảnh Giới: <b>${modeData.realm || 'Luyện Khí Kỳ'}</b> • <b>${(modeData.score || 0).toLocaleString()} Tu Vi</b> • Trảm: <b>${modeData.words || 0}</b>`;
+          }
+          if (actionsRow) {
+            actionsRow.innerHTML = `
+              <button class="setup-btn-continue" id="btnSetupContinue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>TIẾP TỤC TU LUYỆN (${(modeData.score || 0).toLocaleString()} Tu Vi)</span>
+              </button>
+              <button class="setup-btn-restart" id="btnSetupRestart">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <span>TẨY TỦY TRÙNG TU (CHƠI LẠI TỪ CẤP 0)</span>
+              </button>
+            `;
+
+            document.getElementById("btnSetupContinue").onclick = () => {
+              this.state.gameMode = selectedMode;
+              this.state.activeDeckId = selectedDeck;
+              this.state.loadFromModeData(modeData, selectedMode);
+              this.closeBattleSetupModal();
+              this.updateLobbyButtons();
+              this.updateHUD();
+              this.audio.play("chime");
+              this.showStatus(`[ ⚔️ ] [TIẾP TỤC TU LUYỆN] Pháp môn ${mName} • ${(this.state.score || 0).toLocaleString()} Tu Vi!`);
+              if (this.onStartBattle) this.onStartBattle();
+            };
+
+            document.getElementById("btnSetupRestart").onclick = () => {
+              this.showConfirm(`TẨY TỦY PHÁP MÔN [${mName.toUpperCase()}]?`, `Đạo hữu sẽ khởi đầu lại pháp môn ${mName} từ Luyện Khí Kỳ 0 điểm. Kỷ lục tu vi cũ vẫn được lưu danh Bảng Phong Thần.`, () => {
+                this.state.gameMode = selectedMode;
+                this.state.activeDeckId = selectedDeck;
+                this.saveSystem.resetActiveSave(curSlotId, selectedMode);
+                this.state.resetForNewMode(selectedMode);
+                this.closeBattleSetupModal();
+                this.updateLobbyButtons();
+                this.updateHUD();
+                this.audio.play("slash");
+                this.showStatus(`[ 丹 ] [TẨY TỦY] Bắt đầu lại ván mới pháp môn ${mName} từ Cấp 0!`);
+                if (this.onStartBattle) this.onStartBattle();
+              });
+            };
+          }
+        } else {
+          if (detailEl) {
+            detailEl.innerHTML = `<span style="color:#FDE047">Khởi Nguyên Tu Vi:</span> Chưa có dữ liệu • Khởi đầu từ <b>Luyện Khí Kỳ (Cấp 0 - 0 Điểm)</b>`;
+          }
+          if (actionsRow) {
+            actionsRow.innerHTML = `
+              <button class="setup-btn-start-fresh" id="btnSetupStartFresh">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span>BẮT ĐẦU ĐỘ KIẾP NGAY (${mName.toUpperCase()})</span>
+              </button>
+            `;
+
+            document.getElementById("btnSetupStartFresh").onclick = () => {
+              this.state.gameMode = selectedMode;
+              this.state.activeDeckId = selectedDeck;
+              this.state.resetForNewMode(selectedMode);
+              this.closeBattleSetupModal();
+              this.updateLobbyButtons();
+              this.updateHUD();
+              this.audio.play("slash");
+              this.showStatus(`[ ⚔️ ] Khởi nguyên độ kiếp: Pháp môn ${mName}!`);
+              if (this.onStartBattle) this.onStartBattle();
+            };
+          }
+        }
+      };
+
+      // Gắn sự kiện chọn Pháp Môn
+      modal.querySelectorAll(".setup-mode-card").forEach(card => {
+        card.onclick = () => {
+          selectedMode = card.getAttribute("data-mode");
+          this.audio.play("chime");
+          updateSetupUI();
+        };
+      });
+
+      // Gắn sự kiện chọn Tàng Kinh Các
+      modal.querySelectorAll(".setup-deck-card").forEach(card => {
+        card.onclick = () => {
+          selectedDeck = card.getAttribute("data-deck");
+          this.audio.play("chime");
+          updateSetupUI();
+        };
+      });
+
+      // Gắn sự kiện đóng modal
+      const btnClose = document.getElementById("btnCloseBattleSetup");
+      if (btnClose) {
+        btnClose.onclick = () => this.closeBattleSetupModal();
+      }
+
+      updateSetupUI();
+      modal.style.display = "flex";
+      this.audio.play("chime");
+    }
+
+    closeBattleSetupModal() {
+      const modal = document.getElementById("modalBattleSetup");
+      if (modal) modal.style.display = "none";
     }
 
     selectBand(bandIdx) {
