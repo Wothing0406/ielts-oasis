@@ -339,10 +339,25 @@ export const MeowchaGame: React.FC<{
       { key: "cat_hurt", src: "/meowcha/sprites/cat_hurt.png" },
       { key: "cat_defeated", src: "/meowcha/sprites/cat_defeated.png" },
       { key: "cat_attack", src: "/meowcha/sprites/cat_weak_attack.png" },
-      { key: "prop_asteroid", src: "/meowcha/sprites/prop_asteroid.png" },
-      { key: "prop_slash", src: "/meowcha/sprites/prop_sword_slash.png" },
-      { key: "prop_explosion", src: "/meowcha/sprites/prop_tea_explosion.png" }
+      { key: "prop_asteroid", src: "/meowcha/sprites/asteroids/ice.png" },
+      { key: "prop_slash", src: "/meowcha/sprites/vfx/slashes/sword_slash.png" },
+      { key: "prop_explosion", src: "/meowcha/sprites/vfx/impacts/tea_explosion.png" }
     ];
+    const realmFolders = [
+      "realm0_qi_refining",
+      "realm1_foundation",
+      "realm2_golden_core",
+      "realm3_nascent_soul",
+      "realm4_tribulation"
+    ];
+    realmFolders.forEach((folder, rIdx) => {
+      ["idle", "attack", "ultimate", "hurt", "defeated"].forEach((st) => {
+        assetList.push({
+          key: `char_r${rIdx}_${st}`,
+          src: `/meowcha/sprites/characters/${folder}/${st}.png`
+        });
+      });
+    });
 
     let loaded = 0;
     assetList.forEach(item => {
@@ -1194,16 +1209,21 @@ export const MeowchaGame: React.FC<{
       }
 
       // Determine Sprite based on Realm & State
-      const realm = CULTIVATION_REALMS[statsRef.current.realmIdx] || CULTIVATION_REALMS[0];
-      let spriteKey = realm.spriteKey;
-
-      if (statsRef.current.catState === "HURT" || statsRef.current.stunTimer > 0) {
-        spriteKey = "cat_hurt";
-      } else if (isGameOver) {
-        spriteKey = "cat_defeated";
+      const rClamped = Math.min(4, Math.max(0, statsRef.current.realmIdx || 0));
+      const realm = CULTIVATION_REALMS[rClamped] || CULTIVATION_REALMS[0];
+      let stKey = "idle";
+      if (isGameOver) {
+        stKey = "defeated";
+      } else if (statsRef.current.catState === "HURT" || statsRef.current.stunTimer > 0) {
+        stKey = "hurt";
+      } else if (statsRef.current.catLunge > 0) {
+        stKey = "attack";
       }
 
-      const catImg = assetsRef.current[spriteKey] || assetsRef.current["cat_idle"];
+      const catImg =
+        assetsRef.current[`char_r${rClamped}_${stKey}`] ||
+        assetsRef.current[realm.spriteKey] ||
+        assetsRef.current["cat_idle"];
 
       // Draw Realm Aura Ring under Cat
       ctx.save();

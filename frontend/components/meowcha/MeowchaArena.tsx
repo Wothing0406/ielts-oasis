@@ -53,9 +53,21 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
       prop_asteroid: "/meowcha/sprites/prop_asteroid.png",
       prop_bamboo_sword: "/meowcha/sprites/prop_bamboo_sword.png",
       prop_jade_sword: "/meowcha/sprites/prop_jade_sword.png",
-      prop_sword_slash: "/meowcha/sprites/prop_sword_slash.png",
-      prop_tea_explosion: "/meowcha/sprites/prop_tea_explosion.png"
+      prop_sword_slash: "/meowcha/sprites/vfx/slashes/sword_slash.png",
+      prop_tea_explosion: "/meowcha/sprites/vfx/impacts/tea_explosion.png"
     };
+    const realmFolders = [
+      "realm0_qi_refining",
+      "realm1_foundation",
+      "realm2_golden_core",
+      "realm3_nascent_soul",
+      "realm4_tribulation"
+    ];
+    realmFolders.forEach((folder, rIdx) => {
+      ["idle", "attack", "ultimate", "hurt", "defeated"].forEach((st) => {
+        requiredImages[`char_r${rIdx}_${st}`] = `/meowcha/sprites/characters/${folder}/${st}.png`;
+      });
+    });
 
     const total = Object.keys(requiredImages).length;
 
@@ -385,32 +397,12 @@ export const MeowchaArena: React.FC<MeowchaArenaProps> = ({
       }
 
       // 5. CAT CHARACTER SPRITE RENDERING FOR ALL REALMS & FORMS
-      let spriteImg: HTMLImageElement | undefined;
-
-      if (isDefeated) {
-        spriteImg = spritesRef.current["cat_defeated"] || spritesRef.current["cat_hurt"];
-      } else if (catState === "hurt") {
-        spriteImg = spritesRef.current["cat_hurt"];
-      } else if (catState === "ultimate") {
-        // VẠN KIẾM QUY TÔNG: Higher realms retain their divine form with ultimate radiance aura!
-        if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
-        else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
-        else if (currentRealmIdx === 2) spriteImg = spritesRef.current["cat_golden"];
-        else spriteImg = spritesRef.current["cat_blast"] || spritesRef.current["cat_weak"];
-      } else if (catState === "attack") {
-        if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
-        else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
-        else if (currentRealmIdx === 2) spriteImg = spritesRef.current["cat_golden"];
-        else if (currentRealmIdx === 1) spriteImg = spritesRef.current["cat_weak"];
-        else spriteImg = spritesRef.current["cat_weak"];
-      } else {
-        // Idle
-        if (currentRealmIdx >= 4) spriteImg = spritesRef.current["cat_celestial"];
-        else if (currentRealmIdx === 3) spriteImg = spritesRef.current["cat_nascent"];
-        else if (currentRealmIdx === 2) spriteImg = spritesRef.current["cat_golden"];
-        else if (currentRealmIdx === 1) spriteImg = spritesRef.current["cat_idle"];
-        else spriteImg = spritesRef.current["cat_idle"];
-      }
+      const rClamped = Math.min(4, Math.max(0, currentRealmIdx));
+      const stateKey = isDefeated ? "defeated" : (catState || "idle");
+      let spriteImg: HTMLImageElement | undefined =
+        spritesRef.current[`char_r${rClamped}_${stateKey}`] ||
+        spritesRef.current[`char_r${rClamped}_idle`] ||
+        spritesRef.current["cat_idle"];
 
       // Draw Cat Character
       const catW = 140;

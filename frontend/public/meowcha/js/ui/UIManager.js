@@ -447,11 +447,11 @@
       const lobbyCatImg = document.getElementById("lobbyCatImg");
       if (lobbyCatImg) {
         const avatars = [
-          "./sprites/cat_idle.png",
-          "./sprites/cat_weak_attack.png",
-          "./sprites/cat_golden_core.png",
-          "./sprites/cat_nascent_soul.png",
-          "./sprites/cat_celestial_sovereign.png"
+          "./sprites/characters/realm0_qi_refining/idle.png",
+          "./sprites/characters/realm1_foundation/idle.png",
+          "./sprites/characters/realm2_golden_core/idle.png",
+          "./sprites/characters/realm3_nascent_soul/idle.png",
+          "./sprites/characters/realm4_tribulation/idle.png"
         ];
         lobbyCatImg.src = avatars[Math.min(4, s.realmIdx)] || avatars[0];
       }
@@ -1236,11 +1236,11 @@
 
       const getAvatarByRealm = (realmName, score) => {
         const avatars = [
-          "./sprites/cat_idle.png",
-          "./sprites/cat_weak_attack.png",
-          "./sprites/cat_golden_core.png",
-          "./sprites/cat_nascent_soul.png",
-          "./sprites/cat_celestial_sovereign.png"
+          "./sprites/characters/realm0_qi_refining/idle.png",
+          "./sprites/characters/realm1_foundation/idle.png",
+          "./sprites/characters/realm2_golden_core/idle.png",
+          "./sprites/characters/realm3_nascent_soul/idle.png",
+          "./sprites/characters/realm4_tribulation/idle.png"
         ];
         if (!realmName) return avatars[0];
         const rLower = String(realmName).toLowerCase();
@@ -1375,11 +1375,11 @@
       const avatarEl = document.getElementById("profileModalAvatar");
       if (avatarEl) {
         const avatars = [
-          "./sprites/cat_idle.png",
-          "./sprites/cat_weak_attack.png",
-          "./sprites/cat_golden_core.png",
-          "./sprites/cat_nascent_soul.png",
-          "./sprites/cat_celestial_sovereign.png"
+          "./sprites/characters/realm0_qi_refining/idle.png",
+          "./sprites/characters/realm1_foundation/idle.png",
+          "./sprites/characters/realm2_golden_core/idle.png",
+          "./sprites/characters/realm3_nascent_soul/idle.png",
+          "./sprites/characters/realm4_tribulation/idle.png"
         ];
         avatarEl.src = avatars[Math.min(4, this.state.realmIdx)] || avatars[0];
       }
