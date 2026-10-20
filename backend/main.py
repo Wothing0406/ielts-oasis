@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Reques
 from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, desc, text, func, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -123,8 +124,9 @@ def seed_db():
 # VocabIn is imported from schemas
 
 from auth_routes import router as auth_router
-from auth_routes import get_current_user
+from auth_routes import get_current_user, get_optional_current_user
 from meowcha_routes import router as meowcha_router
+from grammar_routes import grammar_router
 from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
@@ -143,6 +145,7 @@ async def normalize_api_path_middleware(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(meowcha_router)
+app.include_router(grammar_router)
 
 async def cleanup_static_files_loop():
     logger.info("Static files cleanup background task started.")
@@ -333,16 +336,146 @@ def validate_uploaded_file(file: UploadFile, max_size_mb: float, allowed_mimes: 
     except Exception:
         pass
 
-allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "*")
-origins = [o.strip() for o in allowed_origins_str.split(",")] if allowed_origins_str else ["*"]
+# --- CORS & ATTACK DEFENSE CONFIGURATION ---
+DEFAULT_TRUSTED_ORIGINS = [
+    "https://ieltsoasis.site",
+    "https://www.ieltsoasis.site",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env and allowed_origins_env.strip() != "*":
+    origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+else:
+    origins = DEFAULT_TRUSTED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^chrome-extension://[a-zA-Z0-9]+$",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
+
+# 1. HTTP Security Headers Middleware (Anti-MIME-Sniffing, Clickjacking, XSS)
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+# 2. Request Body / Data Overflow Limiter Middleware (Anti-OOM / Buffer Bloat)
+MAX_BODY_SIZE_BYTES = 15 * 1024 * 1024  # 15 Megabytes
+
+@app.middleware("http")
+async def payload_size_limit_middleware(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > MAX_BODY_SIZE_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "success": False,
+                        "error": {
+                            "code": "PAYLOAD_TOO_LARGE",
+                            "message": "Dung lượng dữ liệu gửi lên vượt quá giới hạn tối đa (15MB)."
+                        }
+                    }
+                )
+        except (ValueError, TypeError):
+            pass
+    return await call_next(request)
+
+# 3. High-Performance In-Memory Sliding Window Rate Limiter
+from collections import defaultdict
+import threading
+
+class SecurityRateLimiter:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._history = defaultdict(list)
+        self._last_cleanup = time.time()
+
+    def is_allowed(self, client_ip: str, path: str) -> bool:
+        now = time.time()
+        with self._lock:
+            # Auto-purge expired tracking entries every 5 minutes
+            if now - self._last_cleanup > 300:
+                self._history = defaultdict(list, {
+                    k: [t for t in timestamps if now - t < 60]
+                    for k, timestamps in self._history.items()
+                    if [t for t in timestamps if now - t < 60]
+                })
+                self._last_cleanup = now
+
+            # Adaptive limits: Strict for Auth, Moderate for heavy AI/ML, Generous for general
+            if any(path.startswith(p) for p in ["/api/auth/login", "/api/auth/register", "/api/auth/guest-login", "/auth/login", "/auth/register"]):
+                limit = 20  # 20 attempts/min (brute-force defense)
+                key = f"{client_ip}:auth"
+            elif any(path.startswith(p) for p in ["/api/writing/analyze", "/api/reading/generate", "/api/listening/", "/api/vocabulary/detect", "/vocabulary/detect"]):
+                limit = 35  # 35 calls/min (AI quota and resource abuse defense)
+                key = f"{client_ip}:heavy"
+            else:
+                limit = 150  # 150 requests/min (DDoS mitigation)
+                key = f"{client_ip}:gen"
+
+            timestamps = self._history[key]
+            valid_timestamps = [t for t in timestamps if now - t < 60]
+            self._history[key] = valid_timestamps
+            if len(valid_timestamps) >= limit:
+                return False
+
+            self._history[key].append(now)
+            return True
+
+rate_limiter = SecurityRateLimiter()
+
+@app.middleware("http")
+async def rate_limiting_middleware(request: Request, call_next):
+    if request.method == "OPTIONS" or request.url.path.startswith("/static"):
+        return await call_next(request)
+
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
+
+    # Local development bypass
+    if client_ip in ["127.0.0.1", "localhost", "::1"] and os.getenv("ENVIRONMENT") != "production":
+        return await call_next(request)
+
+    if not rate_limiter.is_allowed(client_ip, request.url.path):
+        return JSONResponse(
+            status_code=429,
+            headers={"Retry-After": "60"},
+            content={
+                "success": False,
+                "error": {
+                    "code": "TOO_MANY_REQUESTS",
+                    "message": "Phát hiện lưu lượng truy cập bất thường từ thiết bị của bạn. Vui lòng chờ 1 phút rồi thử lại."
+                }
+            }
+        )
+    return await call_next(request)
+
+# 4. Global Exception Handler (Chặn hoàn toàn rò rỉ stack trace & internal paths)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"[SECURITY_LOG] Uncaught exception on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Đã xảy ra sự cố nội bộ. Yêu cầu đã được ghi lại an toàn và bảo mật."
+            }
+        }
+    )
 
 static_dir = "static"
 if not os.path.exists(static_dir):
@@ -369,11 +502,21 @@ YOLO_TRANSLATIONS = {
 }
 
 @app.get("/vocabulary")
-async def get_vocabulary(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not user:
-        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem từ vựng.")
-    query = db.query(Vocabulary).filter(Vocabulary.user_id == user["user_id"])
-    vocabs = query.order_by(desc(Vocabulary.id)).all()
+@app.get("/vocabularies")
+async def get_vocabulary(user: Optional[dict] = Depends(get_optional_current_user), db: Session = Depends(get_db)):
+    vocabs = []
+    if user and user.get("user_id"):
+        user_id = user["user_id"]
+        vocabs = db.query(Vocabulary).filter(Vocabulary.user_id == user_id).order_by(desc(Vocabulary.id)).all()
+        # Fallback to starter/global words if user's notebook has 0 words
+        if not vocabs:
+            vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(50).all()
+    else:
+        # Public preview / guest: show starter global vocabularies so the web is never empty!
+        vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(50).all()
+        if not vocabs:
+            vocabs = db.query(Vocabulary).limit(30).all()
+
     # Deduplicate by lowercase word to ensure clean list
     unique_vocabs = []
     seen = set()
@@ -736,9 +879,16 @@ async def translate_text(data: TranslateInput):
             clean_res = clean_res.strip(" \"':;,.")
             return {"meaning": clean_res}
         else:
-            # Fallback conversation / chat through /translate using enhanced chat_tutor brain
-            response = await ai_service.chat_tutor(text)
-            return {"meaning": response or "Mát Cha chưa hiểu ý cậu lắm."}
+            # Dịch nguyên câu ví dụ tiếng Anh sang tiếng Việt tự nhiên chuẩn văn phong IELTS
+            prompt = (
+                f"Hãy dịch câu tiếng Anh sau sang tiếng Việt tự nhiên, chính xác, đúng ngữ cảnh học thuật IELTS:\n"
+                f"Sentence: \"{text}\"\n\n"
+                f"YÊU CẦU: Chỉ trả về DUY NHẤT câu dịch tiếng Việt, không giải thích, không để trong ngoặc kép."
+            )
+            response = await ai_service.get_advice(prompt)
+            clean_res = response.strip() if response else text
+            clean_res = clean_res.strip(" \"'")
+            return {"meaning": clean_res}
     except Exception as e:
         logger.error(f"Translate error: {e}")
         return {"error": str(e), "meaning": "Lỗi kết nối máy chủ Matcha."}
@@ -806,10 +956,31 @@ async def chat_tutor_endpoint(data: ChatRequest, request: Request):
 
 @app.post("/tts")
 async def text_to_speech(data: dict):
-    word = data.get("word")
-    if not word: raise HTTPException(status_code=400)
-    audio_file = await tts_service.generate_speech(word)
-    return {"audio_url": f"/static/{audio_file}"}
+    import urllib.parse
+    word = (data.get("word") or "").strip()
+    if not word:
+        raise HTTPException(status_code=400, detail="Missing word parameter")
+    
+    # 1. First priority: Check native human Oxford pronunciation from Oxford 5000 dataset
+    try:
+        from services.oxford_dataset_service import OxfordDatasetService
+        oxford = OxfordDatasetService.get_instance()
+        oxford_entry = oxford.get_word_details(word)
+        if oxford_entry and oxford_entry.get("audio_url"):
+            return {"audio_url": oxford_entry["audio_url"]}
+    except Exception as e:
+        logger.warning(f"Oxford audio lookup failed: {e}")
+
+    # 2. Second priority: Generate audio file via TTSService (Edge-TTS or Google TTS cached)
+    try:
+        audio_file = await tts_service.generate_speech(word)
+        return {"audio_url": f"/static/{audio_file}"}
+    except Exception as e:
+        logger.error(f"TTS generation error for '{word}': {e}")
+        # 3. Third priority: Return direct Google Translate TTS URL
+        return {
+            "audio_url": f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={urllib.parse.quote(word)}"
+        }
 
 import asyncio
 

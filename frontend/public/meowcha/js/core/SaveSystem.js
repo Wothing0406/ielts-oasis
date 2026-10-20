@@ -5,8 +5,29 @@
 (function(root) {
   const STORAGE_KEY = "meowcha_save_slots_v3";
 
+  // Bộ lưu trữ In-Memory an toàn tuyệt đối khi chạy trong môi trường iframe sandboxed hoặc Private Browsing
+  const MemoryStorage = {
+    _data: {},
+    getItem(k) { return Object.prototype.hasOwnProperty.call(this._data, k) ? this._data[k] : null; },
+    setItem(k, v) { this._data[k] = String(v); },
+    removeItem(k) { delete this._data[k]; }
+  };
+
+  function getSafeStorage() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.getItem("__probe__");
+        return window.localStorage;
+      }
+    } catch (e) {
+      console.warn("[SaveSystem] LocalStorage bị chặn (sandboxed), chuyển sang MemoryStorage:", e.message);
+    }
+    return MemoryStorage;
+  }
+
   class SaveSystem {
     constructor() {
+      this.storage = getSafeStorage();
       this.slots = this.loadLocalSlots();
       this.syncSrsDeck();
     }
@@ -35,7 +56,7 @@
       if (!wordItem || !wordItem.word) return;
       try {
         const key = "meowcha_srs_weaknesses";
-        const raw = localStorage.getItem(key);
+        const raw = this.storage.getItem(key);
         let list = raw ? JSON.parse(raw) : [];
         const wordUpper = wordItem.word.toUpperCase();
         const existing = list.find(w => w.word === wordUpper);
@@ -53,7 +74,7 @@
           });
         }
         if (list.length > 200) list = list.slice(-200);
-        localStorage.setItem(key, JSON.stringify(list));
+        this.storage.setItem(key, JSON.stringify(list));
         this.syncSrsDeck();
 
         if (typeof fetch !== "undefined") {
@@ -75,7 +96,7 @@
 
     getWeaknessWords() {
       try {
-        const raw = localStorage.getItem("meowcha_srs_weaknesses");
+        const raw = this.storage.getItem("meowcha_srs_weaknesses");
         if (raw) return JSON.parse(raw);
       } catch (e) {}
       return [];
@@ -89,7 +110,7 @@
         dateStr: "",
         realm: "Luyện Khí Kỳ",
         realmIdx: 0,
-        title: "Tiểu Miêu Kiếm Đồng",
+        title: "Bạch Miêu Tiên Đồng",
         hp: 50,
         maxHp: 50,
         score: 0,
@@ -99,20 +120,87 @@
       };
     }
 
-    loadLocalSlots() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return {
-            1: parsed[1] || this.getDefaultSlot(1),
-            2: parsed[2] || this.getDefaultSlot(2),
-            3: parsed[3] || this.getDefaultSlot(3)
-          };
-        }
-      } catch (e) {
-        console.warn("[SaveSystem] Lỗi đọc LocalStorage, dùng cấu hình mặc định:", e);
+    normalizeSlot(slot, slotId) {
+      if (!slot || typeof slot !== "object") return this.getDefaultSlot(slotId);
+
+      const realms = (root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [
+        { name: "Luyện Khí Kỳ", title: "Bạch Miêu Tiên Đồng" },
+        { name: "Trúc Cơ Kỳ", title: "Thanh Vân Ngự Kiếm Miêu" },
+        { name: "Kim Đan Kỳ", title: "Bát Quái Kim Đan Miêu" },
+        { name: "Nguyên Anh Kỳ", title: "Nguyên Anh Đại Năng" },
+        { name: "Độ Kiếp Kỳ", title: "Vạn Kiếm Chí Tôn" }
+      ];
+
+      // Tương thích ngược: Suy luận realmIdx từ chuỗi cảnh giới cũ nếu realmIdx undefined hoặc không hợp lệ
+      let rIdx = parseInt(slot.realmIdx, 10);
+      if (isNaN(rIdx) || rIdx < 0) {
+        const rStr = String(slot.realm || "").toLowerCase();
+        if (rStr.includes("trúc cơ")) rIdx = 1;
+        else if (rStr.includes("kim đan")) rIdx = 2;
+        else if (rStr.includes("nguyên anh")) rIdx = 3;
+        else if (rStr.includes("độ kiếp") || rStr.includes("hóa thần") || rStr.includes("chí tôn")) rIdx = 4;
+        else rIdx = 0;
       }
+      rIdx = Math.max(0, Math.min(4, rIdx));
+      const rData = realms[rIdx] || realms[0];
+
+      const scoreNum = typeof slot.score === "number" ? Math.max(0, slot.score) : (parseInt(slot.score, 10) || 0);
+      const wordsNum = typeof slot.words === "number" ? Math.max(0, slot.words) : (parseInt(slot.words, 10) || 0);
+      const hpNum = typeof slot.hp === "number" ? Math.max(0, slot.hp) : (parseInt(slot.hp, 10) || 50);
+      const maxHpNum = typeof slot.maxHp === "number" ? Math.max(10, slot.maxHp) : (parseInt(slot.maxHp, 10) || 50);
+      const bandNum = typeof slot.bandIdx === "number" ? Math.max(0, Math.min(3, slot.bandIdx)) : Math.min(3, rIdx);
+
+      const isOccupied = Boolean(slot.isOccupied || scoreNum > 0 || wordsNum > 0 || rIdx > 0);
+
+      return {
+        slotId: slotId,
+        slotName: slot.slotName || `Ngọc Giản ${slotId}`,
+        isOccupied: isOccupied,
+        dateStr: slot.dateStr || (isOccupied ? "Tiền Triều Đạo Quả" : ""),
+        realm: slot.realm || rData.name,
+        realmIdx: rIdx,
+        title: slot.title || rData.title,
+        hp: hpNum,
+        maxHp: maxHpNum,
+        score: scoreNum,
+        words: wordsNum,
+        bandIdx: bandNum,
+        talents: (slot.talents && typeof slot.talents === "object") ? slot.talents : {}
+      };
+    }
+
+    loadLocalSlots() {
+      const candidateKeys = [
+        STORAGE_KEY,
+        "meowcha_save_slots_v2",
+        "meowcha_save_slots",
+        "meowcha_save_game",
+        "meowcha_save"
+      ];
+
+      for (const k of candidateKeys) {
+        try {
+          const raw = this.storage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") {
+              const res = {
+                1: this.normalizeSlot(parsed[1] || (parsed.slotId === 1 ? parsed : null), 1),
+                2: this.normalizeSlot(parsed[2] || (parsed.slotId === 2 ? parsed : null), 2),
+                3: this.normalizeSlot(parsed[3] || (parsed.slotId === 3 ? parsed : null), 3)
+              };
+              if (res[1].isOccupied || res[2].isOccupied || res[3].isOccupied) {
+                try { this.storage.setItem(STORAGE_KEY, JSON.stringify(res)); } catch (se) {}
+                console.log("[SaveSystem] Đã nạp và chuẩn hóa save từ key:", k);
+                return res;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[SaveSystem] Lỗi nạp lưu trữ từ key:", k, e.message);
+        }
+      }
+
       return {
         1: this.getDefaultSlot(1),
         2: this.getDefaultSlot(2),
@@ -122,7 +210,7 @@
 
     saveLocalSlots() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.slots));
+        this.storage.setItem(STORAGE_KEY, JSON.stringify(this.slots));
       } catch (e) {
         console.warn("[SaveSystem] Không thể ghi LocalStorage:", e);
       }

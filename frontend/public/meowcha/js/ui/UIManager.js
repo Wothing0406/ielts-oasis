@@ -366,6 +366,7 @@
       }
 
       // Đồng bộ hiển thị Bộ Pháp Điển và Chế Độ Tu Luyện
+      const s = this.state || {};
       if (this.modeSelectorRow) {
         const curMode = s.gameMode || "CLOZE";
         this.modeSelectorRow.querySelectorAll(".mode-pill-btn").forEach(btn => {
@@ -403,6 +404,41 @@
           }
         }
       }
+    }
+
+    selectGameMode(mode) {
+      if (!mode) return;
+      this.state.gameMode = mode;
+      if (this.modeSelectorRow) {
+        this.modeSelectorRow.querySelectorAll('.mode-pill-btn').forEach(btn => {
+          btn.classList.toggle('active-mode', btn.getAttribute('data-mode') === mode);
+        });
+      }
+      const modeNames = {
+        CLOZE: 'Ngộ Đạo Thông Linh (Active Recall)',
+        DIRECT: 'Trực Diện Trảm Ma (Direct Typing)',
+        AUDIO: 'Thính Lôi Biện Âm (Audio Dictation)'
+      };
+      if (this.audio) this.audio.play('chime');
+      this.showStatus(`[ PHÁP MÔN ] Đã chọn ${modeNames[mode] || mode}`);
+    }
+
+    selectDeck(deckId) {
+      if (!deckId) return;
+      this.state.activeDeckId = deckId;
+      if (this.deckSelectorGrid) {
+        this.deckSelectorGrid.querySelectorAll('.deck-card').forEach(card => {
+          card.classList.toggle('active-deck', card.getAttribute('data-deck') === deckId);
+        });
+      }
+      const deckNames = {
+        oxford_5000: 'Oxford 5000 Cốt Lõi',
+        listening_1200: '1200 Thính Âm Listening',
+        reading_academic: 'Cambridge Academic 7.5+',
+        flashcard_srs: 'Tái Hiện SRS Sổ Tay Tôi Luyện'
+      };
+      if (this.audio) this.audio.play('chime');
+      this.showStatus(`[ TÀNG KINH CÁC ] Đã chọn ${deckNames[deckId] || deckId}`);
     }
 
     selectBand(bandIdx) {
@@ -512,7 +548,12 @@
           "./sprites/characters/realm3_nascent_soul/poses/idle.png",
           "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
-        lobbyCatImg.src = avatars[Math.min(4, s.realmIdx)] || avatars[0];
+        const rIdx = Math.max(0, Math.min(4, parseInt(s.realmIdx, 10) || 0));
+        lobbyCatImg.onerror = () => {
+          lobbyCatImg.onerror = null;
+          lobbyCatImg.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
+        };
+        lobbyCatImg.src = avatars[rIdx] || avatars[0];
       }
 
       this.updateMonolithLocks();
