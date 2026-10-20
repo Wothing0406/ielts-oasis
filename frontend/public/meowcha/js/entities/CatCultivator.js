@@ -38,7 +38,7 @@
       const isMobile = canvas.width <= 768 || canvas.height > canvas.width;
       const BASE_X = canvas.width / 2;
       // Trên mobile: Đẩy tọa độ Miêu Tôn lên ngay trên mép bàn phím ảo (~38-40% tính từ dưới lên = ~61% từ đỉnh xuống)
-      const BASE_Y = isMobile ? canvas.height * 0.61 : canvas.height - 35;
+      const BASE_Y = isMobile ? (canvas.height * 0.48) : (canvas.height - 128);
       const renderSize = isMobile ? 125 : 180;
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
       let drawX = BASE_X - renderSize / 2;

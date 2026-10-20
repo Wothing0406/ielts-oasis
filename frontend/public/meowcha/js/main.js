@@ -704,7 +704,7 @@
 
     update(dt) {
       const isMobile = this.canvas.width <= 768 || (this.canvas.height > this.canvas.width);
-      const catTargetY = isMobile ? (this.canvas.height * 0.61 - 40) : (this.canvas.height - 110);
+      const catTargetY = isMobile ? (this.canvas.height * 0.48 - 25) : (this.canvas.height - 128);
 
       // 1. Cập nhật Choáng, Sấm Sét và Đồng bộ Bàn Phím Ảo
       this.gameState.updateStun(dt);
@@ -747,7 +747,7 @@
       this.cat.update(dt, this.gameState);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên đỉnh bàn phím ảo)
-      const bottomThreshold = isMobile ? (this.canvas.height * 0.61 - 15) : (this.canvas.height - 120);
+      const bottomThreshold = isMobile ? (this.canvas.height * 0.48 + 15) : (this.canvas.height - 128);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
