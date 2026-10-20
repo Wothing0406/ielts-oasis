@@ -15,6 +15,7 @@
       this.projectiles = [];
       this.skyStrikes = []; // Đòn sấm sét từ đỉnh trời / Long kiếm giáng thế khi kết liễu từ
       this.shockwaves = []; // Sóng xung kích kiếm quang bung tròn khi va chạm
+      this.muzzleFlashes = []; // Hiệu ứng bắn ra (Muzzle Firing Burst) tại đầu kiếm theo từng nhân vật
       this.time = 0;
     }
 
@@ -24,11 +25,14 @@
       this.shockwaves = [];
     }
 
-    spawnShockwave(x, y, color = "#FDE047") {
+    spawnShockwave(x, y, color = "#FDE047", realmIdx = 0) {
       if (this.animator) {
-        this.animator.spawnVFXClip("vfx_impact_burst_sheet", x, y, {
-          size: 88,
-          fps: 22,
+        this.animator.spawnVFXClip(`char_r${realmIdx}_hit_sheet`, x, y, {
+          frames: 4,
+          frameW: 256,
+          frameH: 256,
+          size: 96,
+          fps: 18,
           color: color
         });
       }
@@ -36,10 +40,11 @@
         x: x,
         y: y,
         r: 6,
-        maxR: 52,
+        maxR: 56,
         color: color,
         alpha: 1.0,
-        speed: 140
+        speed: 155,
+        realmIdx: realmIdx || 0
       });
     }
 
@@ -47,6 +52,19 @@
     spawn(fromX, fromY, targetX, targetY, realmIdx = 0, color = "#22C55E") {
       const angle = Math.atan2(targetY - fromY, targetX - fromX);
       const speed = 25.0;
+      const rIdx = Math.min(4, Math.max(0, realmIdx));
+
+      // Khởi tạo hiệu ứng bắn ra (Muzzle Launch Burst) ngay tại vị trí xuất kiếm
+      this.muzzleFlashes.push({
+        x: fromX + Math.cos(angle) * 24,
+        y: fromY + Math.sin(angle) * 24,
+        angle: angle,
+        realmIdx: rIdx,
+        isUltimate: false,
+        color: color,
+        life: 0.22,
+        maxLife: 0.22
+      });
 
       this.projectiles.push({
         x: fromX,
@@ -110,7 +128,7 @@
         const dist = Math.hypot(p.targetX - p.x, p.targetY - p.y);
         if (dist <= p.speed * 1.6 || p.y <= p.targetY) {
           if (onHit) onHit(p);
-          this.spawnShockwave(p.targetX, p.targetY, p.color);
+          this.spawnShockwave(p.targetX, p.targetY, p.color, p.realmIdx);
           this.projectiles.splice(i, 1);
         }
       }
@@ -121,6 +139,15 @@
         s.life -= dt;
         if (s.life <= 0) {
           this.skyStrikes.splice(i, 1);
+        }
+      }
+
+      // 2.5 Cập nhật hiệu ứng bắn ra tại đầu kiếm (Muzzle Launch Bursts)
+      for (let i = this.muzzleFlashes.length - 1; i >= 0; i--) {
+        const mf = this.muzzleFlashes[i];
+        mf.life -= dt;
+        if (mf.life <= 0) {
+          this.muzzleFlashes.splice(i, 1);
         }
       }
 
@@ -242,14 +269,66 @@
         ctx.restore();
       }
 
-      // 1.1 VẼ SÓNG XUNG KÍCH VA CHẠM BUNG TRÒN & NỔ BỤI LINH TRÀ (AUTHENTIC PIXEL TEA EXPLOSION)
+      // 1.05 VẼ HIỆU ỨNG BẮN RA / PHÁT CHIÊU TẠI ĐẦU KIẾM (PER-CHARACTER MUZZLE FIRING BURST)
+      if (this.muzzleFlashes && this.muzzleFlashes.length > 0) {
+        ctx.save();
+        for (const mf of this.muzzleFlashes) {
+          const prog = 1.0 - Math.max(0, mf.life / mf.maxLife);
+          const fIdx = Math.min(3, Math.floor(prog * 4));
+          const rIdx = mf.realmIdx || 0;
+          const mSheet = this.assets && this.assets[`char_r${rIdx}_muzzle_sheet`];
+          const mSingle = this.assets && this.assets[`char_r${rIdx}_muzzle`];
+
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(mf.x, mf.y);
+          ctx.rotate(mf.angle);
+          ctx.globalAlpha = Math.min(1.0, (mf.life / mf.maxLife) * 1.35);
+          ctx.shadowColor = mf.color;
+          ctx.shadowBlur = 24;
+
+          const bw = (mf.isUltimate ? 118 : 88) * (0.85 + prog * 0.35);
+          const bh = (mf.isUltimate ? 78 : 58) * (0.85 + prog * 0.35);
+
+          if (mSheet && mSheet.loaded) {
+            const fw = Math.floor(mSheet.img.width / 4);
+            const fh = mSheet.img.height;
+            ctx.drawImage(mSheet.img, fIdx * fw, 0, fw, fh, -bw * 0.2, -bh / 2, bw, bh);
+          } else if (mSingle && mSingle.loaded) {
+            ctx.drawImage(mSingle.img, -bw * 0.2, -bh / 2, bw, bh);
+          }
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      // 1.1 VẼ HIỆU ỨNG NỔ CHẠM MỤC TIÊU ĐỘC BẢN TỪNG NHÂN VẬT (PER-CHARACTER HIT EXPLOSION)
       if (this.shockwaves && this.shockwaves.length > 0) {
         ctx.save();
         for (const sw of this.shockwaves) {
           ctx.globalAlpha = Math.max(0, sw.alpha);
+          const rIdx = sw.realmIdx || 0;
+          const hitSheet = this.assets && this.assets[`char_r${rIdx}_hit_sheet`];
+          const hitSingle = this.assets && this.assets[`char_r${rIdx}_hit`];
 
-          // Vẽ Sprite Nổ Trà / Burst Pixel Art Chân Thực
-          if (this.assets?.prop_tea_explosion?.loaded) {
+          if ((hitSheet && hitSheet.loaded) || (hitSingle && hitSingle.loaded)) {
+            ctx.imageSmoothingEnabled = false;
+            const expSize = Math.max(48, sw.r * 2.5);
+            const prog = Math.min(0.99, sw.r / Math.max(1, sw.maxR));
+            const fIdx = Math.min(3, Math.floor(prog * 4));
+            ctx.save();
+            ctx.translate(sw.x, sw.y);
+            ctx.shadowColor = sw.color;
+            ctx.shadowBlur = 22;
+            if (hitSheet && hitSheet.loaded) {
+              const fw = Math.floor(hitSheet.img.width / 4);
+              const fh = hitSheet.img.height;
+              ctx.drawImage(hitSheet.img, fIdx * fw, 0, fw, fh, -expSize / 2, -expSize / 2, expSize, expSize);
+            } else {
+              ctx.drawImage(hitSingle.img, -expSize / 2, -expSize / 2, expSize, expSize);
+            }
+            ctx.restore();
+          } else if (this.assets?.prop_tea_explosion?.loaded) {
             ctx.imageSmoothingEnabled = false;
             const expSize = sw.r * 2.2;
             ctx.save();

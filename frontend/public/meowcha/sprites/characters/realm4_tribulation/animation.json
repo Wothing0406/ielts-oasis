@@ -77,6 +77,22 @@
       "frames": 4,
       "fps": 16,
       "loop": false
+    },
+    "muzzleName": "Chân Long Đế Ấn Phát Chiêu",
+    "muzzle": "./vfx/muzzle.png",
+    "muzzleSheet": {
+      "file": "./vfx/muzzle_sheet.png",
+      "frames": 4,
+      "fps": 18,
+      "loop": false
+    },
+    "hitName": "Chân Long Đế Viêm Bạo",
+    "hit": "./vfx/hit.png",
+    "hitSheet": {
+      "file": "./vfx/hit_sheet.png",
+      "frames": 4,
+      "fps": 16,
+      "loop": false
     }
   }
 }

@@ -739,21 +739,58 @@
 
         ctx.restore();
 
-        // HÀO QUANG ĐỌT KIẾM TỤ LINH KHÍ (SWORD TIP CONCENTRATION)
+        // HÀO QUANG ĐỌT KIẾM & HIỆU ỨNG BẮN RA ĐỘC BẢN TỪNG NHÂN VẬT (CHARACTER MUZZLE FIRING BURST)
         ctx.save();
         const tipPulse = 1.0 + Math.sin(this.time * 12) * 0.3 + keyPulse;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.shadowColor = curSwordColor;
-        ctx.shadowBlur = 24;
-        ctx.beginPath();
-        ctx.arc(swordTipX, swordTipY, 4.5 * tipPulse, 0, Math.PI * 2);
-        ctx.fill();
+        const muzzleSheetAsset = this.assets && this.assets[`char_r${realmIdx}_muzzle_sheet`];
+        const muzzleSingleAsset = this.assets && this.assets[`char_r${realmIdx}_muzzle`];
+        const isFiringNow = (gameState && (gameState.catState === "WEAK_ATTACK" || gameState.catState === "ULTIMATE_BLAST")) || keyPulse > 0.08;
 
-        ctx.strokeStyle = curSwordColor;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.arc(swordTipX, swordTipY, 10 * tipPulse, 0, Math.PI * 2);
-        ctx.stroke();
+        if ((muzzleSheetAsset && muzzleSheetAsset.loaded) || (muzzleSingleAsset && muzzleSingleAsset.loaded)) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.translate(swordTipX, swordTipY);
+          ctx.rotate(swordAngle);
+          const burstScale = isFiringNow ? (1.28 + keyPulse * 0.45) : (0.72 + Math.sin(this.time * 10) * 0.08);
+          const burstW = (isMobile ? 54 : 78) * burstScale;
+          const burstH = (isMobile ? 36 : 52) * burstScale;
+          ctx.globalAlpha = isFiringNow ? 0.98 : 0.78;
+          ctx.shadowColor = curSwordColor;
+          ctx.shadowBlur = isFiringNow ? 28 : 16;
+
+          if (muzzleSheetAsset && muzzleSheetAsset.loaded) {
+            const fIdx = Math.floor(this.time * (isFiringNow ? 22 : 12)) % 4;
+            const fw = Math.floor(muzzleSheetAsset.img.width / 4);
+            const fh = muzzleSheetAsset.img.height;
+            ctx.drawImage(
+              muzzleSheetAsset.img,
+              fIdx * fw,
+              0,
+              fw,
+              fh,
+              -burstW * 0.22,
+              -burstH / 2,
+              burstW,
+              burstH
+            );
+          } else if (muzzleSingleAsset && muzzleSingleAsset.loaded) {
+            ctx.drawImage(
+              muzzleSingleAsset.img,
+              -burstW * 0.22,
+              -burstH / 2,
+              burstW,
+              burstH
+            );
+          }
+          ctx.restore();
+        } else {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.shadowColor = curSwordColor;
+          ctx.shadowBlur = 24;
+          ctx.beginPath();
+          ctx.arc(swordTipX, swordTipY, 4.5 * tipPulse, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // PHÁP TRẬN BÁT QUÁI KHÓA MỤC TIÊU CỔ TRANG TẠI THIÊN THẠCH
         ctx.translate(targetX, targetY);

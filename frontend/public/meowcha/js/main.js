@@ -101,6 +101,26 @@
           img: new Image(),
           loaded: false
         };
+        this.assets[`char_r${rIdx}_muzzle`] = {
+          src: `./sprites/characters/${folder}/vfx/muzzle.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_muzzle_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/muzzle_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_hit`] = {
+          src: `./sprites/characters/${folder}/vfx/hit.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_hit_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/hit_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
       });
 
       // Các hệ thống con

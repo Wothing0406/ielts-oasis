@@ -42,7 +42,11 @@
       "vfx": {
         "name": "Thanh Trúc Trảm",
         "slash": "./characters/realm0_qi_refining/vfx/slash.png",
-        "slashSheet": "./characters/realm0_qi_refining/vfx/slash_sheet.png"
+        "slashSheet": "./characters/realm0_qi_refining/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm0_qi_refining/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm0_qi_refining/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm0_qi_refining/vfx/hit.png",
+        "hitSheet": "./characters/realm0_qi_refining/vfx/hit_sheet.png"
       }
     },
     {
@@ -80,7 +84,11 @@
       "vfx": {
         "name": "Song Kiếm Hàn Băng Trảm",
         "slash": "./characters/realm1_foundation/vfx/slash.png",
-        "slashSheet": "./characters/realm1_foundation/vfx/slash_sheet.png"
+        "slashSheet": "./characters/realm1_foundation/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm1_foundation/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm1_foundation/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm1_foundation/vfx/hit.png",
+        "hitSheet": "./characters/realm1_foundation/vfx/hit_sheet.png"
       }
     },
     {
@@ -118,7 +126,11 @@
       "vfx": {
         "name": "Kim Liên Kiếm Khí",
         "slash": "./characters/realm2_golden_core/vfx/slash.png",
-        "slashSheet": "./characters/realm2_golden_core/vfx/slash_sheet.png"
+        "slashSheet": "./characters/realm2_golden_core/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm2_golden_core/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm2_golden_core/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm2_golden_core/vfx/hit.png",
+        "hitSheet": "./characters/realm2_golden_core/vfx/hit_sheet.png"
       }
     },
     {
@@ -157,7 +169,11 @@
       "vfx": {
         "name": "Tử Điện Lôi Quang Trảm",
         "slash": "./characters/realm3_nascent_soul/vfx/slash.png",
-        "slashSheet": "./characters/realm3_nascent_soul/vfx/slash_sheet.png"
+        "slashSheet": "./characters/realm3_nascent_soul/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm3_nascent_soul/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm3_nascent_soul/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm3_nascent_soul/vfx/hit.png",
+        "hitSheet": "./characters/realm3_nascent_soul/vfx/hit_sheet.png"
       }
     },
     {
@@ -195,7 +211,11 @@
       "vfx": {
         "name": "Chân Long Phệ Thiên Trảm",
         "slash": "./characters/realm4_tribulation/vfx/slash.png",
-        "slashSheet": "./characters/realm4_tribulation/vfx/slash_sheet.png"
+        "slashSheet": "./characters/realm4_tribulation/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm4_tribulation/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm4_tribulation/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm4_tribulation/vfx/hit.png",
+        "hitSheet": "./characters/realm4_tribulation/vfx/hit_sheet.png"
       }
     }
   ],
