@@ -263,6 +263,75 @@
       this.notify("realm");
       this.notify("load");
     }
+
+    loadFromModeData(modeData, modeName = null) {
+      if (!modeData) return;
+      if (modeName) this.gameMode = modeName;
+      this.maxHp = modeData.maxHp || 50;
+      this.hp = (typeof modeData.hp === "number" && modeData.hp > 0) ? Math.min(this.maxHp, modeData.hp) : this.maxHp;
+      this.score = modeData.score || 0;
+      if (modeData.highScore && modeData.highScore > this.highScore) {
+        this.highScore = modeData.highScore;
+        try {
+          localStorage.setItem("meowcha_high_score", String(this.highScore));
+        } catch (e) {}
+      }
+      this.wordsSlain = modeData.words || 0;
+      this.realmIdx = modeData.realmIdx || 0;
+      this.selectedBandIdx = Math.min(3, this.realmIdx);
+      this.talents = Object.assign({
+        hpBonus: 0,
+        slowFactor: 1.0,
+        critChance: 0.0,
+        scoreMultiplier: 1.0,
+        shieldCharges: 0,
+        autoKill: false,
+        typoImmune: false
+      }, modeData.talents || {});
+      this.shieldCharges = this.talents.shieldCharges || 0;
+      this.isGameOver = false;
+      this.isPaused = false;
+      this.isStunned = false;
+      this.stunTimer = 0;
+      this.combo = 0;
+      this.setCatState("IDLE");
+      this.notify("hp");
+      this.notify("score");
+      this.notify("highScore");
+      this.notify("realm");
+      this.notify("load");
+    }
+
+    resetForNewMode(modeName) {
+      if (modeName) this.gameMode = modeName;
+      this.maxHp = 50;
+      this.hp = 50;
+      this.score = 0;
+      this.wordsSlain = 0;
+      this.realmIdx = 0;
+      this.selectedBandIdx = 0;
+      this.combo = 0;
+      this.maxCombo = 0;
+      this.talents = {
+        hpBonus: 0,
+        slowFactor: 1.0,
+        critChance: 0.0,
+        scoreMultiplier: 1.0,
+        shieldCharges: 0,
+        autoKill: false,
+        typoImmune: false
+      };
+      this.shieldCharges = 0;
+      this.isGameOver = false;
+      this.isPaused = false;
+      this.isStunned = false;
+      this.stunTimer = 0;
+      this.setCatState("IDLE");
+      this.notify("hp");
+      this.notify("score");
+      this.notify("realm");
+      this.notify("load");
+    }
   }
 
   root.Meowcha = root.Meowcha || {};

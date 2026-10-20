@@ -223,6 +223,11 @@
       };
 
       this.bindWindowEvents();
+      window.__meowchaReplayAudio = () => {
+        if (this.typing && this.gameState.currentScene === "BATTLE") {
+          this.typing.replayCurrentAudio();
+        }
+      };
 
       // Lắng nghe thay đổi HP và Game Over để lập tức xử lý và lưu chuẩn xác
       this.gameState.addListener((changeKey) => {
@@ -311,6 +316,13 @@
           }
         }
         if (this.gameState.currentScene !== "BATTLE") return;
+        if (e.key === "Tab" || e.code === "Tab") {
+          e.preventDefault();
+          if (this.typing) {
+            this.typing.replayCurrentAudio();
+          }
+          return;
+        }
         if (e.key === "Escape") {
           this.ui.togglePause();
           return;
@@ -448,6 +460,7 @@
       this.particles.clear();
       this.floatingText.clear();
       this.ui.showScene("LOBBY");
+      this.ui.updateLobbyButtons();
       this.ui.updateHUD();
       // Giữ nguyên khúc Cổ Cầm thiền định để sảnh chờ luôn có nhạc nền thanh tịnh
       if (this.audio && this.audio.soundEnabled && !this.audio.zenMusicPlaying) {

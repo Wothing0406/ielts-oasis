@@ -556,35 +556,66 @@
           const cx = startCharX + c * charSpacing;
 
           if (c < ast.typedLen) {
-            // ĐÃ GÕ ĐÚNG: Kiếm khí Bích Ngọc rực sáng
+            // ĐÃ GÕ ĐÚNG KÝ TỰ: Hiển thị chữ cái thật bừng sáng
             ctx.save();
-            ctx.fillStyle = "#34D399";
-            ctx.shadowColor = "#10B981";
-            ctx.shadowBlur = 12;
+            if (ast.isAudio) {
+              ctx.fillStyle = "#E0E7FF";
+              ctx.shadowColor = "#818CF8";
+            } else if (ast.isCloze) {
+              ctx.fillStyle = "#A7F3D0";
+              ctx.shadowColor = "#10B981";
+            } else {
+              ctx.fillStyle = "#34D399";
+              ctx.shadowColor = "#10B981";
+            }
+            ctx.shadowBlur = 14;
             ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(4, 30, 20, 0.85)";
+            ctx.strokeStyle = "rgba(4, 30, 20, 0.9)";
             ctx.strokeText(letter, cx, runeY);
             ctx.fillText(letter, cx, runeY);
             ctx.restore();
 
           } else if (c === ast.typedLen) {
-            // KÝ TỰ MỤC TIÊU ĐANG GÕ
+            // KÝ TỰ MỤC TIÊU ĐANG CẦN GÕ
             ctx.save();
             const pulse = 1.0 + Math.sin(this.time * 12) * 0.12;
             ctx.translate(cx, runeY);
             ctx.scale(pulse, pulse);
 
-            // Trong chế độ Ngộ Đạo (CLOZE), nếu là ký tự giữa từ chưa gõ, hiện ký tự nhấp nháy gợi ý
+            // PHÂN BIỆT RÕ 3 PHÁP MÔN:
+            // 1. DIRECT: Hiện chữ cái thật nhấp nháy vàng kim
+            // 2. CLOZE: Ký tự đầu tiên (khi chưa gõ chữ nào) hiện chữ để làm điểm tựa; các ký tự sau TUYỆT ĐỐI GIẤU KÍN bằng phù ấn "✦"
+            // 3. AUDIO: TUYỆT ĐỐI GIẤU KÍN TOÀN BỘ bằng phù ấn lôi âm "✦" để buộc người chơi phải nghe âm thanh!
+            let targetChar = letter;
+            let targetColor = "#FDE047";
+            let targetGlow = "#EF4444";
+
+            if (ast.isAudio) {
+              targetChar = "✦";
+              targetColor = "#C084FC";
+              targetGlow = "#A855F7";
+            } else if (ast.isCloze) {
+              if (c === 0 && ast.typedLen === 0) {
+                targetChar = letter;
+                targetColor = "#FDE047";
+                targetGlow = "#F59E0B";
+              } else {
+                targetChar = "✦";
+                targetColor = "#34D399";
+                targetGlow = "#059669";
+              }
+            }
+
             ctx.lineWidth = 3;
             ctx.strokeStyle = "rgba(10, 5, 2, 0.9)";
-            ctx.strokeText(letter, 0, 0);
+            ctx.strokeText(targetChar, 0, 0);
 
-            ctx.fillStyle = "#FDE047";
-            ctx.shadowColor = "#EF4444";
+            ctx.fillStyle = targetColor;
+            ctx.shadowColor = targetGlow;
             ctx.shadowBlur = 20;
-            ctx.fillText(letter, 0, 0);
+            ctx.fillText(targetChar, 0, 0);
 
-            ctx.strokeStyle = "rgba(245, 158, 11, 0.9)";
+            ctx.strokeStyle = targetColor;
             ctx.lineWidth = 1.6;
             ctx.beginPath();
             ctx.arc(0, 0, 13, 0, Math.PI * 2);
@@ -592,49 +623,99 @@
             ctx.restore();
 
           } else {
-            // KÝ TỰ CHƯA GÕ: Kiểm tra nếu ở chế độ Ngộ Đạo (Cloze Mask)
+            // KÝ TỰ CHƯA GÕ (c > ast.typedLen)
             ctx.save();
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = "rgba(10, 5, 2, 0.85)";
 
-            // Nếu là chế độ CLOZE và không phải chữ cái đầu/cuối: hiện dấu phong ấn '_'
-            const isMaskedInCloze = ast.isCloze && (c > 0 && c < word.length - 1);
-            const displayChar = isMaskedInCloze ? "✦" : letter;
+            let displayChar = letter;
+            let fillCol = "#FEF3C7";
+            let glowCol = "rgba(245, 158, 11, 0.65)";
+
+            if (ast.isAudio) {
+              displayChar = "✦";
+              fillCol = "rgba(192, 132, 252, 0.65)";
+              glowCol = "rgba(168, 85, 247, 0.6)";
+            } else if (ast.isCloze) {
+              displayChar = "✦";
+              fillCol = "rgba(110, 231, 183, 0.65)";
+              glowCol = "rgba(16, 185, 129, 0.6)";
+            }
 
             ctx.strokeText(displayChar, cx, runeY);
-            ctx.fillStyle = isMaskedInCloze ? "rgba(254, 243, 199, 0.65)" : "#FEF3C7";
-            ctx.shadowColor = "rgba(245, 158, 11, 0.65)";
-            ctx.shadowBlur = isMaskedInCloze ? 4 : 6;
+            ctx.fillStyle = fillCol;
+            ctx.shadowColor = glowCol;
+            ctx.shadowBlur = 6;
             ctx.fillText(displayChar, cx, runeY);
             ctx.restore();
           }
         }
         ctx.restore();
 
+        // 5.4 HIỆU ỨNG SÓNG ÂM ĐẶC QUYỀN CHO CHẾ ĐỘ THÍNH LÔI BIỆN ÂM (AUDIO MODE)
+        if (ast.isAudio) {
+          ctx.save();
+          const wavePulse1 = ((this.time * 2.2) % 1);
+          const wavePulse2 = ((this.time * 2.2 + 0.5) % 1);
+          const r1 = ast.radius + wavePulse1 * 26;
+          const r2 = ast.radius + wavePulse2 * 26;
+
+          ctx.strokeStyle = `rgba(168, 85, 247, ${Math.max(0, 0.8 - wavePulse1)})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(posX, posY, r1, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.strokeStyle = `rgba(56, 189, 248, ${Math.max(0, 0.7 - wavePulse2)})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(posX, posY, r2, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.font = "700 12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillStyle = "#A78BFA";
+          ctx.fillText("🔊 LẮNG NGHE TIÊN ÂM", posX, posY - ast.radius - 12);
+          ctx.restore();
+        }
+
         // 5.5 CHÂN GIẢI NGHĨA TIẾNG VIỆT & PHIÊN ÂM IPA (MEANING & IPA BANNER)
-        if (ast.meaning) {
+        if (ast.meaning || ast.isAudio) {
           ctx.save();
           const meanY = posY + ast.radius + (isMobileScreen ? 14 : 18);
           ctx.font = isMobileScreen ? "700 11.5px 'Be Vietnam Pro', sans-serif" : "700 13px 'Be Vietnam Pro', sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
-          const displayText = ast.isAudio ? (ast.ipa ? `Tiên Âm: ${ast.ipa}` : ast.meaning) : ast.meaning;
-          const textW = Math.min(280, ctx.measureText(displayText).width);
+          let displayText = ast.meaning;
+          let boxBorder = "rgba(245, 158, 11, 0.85)";
+          let textColor = "#FEF08A";
+
+          if (ast.isAudio) {
+            displayText = `🔊 TAB: Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
+            boxBorder = "#A855F7";
+            textColor = "#E0E7FF";
+          } else if (ast.isCloze) {
+            displayText = `📖 ${ast.meaning} • [${word.length} Ký Tự]`;
+            boxBorder = "#10B981";
+            textColor = "#A7F3D0";
+          }
+
+          const textW = Math.min(320, ctx.measureText(displayText).width);
 
           // Thẻ bài mộc bản ngọc bích viền hoàng kim
-          ctx.fillStyle = "rgba(8, 20, 14, 0.88)";
-          ctx.strokeStyle = ast.isAudio ? "#38BDF8" : "rgba(245, 158, 11, 0.85)";
-          ctx.lineWidth = 1.4;
-          ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+          ctx.fillStyle = "rgba(8, 20, 14, 0.92)";
+          ctx.strokeStyle = boxBorder;
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
           ctx.shadowBlur = 8;
           ctx.beginPath();
-          ctx.roundRect(posX - textW / 2 - 10, meanY - 11, textW + 20, 22, 6);
+          ctx.roundRect(posX - textW / 2 - 12, meanY - 11, textW + 24, 23, 6);
           ctx.fill();
           ctx.stroke();
 
           // Chữ dịch nghĩa vàng kim sáng rõ, không lỗi font
-          ctx.fillStyle = ast.isAudio ? "#BAE6FD" : "#FEF08A";
+          ctx.fillStyle = textColor;
           ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
           ctx.shadowBlur = 3;
           ctx.fillText(displayText, posX, meanY);

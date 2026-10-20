@@ -617,15 +617,36 @@
         console.warn("[Meowcha Speech Synthesis]", e);
       }
     }
+    replayCurrentAudio() {
+      const activeList = (this.asteroids && this.asteroids.asteroids) || [];
+      const target = this.currentTarget || (activeList.length > 0 ? activeList[0] : null);
+      if (target) {
+        this.playWordAudio(target);
+        if (this.audio) this.audio.play("type");
+        const altarSub = document.getElementById("swordTargetMeaning");
+        if (altarSub && this.state && this.state.gameMode === "AUDIO") {
+          altarSub.innerHTML = `<span style="color: #A78BFA; animation: pulse 0.8s infinite;">🔊 Đang phát lại tiên âm: ${target.ipa || '/.../'}</span>`;
+        }
+        return true;
+      }
+      return false;
+    }
+
     updateSwordAltarUI(target) {
       const intentEl = document.getElementById("swordIntentText");
       const meaningEl = document.getElementById("swordTargetMeaning");
       const gaugeEl = document.getElementById("swordTargetGauge");
       const counterEl = document.getElementById("swordTargetCounter");
+      const curMode = (this.state && this.state.gameMode) || "DIRECT";
 
       if (!target || !target.word) {
         if (intentEl) {
-          intentEl.innerHTML = '<span class="altar-idle-msg">❖ ĐỊNH TÂM DƯỠNG KHÍ • GÕ CỔ NGỮ ĐỂ XUẤT KIẾM ❖</span>';
+          const idleMsgs = {
+            DIRECT: "❖ TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM ❖",
+            CLOZE:  "❖ NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ ẤN ❖",
+            AUDIO:  "❖ THÍNH LÔI BIỆN ÂM • LẮNG NGHE TIÊN ÂM (PHÍM TAB ĐỂ NGHE LẠI) ❖"
+          };
+          intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }
         if (meaningEl) meaningEl.innerText = "";
         if (gaugeEl) gaugeEl.style.width = "0%";
@@ -636,15 +657,36 @@
       const word = target.word;
       const typed = Math.min(target.typedLen, word.length);
       const typedPart = word.substring(0, typed);
-      const untypedPart = word.substring(typed);
+      const untypedLen = word.length - typed;
       const pct = Math.round((typed / word.length) * 100);
 
+      // XỬ LÝ HIỂN THỊ KIẾM ĐÀI KHÁC BIỆT THEO 3 PHÁP MÔN:
+      // 1. DIRECT: Hiện chữ cái chưa gõ bình thường
+      // 2. CLOZE: Ký tự chưa gõ hiển thị phù ấn "✦ ", TUYỆT ĐỐI KHÔNG LỘ ĐÁP ÁN!
+      // 3. AUDIO: Ký tự chưa gõ hiển thị phù ấn "✦ " và có nút Loa nghe lại
+      let displayUntyped = word.substring(typed);
+      if (curMode === "CLOZE" || curMode === "AUDIO") {
+        displayUntyped = untypedLen > 0 ? "✦ ".repeat(untypedLen).trim() : "";
+      }
+
       if (intentEl) {
-        intentEl.innerHTML = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${untypedPart}</span>`;
+        intentEl.innerHTML = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${displayUntyped}</span>`;
       }
+
       if (meaningEl) {
-        meaningEl.innerText = target.meaning || target.definition || "";
+        if (curMode === "AUDIO") {
+          meaningEl.innerHTML = `
+            <span style="color: #A78BFA; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
+              🔊 [TIÊN ÂM: ${target.ipa || '/.../'}] • Bấm TAB để nghe lại
+            </span>
+          `;
+        } else if (curMode === "CLOZE") {
+          meaningEl.innerHTML = `<span style="color: #A7F3D0; font-weight: 700;">📖 NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
+        } else {
+          meaningEl.innerText = target.meaning || target.definition || "";
+        }
       }
+
       if (gaugeEl) {
         gaugeEl.style.width = `${pct}%`;
       }

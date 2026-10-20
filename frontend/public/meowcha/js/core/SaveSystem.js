@@ -102,11 +102,34 @@
       return [];
     }
 
+    getDefaultModeState(mName, rData) {
+      return {
+        mode: mName,
+        isOccupied: false,
+        score: 0,
+        highScore: 0,
+        words: 0,
+        realmIdx: 0,
+        realm: (rData && rData.name) || "Luyện Khí Kỳ",
+        title: (rData && rData.title) || "Bạch Miêu Tiên Đồng",
+        hp: 50,
+        maxHp: 50,
+        talents: {}
+      };
+    }
+
     getDefaultSlot(slotId) {
+      const rData = { name: "Luyện Khí Kỳ", title: "Bạch Miêu Tiên Đồng" };
       return {
         slotId: slotId,
         slotName: `Ngọc Giản ${slotId}`,
         isOccupied: false,
+        activeMode: "DIRECT",
+        modes: {
+          DIRECT: this.getDefaultModeState("DIRECT", rData),
+          CLOZE:  this.getDefaultModeState("CLOZE", rData),
+          AUDIO:  this.getDefaultModeState("AUDIO", rData)
+        },
         dateStr: "",
         realm: "Luyện Khí Kỳ",
         realmIdx: 0,
@@ -131,7 +154,6 @@
         { name: "Độ Kiếp Kỳ", title: "Vạn Kiếm Chí Tôn" }
       ];
 
-      // Tương thích ngược: Suy luận realmIdx từ chuỗi cảnh giới cũ nếu realmIdx undefined hoặc không hợp lệ
       let rIdx = parseInt(slot.realmIdx, 10);
       if (isNaN(rIdx) || rIdx < 0) {
         const rStr = String(slot.realm || "").toLowerCase();
@@ -152,10 +174,39 @@
 
       const isOccupied = Boolean(slot.isOccupied || scoreNum > 0 || wordsNum > 0 || rIdx > 0);
 
+      // Chuẩn hóa cấu trúc độc lập 3 Pháp Môn (DIRECT, CLOZE, AUDIO)
+      const existingModes = (slot.modes && typeof slot.modes === "object") ? slot.modes : {};
+      const activeMode = slot.activeMode || slot.gameMode || "DIRECT";
+
+      const normModes = {
+        DIRECT: Object.assign(this.getDefaultModeState("DIRECT", rData), existingModes.DIRECT || {}),
+        CLOZE:  Object.assign(this.getDefaultModeState("CLOZE", rData), existingModes.CLOZE || {}),
+        AUDIO:  Object.assign(this.getDefaultModeState("AUDIO", rData), existingModes.AUDIO || {})
+      };
+
+      // Tương thích ngược: Nếu save cũ chưa có modes.DIRECT mà slot cha có điểm, gán vào mode tương ứng!
+      if (!existingModes[activeMode] && isOccupied) {
+        normModes[activeMode] = {
+          mode: activeMode,
+          isOccupied: true,
+          score: scoreNum,
+          highScore: slot.highScore || scoreNum,
+          words: wordsNum,
+          realmIdx: rIdx,
+          realm: slot.realm || rData.name,
+          title: slot.title || rData.title,
+          hp: hpNum,
+          maxHp: maxHpNum,
+          talents: (slot.talents && typeof slot.talents === "object") ? slot.talents : {}
+        };
+      }
+
       return {
         slotId: slotId,
         slotName: slot.slotName || `Ngọc Giản ${slotId}`,
         isOccupied: isOccupied,
+        activeMode: activeMode,
+        modes: normModes,
         dateStr: slot.dateStr || (isOccupied ? "Tiền Triều Đạo Quả" : ""),
         realm: slot.realm || rData.name,
         realmIdx: rIdx,
@@ -259,14 +310,30 @@
       return id;
     }
 
+    getSlotModeData(slotId, mode = "DIRECT") {
+      const s = this.getSlot(slotId);
+      if (s && s.modes && s.modes[mode]) {
+        return s.modes[mode];
+      }
+      return this.getDefaultModeState(mode, { name: "Luyện Khí Kỳ", title: "Bạch Miêu Tiên Đồng" });
+    }
+
+    hasActiveSaveForMode(mode = "DIRECT", slotId = null) {
+      const targetSlotId = slotId || this.getActiveSlotId();
+      const mData = this.getSlotModeData(targetSlotId, mode);
+      return Boolean(mData && mData.isOccupied && mData.hp > 0 && (mData.score > 0 || mData.realmIdx > 0 || mData.words > 0));
+    }
+
     saveGame(slotId, gameState) {
       const targetSlot = (slotId === 1 || slotId === 2 || slotId === 3)
         ? slotId
         : ((gameState && gameState.activeSlotId) || this.getActiveSlotId());
 
+      const curMode = (gameState && gameState.gameMode) || "DIRECT";
+
       if (!gameState || gameState.isGameOver || gameState.hp <= 0) {
-        // Đạo tiêu thân vong: Tuyệt đối không lưu lại kiếp đã chết!
-        this.deleteSlot(targetSlot);
+        // Đạo tiêu thân vong: Chỉ xóa tiến trình của pháp môn hiện tại, bảo toàn pháp môn khác!
+        this.resetActiveSave(targetSlot, curMode);
         return null;
       }
 
@@ -275,9 +342,14 @@
       const realms = root.Meowcha.CULTIVATION_REALMS || [];
       const realmData = realms[gameState.realmIdx] || realms[0];
 
-      const slotData = {
-        slotId: targetSlot,
-        slotName: `Đạo Quả [${realmData.title}]`,
+      const currentSlot = this.getSlot(targetSlot);
+      currentSlot.modes = currentSlot.modes || {};
+
+      const prevHighScore = (currentSlot.modes[curMode] && currentSlot.modes[curMode].highScore) || 0;
+      const newHighScore = Math.max(prevHighScore, gameState.highScore || 0, gameState.score || 0);
+
+      const modeData = {
+        mode: curMode,
         isOccupied: true,
         dateStr: dateStr,
         realm: realmData.name,
@@ -286,13 +358,27 @@
         hp: gameState.hp,
         maxHp: gameState.maxHp,
         score: gameState.score,
-        highScore: Math.max(gameState.highScore || 0, gameState.score || 0),
+        highScore: newHighScore,
         words: gameState.wordsSlain,
-        bandIdx: gameState.selectedBandIdx || 0,
         talents: JSON.parse(JSON.stringify(gameState.talents || {}))
       };
 
-      this.slots[targetSlot] = slotData;
+      currentSlot.modes[curMode] = modeData;
+      currentSlot.activeMode = curMode;
+      currentSlot.isOccupied = true;
+      currentSlot.dateStr = dateStr;
+      currentSlot.realm = realmData.name;
+      currentSlot.realmIdx = gameState.realmIdx;
+      currentSlot.title = realmData.title;
+      currentSlot.hp = gameState.hp;
+      currentSlot.maxHp = gameState.maxHp;
+      currentSlot.score = gameState.score;
+      currentSlot.highScore = Math.max(currentSlot.highScore || 0, newHighScore);
+      currentSlot.words = gameState.wordsSlain;
+      currentSlot.bandIdx = gameState.selectedBandIdx || 0;
+      currentSlot.talents = modeData.talents;
+
+      this.slots[targetSlot] = currentSlot;
       this.saveLocalSlots();
       this.setActiveSlotId(targetSlot);
       if (gameState) gameState.activeSlotId = targetSlot;
@@ -304,22 +390,22 @@
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             slot_id: targetSlot,
-            slot_name: slotData.slotName,
+            slot_name: currentSlot.slotName || `Đạo Quả [${realmData.title}]`,
             is_occupied: true,
-            realm: slotData.realm,
-            realm_idx: slotData.realmIdx,
-            title: slotData.title,
-            hp: slotData.hp,
-            max_hp: slotData.maxHp,
-            score: slotData.score,
-            words_slain: slotData.words,
-            band_idx: slotData.bandIdx,
-            talents: slotData.talents
+            realm: currentSlot.realm,
+            realm_idx: currentSlot.realmIdx,
+            title: currentSlot.title,
+            hp: currentSlot.hp,
+            max_hp: currentSlot.maxHp,
+            score: currentSlot.score,
+            words_slain: currentSlot.words,
+            band_idx: currentSlot.bandIdx,
+            talents: currentSlot.talents
           })
         }).catch(err => console.log("[SaveSystem] Lưu offline cục bộ (API chưa kết nối)"));
       }
 
-      return slotData;
+      return currentSlot;
     }
 
     deleteSlot(slotId) {
@@ -335,34 +421,60 @@
       }
     }
 
-    hasActiveSave(preferredSlotId = null) {
+    hasActiveSave(preferredSlotId = null, mode = null) {
+      const checkSlotHasSave = (slot, checkMode) => {
+        if (!slot) return null;
+        if (checkMode) {
+          if (slot.modes && slot.modes[checkMode]) {
+            const m = slot.modes[checkMode];
+            if (m.isOccupied && (m.hp > 0) && (m.score > 0 || m.realmIdx > 0 || m.words > 0)) {
+              return Object.assign({}, slot, m);
+            }
+          }
+          return null;
+        }
+        if (slot.isOccupied && (slot.hp > 0) && (slot.score > 0 || slot.realmIdx > 0 || slot.words > 0)) {
+          return slot;
+        }
+        return null;
+      };
+
       // 1. Kiểm tra preferredSlotId nếu có
       if (preferredSlotId && (preferredSlotId === 1 || preferredSlotId === 2 || preferredSlotId === 3)) {
-        const pSlot = this.getSlot(preferredSlotId);
-        if (pSlot && pSlot.isOccupied && (pSlot.hp > 0) && (pSlot.score > 0 || pSlot.realmIdx > 0 || pSlot.words > 0)) {
-          return pSlot;
-        }
+        const found = checkSlotHasSave(this.getSlot(preferredSlotId), mode);
+        if (found) return found;
       }
 
       // 2. Kiểm tra slot active đã lưu
       const activeId = this.getActiveSlotId();
-      const activeSlot = this.getSlot(activeId);
-      if (activeSlot && activeSlot.isOccupied && (activeSlot.hp > 0) && (activeSlot.score > 0 || activeSlot.realmIdx > 0 || activeSlot.words > 0)) {
-        return activeSlot;
-      }
+      const activeFound = checkSlotHasSave(this.getSlot(activeId), mode);
+      if (activeFound) return activeFound;
 
       // 3. Fallback tìm bất kỳ slot nào có tiến trình hợp lệ
       for (let s = 1; s <= 3; s++) {
-        const otherSlot = this.getSlot(s);
-        if (otherSlot && otherSlot.isOccupied && (otherSlot.hp > 0) && (otherSlot.score > 0 || otherSlot.realmIdx > 0 || otherSlot.words > 0)) {
-          return otherSlot;
-        }
+        const otherFound = checkSlotHasSave(this.getSlot(s), mode);
+        if (otherFound) return otherFound;
       }
       return null;
     }
 
-    resetActiveSave(slotId = null) {
+    resetActiveSave(slotId = null, mode = null) {
       const targetId = (slotId === 1 || slotId === 2 || slotId === 3) ? slotId : this.getActiveSlotId();
+      if (mode && this.slots[targetId] && this.slots[targetId].modes && this.slots[targetId].modes[mode]) {
+        const rData = { name: "Luyện Khí Kỳ", title: "Bạch Miêu Tiên Đồng" };
+        this.slots[targetId].modes[mode] = this.getDefaultModeState(mode, rData);
+
+        // Nếu mode này trùng với activeMode của slot, reset chỉ số hiển thị của slot cha
+        if (this.slots[targetId].activeMode === mode) {
+          this.slots[targetId].isOccupied = false;
+          this.slots[targetId].score = 0;
+          this.slots[targetId].words = 0;
+          this.slots[targetId].realmIdx = 0;
+          this.slots[targetId].hp = 50;
+        }
+        this.saveLocalSlots();
+        return;
+      }
       this.deleteSlot(targetId);
     }
 

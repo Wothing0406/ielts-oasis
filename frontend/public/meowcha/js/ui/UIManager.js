@@ -179,49 +179,59 @@
           this.submitScoreToPantheon();
         };
       }
-      // Nút bắt đầu độ kiếp ở Lobby
+      // Nút bắt đầu độ kiếp ở Lobby (Khởi đầu hoặc Trọng Tu theo đúng Pháp Môn)
       const btnStart = document.getElementById("btnStartBattle");
       if (btnStart) {
         btnStart.onclick = () => {
           this.audio.play("slash");
+          const curMode = (this.state && this.state.gameMode) || "DIRECT";
+          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+          const hasModeProgress = this.saveSystem.hasActiveSaveForMode(curMode, curSlotId);
+          if (!hasModeProgress) {
+            this.state.resetForNewMode(curMode);
+          }
           if (this.onStartBattle) this.onStartBattle();
         };
       }
 
-      // Nút Chơi Tiếp (Continue)
+      // Nút Chơi Tiếp (Continue theo đúng Pháp Môn đang chọn)
       const btnContinue = document.getElementById("btnContinueBattle");
       if (btnContinue) {
         btnContinue.onclick = () => {
-          const activeSave = this.saveSystem.hasActiveSave();
-          if (!activeSave) {
-            this.showStatus("[ 仙 ] Chưa có đạo quả nào được lưu trữ!");
-            return;
+          const curMode = (this.state && this.state.gameMode) || "DIRECT";
+          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+          const modeData = this.saveSystem.getSlotModeData(curSlotId, curMode);
+          if (modeData && modeData.isOccupied) {
+            this.state.loadFromModeData(modeData, curMode);
           }
-          const targetSlot = activeSave.slotId || 1;
-          const slotData = this.saveSystem.getSlot(targetSlot);
-          this.state.loadFromSlot(slotData);
-          this.state.activeSlotId = targetSlot;
-          this.saveSystem.setActiveSlotId(targetSlot);
           this.audio.play("chime");
           this.updateHUD();
-          this.showStatus(`[ 仙 ] [TIẾP TỤC TU LUYỆN] Đã nạp Cuộn Trục ${targetSlot}: ${slotData.title || slotData.realm} (${(slotData.score || 0).toLocaleString()} Tu Vi)!`);
+          this.showStatus(`[ 仙 ] [TIẾP TỤC TU LUYỆN] Đang nạp pháp môn ${curMode} (${(this.state.score || 0).toLocaleString()} Tu Vi)!`);
           if (this.onStartBattle) {
             this.onStartBattle();
-          } else {
-            this.showProfileModal(`TIẾN TRÌNH TU LUYỆN • NGỌC GIẢN ${targetSlot}`);
           }
         };
       }
 
-      // Nút Chơi Lại Từ Đầu ở Lobby (Tẩy Tủy Trọng Sinh)
+      // Nút Chơi Lại Từ Đầu ở Lobby (Tẩy Tủy riêng cho Pháp Môn đang chọn)
       const btnRestart = document.getElementById("btnRestartGame");
       if (btnRestart) {
         btnRestart.onclick = () => {
-          this.showConfirm("ĐẠO HỮU TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Mọi điểm Tu Vi và cảnh giới sẽ bắt đầu lại từ Luyện Khí Kỳ.", () => {
-            this.performPurificationRebirth(() => {
-              this.audio.play("chime");
-              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã được bảo lưu & vinh danh Bảng Phong Thần! Khởi đầu lại từ Luyện Khí Kỳ.");
-            });
+          const curMode = (this.state && this.state.gameMode) || "DIRECT";
+          const modeLabels = {
+            DIRECT: "Trực Diện Trảm Ma",
+            CLOZE:  "Ngộ Đạo Thông Linh",
+            AUDIO:  "Thính Lôi Biện Âm"
+          };
+          const modeName = modeLabels[curMode] || curMode;
+          this.showConfirm(`TẨY TỦY PHÁP MÔN [${modeName.toUpperCase()}]?`, `Đạo hữu sẽ bắt đầu lại pháp môn ${modeName} từ Luyện Khí Kỳ 0 điểm. Kỷ lục tu vi vẫn được bảo lưu vinh danh Bảng Phong Thần.`, () => {
+            const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+            this.saveSystem.resetActiveSave(curSlotId, curMode);
+            this.state.resetForNewMode(curMode);
+            this.updateLobbyButtons();
+            this.updateHUD();
+            this.audio.play("chime");
+            this.showStatus(`[ 丹 ] Đã tẩy tủy hoàn tất pháp môn ${modeName}! Khởi đầu từ Luyện Khí Kỳ.`);
           });
         };
       }
@@ -454,13 +464,33 @@
           btn.classList.toggle('active-mode', btn.getAttribute('data-mode') === mode);
         });
       }
+
+      // NẠP TIẾN TRÌNH ĐỘC LẬP THEO PHÁP MÔN ĐANG CHỌN (TÁCH BIỆT TIẾN TRÌNH DIRECT / CLOZE / AUDIO)
+      const currentSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+      const modeData = this.saveSystem.getSlotModeData(currentSlotId, mode);
+
+      if (modeData && modeData.isOccupied && modeData.hp > 0 && (modeData.score > 0 || modeData.realmIdx > 0 || modeData.words > 0)) {
+        // Có ván dở dang của chế độ này -> Nạp đúng tiến trình của chế độ này
+        this.state.loadFromModeData(modeData, mode);
+      } else {
+        // Chế độ này chưa chơi hoặc đã chết -> Bắt đầu mới từ Luyện Khí Kỳ 0 điểm
+        this.state.resetForNewMode(mode);
+      }
+
+      this.updateLobbyButtons();
+      this.updateHUD();
+
       const modeNames = {
         CLOZE: 'Ngộ Đạo Thông Linh (Active Recall)',
         DIRECT: 'Trực Diện Trảm Ma (Direct Typing)',
         AUDIO: 'Thính Lôi Biện Âm (Audio Dictation)'
       };
       if (this.audio) this.audio.play('chime');
-      this.showStatus(`[ PHÁP MÔN ] Đã chọn ${modeNames[mode] || mode}`);
+      this.showStatus(`[ PHÁP MÔN ] Đã chuyển sang ${modeNames[mode] || mode}`);
+    }
+
+    updateLobbyStats() {
+      this.updateHUD();
     }
 
     selectDeck(deckId) {
@@ -605,22 +635,46 @@
       const btnContinue = document.getElementById("btnContinueBattle");
       const btnRestart = document.getElementById("btnRestartGame");
       const continueSub = document.getElementById("continueBattleSub");
+      const startBtnText = btnStart ? (btnStart.querySelector(".btn-xianxia-text") || btnStart) : null;
 
-      const activeSave = this.saveSystem && this.saveSystem.hasActiveSave && this.saveSystem.hasActiveSave();
-      if (activeSave) {
-        const slotData = this.saveSystem.getSlot(activeSave.slotId || 1);
+      const curMode = (this.state && this.state.gameMode) || "DIRECT";
+      const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+      const modeData = this.saveSystem && this.saveSystem.getSlotModeData && this.saveSystem.getSlotModeData(curSlotId, curMode);
+
+      const hasModeProgress = Boolean(modeData && modeData.isOccupied && modeData.hp > 0 && (modeData.score > 0 || modeData.realmIdx > 0 || modeData.words > 0));
+
+      const modeLabels = {
+        DIRECT: "Trực Diện Trảm Ma",
+        CLOZE:  "Ngộ Đạo Thông Linh",
+        AUDIO:  "Thính Lôi Biện Âm"
+      };
+      const modeName = modeLabels[curMode] || curMode;
+
+      if (hasModeProgress) {
         if (btnContinue) {
           btnContinue.style.display = "flex";
           if (continueSub) {
-            continueSub.innerText = `[ Cuộn ${activeSave.slotId}: ${slotData.title || slotData.realm || 'Luyện Khí Kỳ'} • ${(slotData.score || 0).toLocaleString()} Tu Vi ]`;
+            continueSub.innerText = `[ ${modeName}: ${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'} ]`;
           }
         }
-        if (btnRestart) btnRestart.style.display = "inline-flex";
-        if (btnStart) btnStart.style.display = "flex";
+        if (btnRestart) {
+          btnRestart.style.display = "inline-flex";
+        }
+        if (btnStart) {
+          btnStart.style.display = "flex";
+          if (startBtnText && startBtnText !== btnStart) {
+            startBtnText.innerText = "TRỌNG TU PHÁP MÔN";
+          }
+        }
       } else {
         if (btnContinue) btnContinue.style.display = "none";
         if (btnRestart) btnRestart.style.display = "none";
-        if (btnStart) btnStart.style.display = "flex";
+        if (btnStart) {
+          btnStart.style.display = "flex";
+          if (startBtnText && startBtnText !== btnStart) {
+            startBtnText.innerText = `BẮT ĐẦU ĐỘ KIẾP (${modeName.toUpperCase()})`;
+          }
+        }
       }
     }
 
