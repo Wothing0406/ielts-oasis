@@ -624,11 +624,15 @@
           "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
         const rIdx = Math.max(0, Math.min(4, parseInt(s.realmIdx, 10) || 0));
+        const targetSrc = avatars[rIdx] || avatars[0];
+        lobbyCatImg.referrerPolicy = "no-referrer";
         lobbyCatImg.onerror = () => {
           lobbyCatImg.onerror = null;
           lobbyCatImg.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
         };
-        lobbyCatImg.src = avatars[rIdx] || avatars[0];
+        if (lobbyCatImg.getAttribute("src") !== targetSrc) {
+          lobbyCatImg.src = targetSrc;
+        }
       }
 
       this.updateMonolithLocks();
@@ -1623,7 +1627,7 @@
 
       this.saveSystem.saveGame(activeSlot, this.state);
       this.updateHUD();
-      this.updateLobbyStats();
+      if (typeof this.updateLobbyStats === "function") this.updateLobbyStats(); else this.updateHUD();
       this.updatePantheonSelfStats();
 
       if (typeof onComplete === "function") {
@@ -1693,7 +1697,7 @@
           try {
             this._safeSet("meowcha_high_score", String(this.state.highScore));
           } catch (err) {}
-          this.updateLobbyStats();
+          if (typeof this.updateLobbyStats === "function") this.updateLobbyStats(); else this.updateHUD();
         }
       } catch (e) {
         console.warn("[Meowcha] Lỗi tự động ghi danh Bảng Phong Thần:", e);
@@ -1715,7 +1719,14 @@
       const user = this.getLoggedInUser();
       const selfAvatarEl = document.getElementById("pantheonSelfAvatar");
       const selfNameEl = document.getElementById("pantheonSelfName");
-      if (selfAvatarEl) selfAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
+      if (selfAvatarEl) {
+        selfAvatarEl.referrerPolicy = "no-referrer";
+        selfAvatarEl.onerror = () => {
+          selfAvatarEl.onerror = null;
+          selfAvatarEl.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
+        };
+        selfAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
+      }
       if (selfNameEl) selfNameEl.innerText = user.name;
 
       if (this.pantheonPlayerSelfStats) {
@@ -1787,7 +1798,7 @@
               this._safeSet("meowcha_high_score", String(this.state.highScore));
             } catch (e) {}
             this.updatePantheonSelfStats();
-            this.updateLobbyStats();
+            if (typeof this.updateLobbyStats === "function") this.updateLobbyStats(); else this.updateHUD();
           }
         }
 
@@ -1826,11 +1837,17 @@
           if (scoreEl) scoreEl.innerText = `${(itemData.score || 0).toLocaleString()} Tu Vi`;
           if (realmEl) realmEl.innerText = itemData.realm || "Luyện Khí Kỳ";
           if (avatarEl) {
+            const fallbackRealmAvatar = getAvatarByRealm(itemData.realm, itemData.score || 0);
+            avatarEl.referrerPolicy = "no-referrer";
+            avatarEl.onerror = () => {
+              avatarEl.onerror = null;
+              avatarEl.src = fallbackRealmAvatar;
+            };
             // Ưu tiên hiển thị Avatar thực tế của User (Discord / Web Avatar)
             if (itemData.avatar_url && itemData.avatar_url.trim()) {
-              avatarEl.src = itemData.avatar_url;
+              avatarEl.src = itemData.avatar_url.trim();
             } else {
-              avatarEl.src = getAvatarByRealm(itemData.realm, itemData.score || 0);
+              avatarEl.src = fallbackRealmAvatar;
             }
             avatarEl.style.display = "block";
           }
@@ -1902,7 +1919,7 @@
           <div class="pantheon-row ${rowClass}">
             <span class="rank-col">${badgeHtml}</span>
             <span class="name-col" title="${item.player_name}">
-              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" onerror="this.src='./sprites/characters/realm0_qi_refining/poses/idle.png'" />
+              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${getAvatarByRealm(item.realm, item.score || 0)}';" />
               <span class="name-text">${item.player_name || 'Vô Danh Tiên Khách'}</span>
             </span>
             <span class="realm-col">${item.realm || 'Luyện Khí Kỳ'}</span>
