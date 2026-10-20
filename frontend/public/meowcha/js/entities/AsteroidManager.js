@@ -155,12 +155,12 @@
 
       const word = wordItem.word.toUpperCase();
       this.canvasWidth = canvasWidth;
-      const isMobile = canvasWidth <= 600;
-      const charW = isMobile ? 15 : 20;
+      const isMobile = canvasWidth <= 768 || (typeof window !== "undefined" && window.innerWidth <= 768);
+      const charW = isMobile ? 18 : 22;
       const totalWordW = word.length * charW;
       const halfWordW = totalWordW / 2;
-      const baseRadius = isMobile ? Math.max(38, word.length * 6.0) : Math.max(46, word.length * 8.2);
-      const safeMargin = Math.max(baseRadius + 24, halfWordW + 36);
+      const baseRadius = isMobile ? Math.max(50, word.length * 8.2) : Math.max(52, word.length * 8.8);
+      const safeMargin = Math.max(baseRadius + 20, halfWordW + 28);
       // Trên màn hình PC rộng: Thanh ngọc giản HUD ở góc trên bên trái (chiếm ~500px).
       // Để thiên thạch không bị che khuất khi rơi, ưu tiên phân bổ từ x=490px trở sang phải
       const minX = isMobile ? safeMargin : Math.max(safeMargin, Math.min(canvasWidth * 0.38, 490));
@@ -531,8 +531,8 @@
         // ============================================================
         ctx.save();
         const word = ast.word;
-        const isMobileScreen = (ctx.canvas && ctx.canvas.width <= 600) || (typeof window !== "undefined" && window.innerWidth <= 600);
-        const charSpacing = isMobileScreen ? 14.5 : 20;
+        const isMobileScreen = (ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768);
+        const charSpacing = isMobileScreen ? 18 : 22;
         const totalWordW = word.length * charSpacing;
         const startCharX = posX - totalWordW / 2 + charSpacing / 2;
         const runeY = posY;
@@ -544,10 +544,10 @@
         bgGlowGrad.addColorStop(1, "transparent");
         ctx.fillStyle = bgGlowGrad;
         ctx.beginPath();
-        ctx.ellipse(posX, runeY, totalWordW / 1.8 + 12, isMobileScreen ? 17 : 22, 0, 0, Math.PI * 2);
+        ctx.ellipse(posX, runeY, totalWordW / 1.8 + 14, isMobileScreen ? 20 : 24, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.font = isMobileScreen ? "900 15.5px 'Cinzel', serif" : "900 20px 'Cinzel', 'Playfair Display', serif";
+        ctx.font = isMobileScreen ? "900 18px 'Cinzel', serif" : "900 22px 'Cinzel', 'Playfair Display', serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
@@ -682,8 +682,8 @@
         // 5.5 CHÂN GIẢI NGHĨA TIẾNG VIỆT & PHIÊN ÂM IPA (MEANING & IPA BANNER)
         if (ast.meaning || ast.isAudio) {
           ctx.save();
-          const meanY = posY + ast.radius + (isMobileScreen ? 14 : 18);
-          ctx.font = isMobileScreen ? "700 11.5px 'Be Vietnam Pro', sans-serif" : "700 13px 'Be Vietnam Pro', sans-serif";
+          const meanY = posY + ast.radius + (isMobileScreen ? 18 : 22);
+          ctx.font = isMobileScreen ? "700 13px 'Be Vietnam Pro', sans-serif" : "700 14.5px 'Be Vietnam Pro', sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 

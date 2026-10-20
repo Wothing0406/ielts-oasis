@@ -503,12 +503,17 @@
         this.particles.createBambooLeaves(target.x, target.y, 8);
       }
 
-      // 8. Khẩu quyết tiên hiệp
-      const speechesData = root.Meowcha.REALM_SKILL_SPEECHES || [];
-      const realmSpeeches = speechesData[Math.min(4, this.state.realmIdx)] || speechesData[0];
-      if (realmSpeeches && realmSpeeches.length > 0) {
-        const chant = realmSpeeches[Math.floor(Math.random() * realmSpeeches.length)];
-        this.state.setSpeech(chant, 2200);
+      // 8. Khẩu quyết tiên hiệp & Thoại cute meow
+      const comboSpeeches = (root.Meowcha && root.Meowcha.COMBO_SPEECHES) || {};
+      if (comboSpeeches[this.state.combo]) {
+        this.state.setSpeech(comboSpeeches[this.state.combo], 2500);
+      } else {
+        const speechesData = root.Meowcha.REALM_SKILL_SPEECHES || [];
+        const realmSpeeches = speechesData[Math.min(4, this.state.realmIdx)] || speechesData[0];
+        if (realmSpeeches && realmSpeeches.length > 0) {
+          const chant = realmSpeeches[Math.floor(Math.random() * realmSpeeches.length)];
+          this.state.setSpeech(chant, 2200);
+        }
       }
 
       // Xóa ma thạch khỏi danh sách
@@ -637,9 +642,17 @@
       const meaningEl = document.getElementById("swordTargetMeaning");
       const gaugeEl = document.getElementById("swordTargetGauge");
       const counterEl = document.getElementById("swordTargetCounter");
+      const plaqueEl = document.getElementById("swordAltarModeLabel");
       const curMode = (this.state && this.state.gameMode) || "DIRECT";
 
+      const plaqueTitles = {
+        DIRECT: "KIẾM QUYẾT ĐÀI • TRỰC DIỆN TRẢM MA",
+        CLOZE:  "NGỘ ĐẠO ĐÀI • ACTIVE RECALL (ĐIỀN THEO NGHĨA)",
+        AUDIO:  "THÍNH LÔI ĐÀI • AUDIO DICTATION (NGHE & GÕ LẠI)"
+      };
+
       if (!target || !target.word) {
+        if (plaqueEl) plaqueEl.innerText = plaqueTitles[curMode] || plaqueTitles.DIRECT;
         if (intentEl) {
           const idleMsgs = {
             DIRECT: "❖ TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM ❖",
@@ -653,6 +666,8 @@
         if (counterEl) counterEl.innerText = "0/0";
         return;
       }
+
+      if (plaqueEl) plaqueEl.innerText = `ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT}`;
 
       const word = target.word;
       const typed = Math.min(target.typedLen, word.length);

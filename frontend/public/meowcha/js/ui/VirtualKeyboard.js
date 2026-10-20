@@ -1,7 +1,7 @@
 /**
  * VirtualKeyboard.js - Bàn Phím Trận Pháp Cổ Phù Cho Mobile & Tablet
  * Thiết kế chuẩn Đá Thạch Khắc Phù Văn (Ancient Rune Stone Array)
- * Không delay (0ms pointerdown), hỗ trợ rung haptic và trạng thái Choáng
+ * Không delay (0ms pointerdown), hỗ trợ rung haptic, nút Phát Âm (Tab), Space và Xóa.
  */
 (function(root) {
   const KB_ROWS = [
@@ -34,6 +34,7 @@
       `;
       kbWrapper.appendChild(headerBar);
 
+      // 3 Hàng phím chữ cái chính
       KB_ROWS.forEach(row => {
         const rowEl = document.createElement("div");
         rowEl.className = "kb-row";
@@ -43,17 +44,12 @@
           keyBtn.className = "kb-key xianxia-key";
           keyBtn.type = "button";
           keyBtn.setAttribute("data-key", keyChar);
-
-          keyBtn.innerHTML = `
-            <span class="key-char">${keyChar}</span>
-            <span class="key-rune-corner">᛭</span>
-          `;
+          keyBtn.innerHTML = `<span class="key-char">${keyChar}</span>`;
 
           const triggerKey = (e) => {
             e.preventDefault();
             e.stopPropagation();
 
-            // Nếu đang bị Choáng: Chặn xuất chiêu, rung cảnh báo
             if (this.isStunned) {
               keyBtn.classList.add("stun-reject");
               setTimeout(() => keyBtn.classList.remove("stun-reject"), 150);
@@ -63,26 +59,86 @@
               return;
             }
 
-            // Rung phản hồi haptic xúc giác 15ms
             if (typeof navigator !== "undefined" && navigator.vibrate) {
-              try { navigator.vibrate(15); } catch (_) {}
+              try { navigator.vibrate(12); } catch (_) {}
             }
 
             keyBtn.classList.add("active");
-            setTimeout(() => keyBtn.classList.remove("active"), 90);
+            setTimeout(() => keyBtn.classList.remove("active"), 80);
 
             if (this.onKeyPress) this.onKeyPress(keyChar);
           };
 
-          // Pointerdown triệt tiêu hoàn toàn 300ms click delay trên mobile
           keyBtn.addEventListener("pointerdown", triggerKey);
-
           rowEl.appendChild(keyBtn);
         });
 
         kbWrapper.appendChild(rowEl);
       });
 
+      // Hàng 4: Hàng tiện ích (Phát Âm / Tab, Phím Cách Space, Phím Xóa Backspace)
+      const actionRow = document.createElement("div");
+      actionRow.className = "kb-row kb-row-actions";
+
+      // Nút Thính Âm / Replay Audio (Đặc biệt quan trọng cho chế độ Audio Mode)
+      const btnAudio = document.createElement("button");
+      btnAudio.className = "kb-key xianxia-key kb-action-key kb-audio-key";
+      btnAudio.type = "button";
+      btnAudio.title = "Nghe lại phát âm (Tab)";
+      btnAudio.innerHTML = `<span class="key-action-icon">🔊</span><span class="key-action-label">THÍNH ÂM</span>`;
+      btnAudio.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(15); } catch (_) {}
+        }
+        btnAudio.classList.add("active");
+        setTimeout(() => btnAudio.classList.remove("active"), 80);
+        if (window.__meowchaReplayAudio) {
+          window.__meowchaReplayAudio();
+        } else if (this.onKeyPress) {
+          this.onKeyPress("Tab");
+        }
+      });
+      actionRow.appendChild(btnAudio);
+
+      // Phím Cách / Trảm Ma Space
+      const btnSpace = document.createElement("button");
+      btnSpace.className = "kb-key xianxia-key kb-action-key kb-space-key";
+      btnSpace.type = "button";
+      btnSpace.title = "Xuất kiếm (Space)";
+      btnSpace.innerHTML = `<span class="key-action-label">␣ TRẢM MA</span>`;
+      btnSpace.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(12); } catch (_) {}
+        }
+        btnSpace.classList.add("active");
+        setTimeout(() => btnSpace.classList.remove("active"), 80);
+        if (this.onKeyPress) this.onKeyPress(" ");
+      });
+      actionRow.appendChild(btnSpace);
+
+      // Phím Xóa Backspace
+      const btnBackspace = document.createElement("button");
+      btnBackspace.className = "kb-key xianxia-key kb-action-key kb-del-key";
+      btnBackspace.type = "button";
+      btnBackspace.title = "Xóa (Backspace)";
+      btnBackspace.innerHTML = `<span class="key-action-icon">⌫</span><span class="key-action-label">XÓA</span>`;
+      btnBackspace.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(15); } catch (_) {}
+        }
+        btnBackspace.classList.add("active");
+        setTimeout(() => btnBackspace.classList.remove("active"), 80);
+        if (this.onKeyPress) this.onKeyPress("Backspace");
+      });
+      actionRow.appendChild(btnBackspace);
+
+      kbWrapper.appendChild(actionRow);
       this.container.appendChild(kbWrapper);
     }
 

@@ -177,7 +177,8 @@
         this.audio,
         () => this.startBattle(),
         () => this.returnToLobby(),
-        () => this.restartBattle()
+        () => this.restartBattle(),
+        this.assets
       );
 
       // Kết nối callback khi trảm từ hoàn tất
@@ -769,6 +770,12 @@
           }
           this.particles.createExplosion(missedAst.x, bottomThreshold, missedAst.coreColor || "#EF4444", 24);
           this.floatingText.add(missedAst.x, bottomThreshold - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
+
+          const hurtQuotes = (root.Meowcha && root.Meowcha.HURT_SPEECHES) || [];
+          if (hurtQuotes.length > 0) {
+            const hq = hurtQuotes[Math.floor(Math.random() * hurtQuotes.length)];
+            this.gameState.setSpeech(hq, 2200);
+          }
 
           // Rung chấn màn hình theo độ lớn của sát thương
           this.gameState.screenShake = Math.min(26, 10 + damage * 0.6);

@@ -278,7 +278,13 @@
     getAuthHeaders() {
       let token = "";
       try {
-        token = localStorage.getItem("oasis_token") || "";
+        if (typeof window !== "undefined" && window.location && window.location.search) {
+          const sp = new URLSearchParams(window.location.search);
+          token = sp.get("token") || "";
+        }
+        if (!token) {
+          token = localStorage.getItem("oasis_token") || "";
+        }
         if (!token && typeof window !== "undefined" && window.parent && window.parent !== window) {
           try {
             token = window.parent.localStorage.getItem("oasis_token") || "";
