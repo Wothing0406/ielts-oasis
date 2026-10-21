@@ -521,8 +521,34 @@ def get_leaderboard(
                 if len(unique_entries) >= limit:
                     break
 
-        results = [
-            {
+        # Batch load matching users to resolve Discord avatar (Triệt tiêu hoàn toàn lỗi N+1 Query)
+        user_ids = [e.user_id for e in unique_entries if e.user_id]
+        names = [(e.player_name or "").strip().lower() for e in unique_entries if e.player_name]
+
+        users_by_id = {}
+        users_by_name = {}
+        if user_ids or names:
+            filter_clauses = []
+            if user_ids:
+                filter_clauses.append(User.id.in_(user_ids))
+            if names:
+                filter_clauses.append(func.lower(User.username).in_(names))
+            matched_users = db.query(User).filter(or_(*filter_clauses)).all()
+            for u in matched_users:
+                users_by_id[u.id] = u
+                if u.username:
+                    users_by_name[u.username.strip().lower()] = u
+
+        results = []
+        for idx, e in enumerate(unique_entries):
+            u_matched = users_by_id.get(e.user_id) or users_by_name.get((e.player_name or "").strip().lower())
+            resolved_avatar = ""
+            if u_matched and u_matched.avatar_url and u_matched.avatar_url.startswith("http"):
+                resolved_avatar = u_matched.avatar_url
+            elif e.avatar_url and e.avatar_url.startswith("http"):
+                resolved_avatar = e.avatar_url
+
+            results.append({
                 "id": e.id,
                 "rank": idx + 1,
                 "player_name": e.player_name,
@@ -531,11 +557,9 @@ def get_leaderboard(
                 "realm": e.realm,
                 "accuracy": round(e.accuracy, 1),
                 "wpm": e.wpm,
-                "avatar_url": e.avatar_url or "",
+                "avatar_url": resolved_avatar,
                 "created_at": e.created_at.strftime("%d/%m/%Y") if e.created_at else ""
-            }
-            for idx, e in enumerate(unique_entries)
-        ]
+            })
 
         return api_response(data=results, success=True)
     except Exception as e:
@@ -557,13 +581,23 @@ def submit_score_to_leaderboard(
     """
     try:
         player_clean = payload.player_name.strip() or "Tiểu Miêu Kiếm Sĩ"
-        
+        matched_user = db.query(User).filter(func.lower(User.username) == func.lower(player_clean)).first()
+        user_avatar = matched_user.avatar_url if (matched_user and matched_user.avatar_url and matched_user.avatar_url.startswith("http")) else None
+        final_avatar = (payload.avatar_url.strip() if (payload.avatar_url and payload.avatar_url.startswith("http")) else None) or user_avatar
+        user_id_val = matched_user.id if matched_user else None
+
         # Tìm bản ghi hiện có của người chơi (không phân biệt chữ hoa thường)
         existing = db.query(MeowchaLeaderboard).filter(
             func.lower(MeowchaLeaderboard.player_name) == func.lower(player_clean)
         ).first()
 
         if existing:
+            # Cập nhật liên kết user_id và avatar nếu có
+            if user_id_val and not existing.user_id:
+                existing.user_id = user_id_val
+            if final_avatar:
+                existing.avatar_url = final_avatar
+
             # Nếu điểm mới cao hơn, cập nhật thành tích cao nhất
             if payload.score > existing.score:
                 existing.score = payload.score
@@ -571,21 +605,22 @@ def submit_score_to_leaderboard(
                 existing.realm = payload.realm or existing.realm
                 existing.accuracy = min(100.0, max(0.0, payload.accuracy))
                 existing.wpm = max(existing.wpm, payload.wpm)
-                if payload.avatar_url:
-                    existing.avatar_url = payload.avatar_url.strip()
                 existing.created_at = datetime.utcnow()
                 db.commit()
                 db.refresh(existing)
+            else:
+                db.commit()
             active_entry = existing
         else:
             new_entry = MeowchaLeaderboard(
+                user_id=user_id_val,
                 player_name=player_clean,
                 score=max(0, payload.score),
                 words_slain=max(0, payload.words_slain),
                 realm=payload.realm or "Luyện Khí Kỳ",
                 accuracy=min(100.0, max(0.0, payload.accuracy)),
                 wpm=max(0, payload.wpm),
-                avatar_url=(payload.avatar_url.strip() if payload.avatar_url else None),
+                avatar_url=final_avatar,
                 created_at=datetime.utcnow()
             )
             db.add(new_entry)

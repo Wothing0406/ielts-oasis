@@ -318,6 +318,15 @@
         btnClosePantheon.onclick = () => this.hidePantheonModal();
       }
 
+      // Nút Mở Tiên Đạo Ngọc Giản (Profile) từ Sảnh
+      const btnOpenProfileLobby = document.getElementById("btnOpenProfileLobby");
+      if (btnOpenProfileLobby) {
+        btnOpenProfileLobby.onclick = () => {
+          this.audio.play("chime");
+          this.showProfileModal();
+        };
+      }
+
       // Nút Tạm Dừng trận chiến
       const btnPause = document.getElementById("btnPauseGame");
       if (btnPause) {
@@ -868,6 +877,22 @@
         if (lobbyCatImg.getAttribute("src") !== targetSrc) {
           lobbyCatImg.src = targetSrc;
         }
+      }
+
+      // Cập nhật huy hiệu Tu Chân Giả trên dải Tiên Đạo sảnh chính
+      const user = this.getLoggedInUser();
+      const topAvatarEl = document.getElementById("lobbyUserAvatar");
+      const topNameLabel = document.getElementById("lobbyUserNameLabel");
+      if (topAvatarEl) {
+        topAvatarEl.referrerPolicy = "no-referrer";
+        topAvatarEl.onerror = () => {
+          topAvatarEl.onerror = null;
+          topAvatarEl.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
+        };
+        topAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
+      }
+      if (topNameLabel && user.isLoggedIn && user.name) {
+        topNameLabel.innerText = user.name.slice(0, 8);
       }
 
       this.updateMonolithLocks();
@@ -1789,7 +1814,17 @@
           const urlToken = sp.get("token");
           const urlUser = sp.get("user");
           if (urlToken) token = urlToken;
-          if (urlUser) rawUser = decodeURIComponent(urlUser);
+          if (urlUser) {
+            try {
+              let decoded = urlUser;
+              if (decoded.startsWith("%7B") || decoded.includes("%22")) {
+                decoded = decodeURIComponent(decoded);
+              }
+              rawUser = decoded;
+            } catch (_) {
+              rawUser = urlUser;
+            }
+          }
         } catch (_) {}
       }
 
@@ -1811,9 +1846,14 @@
 
       if (rawUser) {
         try {
-          const u = JSON.parse(rawUser);
+          const u = (typeof rawUser === "string") ? JSON.parse(rawUser) : rawUser;
           const name = u.full_name || u.name || u.username || (u.email ? u.email.split("@")[0] : "");
           let avatar = u.discord_avatar || u.avatar_url || u.avatar || u.image || "";
+          if (avatar && !avatar.startsWith("http") && !avatar.startsWith("./") && !avatar.startsWith("/")) {
+            if (u.discord_id) {
+              avatar = `https://cdn.discordapp.com/avatars/${u.discord_id}/${avatar}.png`;
+            }
+          }
           return {
             name: name || localName,
             avatar: avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png",
@@ -1895,9 +1935,10 @@
       const realmData = realms[this.state.realmIdx] || realms[0];
 
       try {
+        const isCustomAvatar = user.avatar && !user.avatar.includes("sprites/characters") && !user.avatar.includes("idle.png");
         const payload = {
           player_name: user.name.slice(0, 40),
-          avatar_url: user.avatar && !user.avatar.includes("cat_idle.png") ? user.avatar : "",
+          avatar_url: isCustomAvatar ? user.avatar : "",
           score: submitScore,
           words_slain: Math.max(1, this.state.wordsSlain),
           realm: realmData.title || "Luyện Khí Kỳ",
@@ -2182,6 +2223,7 @@
 
     showProfileModal(bannerText = "TIÊN ĐẠO NGỌC GIẢN") {
       if (!this.modalProfile) return;
+      const user = this.getLoggedInUser();
       const realms = (typeof window !== "undefined" && window.Meowcha && window.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[this.state.realmIdx] || realms[0];
 
@@ -2189,7 +2231,9 @@
       if (bannerTag) bannerTag.innerText = bannerText;
 
       const titleEl = document.getElementById("profileModalTitle");
-      if (titleEl) titleEl.innerText = realmData.title || "Tiểu Miêu Kiếm Đồng";
+      if (titleEl) {
+        titleEl.innerText = user.isLoggedIn ? `${user.name} • ${realmData.title}` : (realmData.title || "Tiểu Miêu Kiếm Đồng");
+      }
 
       const subEl = document.getElementById("profileModalSub");
       if (subEl) subEl.innerText = `${realmData.name} • Band ${realmData.band}`;
@@ -2203,7 +2247,17 @@
           "./sprites/characters/realm3_nascent_soul/poses/idle.png",
           "./sprites/characters/realm4_tribulation/poses/idle.png"
         ];
-        avatarEl.src = avatars[Math.min(4, this.state.realmIdx)] || avatars[0];
+        const realmFallback = avatars[Math.min(4, this.state.realmIdx)] || avatars[0];
+        avatarEl.referrerPolicy = "no-referrer";
+        avatarEl.onerror = () => {
+          avatarEl.onerror = null;
+          avatarEl.src = realmFallback;
+        };
+        if (user.avatar && !user.avatar.includes("idle.png")) {
+          avatarEl.src = user.avatar;
+        } else {
+          avatarEl.src = realmFallback;
+        }
       }
 
       const scoreEl = document.getElementById("profileModalScore");

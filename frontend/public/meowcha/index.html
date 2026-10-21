@@ -23,10 +23,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.7" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.7" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.7" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.7" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.8" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.8" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.8" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.8" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -269,6 +269,27 @@
                 </svg>
               </div>
               <span class="medallion-label">NGỌC GIẢN</span>
+              <span class="windchime-tassel-bottom"></span>
+            </button>
+
+            <!-- 6. Hồ Sơ Tu Chân Giản (User Avatar & Profile) -->
+            <button
+              class="windchime-medallion"
+              id="btnOpenProfileLobby"
+              title="Mở Tiên Đạo Ngọc Giản • Hồ Sơ Tu Chân"
+            >
+              <span class="windchime-cord-top"></span>
+              <div class="medallion-disc" style="overflow: hidden; padding: 2px;">
+                <img
+                  id="lobbyUserAvatar"
+                  src="./sprites/characters/realm0_qi_refining/poses/idle.png"
+                  alt="Avatar"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null; this.src='./sprites/characters/realm0_qi_refining/poses/idle.png';"
+                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
+                />
+              </div>
+              <span class="medallion-label" id="lobbyUserNameLabel">TU CHÂN</span>
               <span class="windchime-tassel-bottom"></span>
             </button>
           </div>
@@ -1920,35 +1941,35 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=10.7"></script>
-    <script src="./js/data/WordDecks.js?v=10.7"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=10.7"></script>
-    <script src="./js/data/TalentsData.js?v=10.7"></script>
-    <script src="./js/data/SpeechesData.js?v=10.7"></script>
+    <script src="./js/data/RealmsData.js?v=10.8"></script>
+    <script src="./js/data/WordDecks.js?v=10.8"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=10.8"></script>
+    <script src="./js/data/TalentsData.js?v=10.8"></script>
+    <script src="./js/data/SpeechesData.js?v=10.8"></script>
 
-    <script src="./js/core/AudioManager.js?v=10.7"></script>
-    <script src="./js/core/SaveSystem.js?v=10.7"></script>
-    <script src="./js/core/GameState.js?v=10.7"></script>
-    <script src="./js/core/SpriteAnimator.js?v=10.7"></script>
+    <script src="./js/core/AudioManager.js?v=10.8"></script>
+    <script src="./js/core/SaveSystem.js?v=10.8"></script>
+    <script src="./js/core/GameState.js?v=10.8"></script>
+    <script src="./js/core/SpriteAnimator.js?v=10.8"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=10.7"></script>
-    <script src="./js/effects/RealmVFX.js?v=10.7"></script>
-    <script src="./js/effects/FloatingText.js?v=10.7"></script>
+    <script src="./js/effects/ParticleEngine.js?v=10.8"></script>
+    <script src="./js/effects/RealmVFX.js?v=10.8"></script>
+    <script src="./js/effects/FloatingText.js?v=10.8"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=10.7"></script>
-    <script src="./js/entities/AsteroidManager.js?v=10.7"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=10.7"></script>
+    <script src="./js/entities/CatCultivator.js?v=10.8"></script>
+    <script src="./js/entities/AsteroidManager.js?v=10.8"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=10.8"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=10.7"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=10.7"></script>
+    <script src="./js/combat/TypingEngine.js?v=10.8"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=10.8"></script>
 
-    <script src="./js/ui/IPAToast.js?v=10.7"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=10.7"></script>
-    <script src="./js/ui/UnityBridge.js?v=10.7"></script>
-    <script src="./js/core/VocabLoader.js?v=10.7"></script>
-    <script src="./js/ui/UIManager.js?v=10.7"></script>
+    <script src="./js/ui/IPAToast.js?v=10.8"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=10.8"></script>
+    <script src="./js/ui/UnityBridge.js?v=10.8"></script>
+    <script src="./js/core/VocabLoader.js?v=10.8"></script>
+    <script src="./js/ui/UIManager.js?v=10.8"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=10.7"></script>
+    <script src="./js/main.js?v=10.8"></script>
   </body>
 </html>

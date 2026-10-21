@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 export const dynamic = 'force-dynamic';
 
 export default function MeowchaGamePage() {
-  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.7");
+  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.8");
 
   useEffect(() => {
     try {
@@ -13,9 +13,9 @@ export default function MeowchaGamePage() {
       const user = localStorage.getItem("oasis_user");
       if (token || user) {
         const params = new URLSearchParams();
-        params.set("v", "10.7");
+        params.set("v", "10.8");
         if (token) params.set("token", token);
-        if (user) params.set("user", encodeURIComponent(user));
+        if (user) params.set("user", user);
         setIframeSrc(`/meowcha/index.html?${params.toString()}`);
       }
     } catch (e) {
