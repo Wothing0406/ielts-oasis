@@ -6308,19 +6308,34 @@
 }
 
 .floating-stone-pavilion .mascot-cloud-cushion {
-  right: 6px !important;
-  bottom: 22px !important;
-  z-index: 5 !important;
+  right: 14px !important;
+  bottom: 8px !important;
+  z-index: 6 !important;
+  position: absolute !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  pointer-events: none !important;
 }
 
-.winged-cat-mascot-svg {
-  width: 56px !important;
+.winged-cat-pixel-img {
+  width: 44px !important;
   height: 44px !important;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85));
+  object-fit: contain !important;
+  image-rendering: pixelated !important;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 6px rgba(56, 189, 248, 0.35)) !important;
+  animation: mascotBreathe 3s ease-in-out infinite alternate !important;
 }
 
 .golden-cloud-pillow {
-  display: none !important;
+  position: absolute !important;
+  bottom: -2px !important;
+  width: 38px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse, rgba(253, 224, 71, 0.45) 0%, rgba(217, 119, 6, 0.2) 70%, transparent 100%) !important;
+  filter: blur(2px) !important;
+  display: block !important;
 }
 
 /* 5. PHYSICAL CELESTIAL FLYING SWORD CTA BUTTON & CARVED SANDALWOOD STAT PLAQUES */
@@ -6707,6 +6722,22 @@
     width: 120px !important;
     height: 120px !important;
     margin-bottom: 28px !important;
+  }
+
+  .floating-stone-pavilion .mascot-cloud-cushion {
+    right: 8px !important;
+    bottom: 4px !important;
+  }
+
+  .winged-cat-pixel-img {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .golden-cloud-pillow {
+    width: 30px !important;
+    height: 10px !important;
+    bottom: -1px !important;
   }
 
   .sword-talisman-cta.main-battle-start,

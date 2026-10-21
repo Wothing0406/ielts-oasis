@@ -337,11 +337,31 @@
         };
       }
 
-      // Nút Trọng Sinh (Game Over)
+      // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Cấp 0)
       const btnRebirth = document.getElementById("btnRebirth");
       if (btnRebirth) {
         btnRebirth.onclick = () => {
-          this.saveSystem.resetActiveSave();
+          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+          const curMode = (this.state && this.state.gameMode) || "DIRECT";
+          this.saveSystem.resetActiveSave(curSlotId, curMode);
+          this.state.resetForNewMode(curMode);
+          this.hideGameOverModal();
+          this.audio.play("chime");
+          if (this.onRestartBattle) {
+            this.onRestartBattle();
+          } else if (this.onStartBattle) {
+            this.onStartBattle();
+          }
+        };
+      }
+
+      // Nút Quy Về Tiên Sảnh (Game Over -> Trở về sảnh với trạng thái sạch đã tẩy tủy)
+      const btnReturnLobbyGameOver = document.getElementById("btnReturnLobbyGameOver");
+      if (btnReturnLobbyGameOver) {
+        btnReturnLobbyGameOver.onclick = () => {
+          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+          const curMode = (this.state && this.state.gameMode) || "DIRECT";
+          this.saveSystem.resetActiveSave(curSlotId, curMode);
           this.state.reset();
           this.hideGameOverModal();
           this.audio.play("chime");
@@ -670,7 +690,7 @@
                     <span class="sword-token-main">BẮT ĐẦU ĐỘ KIẾP NGAY</span>
                     <span class="sword-token-mode-tag">(${mName.toUpperCase()})</span>
                   </div>
-                  <span class="sword-token-sub">✦ Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến ✦</span>
+                  <span class="sword-token-sub">[ 剑 ] Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến [ 战 ]</span>
                 </div>
                 <div class="sword-token-tip">
                   <svg class="molten-fire-svg animated-pulse" width="26" height="26" viewBox="0 0 28 28" fill="none">

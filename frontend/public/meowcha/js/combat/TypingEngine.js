@@ -655,12 +655,12 @@
       };
 
       if (!target || !target.word) {
-        if (plaqueEl) plaqueEl.innerText = `✦ KIẾM QUYẾT ĐÀI • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} ✦`;
+        if (plaqueEl) plaqueEl.innerText = `[ 剑 ] KIẾM QUYẾT ĐÀI • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 诀 ]`;
         if (intentEl) {
           const idleMsgs = {
-            DIRECT: "❖ TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM ❖",
-            CLOZE:  "❖ NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ CƠ ❖",
-            AUDIO:  "❖ THÍNH LÔI BIỆN ÂM • LẮNG NGHE TIÊN ÂM (PHÍM TAB ĐỂ NGHE LẠI) ❖"
+            DIRECT: "[ 剑 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 斩 ]",
+            CLOZE:  "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ CƠ [ 解 ]",
+            AUDIO:  "[ 听 ] THÍNH LÔI BIỆN ÂM • LẮNG NGHE TIÊN ÂM (PHÍM TAB ĐỂ NGHE LẠI) [ 音 ]"
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }
@@ -670,7 +670,7 @@
         return;
       }
 
-      if (plaqueEl) plaqueEl.innerText = `✦ ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} ✦`;
+      if (plaqueEl) plaqueEl.innerText = `[ 剑 ] ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 决 ]`;
 
       const word = target.word;
       const typed = Math.min(target.typedLen, word.length);
@@ -696,17 +696,17 @@
           } else if (i === midIdx) {
             wordDisplayHtml += `<span class="altar-hint-char" style="color:#0284C7">${word[i]}</span> `;
           } else {
-            wordDisplayHtml += `<span class="altar-untyped-txt">✦ </span>`;
+            wordDisplayHtml += `<span class="altar-untyped-txt">_ </span>`;
           }
         }
       } else if (curMode === "AUDIO") {
         // CHẾ ĐỘ THÍNH LÔI BIỆN ÂM (AUDIO DICTATION):
-        // Chữ chưa gõ giấu kín bằng phù ấn "✦ "
+        // Chữ chưa gõ giấu kín bằng ký hiệu gạch chân "_ "
         for (let i = 0; i < word.length; i++) {
           if (i < typed) {
             wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
           } else {
-            wordDisplayHtml += `<span class="altar-untyped-txt">✦ </span>`;
+            wordDisplayHtml += `<span class="altar-untyped-txt">_ </span>`;
           }
         }
       } else {

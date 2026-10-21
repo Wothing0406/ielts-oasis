@@ -261,26 +261,50 @@
       console.log("[Meowcha] Động cơ Meowcha IELTS đã khởi tạo hoàn tất!");
     }
 
+    purgeAllBattleState() {
+      this.asteroids.clear();
+      this.projectiles.clear();
+      this.particles.clear();
+      this.floatingText.clear();
+      this.recentWordHistory = [];
+      this.spawnTimer = 0;
+      this.gameOverModalShown = false;
+      if (this.typing) {
+        this.typing.currentTarget = null;
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+        this.typing.updateSwordAltarUI(null);
+      }
+      if (this.realmVFX) {
+        this.realmVFX.clearClouds();
+      }
+    }
+
     handleGameOver() {
       if (this.gameOverModalShown) return;
       this.gameOverModalShown = true;
       this.gameState.isGameOver = true;
       this.gameState.hp = 0;
 
-      // ĐẠO TIÊU THÂN VONG: Xóa ngay lập tức save slot hiện tại trên LocalStorage & Backend SQL
-      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      this.saveSystem.resetActiveSave(activeSlot);
+      // Khắc bia kỷ lục cao nhất lên Bảng Phong Thần khi tử trận
+      const best = Math.max(this.gameState.score || 0, this.gameState.highScore || 0);
+      if (best > (this.gameState.highScore || 0)) {
+        this.gameState.highScore = best;
+        try {
+          localStorage.setItem("meowcha_high_score", String(best));
+        } catch (e) {}
+      }
+      if (best > 0 && this.ui) {
+        this.ui.autoSubmitScoreToPantheon(best);
+      }
 
-      this.asteroids.clear();
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
-      if (this.realmVFX) {
-        this.realmVFX.clearClouds();
-      }
+      // ĐẠO TIÊU THÂN VONG: Xóa dứt điểm dữ liệu của slot hiện tại
+      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
+      this.saveSystem.resetActiveSave(activeSlot, curMode);
+
+      this.purgeAllBattleState();
       if (this.unityBridge) {
         this.unityBridge.triggerDefeated();
       }
@@ -404,18 +428,8 @@
         this.gameState.hp = this.gameState.maxHp || 50;
       }
       this.gameState.startTime = Date.now();
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
-
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      
+      this.purgeAllBattleState();
 
       this.ui.showScene("BATTLE");
       this.ui.updateHUD();
@@ -435,9 +449,10 @@
 
     returnToLobby() {
       const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
       if (this.gameState.isGameOver || this.gameState.hp <= 0) {
         // Đạo tiêu thân vong: Tuyệt đối không lưu lại trạng thái đã chết!
-        this.saveSystem.resetActiveSave(activeSlot);
+        this.saveSystem.resetActiveSave(activeSlot, curMode);
         this.gameState.reset();
       } else {
         // Chỉ lưu khi người chơi còn sống chủ động dừng trận vào đúng ngọc giản đang trảm ma
@@ -448,18 +463,9 @@
       this.gameState.isGameOver = false;
       this.gameState.isStunned = false;
       this.gameState.setCatState("IDLE");
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
 
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      this.purgeAllBattleState();
+
       this.ui.showScene("LOBBY");
       this.ui.updateLobbyButtons();
       this.ui.updateHUD();
@@ -487,24 +493,17 @@
       }
 
       const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      this.saveSystem.resetActiveSave(activeSlot);
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
+      this.saveSystem.resetActiveSave(activeSlot, curMode);
+
       this.gameState.reset();
+      this.gameState.gameMode = curMode;
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;
       this.gameState.revive();
       this.gameState.startTime = Date.now();
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
 
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      this.purgeAllBattleState();
 
       this.ui.showScene("BATTLE");
       this.ui.updateHUD();
@@ -515,8 +514,8 @@
         this.vKeyboard.show();
       }
 
-      this.gameState.setSpeech("Tẩy Tủy Hoàn Tất! Trùng Tu Kiếm Đạo!", 3500);
-      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "[ 丹 ] TẨY TỦY TRỌNG SINH!", "#38BDF8", 30);
+      this.gameState.setSpeech("Trọng Sinh Quy Lai! Trùng Tu Kiếm Đạo!", 3500);
+      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "[ 丹 ] TRỌNG SINH TRẬN MỚI!", "#38BDF8", 30);
 
       setTimeout(() => this.spawnWord(), 500);
     }
@@ -829,6 +828,9 @@
       const w = this.canvas.width;
       const h = this.canvas.height;
 
+      // 1. Mandatory Clear Rect to eliminate screen tearing & smearing
+      ctx.clearRect(0, 0, w, h);
+
       ctx.save();
 
       // Hiệu ứng rung màn hình
@@ -838,27 +840,30 @@
         ctx.translate(sx, sy);
       }
 
-      // 1. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực)
+      // 2. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực kèm overscan 40px chống hở mép khi rung chấn)
+      const overscan = 40;
       if (this.assets.bg.loaded) {
         const img = this.assets.bg.img;
+        const targetW = w + overscan * 2;
+        const targetH = h + overscan * 2;
         const imgRatio = img.width / img.height;
-        const canvasRatio = w / h;
+        const canvasRatio = targetW / targetH;
         let renderW, renderH, offsetX, offsetY;
         if (canvasRatio > imgRatio) {
-          renderW = w;
-          renderH = w / imgRatio;
-          offsetX = 0;
-          offsetY = (h - renderH) / 2;
+          renderW = targetW;
+          renderH = targetW / imgRatio;
+          offsetX = -overscan;
+          offsetY = -overscan + (targetH - renderH) / 2;
         } else {
-          renderH = h;
-          renderW = h * imgRatio;
-          offsetX = (w - renderW) / 2;
-          offsetY = 0;
+          renderH = targetH;
+          renderW = targetH * imgRatio;
+          offsetX = -overscan + (targetW - renderW) / 2;
+          offsetY = -overscan;
         }
         ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
       } else {
         ctx.fillStyle = "#1E120A";
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
       }
 
       // Lớp phủ bóng mờ viền màn hình (Vignette)
@@ -866,22 +871,19 @@
       grad.addColorStop(0, "rgba(0, 0, 0, 0.0)");
       grad.addColorStop(1, "rgba(10, 5, 2, 0.72)");
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
 
       // Viền phù văn góc cổ phong Trung Hoa
       this.realmVFX.drawRetroPixelVignette(ctx, w, h);
 
       if (this.gameState.currentScene === "BATTLE") {
-        // 2. Mây mù cổ phong ở tầng nền xa (Không bao giờ che khuất ma thạch và từ vựng)
-        this.realmVFX.drawMysticClouds(ctx, w, h);
-
         // 3. Vẽ Phi Kiếm
         this.projectiles.draw(ctx);
 
         // 4. Vẽ Ma Thạch & Cổ Phù Từ Vựng
         this.asteroids.draw(ctx, this.gameState.screenFlash);
 
-        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Khi bị phạt Ma Vân Tụ Khí, dải sương mù lượn lờ trôi ngang quấy nhiễu tầm nhìn)
+        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Chỉ kích hoạt khi bị phạt Ma Vân Tụ Khí)
         if (this.realmVFX && this.realmVFX.isPunishCloud) {
           this.realmVFX.drawMysticClouds(ctx, w, h, true);
         }

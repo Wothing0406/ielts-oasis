@@ -454,14 +454,14 @@
         const isTarget = (ast.typedLen > 0) || (M.app && M.app.typing && M.app.typing.currentTarget === ast);
 
         // 4.1 XÁC ĐỊNH NỘI DUNG TIÊU ĐỀ & CHÂN GIẢI NGHĨA (CHUẨN CỔ PHONG TIÊN ĐẠO - KHÔNG DÙNG EMOJI THÔ)
-        let topTitle = "✦ [ 斬 ] TRẢM MA PHÙ TRIỆU ✦";
+        let topTitle = "[ 斬 ] TRẢM MA PHÙ TRIỆU [ 诀 ]";
         let bottomText = ast.meaning ? `[ 悟 ] ${ast.meaning}${ast.ipa ? ' • ' + ast.ipa : ''}` : (ast.ipa || '');
 
         if (ast.isAudio) {
-          topTitle = "✦ [ 聽 ] LẮNG NGHE TIÊN ÂM ✦";
+          topTitle = "[ 聽 ] LẮNG NGHE TIÊN ÂM [ 音 ]";
           bottomText = `[ 聽 ] Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
         } else if (ast.isCloze) {
-          topTitle = "✦ [ 悟 ] NGỘ ĐẠO BÍ KÍP ✦";
+          topTitle = "[ 悟 ] NGỘ ĐẠO BÍ KÍP [ 解 ]";
           bottomText = `[ 悟 ] ${ast.meaning || 'Ngộ đạo'} • [${word.length} Ký Tự]`;
         }
 
@@ -697,7 +697,7 @@
             let targetGlow = "#F59E0B";
 
             if (ast.isAudio) {
-              targetChar = "✦";
+              targetChar = "_";
               targetColor = "#7C3AED";
               targetGlow = "#A855F7";
             } else if (ast.isCloze) {
@@ -708,7 +708,7 @@
                 targetColor = c === midIdx ? "#0284C7" : "#B45309";
                 targetGlow = c === midIdx ? "#38BDF8" : "#F59E0B";
               } else {
-                targetChar = "✦";
+                targetChar = "_";
                 targetColor = "#0D9488";
                 targetGlow = "#14B8A6";
               }
@@ -742,7 +742,7 @@
             let glowCol = "rgba(0, 0, 0, 0.4)";
 
             if (ast.isAudio) {
-              displayChar = "✦";
+              displayChar = "_";
               fillCol = "rgba(124, 58, 237, 0.85)";
               glowCol = "rgba(168, 85, 247, 0.5)";
             } else if (ast.isCloze) {
@@ -757,7 +757,7 @@
                 fillCol = "#0369A1";
                 glowCol = "rgba(56, 189, 248, 0.6)";
               } else {
-                displayChar = "✦";
+                displayChar = "_";
                 fillCol = "rgba(13, 148, 136, 0.85)";
                 glowCol = "rgba(20, 184, 166, 0.5)";
               }
