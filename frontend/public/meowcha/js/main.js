@@ -187,6 +187,22 @@
         const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
         this.saveSystem.saveGame(currentSlot, this.gameState);
 
+        // Hiển thị thẻ từ vựng & ngộ đạo nghĩa từ sau khi trảm từ hoàn tất
+        if (this.ipaToast && slainWord) {
+          this.ipaToast.show(slainWord);
+        }
+        if (this.floatingText && slainWord && (slainWord.meaning || slainWord.ipa)) {
+          const catTargetY = (this.canvas ? this.canvas.height : 600) * 0.72;
+          const meaningText = slainWord.meaning ? `[ 悟 ] ${slainWord.meaning}` : `[ 悟 ] ${slainWord.ipa || ''}`;
+          this.floatingText.add(
+            (this.canvas ? this.canvas.width : 400) / 2,
+            catTargetY - 45,
+            meaningText,
+            "#34D399",
+            20
+          );
+        }
+
         // Kiểm tra điều kiện đột phá
         const triggered = this.breakthrough.checkProgress(this.asteroids);
         if (!triggered) {

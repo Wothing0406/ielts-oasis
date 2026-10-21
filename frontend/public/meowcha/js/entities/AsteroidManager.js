@@ -461,8 +461,8 @@
           topTitle = "[ 聽 ] LẮNG NGHE TIÊN ÂM [ 音 ]";
           bottomText = `[ 聽 ] Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
         } else if (ast.isCloze) {
-          topTitle = "[ 悟 ] NGỘ ĐẠO BÍ KÍP [ 解 ]";
-          bottomText = `[ 悟 ] ${ast.meaning || 'Ngộ đạo'} • [${word.length} Ký Tự]`;
+          topTitle = "[ 悟 ] PHẢN XẠ GÕ TỪ [ 解 ]";
+          bottomText = `[ 悟 ] Phản xạ gõ từ • [${word.length} Ký Tự]`;
         }
 
         // 4.2 TÍNH TOÁN KÍCH THƯỚC CUỘN THƯ VỪA VẶN MỌI NỘI DUNG

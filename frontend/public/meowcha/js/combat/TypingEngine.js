@@ -728,7 +728,11 @@
             </span>
           `;
         } else if (curMode === "CLOZE") {
-          meaningEl.innerHTML = `<span style="color: #065F46; font-weight: 800;">[ 悟 ] NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
+          if (typed >= word.length) {
+            meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">[ 悟 • ĐÃ NGỘ ĐẠO ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+          } else {
+            meaningEl.innerHTML = `<span style="color: #D97706; font-weight: 700;">[ 悟 ] PHẢN XẠ GÕ TỪ: Gõ xong để ngộ đạo nghĩa từ (${word.length} Ký Tự)</span>`;
+          }
         } else {
           meaningEl.innerText = `[ 悟 ] ${target.meaning || target.definition || ""}`;
         }

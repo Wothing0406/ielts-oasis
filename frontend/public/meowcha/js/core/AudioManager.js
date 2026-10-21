@@ -125,9 +125,10 @@
 
       try {
         // 1. ÂM RUNG NỀN THIỀN ĐỊNH (3-Layer Tibetan Singing Bowl & Qi Drone)
+        // Giảm âm lượng nhạc nền thiền định êm dịu, không lấn át âm thanh trận chiến
         this.droneGain = this.ctx.createGain();
         this.droneGain.gain.setValueAtTime(0.0001, t);
-        this.droneGain.gain.exponentialRampToValueAtTime(0.12, t + 2.5);
+        this.droneGain.gain.exponentialRampToValueAtTime(0.038, t + 2.5);
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = "lowpass";
@@ -216,9 +217,9 @@
         filter.frequency.setValueAtTime(freq * 4.2, now);
         filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + 2.4);
 
-        // Phong bì biên độ (Attack nhanh, ngân dài 2.6s)
+        // Phong bì biên độ (Âm lượng gảy Cổ Cầm êm đềm, ngân dài)
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.24, now + 0.025);
+        gain.gain.linearRampToValueAtTime(0.085, now + 0.025);
         gain.gain.exponentialRampToValueAtTime(0.0003, now + 2.6);
 
         osc.connect(filter);
@@ -259,7 +260,7 @@
         osc.frequency.setValueAtTime(chimeFreq, now);
 
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
+        gain.gain.linearRampToValueAtTime(0.045, now + 0.04);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.0);
 
         osc.connect(gain);
@@ -316,33 +317,33 @@
 
       switch (type) {
         case "type": {
-          // Gõ phím đúng: Tiếng mõ gỗ thanh tao
+          // Gõ phím đúng: Tiếng mõ gỗ thanh tao, rõ nét
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = "sine";
-          osc.frequency.setValueAtTime(480, t);
-          osc.frequency.exponentialRampToValueAtTime(180, t + 0.035);
-          gain.gain.setValueAtTime(0.18, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+          osc.frequency.setValueAtTime(520, t);
+          osc.frequency.exponentialRampToValueAtTime(180, t + 0.045);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
           osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(t + 0.035);
+          osc.start(); osc.stop(t + 0.045);
           break;
         }
 
         case "slash": {
-          // Xuất kiếm: Tiếng xé gió sắc lẹm
+          // Xuất kiếm: Tiếng xé gió sắc bén, uy lực
           const osc = this.ctx.createOscillator();
           const filter = this.ctx.createBiquadFilter();
           const gain = this.ctx.createGain();
           osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(1050, t);
-          osc.frequency.exponentialRampToValueAtTime(240, t + 0.12);
+          osc.frequency.setValueAtTime(1150, t);
+          osc.frequency.exponentialRampToValueAtTime(220, t + 0.13);
           filter.type = "highpass";
-          filter.frequency.setValueAtTime(550, t);
-          gain.gain.setValueAtTime(0.22, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          filter.frequency.setValueAtTime(500, t);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
           osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(t + 0.12);
+          osc.start(); osc.stop(t + 0.13);
           break;
         }
 
@@ -351,37 +352,37 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = "square";
-          osc.frequency.setValueAtTime(140, t);
-          osc.frequency.exponentialRampToValueAtTime(35, t + 0.35);
-          gain.gain.setValueAtTime(0.3, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc.frequency.setValueAtTime(160, t);
+          osc.frequency.exponentialRampToValueAtTime(30, t + 0.38);
+          gain.gain.setValueAtTime(0.38, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
           osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(t + 0.35);
+          osc.start(); osc.stop(t + 0.38);
           break;
         }
 
         case "explosion": {
-          // Phá vỡ thiên thạch: Tiếng nổ trầm vang
+          // Phá vỡ thiên thạch: Tiếng nổ trầm vang, rền vang
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(160, t);
-          osc.frequency.exponentialRampToValueAtTime(25, t + 0.4);
-          gain.gain.setValueAtTime(0.35, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+          osc.frequency.setValueAtTime(170, t);
+          osc.frequency.exponentialRampToValueAtTime(20, t + 0.42);
+          gain.gain.setValueAtTime(0.42, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
           osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(t + 0.4);
+          osc.start(); osc.stop(t + 0.42);
           break;
         }
 
         case "chime": {
-          // Chuông ngân khánh ngọc
+          // Chuông ngân khánh ngọc thanh khiết
           [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = "sine";
             osc.frequency.setValueAtTime(freq, t + i * 0.05);
-            gain.gain.setValueAtTime(0.12, t + i * 0.05);
+            gain.gain.setValueAtTime(0.22, t + i * 0.05);
             gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.45);
             osc.connect(gain); gain.connect(this.ctx.destination);
             osc.start(t + i * 0.05); osc.stop(t + i * 0.05 + 0.45);
