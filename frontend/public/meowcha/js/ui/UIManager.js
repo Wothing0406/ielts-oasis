@@ -538,36 +538,86 @@
         };
         const mName = modeLabels[selectedMode] || selectedMode;
 
+        const leftMascotSvg = `
+          <div class="setup-mascot-flank left" title="Linh Miêu Phù Lục • Hộ Pháp Trận Đồ" aria-hidden="true">
+            <svg width="46" height="44" viewBox="0 0 48 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Gối mây nhỏ dưới chân -->
+              <ellipse cx="22" cy="40" rx="16" ry="4.5" fill="#140F0B" stroke="#F3C644" stroke-width="1.2"/>
+              <!-- Thân mèo Matcha ngồi cầm bùa -->
+              <ellipse cx="21" cy="29" rx="11" ry="10" fill="#2DE28D" stroke="#065F46" stroke-width="1.5"/>
+              <polygon points="12,21 15,12 19,19" fill="#2DE28D" stroke="#065F46" stroke-width="1.3"/>
+              <polygon points="23,19 27,12 30,21" fill="#2DE28D" stroke="#065F46" stroke-width="1.3"/>
+              <!-- Nón lá / khăn đạo sĩ nhỏ -->
+              <path d="M13 18 Q21 13 29 18" stroke="#F3C644" stroke-width="2" stroke-linecap="round"/>
+              <!-- Mắt long lanh & má hồng -->
+              <circle cx="17.5" cy="25" r="1.6" fill="#064E3B"/>
+              <circle cx="24.5" cy="25" r="1.6" fill="#064E3B"/>
+              <circle cx="14.5" cy="27.5" r="1.6" fill="#F472B6" opacity="0.75"/>
+              <circle cx="27.5" cy="27.5" r="1.6" fill="#F472B6" opacity="0.75"/>
+              <!-- Лаpa giơ lá bùa Hoàng Chỉ Chu Sa -->
+              <rect x="31" y="14" width="11" height="18" rx="1.5" transform="rotate(8 31 14)" fill="#F3C644" stroke="#D44327" stroke-width="1.4"/>
+              <line x1="36" y1="18" x2="35" y2="28" stroke="#D44327" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+        `;
+
+        const rightMascotSvg = `
+          <div class="setup-mascot-flank right" title="Trà Đạo Trưởng Lão • Chưởng Môn Hộ Đạo" aria-hidden="true">
+            <svg width="46" height="44" viewBox="0 0 48 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Gối bồ đoàn dưới chân -->
+              <ellipse cx="26" cy="40" rx="16" ry="4.5" fill="#231912" stroke="#F3C644" stroke-width="1.2"/>
+              <!-- Áo choàng đạo bào lục bảo -->
+              <path d="M14 39 C14 26 38 26 38 39 Z" fill="#168553" stroke="#F3C644" stroke-width="1.4"/>
+              <!-- Đầu mèo trắng râu dài đội nón trúc -->
+              <ellipse cx="26" cy="24" rx="10" ry="8.5" fill="#FEF3C7" stroke="#78350F" stroke-width="1.4"/>
+              <!-- Nón đấu lạp trúc -->
+              <polygon points="10,19 26,9 42,19" fill="#A16207" stroke="#F3C644" stroke-width="1.4"/>
+              <!-- Mắt hiền từ & râu bạc -->
+              <path d="M21 23 Q23 21.5 24.5 23" stroke="#140F0B" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M27.5 23 Q29 21.5 31 23" stroke="#140F0B" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M22 27 Q26 32 30 27" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <!-- Chén trà nóng bốc khói trên tay -->
+              <rect x="7" y="27" width="8" height="6" rx="1.5" fill="#2DE28D" stroke="#F3C644" stroke-width="1.2"/>
+              <path d="M11 25 C9 22 13 20 11 17" stroke="#6EE7B7" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+        `;
+
         if (hasProgress) {
           if (detailEl) {
-            detailEl.innerHTML = `<span style="color:#10B981">Đang Lưu Đạo Quả:</span> Cảnh Giới: <b>${modeData.realm || 'Luyện Khí Kỳ'}</b> • <b>${(modeData.score || 0).toLocaleString()} Tu Vi</b> • Trảm: <b>${modeData.words || 0}</b>`;
+            detailEl.innerHTML = `<span style="color:#2DE28D">Đang Lưu Đạo Quả:</span> Cảnh Giới: <b>${modeData.realm || 'Luyện Khí Kỳ'}</b> • <b>${(modeData.score || 0).toLocaleString()} Tu Vi</b> • Trảm: <b>${modeData.words || 0}</b>`;
           }
           if (actionsRow) {
             actionsRow.innerHTML = `
-              <button class="sword-token-btn continue-green" id="btnSetupContinue">
-                <div class="sword-token-hilt">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.2">
-                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"></path>
-                    <path d="M13 19l6-6"></path>
-                  </svg>
-                </div>
-                <div class="sword-token-content">
-                  <span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC TU LUYỆN</span>
-                  <span class="sword-token-sub">${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'}</span>
-                </div>
-                <div class="sword-token-tip">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </div>
-              </button>
-              <button class="sword-token-btn restart-crimson" id="btnSetupRestart">
-                <div class="sword-token-hilt">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                </div>
-                <div class="sword-token-content">
-                  <span class="sword-token-main" style="color: #FCA5A5">TẨY TỦY TRÙNG TU</span>
-                  <span class="sword-token-sub">Chơi lại từ Cấp 0</span>
-                </div>
-              </button>
+              ${leftMascotSvg}
+              <div class="setup-dual-btns-wrap">
+                <button class="sword-token-btn continue-green" id="btnSetupContinue">
+                  <div class="sword-token-hilt">
+                    <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                      <polygon points="2,14 6,10 10,14 6,18" fill="#168553" stroke="#F3C644" stroke-width="1.3"/>
+                      <rect x="10" y="12" width="8" height="4" fill="#064E3B" stroke="#F3C644" stroke-width="1.2"/>
+                      <path d="M18 5 L24 14 L18 23 L16 18 L18 14 L16 10 Z" fill="#2DE28D" stroke="#F3C644" stroke-width="1.3"/>
+                    </svg>
+                  </div>
+                  <div class="sword-token-content">
+                    <span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC TU LUYỆN</span>
+                    <span class="sword-token-sub">${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'}</span>
+                  </div>
+                  <div class="sword-token-tip">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.5"><polygon points="4 4 20 12 4 20 7 12" fill="rgba(45,226,141,0.3)"></polygon></svg>
+                  </div>
+                </button>
+                <button class="sword-token-btn restart-crimson" id="btnSetupRestart">
+                  <div class="sword-token-hilt">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3C644" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  </div>
+                  <div class="sword-token-content">
+                    <span class="sword-token-main" style="color: #FCA5A5">TẨY TỦY TRÙNG TU</span>
+                    <span class="sword-token-sub">Chơi lại từ Cấp 0</span>
+                  </div>
+                </button>
+              </div>
+              ${rightMascotSvg}
             `;
 
             document.getElementById("btnSetupContinue").onclick = () => {
@@ -578,7 +628,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("chime");
-              this.showStatus(`[ 斬 ] [TIẾP TỤC TU LUYỆN] Pháp môn ${mName} • ${(this.state.score || 0).toLocaleString()} Tu Vi!`);
+              this.showStatus(`TIẾP TỤC TU LUYỆN • Pháp môn ${mName} • ${(this.state.score || 0).toLocaleString()} Tu Vi!`);
               if (this.onStartBattle) this.onStartBattle();
             };
 
@@ -592,39 +642,44 @@
                 this.updateLobbyButtons();
                 this.updateHUD();
                 this.audio.play("slash");
-                this.showStatus(`[ 丹 ] [TẨY TỦY] Bắt đầu lại ván mới pháp môn ${mName} từ Cấp 0!`);
+                this.showStatus(`TẨY TỦY TRỌNG SINH • Bắt đầu ván mới pháp môn ${mName} từ Cấp 0!`);
                 if (this.onStartBattle) this.onStartBattle();
               });
             };
           }
         } else {
           if (detailEl) {
-            detailEl.innerHTML = `<span style="color:#FDE047">Khởi Nguyên Tu Vi:</span> Chưa có dữ liệu • Khởi đầu từ <b>Luyện Khí Kỳ (Cấp 0 - 0 Điểm)</b>`;
+            detailEl.innerHTML = `<span style="color:#F3C644">Khởi Nguyên Tu Vi:</span> Chưa có dữ liệu • Khởi đầu từ <b>Luyện Khí Kỳ (Cấp 0 - 0 Điểm)</b>`;
           }
           if (actionsRow) {
             actionsRow.innerHTML = `
+              ${leftMascotSvg}
               <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
                 <div class="sword-token-glow"></div>
                 <div class="sword-token-hilt">
-                  <svg class="sword-pommel-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2">
-                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"></path>
-                    <path d="M13 19l6-6"></path>
-                    <circle cx="4.5" cy="4.5" r="1.5" fill="#FDE047"/>
+                  <svg class="sword-pommel-svg" width="30" height="30" viewBox="0 0 36 36" fill="none">
+                    <path d="M5 18 C2 23 3 29 6 33" stroke="#D44327" stroke-width="2" stroke-linecap="round"/>
+                    <polygon points="2,18 6,13 10,18 6,23" fill="#D44327" stroke="#F3C644" stroke-width="1.4"/>
+                    <rect x="10" y="15" width="10" height="6" rx="1" fill="#231912" stroke="#F3C644" stroke-width="1.3"/>
+                    <path d="M20 5 L28 18 L20 31 L17 25 L21 18 L17 11 Z" fill="#F3C644" stroke="#78350F" stroke-width="1.4"/>
+                    <circle cx="23" cy="18" r="2.2" fill="#2DE28D"/>
                   </svg>
                 </div>
                 <div class="sword-token-content">
                   <div class="sword-token-title-row">
                     <span class="sword-token-main">BẮT ĐẦU ĐỘ KIẾP NGAY</span>
-                    <span class="sword-token-mode-tag">${mName.toUpperCase()}</span>
+                    <span class="sword-token-mode-tag">(${mName.toUpperCase()})</span>
                   </div>
                   <span class="sword-token-sub">✦ Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến ✦</span>
                 </div>
                 <div class="sword-token-tip">
-                  <svg class="molten-fire-svg animated-pulse" width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B" stroke="#FDE047" stroke-width="1.8">
-                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                  <svg class="molten-fire-svg animated-pulse" width="26" height="26" viewBox="0 0 28 28" fill="none">
+                    <polygon points="2,6 26,14 2,22 7,14" fill="#F3C644" stroke="#FEF08A" stroke-width="1.5"/>
+                    <line x1="6" y1="14" x2="22" y2="14" stroke="#D44327" stroke-width="2"/>
                   </svg>
                 </div>
               </button>
+              ${rightMascotSvg}
             `;
 
             document.getElementById("btnSetupStartFresh").onclick = () => {
@@ -635,7 +690,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("slash");
-              this.showStatus(`[ 斬 ] Khởi nguyên độ kiếp: Pháp môn ${mName}!`);
+              this.showStatus(`KHỞI NGUYÊN ĐỘ KIẾP • Pháp môn ${mName}!`);
               if (this.onStartBattle) this.onStartBattle();
             };
           }
@@ -819,6 +874,8 @@
       };
       const modeName = modeLabels[curMode] || curMode;
 
+      const startBtnSub = document.getElementById("startBattleSub") || (btnStart ? btnStart.querySelector(".sword-cta-sub") : null);
+
       if (hasModeProgress) {
         if (btnContinue) {
           btnContinue.style.display = "flex";
@@ -834,6 +891,9 @@
           if (startBtnText && startBtnText !== btnStart) {
             startBtnText.innerText = "TRỌNG TU PHÁP MÔN";
           }
+          if (startBtnSub) {
+            startBtnSub.innerText = `[ Đổi Pháp Môn / Tàng Kinh Các (${modeName}) ]`;
+          }
         }
       } else {
         if (btnContinue) btnContinue.style.display = "none";
@@ -841,7 +901,10 @@
         if (btnStart) {
           btnStart.style.display = "flex";
           if (startBtnText && startBtnText !== btnStart) {
-            startBtnText.innerText = `BẮT ĐẦU ĐỘ KIẾP (${modeName.toUpperCase()})`;
+            startBtnText.innerText = "VÀO TRẬN ĐỘ KIẾP";
+          }
+          if (startBtnSub) {
+            startBtnSub.innerText = `[ Pháp Môn: ${modeName} • Chạm để khai mở trận đồ ]`;
           }
         }
       }

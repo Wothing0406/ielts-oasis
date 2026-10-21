@@ -6012,3 +6012,839 @@
   color: #34D399;
   margin-left: 6px;
 }
+
+
+/* ==========================================================================
+   V10.5 STRICT XIANXIA RETRO PIXEL ARTIFACT & MOBILE HUD OVERHAUL
+   ========================================================================== */
+
+/* 1. HIDE REDUNDANT BOTTOM SELECTION SHELVES IN LOBBY (MOVED TO SETUP MODAL) */
+#lobbyView .lobby-organic-shelves {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+#lobbyView {
+  justify-content: space-between !important;
+  padding: 10px 20px 22px !important;
+}
+
+/* 2. OPEN CELESTIAL TOP BAR & HANGING JADE WINDCHIMES (NO GIANT BOX) */
+#lobbyView .lobby-top-bar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 2px 4px !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 1220px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.lobby-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lobby-brand-badge {
+  background: linear-gradient(180deg, #231912 0%, #140F0B 100%) !important;
+  border: 1.5px solid #F3C644 !important;
+  outline: 1px solid rgba(45, 226, 141, 0.35);
+  outline-offset: -3px;
+  border-radius: 6px !important;
+  padding: 5px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85) !important;
+}
+
+#lobbyView .btn-back-to-games {
+  background: linear-gradient(180deg, #231912 0%, #140F0B 100%) !important;
+  border: 1.5px solid #F3C644 !important;
+  border-radius: 20px 6px 20px 6px !important;
+  padding: 6px 14px !important;
+  color: #FDE68A !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), inset 0 0 8px rgba(243, 198, 68, 0.2) !important;
+  text-decoration: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+#lobbyView .btn-back-to-games:hover {
+  transform: translateY(-2px);
+  border-color: #2DE28D !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.9), 0 0 14px rgba(45, 226, 141, 0.45) !important;
+}
+
+/* 5 Hanging Circular Jade Wind-Chimes */
+#lobbyView .lobby-top-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.windchime-medallion {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transform-origin: top center;
+  animation: windchimeGentleSway 4.2s ease-in-out infinite alternate;
+}
+
+.windchime-medallion:nth-child(2) { animation-delay: -0.8s; }
+.windchime-medallion:nth-child(3) { animation-delay: -1.6s; }
+.windchime-medallion:nth-child(4) { animation-delay: -2.4s; }
+.windchime-medallion:nth-child(5) { animation-delay: -3.2s; }
+
+@keyframes windchimeGentleSway {
+  0% { transform: rotate(-1.8deg); }
+  100% { transform: rotate(1.8deg); }
+}
+
+.windchime-cord-top {
+  display: block;
+  width: 2px;
+  height: 8px;
+  background: linear-gradient(180deg, #D44327 0%, #F3C644 100%);
+}
+
+.windchime-medallion .medallion-disc {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 30%, #168553 0%, #064E3B 65%, #140F0B 100%) !important;
+  border: 2px solid #F3C644 !important;
+  outline: 1.5px solid #2DE28D;
+  outline-offset: -4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(45, 226, 141, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #FEF08A !important;
+  transition: all 0.2s ease !important;
+}
+
+.windchime-medallion:hover .medallion-disc {
+  transform: scale(1.08);
+  box-shadow: 0 0 18px rgba(243, 198, 68, 0.8), 0 0 12px rgba(45, 226, 141, 0.7) !important;
+}
+
+.windchime-medallion .medallion-label {
+  margin-top: 3px !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  color: #FDE68A !important;
+  background: #140F0B !important;
+  border: 1px solid #854D0E !important;
+  border-radius: 3px !important;
+  padding: 1px 5px !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 2px #000 !important;
+}
+
+.windchime-tassel-bottom {
+  display: block;
+  width: 2px;
+  height: 7px;
+  background: linear-gradient(180deg, #F3C644 0%, #D44327 100%);
+  margin-top: 1px;
+}
+
+/* 3. HANGING JADE TITLE PLAQUE + UNFOLDED WEATHERED PARCHMENT QUOTE SCROLL */
+.cultivation-tea-station {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin: auto 0 !important;
+}
+
+.hanging-jade-title-plaque {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin-bottom: 2px !important;
+}
+
+.hanging-jade-title-plaque .plaque-body {
+  background: linear-gradient(180deg, #064E3B 0%, #032B21 100%) !important;
+  border: 2px solid #F3C644 !important;
+  outline: 1.5px solid #2DE28D !important;
+  outline-offset: -5px !important;
+  border-radius: 8px !important;
+  padding: 7px 22px 7px 36px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.85), 0 0 18px rgba(45, 226, 141, 0.3) !important;
+  position: relative !important;
+}
+
+/* Hanging Parchment Scroll Ribbon Below Jade Plaque */
+.plaque-quote-scroll-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-top: -3px;
+  z-index: 3;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85));
+}
+
+.quote-scroll-roller {
+  width: 7px;
+  height: 24px;
+  background: linear-gradient(180deg, #F3C644 0%, #78350F 30%, #451A03 70%, #F3C644 100%);
+  border: 1px solid #F3C644;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.plaque-quote-scroll-wrap .plaque-quote-silk {
+  background: linear-gradient(90deg, #D97706 0%, #FEF3C7 10%, #FDE68A 50%, #FEF3C7 90%, #D97706 100%) !important;
+  border-top: 1.5px solid #92400E !important;
+  border-bottom: 1.5px solid #92400E !important;
+  color: #231912 !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  font-style: italic !important;
+  padding: 2px 14px !important;
+  text-shadow: none !important;
+  white-space: nowrap !important;
+}
+
+/* 4. SCULPTED FLOATING STONE CLIFF PAVILION & STEAMING SANDALWOOD TEA TABLE */
+.floating-stone-pavilion {
+  width: 310px !important;
+  height: 205px !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+.floating-stone-pavilion .lotus-cushion-base {
+  position: absolute !important;
+  bottom: -6px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 310px !important;
+  height: 92px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  z-index: 2 !important;
+  pointer-events: none;
+}
+
+.stone-cliff-platform-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.9));
+}
+
+.floating-stone-pavilion .lobby-cat-avatar {
+  width: 142px !important;
+  height: 142px !important;
+  margin-bottom: 34px !important;
+  z-index: 4 !important;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 16px rgba(45, 226, 141, 0.45)) !important;
+}
+
+.floating-stone-pavilion .wooden-tea-table {
+  position: absolute !important;
+  bottom: 12px !important;
+  z-index: 6 !important;
+}
+
+.wooden-tea-table .table-surface {
+  width: 126px !important;
+  height: 12px !important;
+  background: linear-gradient(180deg, #451A03 0%, #231912 100%) !important;
+  border: 1.5px solid #F3C644 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.9) !important;
+}
+
+.wooden-tea-table .steaming-teapot-set {
+  top: -42px !important;
+}
+
+.wooden-tea-table .anime-tea-steam-svg {
+  width: 114px !important;
+  height: 46px !important;
+}
+
+.steam-cloud-3 {
+  animation: steamRiseVapor 3.1s ease-in-out infinite 0.9s;
+}
+
+.floating-stone-pavilion .mascot-cloud-cushion {
+  right: 6px !important;
+  bottom: 22px !important;
+  z-index: 5 !important;
+}
+
+.winged-cat-mascot-svg {
+  width: 56px !important;
+  height: 44px !important;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85));
+}
+
+.golden-cloud-pillow {
+  display: none !important;
+}
+
+/* 5. PHYSICAL CELESTIAL FLYING SWORD CTA BUTTON & CARVED SANDALWOOD STAT PLAQUES */
+.lobby-cta-sword-area {
+  width: min(94vw, 450px) !important;
+  gap: 8px !important;
+  margin-top: 2px !important;
+}
+
+.sword-talisman-cta.main-battle-start,
+.sword-talisman-cta.continue-mode {
+  position: relative !important;
+  width: 100% !important;
+  height: 54px !important;
+  padding: 0 14px 0 10px !important;
+  border-radius: 26px 32px 32px 26px !important;
+  background: linear-gradient(180deg, #7F1D1D 0%, #450A0A 50%, #7F1D1D 100%) !important;
+  border: 2px solid #F3C644 !important;
+  outline: 1.5px solid #D97706 !important;
+  outline-offset: -5px !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.9), 0 0 22px rgba(243, 198, 68, 0.45) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  overflow: hidden !important;
+}
+
+.sword-talisman-cta.continue-mode {
+  background: linear-gradient(180deg, #065F46 0%, #022C22 50%, #065F46 100%) !important;
+  border-color: #2DE28D !important;
+  outline-color: #F3C644 !important;
+}
+
+.sword-cta-hilt {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.sword-cta-content {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 6px !important;
+  z-index: 2;
+}
+
+.sword-cta-main {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  color: #FEF08A !important;
+  letter-spacing: 1px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  text-shadow: 0 2px 4px #000, 0 0 12px rgba(243, 198, 68, 0.85) !important;
+}
+
+.sword-cta-sub {
+  font-size: 10px !important;
+  color: #FDE68A !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+
+/* Carved Dark Sandalwood Stat Plaques (Replacing modern green pills) */
+.compact-stat-pills {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.stat-pill.sandalwood-stat-plaque {
+  background: linear-gradient(180deg, #231912 0%, #140F0B 100%) !important;
+  border: 1.5px solid #F3C644 !important;
+  outline: 1px solid rgba(45, 226, 141, 0.3) !important;
+  outline-offset: -3px !important;
+  border-radius: 6px !important;
+  padding: 5px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.mini-flying-sword-svg {
+  animation: miniSwordGlide 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes miniSwordGlide {
+  0% { transform: translateX(-2px) translateY(1px); }
+  100% { transform: translateX(2px) translateY(-1px); }
+}
+
+/* 6. BATTLE SETUP MODAL: FLOATING DAO TALISMANS, 4 PHYSICAL ARTIFACT DECKS & MASCOT FLANKS */
+.battle-setup-modal-box {
+  background: linear-gradient(180deg, #1E150F 0%, #140F0B 100%) !important;
+  border: 2.5px solid #F3C644 !important;
+  outline: 1.5px solid #854D0E !important;
+  outline-offset: -6px !important;
+  position: relative !important;
+}
+
+.floating-dao-talisman {
+  position: absolute;
+  top: 76px;
+  width: 22px;
+  height: 54px;
+  background: linear-gradient(180deg, #FACC15 0%, #EAB308 100%);
+  border: 1.5px solid #B91C1C;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 0 10px rgba(250, 204, 21, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-family: serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #B91C1C;
+  letter-spacing: 2px;
+  z-index: 15;
+  pointer-events: none;
+  animation: daoTalismanBob 3s ease-in-out infinite alternate;
+}
+
+.floating-dao-talisman.left {
+  left: 6px;
+  transform: rotate(-6deg);
+}
+
+.floating-dao-talisman.right {
+  right: 6px;
+  transform: rotate(6deg);
+  animation-delay: -1.5s;
+}
+
+@keyframes daoTalismanBob {
+  0% { margin-top: -4px; }
+  100% { margin-top: 4px; }
+}
+
+/* Protruding Octagonal Jade Medallion on the 3 Mode Cards */
+.setup-modes-grid {
+  padding-top: 10px !important;
+}
+
+.setup-mode-card .medallion-body-plate {
+  padding-top: 14px !important;
+  overflow: visible !important;
+}
+
+.setup-mode-card .setup-card-icon-art {
+  margin-top: -26px !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: #140F0B !important;
+  border: 2px solid #F3C644 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.85) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.setup-mode-card.active-mode .setup-card-icon-art {
+  border-color: #2DE28D !important;
+  box-shadow: 0 0 16px rgba(45, 226, 141, 0.85), 0 0 8px rgba(243, 198, 68, 0.8) !important;
+}
+
+/* 4 Distinct Physical Artifacts in Tàng Kinh Các */
+.setup-deck-card.modal-bamboo-scroll {
+  background: repeating-linear-gradient(
+    90deg,
+    #2A1B0E 0px,
+    #3E2714 9px,
+    #140F0B 10px,
+    #140F0B 12px
+  ) !important;
+  border: 1.5px solid #D97706 !important;
+}
+
+.setup-deck-card.modal-indigo-scroll {
+  background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #090D16 100%) !important;
+  border: 1.5px solid #38BDF8 !important;
+}
+
+.setup-deck-card.modal-leather-book {
+  background: linear-gradient(135deg, #2E1065 0%, #1E1B4B 60%, #140F0B 100%) !important;
+  border: 1.5px solid #A855F7 !important;
+  padding-bottom: 13px !important;
+}
+
+.book-pages-edge {
+  position: absolute;
+  bottom: 2px;
+  left: 10px;
+  right: 6px;
+  height: 5px;
+  background: repeating-linear-gradient(
+    180deg,
+    #FEF3C7 0px,
+    #FEF3C7 1.5px,
+    #B45309 1.5px,
+    #B45309 2.5px
+  );
+  border-radius: 0 0 3px 2px;
+}
+
+.setup-deck-card.modal-paw-scroll {
+  background: linear-gradient(135deg, #292018 0%, #1C1510 100%) !important;
+  border: 1.5px solid #2DE28D !important;
+}
+
+.setup-deck-card.active-deck {
+  border: 2px solid #2DE28D !important;
+  outline: 1.5px solid #F3C644 !important;
+  outline-offset: -4px !important;
+  box-shadow: 0 0 20px rgba(45, 226, 141, 0.55) !important;
+}
+
+.scroll-silk-tassel {
+  position: absolute;
+  bottom: -7px;
+  right: 10px;
+  width: 4px;
+  height: 10px;
+  border-radius: 0 0 3px 3px;
+  pointer-events: none;
+}
+.scroll-silk-tassel.red { background: linear-gradient(180deg, #F3C644, #D44327); }
+.scroll-silk-tassel.cyan { background: linear-gradient(180deg, #F3C644, #38BDF8); }
+.scroll-silk-tassel.green { background: linear-gradient(180deg, #F3C644, #2DE28D); }
+
+/* Carved Mutton-Fat Cyan Jade Ruyi Slab (Zero Glassmorphism) */
+.jade-comm-slab {
+  background: linear-gradient(180deg, #06392C 0%, #03221A 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 2px solid #2DE28D !important;
+  outline: 1px solid #F3C644 !important;
+  outline-offset: -4px !important;
+  border-radius: 14px !important;
+  box-shadow: inset 0 0 14px rgba(45, 226, 141, 0.25), 0 6px 14px rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Footer Launch Row Flanked by Chibi Mascot Cats */
+.setup-actions-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.setup-mascot-flank {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85));
+}
+
+.setup-dual-btns-wrap {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   7. CRITICAL MOBILE RESPONSIVE OVERHAUL (LOBBY & IN-GAME BATTLE HUD)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Hide decorative screen corner SVGs on mobile so they never overlap HUD or Keyboard */
+  .xianxia-corner {
+    display: none !important;
+  }
+
+  /* Mobile Lobby Top Bar: Compact 2-Row Celestial Header, NO giant box */
+  #lobbyView {
+    padding: 6px 8px 14px !important;
+  }
+
+  #lobbyView .lobby-top-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding: 2px 2px !important;
+  }
+
+  .lobby-top-left {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+
+  .lobby-brand-badge {
+    padding: 4px 8px !important;
+  }
+
+  .lobby-brand-badge .brand-name {
+    font-size: 12px !important;
+  }
+
+  .lobby-brand-badge .brand-sub {
+    font-size: 8.5px !important;
+  }
+
+  #lobbyView .btn-back-to-games {
+    padding: 5px 10px !important;
+    font-size: 10px !important;
+  }
+
+  /* Keep all 5 Hanging Jade Windchimes in a single neat horizontal row on mobile */
+  #lobbyView .lobby-top-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-around !important;
+    gap: 4px !important;
+  }
+
+  .windchime-cord-top {
+    height: 4px !important;
+  }
+
+  .windchime-medallion .medallion-disc {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .windchime-medallion .medallion-label {
+    font-size: 8.5px !important;
+    padding: 1px 4px !important;
+  }
+
+  .windchime-tassel-bottom {
+    height: 4px !important;
+  }
+
+  /* Mobile Central Tea Pavilion scaling */
+  .hanging-jade-title-plaque .plaque-body {
+    padding: 5px 14px 5px 28px !important;
+  }
+
+  .hanging-jade-title-plaque .cat-name-gold {
+    font-size: 14px !important;
+  }
+
+  .plaque-quote-scroll-wrap .plaque-quote-silk {
+    font-size: 9.5px !important;
+    padding: 2px 8px !important;
+  }
+
+  .floating-stone-pavilion {
+    width: 270px !important;
+    height: 175px !important;
+  }
+
+  .floating-stone-pavilion .lotus-cushion-base {
+    width: 270px !important;
+    height: 80px !important;
+  }
+
+  .floating-stone-pavilion .lobby-cat-avatar {
+    width: 120px !important;
+    height: 120px !important;
+    margin-bottom: 28px !important;
+  }
+
+  .sword-talisman-cta.main-battle-start,
+  .sword-talisman-cta.continue-mode {
+    height: 48px !important;
+    padding: 0 10px 0 8px !important;
+  }
+
+  .sword-cta-main {
+    font-size: 14px !important;
+  }
+
+  .sword-cta-sub {
+    font-size: 9px !important;
+  }
+
+  .stat-pill.sandalwood-stat-plaque {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+  }
+
+  /* MOBILE BATTLE HUD: Low-Profile Horizontal Scripture Bar (#swordIntentBox) Above Virtual Keyboard */
+  #swordIntentBox,
+  .sword-altar-hud {
+    position: fixed !important;
+    bottom: calc(var(--kb-height, 178px) + 2px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 98vw !important;
+    max-width: 98vw !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 50px !important;
+    padding: 2px 4px !important;
+    background: linear-gradient(180deg, #231912 0%, #140F0B 100%) !important;
+    border: 1.5px solid #F3C644 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.9) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 45 !important;
+  }
+
+  /* Hide left/right stone dragon guardians & top ribbon on mobile so the parchment scroll spans 100% width! */
+  #swordIntentBox .altar-guardian.left,
+  #swordIntentBox .altar-guardian.right,
+  #swordIntentBox .altar-ribbon-banner {
+    display: none !important;
+  }
+
+  #swordIntentBox .altar-parchment-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin: 0 !important;
+  }
+
+  #swordIntentBox .parchment-roller {
+    width: 8px !important;
+    height: 40px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #swordIntentBox .parchment-body {
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    padding: 2px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+
+  #swordIntentBox .altar-word-display,
+  #swordIntentBox #swordIntentText,
+  #swordIntentBox .altar-idle-msg {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 12.5px !important;
+    line-height: 1.15 !important;
+    width: 100% !important;
+    text-align: center !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  #swordIntentBox .altar-meaning-display {
+    font-size: 9.5px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    margin-top: 0 !important;
+  }
+
+  #swordIntentBox .altar-gauge-track {
+    height: 3px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Virtual Keyboard Action Keys: Single horizontal row, never wrap vertically */
+  .kb-action-key {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    padding: 0 8px !important;
+  }
+
+  .kb-action-key .key-action-label {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Mobile Battle Setup Modal adjustments */
+  .floating-dao-talisman {
+    display: none !important;
+  }
+
+  .setup-mascot-flank svg {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .setup-dual-btns-wrap {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+}
