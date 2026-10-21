@@ -161,10 +161,28 @@
       const halfWordW = totalWordW / 2;
       const baseRadius = isMobile ? Math.max(50, word.length * 8.2) : Math.max(52, word.length * 8.8);
       const safeMargin = Math.max(baseRadius + 20, halfWordW + 28);
-      // Trên màn hình PC rộng: Thanh ngọc giản HUD ở góc trên bên trái (chiếm ~500px).
-      // Để thiên thạch không bị che khuất khi rơi, ưu tiên phân bổ từ x=490px trở sang phải
-      const minX = isMobile ? safeMargin : Math.max(safeMargin, Math.min(canvasWidth * 0.38, 490));
-      const maxX = Math.max(minX + 40, canvasWidth - safeMargin);
+      // THANH NGỌC GIẢN HUD ĐÃ ĐƯỢC CHIA THÀNH 2 GÓC:
+      // Góc trái: Cấp bậc & Mệnh Đan (~260px)
+      // Góc phải: Tu vi & Phù chú điều khiển (~290px)
+      // KHU VỰC CHÍNH GIỮA (CENTER SKY) LÀ KHOẢNG TRỐNG HOÀN HẢO ĐỂ MA THẠCH RƠI TỰ DO:
+      let minX, maxX;
+      if (isMobile) {
+        minX = Math.max(safeMargin, canvasWidth * 0.20);
+        maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.80);
+        if (maxX <= minX + 30) {
+          minX = canvasWidth * 0.22;
+          maxX = canvasWidth * 0.78;
+        }
+      } else {
+        const leftAvoidW = 270;
+        const rightAvoidW = 290;
+        minX = Math.max(safeMargin, leftAvoidW);
+        maxX = Math.min(canvasWidth - safeMargin, canvasWidth - rightAvoidW);
+        if (maxX <= minX + 60) {
+          minX = canvasWidth * 0.22;
+          maxX = canvasWidth * 0.78;
+        }
+      }
       const spawnX = minX + Math.random() * (maxX - minX);
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
@@ -435,16 +453,16 @@
         const M = root.Meowcha || {};
         const isTarget = (ast.typedLen > 0) || (M.app && M.app.typing && M.app.typing.currentTarget === ast);
 
-        // 4.1 XÁC ĐỊNH NỘI DUNG TIÊU ĐỀ & CHÂN GIẢI NGHĨA
-        let topTitle = "✦ ⚔️ TRẢM MA PHÙ TRIỆU ✦";
-        let bottomText = ast.meaning ? `📖 ${ast.meaning}${ast.ipa ? ' • ' + ast.ipa : ''}` : (ast.ipa || '');
+        // 4.1 XÁC ĐỊNH NỘI DUNG TIÊU ĐỀ & CHÂN GIẢI NGHĨA (CHUẨN CỔ PHONG TIÊN ĐẠO - KHÔNG DÙNG EMOJI THÔ)
+        let topTitle = "✦ [ 斬 ] TRẢM MA PHÙ TRIỆU ✦";
+        let bottomText = ast.meaning ? `[ 悟 ] ${ast.meaning}${ast.ipa ? ' • ' + ast.ipa : ''}` : (ast.ipa || '');
 
         if (ast.isAudio) {
-          topTitle = "✦ 🔊 LẮNG NGHE TIÊN ÂM ✦";
-          bottomText = `🔊 Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
+          topTitle = "✦ [ 聽 ] LẮNG NGHE TIÊN ÂM ✦";
+          bottomText = `[ 聽 ] Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
         } else if (ast.isCloze) {
-          topTitle = "✦ 📖 NGỘ ĐẠO BÍ KÍP ✦";
-          bottomText = `📖 ${ast.meaning || 'Ngộ đạo'} • [${word.length} Ký Tự]`;
+          topTitle = "✦ [ 悟 ] NGỘ ĐẠO BÍ KÍP ✦";
+          bottomText = `[ 悟 ] ${ast.meaning || 'Ngộ đạo'} • [${word.length} Ký Tự]`;
         }
 
         // 4.2 TÍNH TOÁN KÍCH THƯỚC CUỘN THƯ VỪA VẶN MỌI NỘI DUNG
@@ -683,11 +701,12 @@
               targetColor = "#7C3AED";
               targetGlow = "#A855F7";
             } else if (ast.isCloze) {
-              // CLOZE: Chữ đầu hoặc chữ cuối hiện làm điểm tựa
-              if (c === 0 || (c === word.length - 1 && word.length >= 3)) {
+              // CLOZE: Chữ đầu, chữ cuối và chữ giữa (nếu từ >= 6 chữ) hiện làm điểm tựa
+              const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
+              if (c === 0 || (c === word.length - 1 && word.length >= 3) || c === midIdx) {
                 targetChar = letter;
-                targetColor = "#B45309";
-                targetGlow = "#F59E0B";
+                targetColor = c === midIdx ? "#0284C7" : "#B45309";
+                targetGlow = c === midIdx ? "#38BDF8" : "#F59E0B";
               } else {
                 targetChar = "✦";
                 targetColor = "#0D9488";
@@ -727,11 +746,16 @@
               fillCol = "rgba(124, 58, 237, 0.85)";
               glowCol = "rgba(168, 85, 247, 0.5)";
             } else if (ast.isCloze) {
-              // CLOZE: KÝ TỰ CUỐI CÙNG LUÔN HIỆN LÀM GỢI Ý CHỐT ĐUÔI NẾU TỪ >= 3 CHỮ!
+              // CLOZE: Ký tự cuối cùng và ký tự giữa (nếu >= 6 chữ) luôn hiện làm gợi ý chốt đuôi!
+              const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
               if (c === word.length - 1 && word.length >= 3) {
                 displayChar = letter;
                 fillCol = "#B45309";
                 glowCol = "rgba(245, 158, 11, 0.6)";
+              } else if (c === midIdx) {
+                displayChar = letter;
+                fillCol = "#0369A1";
+                glowCol = "rgba(56, 189, 248, 0.6)";
               } else {
                 displayChar = "✦";
                 fillCol = "rgba(13, 148, 136, 0.85)";

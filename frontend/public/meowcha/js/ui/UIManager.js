@@ -578,7 +578,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("chime");
-              this.showStatus(`[ ⚔️ ] [TIẾP TỤC TU LUYỆN] Pháp môn ${mName} • ${(this.state.score || 0).toLocaleString()} Tu Vi!`);
+              this.showStatus(`[ 斬 ] [TIẾP TỤC TU LUYỆN] Pháp môn ${mName} • ${(this.state.score || 0).toLocaleString()} Tu Vi!`);
               if (this.onStartBattle) this.onStartBattle();
             };
 
@@ -635,7 +635,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("slash");
-              this.showStatus(`[ ⚔️ ] Khởi nguyên độ kiếp: Pháp môn ${mName}!`);
+              this.showStatus(`[ 斬 ] Khởi nguyên độ kiếp: Pháp môn ${mName}!`);
               if (this.onStartBattle) this.onStartBattle();
             };
           }

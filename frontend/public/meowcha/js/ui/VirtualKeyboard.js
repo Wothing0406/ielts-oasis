@@ -85,7 +85,7 @@
       btnAudio.className = "kb-key xianxia-key kb-action-key kb-audio-key";
       btnAudio.type = "button";
       btnAudio.title = "Nghe lại phát âm (Tab)";
-      btnAudio.innerHTML = `<span class="key-action-icon">🔊</span><span class="key-action-label">THÍNH ÂM</span>`;
+      btnAudio.innerHTML = `<span class="key-action-icon">[ 聽 ]</span><span class="key-action-label">THÍNH ÂM</span>`;
       btnAudio.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         e.stopPropagation();

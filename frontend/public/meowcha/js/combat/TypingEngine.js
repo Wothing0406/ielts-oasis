@@ -496,8 +496,11 @@
       // 5. HẠT TU VI (+EXP) BAY THEO QUỸ ĐẠO HÚT VỀ MIÊU KIẾM TÔN
       this.floatingText.addExpOrb(target.x, target.y, catX, catY, gainedScore);
 
-      // 7. Thiên thạch vỡ vụn thành các mảnh vỡ pixel retro văng ra
-      this.particles.createPixelShards(target.x, target.y, [target.coreColor, "#FEF08A", "#EF4444", "#38BDF8", "#170D08"], 42);
+      // 7. Vụ nổ tiên đạo: Sóng Bát Quái + cánh sen + tàn kiếm khí + mảnh vỡ pixel
+      if (this.particles.createXianxiaWordBurst) {
+        this.particles.createXianxiaWordBurst(target.x, target.y, this.state.realmIdx || 0);
+      }
+      this.particles.createPixelShards(target.x, target.y, [target.coreColor, "#FEF08A", "#EF4444", "#38BDF8", "#170D08"], 36);
       this.particles.createExplosion(target.x, target.y, target.color, 24);
       if (this.state.realmIdx <= 1) {
         this.particles.createBambooLeaves(target.x, target.y, 8);
@@ -630,7 +633,7 @@
         if (this.audio) this.audio.play("type");
         const altarSub = document.getElementById("swordTargetMeaning");
         if (altarSub && this.state && this.state.gameMode === "AUDIO") {
-          altarSub.innerHTML = `<span style="color: #A78BFA; animation: pulse 0.8s infinite;">🔊 Đang phát lại tiên âm: ${target.ipa || '/.../'}</span>`;
+          altarSub.innerHTML = `<span style="color: #A78BFA; animation: pulse 0.8s infinite;">[ 聽 ] Đang phát lại tiên âm: ${target.ipa || '/.../'}</span>`;
         }
         return true;
       }
@@ -681,7 +684,8 @@
         // 1. Chữ đã gõ: Hiện màu xanh ngọc phát sáng
         // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu
         // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ
-        // 4. Các ký tự ở giữa chưa gõ: Hiển thị phù ấn bí mật "✦ "
+        // 4. Ký tự ở giữa: Hiện thêm gợi ý nếu từ dài >= 6 ký tự
+        const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
         for (let i = 0; i < word.length; i++) {
           if (i < typed) {
             wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
@@ -689,6 +693,8 @@
             wordDisplayHtml += `<span class="altar-hint-char" style="color:#D97706">${word[0]}</span> `;
           } else if (i === word.length - 1 && word.length >= 3) {
             wordDisplayHtml += `<span class="altar-hint-char">${word[i]}</span> `;
+          } else if (i === midIdx) {
+            wordDisplayHtml += `<span class="altar-hint-char" style="color:#0284C7">${word[i]}</span> `;
           } else {
             wordDisplayHtml += `<span class="altar-untyped-txt">✦ </span>`;
           }
@@ -718,13 +724,13 @@
         if (curMode === "AUDIO") {
           meaningEl.innerHTML = `
             <span style="color: #7C3AED; font-weight: 700; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
-              🔊 [TIÊN ÂM: ${target.ipa || '/.../'}] • Bấm TAB để nghe lại
+              [ 聽 ] TIÊN ÂM: ${target.ipa || '/.../'} • Bấm TAB để nghe lại
             </span>
           `;
         } else if (curMode === "CLOZE") {
-          meaningEl.innerHTML = `<span style="color: #065F46; font-weight: 800;">📖 NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
+          meaningEl.innerHTML = `<span style="color: #065F46; font-weight: 800;">[ 悟 ] NGHĨA: ${target.meaning || target.definition || ""} (${word.length} Ký Tự)</span>`;
         } else {
-          meaningEl.innerText = `📖 ${target.meaning || target.definition || ""}`;
+          meaningEl.innerText = `[ 悟 ] ${target.meaning || target.definition || ""}`;
         }
       }
 

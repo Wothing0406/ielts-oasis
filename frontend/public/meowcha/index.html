@@ -23,10 +23,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.3" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.3" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.3" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.3" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=10.4" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=10.4" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=10.4" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=10.4" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -135,7 +135,7 @@
               />
             </svg>
             <div class="brand-text-container">
-              <div class="brand-name">MEOW-CHA TRÀ ĐẠO 🍃</div>
+              <div class="brand-name">MEOW-CHA TRÀ ĐẠO</div>
               <div class="brand-sub">Vạn Kiếm Quy Tông • Tiên Đạo Trà Viện</div>
             </div>
           </div>
@@ -656,13 +656,31 @@
       <!-- 2. CHIẾN TRƯỜNG ĐỘ KIẾP (IN-GAME BATTLE VIEW) -->
       <!-- ========================================================= -->
       <div id="battleView">
-        <!-- BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG (THANH TRẠNG THÁI CHIẾN TRƯỜNG TOÀN DIỆN) -->
+        <!-- BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG (TÁCH 2 GÓC TRÁI - PHẢI, KHOẢNG TRỜI CHÍNH GIỮA HOÀN TOÀN THÔNG THOÁNG) -->
         <div class="sect-scroll-hud">
-          <div class="sect-hud-top-row">
+          <!-- GÓC TRÁI: CẤP BẬC, DANH HIỆU & MỆNH ĐAN (LEFT DOCK) -->
+          <div class="sect-hud-left-dock">
             <div class="sect-row-title">
               <span class="sect-level-tag" id="hudLevelBadge">CẤP 0</span>
               <strong id="hudRealm">Tiểu Miêu Kiếm Đồng</strong>
             </div>
+            <!-- Hiển thị Khí Huyết Mệnh Đan & Ống Tiên Đan Ngọc Bích (Jade Elixir Vial) -->
+            <div class="sect-hp-container">
+              <span class="sect-glyph glyph-red" title="Khí Huyết Mệnh Thể">[命]</span>
+              <span class="hp-label-title">MỆNH:</span>
+              <span id="hudHpText" class="hp-val-text">50 / 50</span>
+              <div class="hp-mini-track hp-elixir-tube">
+                <div class="tube-cap left"></div>
+                <div class="hp-fill" id="hudHpBar" style="width: 100%"></div>
+                <div class="tube-cap right"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KHOẢNG TRỜI CHÍNH GIỮA THÔNG THOÁNG ĐỂ MA THẠCH RƠI TỰ DO KHÔNG BỊ THANH MÁU CHE -->
+
+          <!-- GÓC PHẢI: NÚT ĐIỀU KHIỂN & TU VI, TỐC ĐỘ CHIẾN TRẬN (RIGHT DOCK) -->
+          <div class="sect-hud-right-dock">
             <!-- Cụm nút điều khiển chiến trận (Tích hợp ngay ngắn, không đè chữ) -->
             <div class="battle-controls-inline">
               <button
@@ -714,20 +732,6 @@
                 </svg>
               </button>
             </div>
-          </div>
-
-          <div class="sect-hud-bottom-row">
-            <!-- Hiển thị Khí Huyết Mệnh Đan & Ống Tiên Đan Ngọc Bích (Jade Elixir Vial) -->
-            <div class="sect-hp-container">
-              <span class="sect-glyph glyph-red" title="Khí Huyết Mệnh Thể">[命]</span>
-              <span class="hp-label-title">MỆNH:</span>
-              <span id="hudHpText" class="hp-val-text">50 / 50</span>
-              <div class="hp-mini-track hp-elixir-tube">
-                <div class="tube-cap left"></div>
-                <div class="hp-fill" id="hudHpBar" style="width: 100%"></div>
-                <div class="tube-cap right"></div>
-              </div>
-            </div>
             <!-- Hiển thị Tu Vi Điểm, Cổ Ngữ Trảm Ma, Tốc Độ WPM Cổ Phong -->
             <div class="sect-stats-inline">
               <span class="stat-mini gold">
@@ -776,7 +780,7 @@
               <span class="yinyang-glyph">☯</span>
             </div>
             <div class="intent-seal-flame" id="swordIntentSealBadge">
-              <span class="flame-icon">🔥</span>
+              <span class="flame-icon">[ 焰 ]</span>
               <span class="flame-text">KIẾM Ý</span>
             </div>
           </div>
@@ -1816,7 +1820,7 @@
           <div class="certificate-preview-wrap">
             <img id="certificateImgPreview" alt="Chứng Đạo Kim Đồ" class="certificate-img-preview" />
             <p class="cert-save-hint" style="text-align: center; font-size: 11.5px; color: #94A3B8; margin-top: 8px;">
-              💡 Tiên hữu có thể nhấn giữ (điện thoại) hoặc nhấp chuột phải chọn "Lưu hình ảnh" để tải ảnh về máy.
+              [ 秘 ] Tiên hữu có thể nhấn giữ (điện thoại) hoặc nhấp chuột phải chọn "Lưu hình ảnh" để tải ảnh về máy.
             </p>
           </div>
 
@@ -1838,35 +1842,35 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=10.3"></script>
-    <script src="./js/data/WordDecks.js?v=10.3"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=10.3"></script>
-    <script src="./js/data/TalentsData.js?v=10.3"></script>
-    <script src="./js/data/SpeechesData.js?v=10.3"></script>
+    <script src="./js/data/RealmsData.js?v=10.4"></script>
+    <script src="./js/data/WordDecks.js?v=10.4"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=10.4"></script>
+    <script src="./js/data/TalentsData.js?v=10.4"></script>
+    <script src="./js/data/SpeechesData.js?v=10.4"></script>
 
-    <script src="./js/core/AudioManager.js?v=10.3"></script>
-    <script src="./js/core/SaveSystem.js?v=10.3"></script>
-    <script src="./js/core/GameState.js?v=10.3"></script>
-    <script src="./js/core/SpriteAnimator.js?v=10.3"></script>
+    <script src="./js/core/AudioManager.js?v=10.4"></script>
+    <script src="./js/core/SaveSystem.js?v=10.4"></script>
+    <script src="./js/core/GameState.js?v=10.4"></script>
+    <script src="./js/core/SpriteAnimator.js?v=10.4"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=10.3"></script>
-    <script src="./js/effects/RealmVFX.js?v=10.3"></script>
-    <script src="./js/effects/FloatingText.js?v=10.3"></script>
+    <script src="./js/effects/ParticleEngine.js?v=10.4"></script>
+    <script src="./js/effects/RealmVFX.js?v=10.4"></script>
+    <script src="./js/effects/FloatingText.js?v=10.4"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=10.3"></script>
-    <script src="./js/entities/AsteroidManager.js?v=10.3"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=10.3"></script>
+    <script src="./js/entities/CatCultivator.js?v=10.4"></script>
+    <script src="./js/entities/AsteroidManager.js?v=10.4"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=10.4"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=10.3"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=10.3"></script>
+    <script src="./js/combat/TypingEngine.js?v=10.4"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=10.4"></script>
 
-    <script src="./js/ui/IPAToast.js?v=10.3"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=10.3"></script>
-    <script src="./js/ui/UnityBridge.js?v=10.3"></script>
-    <script src="./js/core/VocabLoader.js?v=10.3"></script>
-    <script src="./js/ui/UIManager.js?v=10.3"></script>
+    <script src="./js/ui/IPAToast.js?v=10.4"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=10.4"></script>
+    <script src="./js/ui/UnityBridge.js?v=10.4"></script>
+    <script src="./js/core/VocabLoader.js?v=10.4"></script>
+    <script src="./js/ui/UIManager.js?v=10.4"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=10.3"></script>
+    <script src="./js/main.js?v=10.4"></script>
   </body>
 </html>

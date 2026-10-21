@@ -1589,45 +1589,76 @@
    ============================================================ */
 .sect-scroll-hud {
   position: absolute;
-  top: 8px;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  right: auto;
-  width: min(92vw, 680px) !important;
-  max-width: calc(100vw - 24px) !important;
+  top: 10px;
+  left: 14px;
+  right: 14px;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
   margin: 0;
   z-index: 50;
-  /* KÍNH NGỌC BIỂN TRONG SUỐT (TRANSLUCENT XIANXIA JADE GLASSMORPHISM) */
-  background: rgba(8, 14, 24, 0.38) !important;
-  border: 1px solid rgba(212, 175, 55, 0.38) !important;
+  /* THANH ĐIỀU KHIỂN & MỆNH ĐAN TÁCH BIỆT 2 GÓC: KHÔNG CHE KHUẤT MA THẠCH RƠI CHÍNH GIỮA TRỜI */
+  background: transparent !important;
+  border: none !important;
   outline: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* KHỐI GÓC TRÁI (LEFT DOCK): CẤP BẬC, TIÊU ĐỀ & KHÍ HUYẾT MỆNH ĐAN */
+.sect-hud-left-dock {
+  pointer-events: auto !important;
+  background: linear-gradient(135deg, rgba(20, 12, 6, 0.94) 0%, rgba(10, 6, 3, 0.96) 100%) !important;
+  border: 1.5px solid #D4AF37 !important;
   border-radius: 8px !important;
-  padding: 4px 14px !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(254, 240, 138, 0.2), 0 0 14px rgba(212, 175, 55, 0.1) !important;
-  backdrop-filter: blur(10px) saturate(130%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(130%) !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(254, 240, 138, 0.3) !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 3px !important;
-  /* Cho phép click xuyên qua để bắn trúng thiên thạch rơi phía sau */
-  pointer-events: none;
+  gap: 5px !important;
   box-sizing: border-box !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow: visible !important;
-  transition: opacity 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  max-width: 280px;
+  flex-shrink: 0;
+  transition: opacity 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.sect-scroll-hud.hud-dimmed {
+/* KHỐI GÓC PHẢI (RIGHT DOCK): BỘ PHÙ CHÚ ĐIỀU KHIỂN & TU VI, TỐC ĐỘ WPM */
+.sect-hud-right-dock {
+  pointer-events: auto !important;
+  background: linear-gradient(135deg, rgba(20, 12, 6, 0.94) 0%, rgba(10, 6, 3, 0.96) 100%) !important;
+  border: 1.5px solid #D4AF37 !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(254, 240, 138, 0.3) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 5px !important;
+  box-sizing: border-box !important;
+  max-width: 330px;
+  flex-shrink: 0;
+  transition: opacity 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sect-scroll-hud.hud-dimmed .sect-hud-left-dock,
+.sect-scroll-hud.hud-dimmed .sect-hud-right-dock {
   opacity: 0.22 !important;
-  border-color: rgba(212, 175, 55, 0.15) !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
 }
 
-.sect-scroll-hud:hover {
-  background: rgba(8, 14, 24, 0.65) !important;
-  border-color: rgba(253, 224, 71, 0.65) !important;
-  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(254, 240, 138, 0.35), 0 0 20px rgba(212, 175, 55, 0.25) !important;
+.sect-scroll-hud .sect-hud-left-dock:hover,
+.sect-scroll-hud .sect-hud-right-dock:hover {
   opacity: 1.0 !important;
+  border-color: #FDE047 !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(254, 240, 138, 0.5), 0 0 16px rgba(212, 175, 55, 0.3) !important;
 }
 
 /* Các nút bấm bên trong HUD vẫn bắt click bình thường */
@@ -2059,31 +2090,45 @@
    BỐ CỤC ĐẶC TRỊ MOBILE RESPONSIVE (CRITICAL 3-TIER MOBILE LAYOUT)
    ============================================================ */
 @media (max-width: 600px) {
-  /* 1. TẦNG HUD (TOP - THANH NGỌC GIẢN CỔ PHONG GỌN GÀNG CHO MOBILE) */
+  /* 1. TẦNG HUD (TOP - TÁCH 2 GÓC TRÁI PHẢI, KHOẢNG CHÍNH GIỮA THÔNG THOÁNG TUYỆT ĐỐI) */
   .sect-scroll-hud {
     position: absolute;
     top: 6px;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    right: auto;
-    width: calc(100vw - 14px) !important;
-    max-width: calc(100vw - 14px) !important;
+    left: 6px !important;
+    right: 6px !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
     min-width: unset !important;
     height: auto;
-    padding: 3px 8px !important;
+    padding: 0 !important;
     display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    background: rgba(8, 14, 24, 0.55) !important;
-    border: 1px solid rgba(212, 175, 55, 0.35) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(254, 240, 138, 0.15) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    pointer-events: auto;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none;
     z-index: 50;
     white-space: nowrap !important;
     word-break: keep-all !important;
+  }
+
+  .sect-hud-left-dock {
+    padding: 4px 8px !important;
+    max-width: 155px !important;
+    gap: 3px !important;
+    border-radius: 6px !important;
+  }
+
+  .sect-hud-right-dock {
+    padding: 4px 8px !important;
+    max-width: 175px !important;
+    gap: 3px !important;
+    border-radius: 6px !important;
   }
 
   /* Ẩn Kiếm Quyết Đài trên Mobile trong trận chiến để tránh che khuất không gian gõ phím */
@@ -4400,18 +4445,18 @@
   right: auto !important;
   z-index: 45;
   width: min(94vw, 580px);
-  /* TRONG SUỐT HUYỀN ẢO PHONG CÁCH TIÊN ĐÀI (TRANSLUCENT DAOIST ALTAR) */
-  background: rgba(8, 14, 24, 0.45) !important;
-  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  /* BÀN THẦN MỘC SƠN MÀI ĐẬM ĐẶC NGUYÊN KHỐI (SOLID OPAQUE XIANXIA ALTAR - KHÔNG LÀM MỜ / KHÔNG TRONG SUỐT) */
+  background: linear-gradient(180deg, #1C0F06 0%, #120904 55%, #0A0502 100%) !important;
+  border: 2px solid #D4AF37 !important;
   border-radius: 12px !important;
   padding: 8px 14px 6px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 8px !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(254, 240, 138, 0.25), 0 0 16px rgba(212, 175, 55, 0.12) !important;
-  backdrop-filter: blur(14px) saturate(130%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(254, 240, 138, 0.4), 0 0 18px rgba(212, 175, 55, 0.25) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   pointer-events: auto;
   box-sizing: border-box !important;
   transition: all 0.2s ease;
@@ -4506,7 +4551,11 @@
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
 }
 .intent-seal-flame .flame-icon {
+  font-family: var(--font-xianxia-title, serif);
   font-size: 11px;
+  font-weight: 900;
+  color: #FCA5A5;
+  text-shadow: 0 0 6px #EF4444;
 }
 .intent-seal-flame .flame-text {
   font-family: var(--font-xianxia-title, serif);
