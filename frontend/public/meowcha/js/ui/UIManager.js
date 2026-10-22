@@ -1452,7 +1452,6 @@
       ctx.stroke();
 
       // VẼ ASSET NHÂN VẬT THỰC TẾ (REAL CHARACTER SPRITE ASSET)
-      const rIdx = Math.min(4, Math.max(0, s.realmIdx || 0));
       const catAsset = (this.assets && (this.assets[`char_r${rIdx}_ultimate`]?.img || this.assets[`char_r${rIdx}_idle`]?.img))
         || document.getElementById("lobbyCatImg");
       const swordAsset = this.assets && this.assets[`char_r${rIdx}_sword`]?.img;
