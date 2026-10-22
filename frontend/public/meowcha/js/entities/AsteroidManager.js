@@ -449,7 +449,8 @@
         // ============================================================
         ctx.save();
         const word = ast.word;
-        const isMobileScreen = (ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768);
+        const D = root.Meowcha && root.Meowcha.Device;
+        const isMobileScreen = D ? D.info.isMobile : ((ctx.canvas && ctx.canvas.width <= 768) || (typeof window !== "undefined" && window.innerWidth <= 768));
         const M = root.Meowcha || {};
         const isTarget = (ast.typedLen > 0) || (M.app && M.app.typing && M.app.typing.currentTarget === ast);
 

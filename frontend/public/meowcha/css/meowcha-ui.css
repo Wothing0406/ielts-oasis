@@ -7527,3 +7527,78 @@
     text-overflow: clip !important;
   }
 }
+
+/* ============================================================
+   ROBUST MULTI-FACTOR PLATFORM RULES: PC DESKTOP VS MOBILE NATIVE
+   ============================================================ */
+
+/* 1. PC PLATFORM: Tuyệt đối KHÔNG BAO GIỜ hiện bàn phím ảo tự động! */
+html.platform-pc #virtualKeyboardContainer,
+body.platform-pc #virtualKeyboardContainer {
+  display: none !important;
+}
+
+/* Chỉ hiện trên PC khi người dùng chủ động mở */
+html.platform-pc #virtualKeyboardContainer.user-force-opened,
+body.platform-pc #virtualKeyboardContainer.user-force-opened {
+  display: flex !important;
+}
+
+html.platform-pc #floatingKbRestoreBtn,
+body.platform-pc #floatingKbRestoreBtn {
+  display: none !important;
+}
+
+/* 2. MOBILE PLATFORM: Giao diện Native Portrait Touch cao cấp */
+html.platform-mobile #virtualKeyboardContainer,
+body.platform-mobile #virtualKeyboardContainer {
+  display: flex;
+}
+
+/* Nút Thu Gọn Bàn Phím Ảo trên Header Trận Pháp */
+.kb-minimize-btn {
+  background: transparent;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 4px;
+  color: #FEF08A;
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.kb-minimize-btn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #FDE047;
+  color: #FFFFFF;
+}
+
+/* Nút Phù Khôi Phục Bàn Phím Nổi */
+.floating-kb-restore-btn {
+  position: fixed;
+  bottom: 12px;
+  right: 14px;
+  z-index: 50;
+  background: linear-gradient(135deg, #064E3B 0%, #022C22 100%);
+  border: 1.5px solid #34D399;
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: #FEF08A;
+  font-family: var(--font-xianxia-title, serif);
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(52, 211, 153, 0.4);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.floating-kb-restore-btn:hover {
+  border-color: #FDE047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.9), 0 0 14px rgba(253, 224, 71, 0.6);
+}

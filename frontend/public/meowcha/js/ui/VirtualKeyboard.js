@@ -35,7 +35,23 @@
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="vertical-align: -1px; margin-left: 4px;"><polygon points="8,1 15,8 8,15 1,8" fill="#78350F" stroke="#F3C644" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#2DE28D"/></svg>
         </span>
         <span class="kb-stun-badge" id="kbStunBadge">TÂM MA NHIỄU LOẠN</span>
+        <button class="kb-minimize-btn" id="btnMinimizeKeyboard" type="button" title="Thu gọn bàn phím ảo">
+          <span>[ Ẩn Bàn Phím ▼ ]</span>
+        </button>
       `;
+
+      const btnMin = headerBar.querySelector("#btnMinimizeKeyboard");
+      if (btnMin) {
+        btnMin.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const D = root.Meowcha && root.Meowcha.Device;
+          if (D) D.setUserPrefKeyboard(false);
+          else this.hide();
+          const restoreBtn = document.getElementById("floatingKbRestoreBtn");
+          if (restoreBtn) restoreBtn.style.display = "inline-flex";
+        });
+      }
       kbWrapper.appendChild(headerBar);
 
       // 3 Hàng phím chữ cái chính

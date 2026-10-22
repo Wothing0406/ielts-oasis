@@ -35,7 +35,8 @@
     }
 
     draw(ctx, canvas, gameState, currentTarget) {
-      const isMobile = canvas.width <= 768 || canvas.height > canvas.width;
+      const D = root.Meowcha && root.Meowcha.Device;
+      const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const BASE_X = canvas.width / 2;
       // Trên mobile: Đặt Miêu Tôn trang nghiêm trên đài phù vân, cách thanh thư cuộn bên dưới khoảng cách thoáng đãng
       const BASE_Y = isMobile ? (canvas.height - 252) : (canvas.height - 128);

@@ -75,7 +75,8 @@
           this.unityBridge.triggerWeakAttack(target.x, target.y);
         }
 
-        const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
+        const D = root.Meowcha && root.Meowcha.Device;
+        const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
         const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
@@ -120,7 +121,8 @@
         this.state.typoCount++;
         this.audio.play("hurt");
 
-        const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
+        const D = root.Meowcha && root.Meowcha.Device;
+        const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
         const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
@@ -279,7 +281,8 @@
             ? this.currentTarget
             : this.asteroids.asteroids[0];
           if (ast) {
-            const isMobile = canvas && (canvas.width <= 768 || canvas.height > canvas.width);
+            const D = root.Meowcha && root.Meowcha.Device;
+        const isMobile = D ? D.info.isMobile : (canvas && canvas.width <= 768);
             const catX = canvas ? canvas.width / 2 : 400;
             const catY = canvas ? (isMobile ? canvas.height - 232 : canvas.height - 128) : 500;
             this.state.chibiAttackFlash = 1.0;
@@ -406,7 +409,8 @@
         this.state.maxCombo = this.state.combo;
       }
 
-      const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
+      const D = root.Meowcha && root.Meowcha.Device;
+        const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const catX = canvas.width / 2;
       const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 

@@ -14,6 +14,28 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <!-- Immediate Multi-Factor Platform Recognition (PC vs Mobile Native) -->
+    <script>
+      (function() {
+        try {
+          var nav = navigator || {};
+          var ua = nav.userAgent || '';
+          var platform = nav.platform || '';
+          var maxTouch = nav.maxTouchPoints || 0;
+          var isMobileUA = Boolean(
+            (nav.userAgentData && nav.userAgentData.mobile) ||
+            /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua)
+          );
+          var isIPad = /iPad/i.test(ua) || (platform === 'MacIntel' && maxTouch > 1);
+          var isTabletUA = isIPad || /Tablet|PlayBook|Silk|Kindle/i.test(ua);
+          var hasHover = false;
+          try { hasHover = window.matchMedia && window.matchMedia('(hover: hover)').matches; } catch(e){}
+          var isDesktop = (!isMobileUA && !isTabletUA) || (hasHover && !isMobileUA);
+          var rootClass = isDesktop ? 'platform-pc' : 'platform-mobile';
+          document.documentElement.classList.add(rootClass);
+        } catch (_) {}
+      })();
+    </script>
     <!-- Google Fonts: Be Vietnam Pro (Chuẩn Tiếng Việt không lỗi dấu) & Cinzel (Cổ Tự Latin) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -916,7 +938,13 @@
         </div>
 
         <!-- BÀN PHÍM ẢO CHO MOBILE (DOCK Ở ĐÁY MÀN HÌNH) -->
-        <div id="virtualKeyboardContainer"></div>
+        
+      <!-- NÚT PHÙ HIỆN BÀN PHÍM ẢO TRÊN THIẾT BỊ DI ĐỘNG KHI ĐÃ THU GỌN -->
+      <button id="floatingKbRestoreBtn" class="floating-kb-restore-btn" type="button" title="Mở lại Trận Pháp Phù Thạch">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path></svg>
+        <span>[ ⌨ Hiện Bàn Phím ▲ ]</span>
+      </button>
+      <div id="virtualKeyboardContainer"></div>
       </div>
 
       <!-- Thanh Trạng Thái Phù Văn Duy Nhất (đặt ngoài battleView để hiển thị đồng bộ cả ở Sảnh và Trong Trận) -->
@@ -2004,6 +2032,7 @@
     <script src="./js/ui/UIManager.js?v=11.7"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=11.7"></script>
+    <script src="./js/core/DeviceDetector.js?v=11.8"></script>
+    <script src="./js/main.js?v=11.8"></script>
   </body>
 </html>

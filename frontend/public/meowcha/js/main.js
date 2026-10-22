@@ -171,6 +171,28 @@
         });
       }
 
+      // Nút khôi phục bàn phím ảo khi người dùng di động bấm thu gọn
+      const restoreBtn = document.getElementById("floatingKbRestoreBtn");
+      if (restoreBtn) {
+        restoreBtn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const D = root.Meowcha && root.Meowcha.Device;
+          if (D) D.setUserPrefKeyboard(true);
+          else if (this.vKeyboard) this.vKeyboard.show();
+          restoreBtn.style.display = "none";
+        });
+      }
+
+      // Khi người dùng bấm phím cứng thực tế -> Tự động ẩn bàn phím ảo nếu đang vô tình bật trên PC
+      if (root.Meowcha && root.Meowcha.Device) {
+        root.Meowcha.Device.onPhysicalKeyboardUsed = () => {
+          if (root.Meowcha.Device.info.isDesktop && this.vKeyboard) {
+            this.vKeyboard.hide();
+          }
+        };
+      }
+
       this.ui = new M.UIManager(
         this.gameState,
         this.saveSystem,
@@ -429,7 +451,8 @@
       window.addEventListener("resize", () => {
         this.initCanvasSize();
         if (this.vKeyboard && this.gameState.currentScene === "BATTLE") {
-          if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+          const D = root.Meowcha && root.Meowcha.Device;
+          if (D && D.shouldShowVirtualKeyboard()) {
             this.vKeyboard.show();
           } else {
             this.vKeyboard.hide();
@@ -463,9 +486,12 @@
       this.audio.init();
       this.audio.startZenGuqin();
 
-      // Tự động hiển thị bàn phím ảo trên thiết bị di động / cảm ứng
-      if (this.vKeyboard && (window.innerWidth <= 768 || 'ontouchstart' in window)) {
+      // Tự động hiển thị bàn phím ảo CHỈ KHI LÀ THIẾT BỊ DI ĐỘNG / TOUCH NATIVE
+      const D = root.Meowcha && root.Meowcha.Device;
+      if (this.vKeyboard && D && D.shouldShowVirtualKeyboard()) {
         this.vKeyboard.show();
+      } else if (this.vKeyboard) {
+        this.vKeyboard.hide();
       }
 
       this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 1600);
@@ -537,8 +563,11 @@
       this.audio.play("breakthrough");
       this.audio.startZenGuqin();
 
-      if (this.vKeyboard && (window.innerWidth <= 768 || 'ontouchstart' in window)) {
+      const DRestart = root.Meowcha && root.Meowcha.Device;
+      if (this.vKeyboard && DRestart && DRestart.shouldShowVirtualKeyboard()) {
         this.vKeyboard.show();
+      } else if (this.vKeyboard) {
+        this.vKeyboard.hide();
       }
 
       this.gameState.setSpeech("Trọng Sinh Quy Lai! Trùng Tu Kiếm Đạo!", 3500);
@@ -729,7 +758,8 @@
     }
 
     update(dt) {
-      const isMobile = this.canvas.width <= 768 || (this.canvas.height > this.canvas.width);
+      const DPlatform = root.Meowcha && root.Meowcha.Device;
+      const isMobile = DPlatform ? DPlatform.info.isMobile : (this.canvas.width <= 768);
       const catTargetY = isMobile ? (this.canvas.height - 232) : (this.canvas.height - 128);
 
       // 1. Cập nhật Choáng, Sấm Sét và Đồng bộ Bàn Phím Ảo
