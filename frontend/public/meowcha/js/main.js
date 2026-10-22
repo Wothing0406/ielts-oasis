@@ -287,10 +287,24 @@
         this.typing.isLightningHazard = false;
         this.typing.isCloudHazard = false;
         this.typing.hazardTimer = 0;
+        this.typing.hazardLightningTimer = 0;
+        this.typing.mistakeStreak = 0;
+        this.typing.cloudMistakeCount = 0;
+        this.typing.cloudPurifiedCount = 0;
+        this.typing.purifiedWordsStreak = 0;
         this.typing.updateSwordAltarUI(null);
       }
       if (this.realmVFX) {
         this.realmVFX.clearClouds();
+        this.realmVFX.cloudAlpha = 0;
+        this.realmVFX.isPunishCloud = false;
+        this.realmVFX.cloudTimer = 0;
+      }
+      if (this.gameState) {
+        this.gameState.screenShake = 0;
+        this.gameState.screenFlash = 0;
+        this.gameState.isStunned = false;
+        this.gameState.stunTimer = 0;
       }
     }
 
@@ -789,8 +803,8 @@
             this.gameState.setSpeech(hq, 2200);
           }
 
-          // Rung chấn màn hình theo độ lớn của sát thương
-          this.gameState.screenShake = Math.min(26, 10 + damage * 0.6);
+          // Rung chấn màn hình êm dịu, không giật mạnh gây xé hình hay hoa mắt
+          this.gameState.screenShake = Math.min(5.0, 2.5 + damage * 0.12);
 
           // Bị ma thạch chạm đáy tổn thất đan điền: Kích hoạt cảnh báo Ma Vân Tụ Khí
           if (this.typing && !this.gameState.isGameOver) {
@@ -812,9 +826,9 @@
         this.particles.createHitSparks(hitProj.targetX, hitProj.targetY, hitProj.color, 6);
       });
 
-      // Rung màn hình (Screen Shake decay)
+      // Rung màn hình suy giảm cực nhanh (Screen Shake decay nhanh 45x dt)
       if (this.gameState.screenShake > 0) {
-        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 25);
+        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 45);
       }
 
       // Cập nhật thanh HUD
@@ -841,20 +855,22 @@
       const w = this.canvas.width;
       const h = this.canvas.height;
 
-      // 1. Mandatory Clear Rect to eliminate screen tearing & smearing
+      // 1. Reset ma trận transform và xóa sạch toàn bộ khung hình canvas (Triệt tiêu 100% xé hình & bóng ma mép màn hình)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
       ctx.save();
 
-      // Hiệu ứng rung màn hình
+      // Hiệu ứng rung màn hình êm dịu (tối đa 4.5px, làm tròn pixel)
       if (this.gameState.screenShake > 0) {
-        const sx = (Math.random() - 0.5) * this.gameState.screenShake;
-        const sy = (Math.random() - 0.5) * this.gameState.screenShake;
+        const shakeMag = Math.min(4.5, this.gameState.screenShake);
+        const sx = Math.round((Math.random() - 0.5) * shakeMag);
+        const sy = Math.round((Math.random() - 0.5) * shakeMag);
         ctx.translate(sx, sy);
       }
 
-      // 2. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực kèm overscan 40px chống hở mép khi rung chấn)
-      const overscan = 40;
+      // 2. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực kèm overscan 80px chống hở mép khi rung chấn)
+      const overscan = 80;
       if (this.assets.bg.loaded) {
         const img = this.assets.bg.img;
         const targetW = w + overscan * 2;
@@ -927,6 +943,7 @@
       }
 
       ctx.restore();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
   }
 

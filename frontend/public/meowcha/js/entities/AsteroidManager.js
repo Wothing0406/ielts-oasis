@@ -378,12 +378,12 @@
         // ============================================================
         // 1. VẼ CÁC HẠT ĐUÔI LỬA & BỤI THAN PIXEL (PIXEL EMBER PARTICLES)
         // ============================================================
+        // 1. TÀN TRO PIXEL & BỤI LINH KHÍ (SIÊU TỐI ƯU HIỆU NĂNG - ZERO LAG)
+        // ============================================================
         ctx.save();
         for (const p of ast.trail) {
           ctx.globalAlpha = Math.max(0, p.alpha);
           ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
           ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
         }
         ctx.restore();

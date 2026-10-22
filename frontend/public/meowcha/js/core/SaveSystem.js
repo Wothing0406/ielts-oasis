@@ -470,8 +470,11 @@
         const rData = { name: "Luyện Khí Kỳ", title: "Bạch Miêu Tiên Đồng" };
         this.slots[targetId].modes[mode] = this.getDefaultModeState(mode, rData);
 
-        // Nếu mode này trùng với activeMode của slot, reset chỉ số hiển thị của slot cha
-        if (this.slots[targetId].activeMode === mode) {
+        // Luôn luôn reset slot cha nếu không còn mode nào khác occupied, hoặc nếu mode hiện tại bị reset
+        const otherModesOccupied = Object.keys(this.slots[targetId].modes || {}).some(
+          m => m !== mode && this.slots[targetId].modes[m] && this.slots[targetId].modes[m].isOccupied
+        );
+        if (!otherModesOccupied || this.slots[targetId].activeMode === mode || !this.slots[targetId].activeMode) {
           this.slots[targetId].isOccupied = false;
           this.slots[targetId].score = 0;
           this.slots[targetId].words = 0;

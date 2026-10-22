@@ -125,7 +125,7 @@
         const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
         this.state.setCatState("HURT", 140);
-        this.state.screenShake = 5;
+        this.state.screenShake = 2.5; // Rung nhẹ nhàng 2.5px, không gây giật lag
 
         if (!this.isCloudHazard && !this.isLightningHazard) {
           // GIAI ĐOẠN 1: Gõ sai 3 lần liên tiếp -> KÍCH HOẠT MA VÂN TỤ KHÍ (MÂY MÙ CHE MẮT, CHƯA CÓ SÉT)
@@ -133,7 +133,7 @@
             this.isCloudHazard = true;
             this.cloudMistakeCount = 0;
             this.cloudPurifiedCount = 0;
-            this.state.screenShake = 8;
+            this.state.screenShake = 3.5;
             this.audio.play("hurt");
 
             const canvasW = (canvas && canvas.width) || (typeof window !== "undefined" ? window.innerWidth : 800);
@@ -162,10 +162,10 @@
           }
         } else if (this.isLightningHazard) {
           // ĐANG TRONG THIÊN KIẾP SẤM SÉT MÀ TIẾP TỤC GÕ SAI: Trừ nhẹ 2 HP nhắc nhở
-          this.state.triggerLightning(20);
+          this.state.triggerLightning(10);
           this.audio.play("lightning");
           this.state.takeDamage(2);
-          this.state.screenShake = 8;
+          this.state.screenShake = 3.5;
 
           const timeLeft = Math.max(1, Math.ceil(this.hazardTimer || 14));
           this.floatingText.add(catX, catY - 65, `[ 敕 ] THIÊN LÔI NHẮC NHỞ! (-2 HP) Còn ${timeLeft}s • Cần ${this.hazardReqWords || 2} từ để phá kiếp!`, "#FDE047", isMobile ? 12 : 15);
@@ -188,9 +188,9 @@
       this.purifiedWordsStreak = 0;
       this.hazardReqWords = 2; // Chỉ cần trảm 2 từ thong thả là phá giải thiên kiếp thành công
 
-      this.state.triggerLightning(22);
+      this.state.triggerLightning(12);
       this.audio.play("lightning");
-      this.state.screenShake = 10;
+      this.state.screenShake = 4.0;
 
       const canvasW = (canvas && canvas.width) || (typeof window !== "undefined" ? window.innerWidth : 800);
       this.floatingText.addCelestialEdict(
@@ -303,17 +303,16 @@
 
       this.hazardTimer -= dt;
 
-      // Rung giật màn hình nhẹ nhàng trong thiên kiếp
-      this.state.screenShake = Math.max(this.state.screenShake, 3);
+      // Không ép rung liên tục mỗi frame để triệt tiêu hiện tượng xé hình và đơ giật
 
-      // Định kỳ mỗi 1.5s chớp sét lãng đãng (không giật đùng đùng gây hoa mắt)
+      // Định kỳ mỗi 1.8s chớp sét lãng đãng nhẹ nhàng
       this.hazardLightningTimer = (this.hazardLightningTimer || 0) + dt;
-      if (this.hazardLightningTimer >= 1.5) {
+      if (this.hazardLightningTimer >= 1.8) {
         this.hazardLightningTimer = 0;
-        this.state.triggerLightning(12);
+        this.state.triggerLightning(8);
         this.audio.play("lightning");
         if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(25); } catch (_) {}
+          try { navigator.vibrate(20); } catch (_) {}
         }
       }
 
@@ -327,8 +326,8 @@
         this.purifiedWordsStreak = 0;
 
         // Đòn sét nhẹ nhàng kết thúc thiên kiếp
-        this.state.triggerLightning(24);
-        this.state.screenShake = 12;
+        this.state.triggerLightning(10);
+        this.state.screenShake = 4.0;
         this.audio.play("lightning");
         this.audio.play("hurt");
         this.state.takeDamage(5); // Chỉ trừ 5 HP nhẹ nhàng
