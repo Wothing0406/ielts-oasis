@@ -187,10 +187,7 @@
         const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
         this.saveSystem.saveGame(currentSlot, this.gameState);
 
-        // Hiển thị thẻ từ vựng & ngộ đạo nghĩa từ sau khi trảm từ hoàn tất
-        if (this.ipaToast && slainWord) {
-          this.ipaToast.show(slainWord);
-        }
+        // Hiển thị chữ Ngộ Đạo trực tiếp trên chiến trường (trên đỉnh đầu mèo, rõ ràng và không che khuất góc nhìn)
         if (this.floatingText && slainWord && (slainWord.meaning || slainWord.ipa)) {
           const catTargetY = (this.canvas ? this.canvas.height : 600) * 0.72;
           const meaningText = slainWord.meaning ? `[ 悟 ] ${slainWord.meaning}` : `[ 悟 ] ${slainWord.ipa || ''}`;

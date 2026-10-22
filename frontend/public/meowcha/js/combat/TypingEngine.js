@@ -584,17 +584,33 @@
 
     playWordAudio(target) {
       if (!target) return;
+
+      // 0. TRIỆT TIÊU TOÀN BỘ ÂM THANH TRƯỚC ĐÓ ĐỂ ĐẢM BẢO KHÔNG BAO GIỜ BỊ VỌNG HOẶC CHỒNG 2 GIỌNG
+      if (this.currentAudioInstance) {
+        try {
+          this.currentAudioInstance.pause();
+          this.currentAudioInstance.currentTime = 0;
+        } catch (_) {}
+        this.currentAudioInstance = null;
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (_) {}
+      }
+
       const audioUrl = target.audio_url;
 
-      // 1. ƯU TIÊN PHÁT GIỌNG NGƯỜI THẬT TỪ TỪ ĐIỂN OXFORD
+      // 1. ƯU TIÊN PHÁT DUY NHẤT 1 LẦN GIỌNG BẢN XỨ OXFORD CHUẨN XÁC
       if (audioUrl && typeof audioUrl === "string" && audioUrl.startsWith("http")) {
         try {
           const audio = new Audio(audioUrl);
+          this.currentAudioInstance = audio;
           audio.volume = 1.0;
           const playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.catch(() => {
-              // Nếu mạng chặn hoặc lỗi mp3 -> Fallback về Web Speech API
+              // Nếu mạng chặn hoặc lỗi mp3 -> Mới Fallback về Web Speech API
               this.speakWord(target.word);
             });
           }
@@ -604,7 +620,7 @@
         }
       }
 
-      // 2. Fallback: Phát âm qua Web Speech API
+      // 2. Fallback: Phát âm qua Web Speech API duy nhất 1 lần nếu không có URL mp3
       this.speakWord(target.word);
     }
 

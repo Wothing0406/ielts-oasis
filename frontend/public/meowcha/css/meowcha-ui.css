@@ -2537,15 +2537,17 @@
 }
 
 /* ==========================================================================
-   CHIẾU THƯ TRUYỀN CÔNG / IPA TOAST - PHONG CÁCH NGỌC GIẢN CỔ PHONG
+   CHIẾU THƯ TRUYỀN CÔNG / IPA TOAST - ĐÃ ẨN TRIỆT ĐỂ (TRÁNH RỐI GIAO DIỆN & VỌNG ÂM)
    ========================================================================== */
 #ipaToastContainer {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
   position: fixed;
   bottom: 28px;
   right: 20px;
-  z-index: 9000;
-  pointer-events: auto;
-  max-width: calc(100vw - 40px);
+  z-index: -9999;
 }
 
 .ipa-card-wrapper {
