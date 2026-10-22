@@ -605,68 +605,92 @@
         ctx.shadowBlur = 3;
         ctx.fillText(topTitle, posX, topBannerY + topBannerH / 2);
 
-        // 4.7 TÂM ĐIỂM: MA THẠCH NGUYÊN TỐ & VÒNG BÁT QUÁI PHÙ ẤN
-        const cy = sy + scrollH / 2 + 1;
+        // 4.7 TÂM ĐIỂM: MA THẠCH PHONG ẤN & PHIẾN THẦN THẠCH ÔM TRỌN TỪ VỰNG
+        const cy = sy + scrollH / 2 + (isMobileScreen ? 1 : 2);
 
-        // Vòng Bát Quái Cổ Trận mờ ảo
+        // A. KÍCH THƯỚC PHIẾN MA THẠCH CO GIÃN THEO ĐỘ DÀI TỪ VỰNG (KHÔNG BỊ NHỎ, KHÔNG BỊ ĐÈ NÉT)
+        const oreW = Math.min(scrollW - 24, Math.max(wordWidth + (isMobileScreen ? 28 : 36), isMobileScreen ? 140 : 180));
+        const oreH = isMobileScreen ? 34 : 38;
+        const oreX = posX - oreW / 2;
+        const oreY = cy - oreH / 2;
+
         ctx.save();
-        ctx.strokeStyle = "rgba(180, 130, 45, 0.28)";
-        ctx.lineWidth = 1.2;
+        // Vòng Bát Quái Cổ Trận phát quang tinh tế quanh phiến thạch
+        const baguaPulse = 0.88 + Math.sin(this.time * 2.8) * 0.12;
+        ctx.strokeStyle = "rgba(212, 175, 55, 0.4)";
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
-        ctx.arc(posX, cy, scrollH * 0.32, 0, Math.PI * 2);
+        ctx.arc(posX, cy, (oreH * 0.85) * baguaPulse, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.restore();
 
-        // Khối Ma Thạch nguyên tố lồng tinh tế trong tâm cuộn thư
-        ctx.save();
-        ctx.translate(posX, cy);
-        ctx.rotate(ast.rot);
+        // B. NỀN PHIẾN MA THẠCH NGUYÊN TỐ (TRANSLUCENT ELEMENTAL SPIRIT ORE TABLET)
+        let oreGrad = ctx.createLinearGradient(oreX, oreY, oreX + oreW, oreY + oreH);
+        let oreBorderCol = "#38BDF8";
+        let oreGlowCol = "rgba(56, 189, 248, 0.6)";
 
-        let spriteImg = null;
         if (ast.asteroidType === "ice") {
-          spriteImg = (this.assets?.prop_asteroid_ice?.loaded && this.assets.prop_asteroid_ice.img) ||
-                      (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
+          oreGrad.addColorStop(0, "rgba(8, 47, 73, 0.92)");
+          oreGrad.addColorStop(0.5, "rgba(2, 132, 199, 0.85)");
+          oreGrad.addColorStop(1, "rgba(8, 47, 73, 0.92)");
+          oreBorderCol = "#38BDF8";
+          oreGlowCol = "rgba(56, 189, 248, 0.55)";
         } else if (ast.asteroidType === "fire") {
-          spriteImg = (this.assets?.prop_asteroid_fire?.loaded && this.assets.prop_asteroid_fire.img) ||
-                      (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
+          oreGrad.addColorStop(0, "rgba(69, 26, 3, 0.92)");
+          oreGrad.addColorStop(0.5, "rgba(180, 83, 9, 0.85)");
+          oreGrad.addColorStop(1, "rgba(69, 26, 3, 0.92)");
+          oreBorderCol = "#F59E0B";
+          oreGlowCol = "rgba(245, 158, 11, 0.55)";
         } else if (ast.asteroidType === "void") {
-          spriteImg = (this.assets?.prop_asteroid_void?.loaded && this.assets.prop_asteroid_void.img) ||
-                      (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
+          oreGrad.addColorStop(0, "rgba(30, 27, 75, 0.92)");
+          oreGrad.addColorStop(0.5, "rgba(67, 56, 202, 0.85)");
+          oreGrad.addColorStop(1, "rgba(30, 27, 75, 0.92)");
+          oreBorderCol = "#818CF8";
+          oreGlowCol = "rgba(129, 140, 248, 0.55)";
         } else if (ast.asteroidType === "thunder" || ast.asteroidType === "chaos") {
-          spriteImg = (this.assets?.prop_asteroid_thunder?.loaded && this.assets.prop_asteroid_thunder.img) ||
-                      (this.assets?.prop_asteroid_fire?.loaded && this.assets.prop_asteroid_fire.img) ||
-                      (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) || null;
+          oreGrad.addColorStop(0, "rgba(59, 7, 100, 0.92)");
+          oreGrad.addColorStop(0.5, "rgba(126, 34, 206, 0.85)");
+          oreGrad.addColorStop(1, "rgba(59, 7, 100, 0.92)");
+          oreBorderCol = "#C084FC";
+          oreGlowCol = "rgba(192, 132, 252, 0.55)";
         } else {
-          spriteImg = (this.assets?.prop_asteroid?.loaded && this.assets.prop_asteroid.img) ||
-                      (this.assets?.prop_asteroid_ice?.loaded && this.assets.prop_asteroid_ice.img) || null;
+          oreGrad.addColorStop(0, "rgba(6, 78, 59, 0.92)");
+          oreGrad.addColorStop(0.5, "rgba(16, 185, 129, 0.85)");
+          oreGrad.addColorStop(1, "rgba(6, 78, 59, 0.92)");
+          oreBorderCol = "#34D399";
+          oreGlowCol = "rgba(52, 211, 153, 0.55)";
         }
 
-        const rockSize = scrollH * 0.54;
-        if (spriteImg) {
-          ctx.globalAlpha = 0.55;
-          ctx.drawImage(spriteImg, -rockSize / 2, -rockSize / 2, rockSize, rockSize);
-        } else {
-          ctx.globalAlpha = 0.45;
-          const rockGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, rockSize / 2);
-          rockGrad.addColorStop(0, ast.runeColor || "#FEF08A");
-          rockGrad.addColorStop(0.7, ast.coreColor || "#F97316");
-          rockGrad.addColorStop(1, "transparent");
-          ctx.fillStyle = rockGrad;
-          ctx.beginPath();
-          ctx.arc(0, 0, rockSize / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.fillStyle = oreGrad;
+        ctx.shadowColor = oreGlowCol;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(oreX, oreY, oreW, oreH, 6);
+        ctx.fill();
+
+        // Viền ngọc thần thạch chạm khắc
+        ctx.strokeStyle = oreBorderCol;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+
+        // C. PHÙ ẤN BỐN GÓC THẦN THẠCH [ 攻 破 ]
+        ctx.font = "800 8.5px 'Cinzel', serif";
+        ctx.fillStyle = "rgba(253, 224, 71, 0.75)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("攻", oreX + 9, oreY + oreH / 2);
+        ctx.fillText("破", oreX + oreW - 9, oreY + oreH / 2);
+
         ctx.restore();
 
         // 4.8 KÝ TỰ CỔ PHÙ TRẢM MA (CARVED SACRED RUNES)
-        // Hiển thị trực diện trên giấy cổ với độ tương phản cao, rõ nét tuyệt đối
+        // Hiển thị trực diện trên phiến ma thạch với độ tương phản cao, rõ nét tuyệt đối
         ctx.save();
-        ctx.font = isMobileScreen ? "900 18.5px 'Cinzel', serif" : "900 22.5px 'Cinzel', 'Playfair Display', serif";
+        ctx.font = isMobileScreen ? "900 17.5px 'Cinzel', serif" : "900 21px 'Cinzel', 'Playfair Display', serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
         const startCharX = posX - (word.length * charSpacing) / 2 + charSpacing / 2;
-        const runeY = cy - 1;
+        const runeY = cy;
 
         for (let c = 0; c < word.length; c++) {
           const letter = word[c];
@@ -675,13 +699,13 @@
           if (c < ast.typedLen) {
             // ĐÃ GÕ ĐÚNG: Hiện chữ cái thật rực rỡ ngọc bích
             ctx.save();
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(4, 30, 20, 0.95)";
+            ctx.lineWidth = 2.8;
+            ctx.strokeStyle = "rgba(6, 78, 59, 0.95)";
             ctx.strokeText(letter, cx, runeY);
 
-            ctx.fillStyle = "#059669";
+            ctx.fillStyle = "#34D399";
             ctx.shadowColor = "#10B981";
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 12;
             ctx.fillText(letter, cx, runeY);
             ctx.restore();
 
@@ -693,79 +717,79 @@
             ctx.scale(pulse, pulse);
 
             let targetChar = letter;
-            let targetColor = "#D97706";
+            let targetColor = "#FDE047";
             let targetGlow = "#F59E0B";
 
             if (ast.isAudio) {
               targetChar = "_";
-              targetColor = "#7C3AED";
+              targetColor = "#C084FC";
               targetGlow = "#A855F7";
             } else if (ast.isCloze) {
               // CLOZE: Chỉ hiện gợi ý chữ đầu (khi chưa gõ) và chữ cuối (nếu từ >= 3 ký tự)
               if ((c === 0 && ast.typedLen === 0) || (c === word.length - 1 && word.length >= 3)) {
                 targetChar = letter;
-                targetColor = "#B45309";
+                targetColor = "#FDE047";
                 targetGlow = "#F59E0B";
               } else {
                 targetChar = "_";
-                targetColor = "#0D9488";
-                targetGlow = "#14B8A6";
+                targetColor = "#67E8F9";
+                targetGlow = "#38BDF8";
               }
             }
 
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(69, 26, 3, 0.95)";
+            ctx.lineWidth = 3.0;
+            ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
             ctx.strokeText(targetChar, 0, 0);
 
             ctx.fillStyle = targetColor;
             ctx.shadowColor = targetGlow;
-            ctx.shadowBlur = 14;
+            ctx.shadowBlur = 16;
             ctx.fillText(targetChar, 0, 0);
 
             // Vòng tròn kiếm khí nhắm mục tiêu
             ctx.strokeStyle = targetGlow;
             ctx.lineWidth = 1.6;
             ctx.beginPath();
-            ctx.arc(0, 0, 12, 0, Math.PI * 2);
+            ctx.arc(0, 0, isMobileScreen ? 11 : 13, 0, Math.PI * 2);
             ctx.stroke();
             ctx.restore();
 
           } else {
             // KÝ TỰ CHƯA GÕ (c > ast.typedLen)
             ctx.save();
-            ctx.lineWidth = 2.2;
-            ctx.strokeStyle = "rgba(69, 26, 3, 0.85)";
+            ctx.lineWidth = 2.6;
+            ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
 
             let displayChar = letter;
-            let fillCol = "#1E293B";
-            let glowCol = "rgba(0, 0, 0, 0.4)";
+            let fillCol = "#FEF08A";
+            let glowCol = "rgba(254, 240, 138, 0.5)";
 
             if (ast.isAudio) {
               displayChar = "_";
-              fillCol = "rgba(124, 58, 237, 0.85)";
-              glowCol = "rgba(168, 85, 247, 0.5)";
+              fillCol = "#C084FC";
+              glowCol = "rgba(192, 132, 252, 0.5)";
             } else if (ast.isCloze) {
               // CLOZE: Ký tự cuối cùng luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 ký tự
               if (c === word.length - 1 && word.length >= 3) {
                 displayChar = letter;
-                fillCol = "#B45309";
+                fillCol = "#FDE047";
                 glowCol = "rgba(245, 158, 11, 0.6)";
               } else {
                 displayChar = "_";
-                fillCol = "rgba(13, 148, 136, 0.85)";
-                glowCol = "rgba(20, 184, 166, 0.5)";
+                fillCol = "rgba(103, 232, 249, 0.85)";
+                glowCol = "rgba(56, 189, 248, 0.5)";
               }
             }
 
             ctx.strokeText(displayChar, cx, runeY);
             ctx.fillStyle = fillCol;
             ctx.shadowColor = glowCol;
-            ctx.shadowBlur = 6;
+            ctx.shadowBlur = 8;
             ctx.fillText(displayChar, cx, runeY);
 
             // Gạch chân ký tự cuối để người chơi nhận diện đây là chữ cái gợi ý
             if (ast.isCloze && c === word.length - 1 && word.length >= 3) {
-              ctx.strokeStyle = "#B45309";
+              ctx.strokeStyle = "#FDE047";
               ctx.lineWidth = 1.4;
               ctx.beginPath();
               ctx.moveTo(cx - 7, runeY + 11);
@@ -813,56 +837,6 @@
           fitText += "...";
         }
         ctx.fillText(fitText, posX, btmBannerY + btmBannerH / 2);
-
-        // 4.10 LINH THÚ HỘ ĐẠO (PLAYFUL GREEN CHIBI CAT COMPANION ON ACTIVE SCROLL)
-        if (isTarget) {
-          ctx.save();
-          const catX = sx + scrollW + 2;
-          const catY = sy + scrollH - 4;
-          const catBob = Math.sin(this.time * 6) * 3;
-
-          // Đám mây vàng bồng bềnh nâng linh thú
-          ctx.fillStyle = "rgba(253, 224, 71, 0.85)";
-          ctx.shadowColor = "#F59E0B";
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.ellipse(catX + 4, catY + catBob + 6, 12, 5, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Thân mèo ngọc bích cute vẫy tay
-          ctx.fillStyle = "#10B981";
-          ctx.strokeStyle = "#064E3B";
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.arc(catX + 4, catY + catBob, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-
-          // Hai tai mèo
-          ctx.beginPath();
-          ctx.moveTo(catX - 1, catY + catBob - 6);
-          ctx.lineTo(catX + 1, catY + catBob - 12);
-          ctx.lineTo(catX + 4, catY + catBob - 6);
-          ctx.moveTo(catX + 4, catY + catBob - 6);
-          ctx.lineTo(catX + 7, catY + catBob - 12);
-          ctx.lineTo(catX + 9, catY + catBob - 6);
-          ctx.fill();
-          ctx.stroke();
-
-          // Mắt và má hồng
-          ctx.fillStyle = "#064E3B";
-          ctx.beginPath();
-          ctx.arc(catX + 2, catY + catBob - 1, 1, 0, Math.PI * 2);
-          ctx.arc(catX + 6, catY + catBob - 1, 1, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = "#F43F5E";
-          ctx.beginPath();
-          ctx.arc(catX, catY + catBob + 2, 1.2, 0, Math.PI * 2);
-          ctx.arc(catX + 8, catY + catBob + 2, 1.2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
 
         ctx.restore();
       }

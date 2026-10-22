@@ -719,7 +719,7 @@
 
     update(dt) {
       const isMobile = this.canvas.width <= 768 || (this.canvas.height > this.canvas.width);
-      const catTargetY = isMobile ? (this.canvas.height * 0.48 - 25) : (this.canvas.height - 128);
+      const catTargetY = isMobile ? (this.canvas.height - 232) : (this.canvas.height - 128);
 
       // 1. Cập nhật Choáng, Sấm Sét và Đồng bộ Bàn Phím Ảo
       this.gameState.updateStun(dt);
@@ -761,8 +761,8 @@
       if (this.animator) this.animator.update(dt, this.gameState);
       this.cat.update(dt, this.gameState);
 
-      // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên đỉnh bàn phím ảo)
-      const bottomThreshold = isMobile ? (this.canvas.height * 0.48 + 15) : (this.canvas.height - 128);
+      // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
+      const bottomThreshold = isMobile ? (this.canvas.height - 240) : (this.canvas.height - 128);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
@@ -919,7 +919,9 @@
 
         // 9. Bong bóng thoại Mèo Tôn
         if (this.gameState.speechText && performance.now() < this.gameState.speechTimer) {
-          this.floatingText.drawSideSpeechBubble(ctx, w / 2, h - 180, this.gameState.speechText);
+          const isMob = w <= 768 || (h > w);
+          const speechY = isMob ? (h - 365) : (h - 260);
+          this.floatingText.drawSideSpeechBubble(ctx, w / 2, speechY, this.gameState.speechText);
         }
       }
 

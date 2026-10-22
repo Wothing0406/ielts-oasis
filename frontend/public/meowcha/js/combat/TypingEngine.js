@@ -77,7 +77,7 @@
 
         const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
         const catX = canvas.width / 2;
-        const catY = isMobile ? (canvas.height * 0.48 - 25) : (canvas.height - 128);
+        const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
@@ -122,7 +122,7 @@
 
         const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
         const catX = canvas.width / 2;
-        const catY = isMobile ? (canvas.height * 0.48 - 25) : (canvas.height - 128);
+        const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
         this.state.setCatState("HURT", 140);
         this.state.screenShake = 5;
@@ -281,7 +281,7 @@
           if (ast) {
             const isMobile = canvas && (canvas.width <= 768 || canvas.height > canvas.width);
             const catX = canvas ? canvas.width / 2 : 400;
-            const catY = canvas ? (isMobile ? canvas.height * 0.48 - 25 : canvas.height - 128) : 500;
+            const catY = canvas ? (isMobile ? canvas.height - 232 : canvas.height - 128) : 500;
             this.state.chibiAttackFlash = 1.0;
             this.projectiles.spawn(catX - 70, catY - 60, ast.x, ast.y, 3, "#C084FC");
             this.projectiles.spawnSkyStrike(ast.x, ast.y, 3);
@@ -409,7 +409,7 @@
 
       const isMobile = canvas.width <= 768 || (canvas.height > canvas.width);
       const catX = canvas.width / 2;
-      const catY = isMobile ? (canvas.height * 0.48 - 25) : (canvas.height - 128);
+      const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
       this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
