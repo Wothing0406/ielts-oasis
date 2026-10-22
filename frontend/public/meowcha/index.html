@@ -23,10 +23,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=11.6" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=11.6" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=11.6" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=11.6" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=11.7" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=11.7" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=11.7" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=11.7" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -945,35 +945,87 @@
 
           <!-- BANNER DẢI LỤA ĐỎ CỔ PHONG (Scarlet Silk Banner with Hanging Paper Lanterns) -->
           <div class="battle-setup-banner">
-            <!-- Đèn lồng giấy đỏ treo bên trái -->
-            <div class="hanging-paper-lantern lantern-left">
-              <div class="lantern-cord"></div>
-              <div class="lantern-body">
-                <span class="lantern-tassel"></span>
-              </div>
+            <!-- Đèn lồng đỏ Cổ Phong 3D treo bên trái -->
+            <div class="hanging-xianxia-lantern lantern-left" aria-hidden="true">
+              <svg class="lantern-3d-svg" width="32" height="60" viewBox="0 0 32 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="lanternGlowLeft" cx="45%" cy="40%" r="55%">
+                    <stop offset="0%" stop-color="#FEF08A"/>
+                    <stop offset="35%" stop-color="#EF4444"/>
+                    <stop offset="75%" stop-color="#B91C1C"/>
+                    <stop offset="100%" stop-color="#450A0A"/>
+                  </radialGradient>
+                  <linearGradient id="goldCapLeft" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#B45309"/>
+                    <stop offset="50%" stop-color="#FDE047"/>
+                    <stop offset="100%" stop-color="#92400E"/>
+                  </linearGradient>
+                </defs>
+                <line x1="16" y1="0" x2="16" y2="8" stroke="#FDE047" stroke-width="1.4"/>
+                <path d="M8 8 H24 L21 11 H11 Z" fill="url(#goldCapLeft)" stroke="#78350F" stroke-width="0.8"/>
+                <circle cx="16" cy="7" r="1.5" fill="#10B981" stroke="#FDE047" stroke-width="0.6"/>
+                <g class="lantern-glow-group">
+                  <ellipse cx="16" cy="24" rx="12" ry="13" fill="url(#lanternGlowLeft)"/>
+                  <path d="M16 11 V37" stroke="rgba(253, 224, 71, 0.55)" stroke-width="0.9"/>
+                  <path d="M11.5 11.5 C8 17 8 31 11.5 36.5" stroke="rgba(253, 224, 71, 0.45)" stroke-width="0.9" fill="none"/>
+                  <path d="M20.5 11.5 C24 17 24 31 20.5 36.5" stroke="rgba(253, 224, 71, 0.45)" stroke-width="0.9" fill="none"/>
+                  <path d="M6.5 17 C5 21 5 27 6.5 31" stroke="rgba(253, 224, 71, 0.35)" stroke-width="0.8" fill="none"/>
+                  <path d="M25.5 17 C27 21 27 27 25.5 31" stroke="rgba(253, 224, 71, 0.35)" stroke-width="0.8" fill="none"/>
+                  <ellipse cx="16" cy="24" rx="12" ry="4" stroke="rgba(253, 224, 71, 0.3)" stroke-width="0.7" fill="none"/>
+                </g>
+                <path d="M11 37 H21 L23 40 H9 Z" fill="url(#goldCapLeft)" stroke="#78350F" stroke-width="0.8"/>
+                <circle cx="16" cy="41" r="1.5" fill="#10B981" stroke="#FDE047" stroke-width="0.6"/>
+                <line x1="16" y1="42.5" x2="16" y2="46" stroke="#FDE047" stroke-width="1.4"/>
+                <path d="M13 46 H19 L20 60 L16 64 L12 60 Z" fill="#DC2626"/>
+                <line x1="16" y1="46" x2="16" y2="63" stroke="#FDE047" stroke-width="1"/>
+                <line x1="14" y1="47" x2="13.5" y2="59" stroke="#EF4444" stroke-width="0.7"/>
+                <line x1="18" y1="47" x2="18.5" y2="59" stroke="#EF4444" stroke-width="0.7"/>
+              </svg>
             </div>
 
             <!-- Dải lụa đỏ chính giữa -->
             <div class="banner-silk-wrap">
               <div class="silk-ribbon-tail left"></div>
-              <div class="silk-title-box">
-                <svg class="incense-smoke-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2">
-                  <path d="M12 2c-2 4 2 6 0 10s-2 6 0 10" stroke-linecap="round"/>
-                </svg>
-                <h2 class="modal-title-xianxia">THIẾT LẬP TRẬN ĐẤU</h2>
-                <svg class="incense-smoke-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2">
-                  <path d="M12 2c2 4-2 6 0 10s2 6 0 10" stroke-linecap="round"/>
-                </svg>
-              </div>
+              <div class="silk-title-box"><span class="seal-glyph-gold" style="color: #FDE047; font-size: 13px; font-weight: 900;">[ 敕 ]</span><h2 class="modal-title-xianxia">TIÊN MA ĐẠO TRÀNG • KHAI TRẬN ĐỘ KIẾP</h2><span class="seal-glyph-gold" style="color: #FDE047; font-size: 13px; font-weight: 900;">[ 令 ]</span></div>
               <div class="silk-ribbon-tail right"></div>
             </div>
 
-            <!-- Đèn lồng giấy đỏ treo bên phải -->
-            <div class="hanging-paper-lantern lantern-right">
-              <div class="lantern-cord"></div>
-              <div class="lantern-body">
-                <span class="lantern-tassel"></span>
-              </div>
+            <!-- Đèn lồng đỏ Cổ Phong 3D treo bên phải -->
+            <div class="hanging-xianxia-lantern lantern-right" aria-hidden="true">
+              <svg class="lantern-3d-svg" width="32" height="60" viewBox="0 0 32 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="lanternGlowRight" cx="45%" cy="40%" r="55%">
+                    <stop offset="0%" stop-color="#FEF08A"/>
+                    <stop offset="35%" stop-color="#EF4444"/>
+                    <stop offset="75%" stop-color="#B91C1C"/>
+                    <stop offset="100%" stop-color="#450A0A"/>
+                  </radialGradient>
+                  <linearGradient id="goldCapRight" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#B45309"/>
+                    <stop offset="50%" stop-color="#FDE047"/>
+                    <stop offset="100%" stop-color="#92400E"/>
+                  </linearGradient>
+                </defs>
+                <line x1="16" y1="0" x2="16" y2="8" stroke="#FDE047" stroke-width="1.4"/>
+                <path d="M8 8 H24 L21 11 H11 Z" fill="url(#goldCapRight)" stroke="#78350F" stroke-width="0.8"/>
+                <circle cx="16" cy="7" r="1.5" fill="#10B981" stroke="#FDE047" stroke-width="0.6"/>
+                <g class="lantern-glow-group">
+                  <ellipse cx="16" cy="24" rx="12" ry="13" fill="url(#lanternGlowRight)"/>
+                  <path d="M16 11 V37" stroke="rgba(253, 224, 71, 0.55)" stroke-width="0.9"/>
+                  <path d="M11.5 11.5 C8 17 8 31 11.5 36.5" stroke="rgba(253, 224, 71, 0.45)" stroke-width="0.9" fill="none"/>
+                  <path d="M20.5 11.5 C24 17 24 31 20.5 36.5" stroke="rgba(253, 224, 71, 0.45)" stroke-width="0.9" fill="none"/>
+                  <path d="M6.5 17 C5 21 5 27 6.5 31" stroke="rgba(253, 224, 71, 0.35)" stroke-width="0.8" fill="none"/>
+                  <path d="M25.5 17 C27 21 27 27 25.5 31" stroke="rgba(253, 224, 71, 0.35)" stroke-width="0.8" fill="none"/>
+                  <ellipse cx="16" cy="24" rx="12" ry="4" stroke="rgba(253, 224, 71, 0.3)" stroke-width="0.7" fill="none"/>
+                </g>
+                <path d="M11 37 H21 L23 40 H9 Z" fill="url(#goldCapRight)" stroke="#78350F" stroke-width="0.8"/>
+                <circle cx="16" cy="41" r="1.5" fill="#10B981" stroke="#FDE047" stroke-width="0.6"/>
+                <line x1="16" y1="42.5" x2="16" y2="46" stroke="#FDE047" stroke-width="1.4"/>
+                <path d="M13 46 H19 L20 60 L16 64 L12 60 Z" fill="#DC2626"/>
+                <line x1="16" y1="46" x2="16" y2="63" stroke="#FDE047" stroke-width="1"/>
+                <line x1="14" y1="47" x2="13.5" y2="59" stroke="#EF4444" stroke-width="0.7"/>
+                <line x1="18" y1="47" x2="18.5" y2="59" stroke="#EF4444" stroke-width="0.7"/>
+              </svg>
             </div>
 
             <!-- Nút đóng lệnh bài ngọc -->
@@ -987,8 +1039,8 @@
             <div class="setup-section-block">
               <div class="setup-section-header">
                 <span class="setup-sec-num">壹</span>
-                <span class="setup-sec-title">CHỌN CHẾ ĐỘ CHƠI</span>
-                <span class="setup-sec-sub">(Phương thức nhập từ vựng)</span>
+                <span class="setup-sec-title">CHỌN PHÁP MÔN TRẢM MA</span>
+                <span class="setup-sec-sub">• Pháp quyết xuất kiếm</span>
               </div>
 
               <div class="setup-modes-grid" id="setupModeGrid">
@@ -1067,72 +1119,51 @@
               </div>
             </div>
 
-            <!-- MỤC 2: CHỌN TÀNG KINH CÁC (4 Miniature Bamboo Scrolls & Books) -->
+            <!-- MỤC 2: TIÊN ĐẠO QUẢ VỊ • ĐẠI LỘ TU CHÂN (Unified Cultivation Path & Auto SRS) -->
             <div class="setup-section-block">
               <div class="setup-section-header">
                 <span class="setup-sec-num">贰</span>
-                <span class="setup-sec-title">CHỌN BỘ TỪ VỰNG</span>
-                <span class="setup-sec-sub">(Danh mục từ vựng luyện tập)</span>
+                <span class="setup-sec-title">ĐẠI LỘ TU CHÂN • TIÊN ĐẠO TRÀNG</span>
+                <span class="setup-sec-sub">• Độ khó & từ vựng tiến hóa tự nhiên theo Cảnh Giới</span>
               </div>
 
-              <div class="setup-decks-grid" id="setupDeckGrid">
-                <!-- Deck 1: Oxford 5000 (Bamboo Slip tied with jade toggle & red silk tassel) -->
-                <div class="setup-deck-card modal-bamboo-scroll active-deck" data-deck="oxford_5000">
-                  <div class="scroll-roller-cap left"></div>
-                  <div class="scroll-parchment-body">
-                    <div class="deck-badge-wrap">
-                      <span class="setup-deck-badge gold">CƠ BẢN</span>
-                      <span class="bamboo-jade-toggle"></span>
-                    </div>
-                    <div class="setup-deck-title">OXFORD 5000</div>
-                    <div class="setup-deck-desc">5,946 từ cốt lõi A1 - C1 theo 5 cấp độ</div>
-                  </div>
-                  <div class="scroll-roller-cap right"></div>
-                  <span class="scroll-silk-tassel red" aria-hidden="true"></span>
+              <!-- 5 Cảnh Giới Tiến Trình Thống Nhất -->
+              <div class="cultivation-track-container" id="setupRealmsTrack">
+                <div class="realm-step-card active-realm" data-realm="0">
+                  <div class="realm-step-badge">CẤP 0 - 1</div>
+                  <div class="realm-step-name">Luyện Khí Kỳ</div>
+                  <div class="realm-step-vocab">Cốt lõi A1 - B1 • 3-5 Ký tự</div>
                 </div>
-
-                <!-- Deck 2: 1200 Thính Âm (Indigo silk scroll with thunder runes & cyan tassel) -->
-                <div class="setup-deck-card modal-indigo-scroll" data-deck="listening_1200">
-                  <div class="scroll-roller-cap left"></div>
-                  <div class="scroll-parchment-body">
-                    <div class="deck-badge-wrap">
-                      <span class="setup-deck-badge cyan">LISTENING</span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#38BDF8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    </div>
-                    <div class="setup-deck-title">1200 THÍNH ÂM</div>
-                    <div class="setup-deck-desc">Từ vựng hay gặp trong IELTS Listening Section 1</div>
-                  </div>
-                  <div class="scroll-roller-cap right"></div>
-                  <span class="scroll-silk-tassel cyan" aria-hidden="true"></span>
+                <div class="realm-step-card" data-realm="1">
+                  <div class="realm-step-badge">CẤP 2 - 3</div>
+                  <div class="realm-step-name">Trúc Cơ Kỳ</div>
+                  <div class="realm-step-vocab">B1 - B2 • 1200 Thính Âm</div>
                 </div>
-
-                <!-- Deck 3: Cambridge 17-19 (Leather-bound stitched grimoire with 7.5+ stamp & cream pages) -->
-                <div class="setup-deck-card modal-leather-book" data-deck="reading_academic">
-                  <div class="book-stitched-spine"></div>
-                  <div class="scroll-parchment-body">
-                    <div class="deck-badge-wrap">
-                      <span class="setup-deck-badge purple">HỌC THUẬT</span>
-                      <span class="vermilion-75-seal">7.5+</span>
-                    </div>
-                    <div class="setup-deck-title">CAMBRIDGE 17-19</div>
-                    <div class="setup-deck-desc">Từ vựng học thuật trong đề thi Cambridge IELTS</div>
-                  </div>
-                  <div class="book-pages-edge" aria-hidden="true"></div>
+                <div class="realm-step-card" data-realm="2">
+                  <div class="realm-step-badge">CẤP 4 - 5</div>
+                  <div class="realm-step-name">Kim Đan Kỳ</div>
+                  <div class="realm-step-vocab">B2 - C1 • Cambridge Academic</div>
                 </div>
+                <div class="realm-step-card" data-realm="3">
+                  <div class="realm-step-badge">CẤP 6 - 7</div>
+                  <div class="realm-step-name">Nguyên Anh Kỳ</div>
+                  <div class="realm-step-vocab">C1 - C2 • Học Thuật Chuyên Sâu</div>
+                </div>
+                <div class="realm-step-card" data-realm="4">
+                  <div class="realm-step-badge">CẤP 8+</div>
+                  <div class="realm-step-name">Vạn Kiếm Chí Tôn</div>
+                  <div class="realm-step-vocab">Collocations & C2 Master</div>
+                </div>
+              </div>
 
-                <!-- Deck 4: Tái Hiện SRS (Parchment scroll with green cat paw & emerald tassel) -->
-                <div class="setup-deck-card modal-paw-scroll" data-deck="flashcard_srs">
-                  <div class="scroll-roller-cap left"></div>
-                  <div class="scroll-parchment-body">
-                    <div class="deck-badge-wrap">
-                      <span class="setup-deck-badge emerald">SỔ TAY</span>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="#10B981"><circle cx="12" cy="15" r="4"/><circle cx="7" cy="9" r="2.2"/><circle cx="17" cy="9" r="2.2"/><circle cx="12" cy="6" r="2.2"/></svg>
-                    </div>
-                    <div class="setup-deck-title">TÁI HIỆN SRS</div>
-                    <div class="setup-deck-desc">Ôn tập các từ đã từng gõ sai</div>
-                  </div>
-                  <div class="scroll-roller-cap right"></div>
-                  <span class="scroll-silk-tassel green" aria-hidden="true"></span>
+              <!-- Thẻ Ghi Chú Tâm Ma Tẩy Luyện (Tự Động Hóa SRS 100%) -->
+              <div class="srs-auto-notice-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2" class="notice-flame-icon">
+                  <path d="M12 2c1 3 4 5 4 9a6 6 0 1 1-12 0c0-4 3-6 4-9 1 3 2 4 4 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="srs-notice-content">
+                  <span class="srs-notice-title">TÂM MA TẨY LUYỆN (SRS TỰ ĐỘNG):</span>
+                  <span class="srs-notice-desc">Từ gõ sai hoặc ma thạch chạm đất sẽ tự động hóa thành <b>Hắc Ám Tâm Ma Thạch</b> giáng lâm trong trận tiếp theo. Chém tan để thanh tẩy tâm ma và nhận <b>x2 Tu Vi</b>!</span>
                 </div>
               </div>
             </div>
@@ -1938,35 +1969,35 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=11.6"></script>
-    <script src="./js/data/WordDecks.js?v=11.6"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=11.6"></script>
-    <script src="./js/data/TalentsData.js?v=11.6"></script>
-    <script src="./js/data/SpeechesData.js?v=11.6"></script>
+    <script src="./js/data/RealmsData.js?v=11.7"></script>
+    <script src="./js/data/WordDecks.js?v=11.7"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=11.7"></script>
+    <script src="./js/data/TalentsData.js?v=11.7"></script>
+    <script src="./js/data/SpeechesData.js?v=11.7"></script>
 
-    <script src="./js/core/AudioManager.js?v=11.6"></script>
-    <script src="./js/core/SaveSystem.js?v=11.6"></script>
-    <script src="./js/core/GameState.js?v=11.6"></script>
-    <script src="./js/core/SpriteAnimator.js?v=11.6"></script>
+    <script src="./js/core/AudioManager.js?v=11.7"></script>
+    <script src="./js/core/SaveSystem.js?v=11.7"></script>
+    <script src="./js/core/GameState.js?v=11.7"></script>
+    <script src="./js/core/SpriteAnimator.js?v=11.7"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=11.6"></script>
-    <script src="./js/effects/RealmVFX.js?v=11.6"></script>
-    <script src="./js/effects/FloatingText.js?v=11.6"></script>
+    <script src="./js/effects/ParticleEngine.js?v=11.7"></script>
+    <script src="./js/effects/RealmVFX.js?v=11.7"></script>
+    <script src="./js/effects/FloatingText.js?v=11.7"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=11.6"></script>
-    <script src="./js/entities/AsteroidManager.js?v=11.6"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=11.6"></script>
+    <script src="./js/entities/CatCultivator.js?v=11.7"></script>
+    <script src="./js/entities/AsteroidManager.js?v=11.7"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=11.7"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=11.6"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=11.6"></script>
+    <script src="./js/combat/TypingEngine.js?v=11.7"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=11.7"></script>
 
-    <script src="./js/ui/IPAToast.js?v=11.6"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=11.6"></script>
-    <script src="./js/ui/UnityBridge.js?v=11.6"></script>
-    <script src="./js/core/VocabLoader.js?v=11.6"></script>
-    <script src="./js/ui/UIManager.js?v=11.6"></script>
+    <script src="./js/ui/IPAToast.js?v=11.7"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=11.7"></script>
+    <script src="./js/ui/UnityBridge.js?v=11.7"></script>
+    <script src="./js/core/VocabLoader.js?v=11.7"></script>
+    <script src="./js/ui/UIManager.js?v=11.7"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=11.6"></script>
+    <script src="./js/main.js?v=11.7"></script>
   </body>
 </html>

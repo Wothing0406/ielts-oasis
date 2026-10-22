@@ -6945,3 +6945,208 @@
     gap: 6px !important;
   }
 }
+
+/* ==========================================================================
+   8. 3D PALACE LANTERNS, REALMS PROGRESSION TRACK & MOBILE ALIGNMENT OVERHAUL
+   ========================================================================== */
+.hanging-xianxia-lantern {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.65)) drop-shadow(0 0 16px rgba(253, 224, 71, 0.4));
+  animation: lanternSway 3.2s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+.lantern-left { animation-delay: -1.6s; }
+
+@keyframes lanternSway {
+  0% { transform: rotate(-5deg); }
+  100% { transform: rotate(5deg); }
+}
+
+.lantern-glow-group {
+  filter: drop-shadow(0 0 8px rgba(254, 240, 138, 0.5));
+}
+
+/* 5-REALM PROGRESSION TRACK (REPLACING 4 SEPARATE DECKS) */
+.cultivation-track-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.realm-step-card {
+  background: linear-gradient(180deg, #1C130B 0%, #110B07 100%);
+  border: 1.5px solid #78350F;
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.realm-step-card.active-realm {
+  background: linear-gradient(180deg, #2D1A0D 0%, #1A0F07 100%);
+  border: 1.5px solid #FDE047;
+  box-shadow: 0 0 14px rgba(253, 224, 71, 0.35), inset 0 0 10px rgba(245, 158, 11, 0.2);
+  transform: translateY(-2px);
+}
+
+.realm-step-badge {
+  font-size: 9px;
+  font-weight: 800;
+  color: #D97706;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.realm-step-card.active-realm .realm-step-badge {
+  color: #FEF08A;
+}
+
+.realm-step-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #F3F4F6;
+  margin-bottom: 2px;
+}
+
+.realm-step-vocab {
+  font-size: 9px;
+  color: #9CA3AF;
+  line-height: 1.2;
+}
+
+.srs-auto-notice-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  background: linear-gradient(90deg, rgba(88, 28, 135, 0.25) 0%, rgba(20, 14, 25, 0.5) 100%);
+  border: 1px dashed rgba(168, 85, 247, 0.5);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.srs-notice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.srs-notice-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #E879F9;
+  letter-spacing: 0.5px;
+}
+
+.srs-notice-desc {
+  font-size: 10.5px;
+  color: #E2E8F0;
+  line-height: 1.35;
+}
+
+/* FIX MOBILE MODAL ALIGNMENT & SQUISHED BUTTONS */
+@media (max-width: 768px) {
+  .battle-setup-modal-box {
+    width: min(95vw, 440px) !important;
+    max-height: 90dvh !important;
+    padding: 14px 10px 16px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .modal-brass-corner.top-left { top: 0 !important; left: 0 !important; }
+  .modal-brass-corner.top-right { top: 0 !important; right: 0 !important; }
+  .modal-brass-corner.bottom-left { bottom: 0 !important; left: 0 !important; }
+  .modal-brass-corner.bottom-right { bottom: 0 !important; right: 0 !important; }
+
+  .battle-setup-banner {
+    flex-shrink: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .silk-title-box {
+    padding: 5px 8px !important;
+    gap: 6px !important;
+    justify-content: center !important;
+  }
+
+  .modal-title-xianxia {
+    font-size: 12.5px !important;
+    text-align: center !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .seal-glyph-gold {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 11px !important;
+  }
+
+  .hanging-xianxia-lantern {
+    top: -4px !important;
+  }
+
+  .hanging-xianxia-lantern svg {
+    width: 24px !important;
+    height: 48px !important;
+  }
+
+  .battle-setup-body {
+    overflow-y: auto !important;
+    max-height: calc(90dvh - 85px) !important;
+    padding-right: 4px !important;
+  }
+
+  .cultivation-track-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+  .cultivation-track-container .realm-step-card:last-child {
+    grid-column: span 2 !important;
+  }
+
+  .setup-actions-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .setup-mascot-flank {
+    display: none !important;
+  }
+
+  .setup-dual-btns-wrap {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .sword-token-btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+  }
+
+  .sword-token-content {
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  .sword-token-main {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+
+  .sword-token-sub {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
+}

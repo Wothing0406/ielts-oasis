@@ -419,8 +419,9 @@
       this.slots[targetSlot] = this.getDefaultSlot(targetSlot);
       this.saveLocalSlots();
 
+      // Đồng bộ xóa dứt điểm trên Backend SQL
       if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/saves/${targetSlot}`, { 
+        fetch(`/api/meowcha/saves/${targetSlot}`, {
           method: 'DELETE',
           headers: this.getAuthHeaders()
         }).catch(() => {});
@@ -480,6 +481,14 @@
           this.slots[targetId].words = 0;
           this.slots[targetId].realmIdx = 0;
           this.slots[targetId].hp = 50;
+
+          // Xóa dứt điểm trên database backend nếu không còn tiến trình
+          if (typeof fetch !== "undefined") {
+            fetch(`/api/meowcha/saves/${targetId}`, {
+              method: 'DELETE',
+              headers: this.getAuthHeaders()
+            }).catch(() => {});
+          }
         }
         this.saveLocalSlots();
         return;
@@ -502,7 +511,7 @@
             for (let s = 1; s <= 3; s++) {
               const remote = res.data[s];
               if (remote && remote.is_occupied) {
-                this.slots[s] = {
+                this.slots[s] = this.normalizeSlot({
                   slotId: s,
                   slotName: remote.slot_name || `Ngọc Giản ${s}`,
                   isOccupied: true,
@@ -516,7 +525,7 @@
                   words: remote.words_slain,
                   bandIdx: remote.band_idx || 0,
                   talents: remote.talents || {}
-                };
+                }, s);
               }
             }
             this.saveLocalSlots();
