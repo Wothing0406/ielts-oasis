@@ -229,7 +229,7 @@
 
       const M = root.Meowcha || {};
       const appState = this.gameState || (M.app && M.app.gameState) || null;
-      const curMode = (appState && appState.gameMode) || "CLOZE";
+      const curMode = (appState && appState.gameMode) || "DIRECT";
 
       const asteroid = {
         id: Date.now() + Math.random(),
@@ -466,23 +466,56 @@
         }
 
         // 4.2 TÍNH TOÁN KÍCH THƯỚC CUỘN THƯ VỪA VẶN MỌI NỘI DUNG
-        ctx.font = isMobileScreen ? "700 11.5px 'Be Vietnam Pro', sans-serif" : "700 13px 'Be Vietnam Pro', sans-serif";
+        ctx.font = isMobileScreen ? "700 11px 'Be Vietnam Pro', sans-serif" : "700 12.5px 'Be Vietnam Pro', sans-serif";
         const bottomTextMetrics = ctx.measureText(bottomText).width;
         const charSpacing = isMobileScreen ? 19 : 23;
         const wordWidth = word.length * charSpacing;
 
-        const minW = isMobileScreen ? 185 : 225;
-        const maxW = isMobileScreen ? 310 : 380;
-        const scrollW = Math.max(minW, Math.min(maxW, Math.max(bottomTextMetrics + 36, wordWidth + 60)));
-        const scrollH = isMobileScreen ? 88 : 98;
+        const minW = isMobileScreen ? 175 : 210;
+        const maxW = isMobileScreen ? 285 : 350;
+        const scrollW = Math.max(minW, Math.min(maxW, Math.max(bottomTextMetrics + 32, wordWidth + 50)));
+        const scrollH = isMobileScreen ? 74 : 84;
         const sx = posX - scrollW / 2;
         const sy = posY - scrollH / 2;
 
-        // 4.3 ĐỔ BÓNG HÀO QUANG CUỘN THƯ
+        // 4.3 KHỐI THIÊN THẠCH MA THẠCH NGUYÊN TỐ LÀM NỀN DƯỚI (CELESTIAL METEORITE BASE LAYER)
+        // Asset thiên thạch thực tế nằm ở LỚP DƯỚI của cuộn thư theo đúng chuẩn thiết kế
+        // Giữ nguyên tỷ lệ 1:1 chuẩn pixel art (256x256) để thiên thạch khổng lồ vươn cao trên và dưới cuộn thư
+        const astType = ast.asteroidType || "fire";
+        const astAssetKey = `prop_asteroid_${astType}`;
+        const astAsset = this.assets && this.assets[astAssetKey];
+
+        ctx.save();
+        const rockSize = Math.max(isMobileScreen ? 230 : 285, scrollW + 28);
+        const rockW = rockSize;
+        const rockH = rockSize;
+
+        ctx.translate(posX, posY);
+        // Xoay nhẹ theo góc rơi và nhịp thời gian
+        ctx.rotate(ast.fallAngle * 0.12 + Math.sin(this.time * 2.2 + (ast.id || 0)) * 0.04);
+        ctx.shadowColor = ast.coreColor || "#F59E0B";
+        ctx.shadowBlur = isTarget ? 32 : 18;
+
+        if (astAsset && astAsset.loaded) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(astAsset.img, -rockW / 2, -rockH / 2, rockW, rockH);
+        } else {
+          // Fallback nếu sprite chưa nạp xong: Khối ma thạch phong ấn
+          ctx.fillStyle = "rgba(18, 12, 8, 0.96)";
+          ctx.strokeStyle = ast.coreColor || "#F59E0B";
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.roundRect(-rockW / 2, -rockH / 2, rockW, rockH, 14);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // 4.4 ĐỔ BÓNG HÀO QUANG CUỘN THƯ
         ctx.shadowColor = ast.hitReaction > 0 ? "#FFFFFF" : (isTarget ? "#F59E0B" : "rgba(0, 0, 0, 0.75)");
         ctx.shadowBlur = ast.hitReaction > 0 ? 28 : (isTarget ? 20 : 12);
 
-        // 4.4 THÂN CUỘN THƯ HOÀNG KIM CỔ PHONG (AGED GOLDEN PARCHMENT)
+        // 4.5 THÂN CUỘN THƯ HOÀNG KIM CỔ PHONG (AGED GOLDEN PARCHMENT)
         const pGrad = ctx.createLinearGradient(sx, sy, sx, sy + scrollH);
         pGrad.addColorStop(0, "rgba(225, 198, 142, 0.96)");
         pGrad.addColorStop(0.12, "rgba(252, 246, 224, 0.95)");
@@ -577,10 +610,10 @@
         ctx.fill();
 
         // 4.6 DẢI LỤA ĐỎ TIÊU ĐỀ TÍCH HỢP Ở ĐỈNH CUỘN THƯ (INTEGRATED TOP RED SILK BANNER)
-        const topBannerH = isMobileScreen ? 18 : 20;
+        const topBannerH = isMobileScreen ? 15 : 17;
         const topBannerW = scrollW - 14;
         const topBannerX = sx + 7;
-        const topBannerY = sy + 4;
+        const topBannerY = sy + 3;
 
         const silkGrad = ctx.createLinearGradient(topBannerX, 0, topBannerX + topBannerW, 0);
         silkGrad.addColorStop(0, "#7F1D1D");
@@ -597,7 +630,7 @@
         ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        ctx.font = isMobileScreen ? "800 10px 'Cinzel', serif" : "800 11px 'Cinzel', serif";
+        ctx.font = isMobileScreen ? "800 9.5px 'Cinzel', serif" : "800 10.5px 'Cinzel', serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#FEF08A";
@@ -606,11 +639,11 @@
         ctx.fillText(topTitle, posX, topBannerY + topBannerH / 2);
 
         // 4.7 TÂM ĐIỂM: MA THẠCH PHONG ẤN & PHIẾN THẦN THẠCH ÔM TRỌN TỪ VỰNG
-        const cy = sy + scrollH / 2 + (isMobileScreen ? 1 : 2);
+        const cy = sy + scrollH / 2;
 
         // A. KÍCH THƯỚC PHIẾN MA THẠCH CO GIÃN THEO ĐỘ DÀI TỪ VỰNG (KHÔNG BỊ NHỎ, KHÔNG BỊ ĐÈ NÉT)
-        const oreW = Math.min(scrollW - 24, Math.max(wordWidth + (isMobileScreen ? 28 : 36), isMobileScreen ? 140 : 180));
-        const oreH = isMobileScreen ? 34 : 38;
+        const oreW = Math.min(scrollW - 22, Math.max(wordWidth + (isMobileScreen ? 24 : 32), isMobileScreen ? 135 : 175));
+        const oreH = isMobileScreen ? 30 : 34;
         const oreX = posX - oreW / 2;
         const oreY = cy - oreH / 2;
 
@@ -802,10 +835,10 @@
         ctx.restore();
 
         // 4.9 DẢI ĐẾ SẪM MÀU TRANG NHÃ CHỨA PHIÊN ÂM & NGHĨA (INTEGRATED BOTTOM BANNER)
-        const btmBannerH = isMobileScreen ? 20 : 22;
+        const btmBannerH = isMobileScreen ? 16 : 18;
         const btmBannerW = scrollW - 14;
         const btmBannerX = sx + 7;
-        const btmBannerY = sy + scrollH - btmBannerH - 4;
+        const btmBannerY = sy + scrollH - btmBannerH - 3;
 
         ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
         ctx.beginPath();
@@ -816,7 +849,7 @@
         ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        ctx.font = isMobileScreen ? "700 11px 'Be Vietnam Pro', sans-serif" : "700 12.5px 'Be Vietnam Pro', sans-serif";
+        ctx.font = isMobileScreen ? "700 10.5px 'Be Vietnam Pro', sans-serif" : "700 12px 'Be Vietnam Pro', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 

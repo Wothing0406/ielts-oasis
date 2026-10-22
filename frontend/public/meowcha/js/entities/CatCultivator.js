@@ -37,8 +37,8 @@
     draw(ctx, canvas, gameState, currentTarget) {
       const isMobile = canvas.width <= 768 || canvas.height > canvas.width;
       const BASE_X = canvas.width / 2;
-      // Trên mobile: Đặt Miêu Tôn trang nghiêm ngay trên đỉnh đàn tế kiếm và bàn phím ảo
-      const BASE_Y = isMobile ? (canvas.height - 232) : (canvas.height - 128);
+      // Trên mobile: Đặt Miêu Tôn trang nghiêm trên đài phù vân, cách thanh thư cuộn bên dưới khoảng cách thoáng đãng
+      const BASE_Y = isMobile ? (canvas.height - 252) : (canvas.height - 128);
       const renderSize = isMobile ? 125 : 180;
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
       let drawX = BASE_X - renderSize / 2;
@@ -425,9 +425,7 @@
         ctx.restore();
       }
 
-      // ============================================================
       // 8. PHI KIẾM TỎA KHÍ & SỢI TƠ KIẾM Ý KHÓA MỤC TIÊU (QI TETHER)
-      // ============================================================
       this.drawAimingSwordAndTether(
         ctx,
         BASE_X,
@@ -436,45 +434,6 @@
         currentTarget,
         gameState,
       );
-
-      // 8.5 THANH TỤ KHÍ TUYỆT KỸ CẢNH GIỚI (REALM SKILL GAUGE)
-      if (gameState.getRealmPassiveConfig) {
-        const pCfg = gameState.getRealmPassiveConfig();
-        const curCharge = Math.min(pCfg.max, gameState.realmPassiveCharge || 0);
-        const barW = isMobile ? 96 : 124;
-        const barH = 5;
-        const barX = BASE_X - barW / 2;
-        const barY = BASE_Y - (isMobile ? 4 : 8);
-
-        ctx.save();
-        ctx.fillStyle = "rgba(10, 5, 18, 0.78)";
-        ctx.strokeStyle = "rgba(253, 224, 71, 0.45)";
-        ctx.lineWidth = 1;
-        ctx.fillRect(barX - 2, barY - 1, barW + 4, barH + 2);
-        ctx.strokeRect(barX - 2, barY - 1, barW + 4, barH + 2);
-
-        const segW = (barW - (pCfg.max - 1) * 2) / pCfg.max;
-        for (let s = 0; s < pCfg.max; s++) {
-          const sx = barX + s * (segW + 2);
-          if (s < curCharge) {
-            ctx.fillStyle = pCfg.color;
-            ctx.shadowColor = pCfg.color;
-            ctx.shadowBlur = 8;
-          } else {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-            ctx.shadowBlur = 0;
-          }
-          ctx.fillRect(sx, barY, segW, barH);
-        }
-
-        ctx.font = isMobile ? "bold 8.5px 'Cinzel', serif" : "bold 9.5px 'Cinzel', serif";
-        ctx.fillStyle = pCfg.color;
-        ctx.textAlign = "center";
-        ctx.shadowColor = "#000000";
-        ctx.shadowBlur = 4;
-        ctx.fillText(pCfg.name, BASE_X, barY + (isMobile ? 12 : 14));
-        ctx.restore();
-      }
 
       // 9. VÒNG SAO HOA MẮT KHI BỊ CHOÁNG (STUN DIZZY RUNES)
       if (gameState.isStunned || gameState.catState === "HURT") {
@@ -537,9 +496,10 @@
         swordBaseY =
           baseY - (isMobile ? 98 : 138) + Math.sin(this.time * 6) * 5;
 
-        const targetX = currentTarget.x;
-        const targetY = currentTarget.y;
-        swordAngle = Math.atan2(targetY - swordBaseY, targetX - swordBaseX);
+        // Điểm ngắm cắm vào mép dưới của thiên thạch, tuyệt đối không đâm xuyên qua tâm chữ cái
+        const aimTargetX = currentTarget.x;
+        const aimTargetY = currentTarget.y + (isMobile ? 48 : 56);
+        swordAngle = Math.atan2(aimTargetY - swordBaseY, aimTargetX - swordBaseX);
 
         // Xuất kiếm: Khi gõ trúng (WEAK_ATTACK), phi kiếm phóng vút tới trước theo góc ngắm
         if (gameState && gameState.catState === "WEAK_ATTACK") {
@@ -564,292 +524,39 @@
           swordBaseY + Math.sin(swordAngle) * (isMobile ? 28 : 42);
 
         // ============================================================
-        // A. TIA BẮN KIẾM KHÍ ĐIỆN ẢNH CỔ PHONG (CINEMATIC XIANXIA QI BEAM)
-        // Dải lụa kiếm khí đa tầng, vòng linh phù xoay chuyển và lõi laser rực rỡ
+        // SỢI TƠ KIẾM Ý TIÊN THIÊN (CELESTIAL QI THREAD)
+        // Thanh thoát, mỏng nhẹ (1.2px), bán trong suốt, uốn lượn cắm vào đáy thiên thạch
+        // Tuyệt đối KHÔNG che khuất từ ngữ hay tạo dải beam đặc 50px
         // ============================================================
         ctx.save();
-        const keyPulse = ((gameState && gameState.catRecoveryPulse) || 0) * 1.8;
-
-        // 1. Dải lụa sương mù kiếm khí uốn lượn bên ngoài (Outer Waving Silk Qi Mist)
-        ctx.strokeStyle = curAuraColor;
+        ctx.strokeStyle = "rgba(45, 226, 141, 0.4)";
         ctx.shadowColor = curSwordColor;
-        ctx.shadowBlur = 24 + keyPulse * 20;
-        ctx.lineWidth = Math.max(
-          3.2,
-          (4.2 + keyPulse * 3.0) * (isMobile ? 0.8 : 1.0),
-        );
-        ctx.beginPath();
-        ctx.moveTo(swordTipX, swordTipY);
-        const distToTarget = Math.hypot(
-          targetX - swordTipX,
-          targetY - swordTipY,
-        );
-        const midWave = Math.sin(this.time * 16) * (isMobile ? 4.5 : 8.5);
-        const perpX = -(targetY - swordTipY) / distToTarget;
-        const perpY = (targetX - swordTipX) / distToTarget;
-        const midX = (swordTipX + targetX) / 2 + perpX * midWave;
-        const midY = (swordTipY + targetY) / 2 + perpY * midWave;
-        ctx.quadraticCurveTo(midX, midY, targetX, targetY);
-        ctx.stroke();
-
-        // 2. Dải sóng kiếm ý đối xứng ngược chiều (Braided Counter Wave)
-        ctx.lineWidth = Math.max(
-          1.8,
-          (2.4 + keyPulse * 2.0) * (isMobile ? 0.75 : 0.95),
-        );
-        ctx.beginPath();
-        ctx.moveTo(swordTipX, swordTipY);
-        const midX2 = (swordTipX + targetX) / 2 - perpX * midWave * 0.8;
-        const midY2 = (swordTipY + targetY) / 2 - perpY * midWave * 0.8;
-        ctx.quadraticCurveTo(midX2, midY2, targetX, targetY);
-        ctx.stroke();
-
-        // 3. Lõi chùm Laser Bạch Quang phát sáng rực rỡ ở tâm tia
-        ctx.strokeStyle = "#FFFFFF";
-        ctx.lineWidth = Math.max(1.4, 1.4 + keyPulse * 1.2);
         ctx.shadowBlur = 10;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([6, 5]);
+
+        const distToTarget = Math.hypot(aimTargetX - swordTipX, aimTargetY - swordTipY);
+        const midWave = Math.sin(this.time * 12) * (isMobile ? 3 : 5);
+        const perpX = -(aimTargetY - swordTipY) / (distToTarget || 1);
+        const perpY = (aimTargetX - swordTipX) / (distToTarget || 1);
+        const midX = (swordTipX + aimTargetX) / 2 + perpX * midWave;
+        const midY = (swordTipY + aimTargetY) / 2 + perpY * midWave;
+
         ctx.beginPath();
         ctx.moveTo(swordTipX, swordTipY);
-        ctx.lineTo(targetX, targetY);
-        ctx.stroke();
-
-        // 3.4 SPRITE TIA BẮN PIXEL ART ĐỘC BẢN TỪNG NHÂN VẬT (AUTHENTIC CHARACTER BEAM SPRITE)
-        const beamSheetAsset = this.assets && this.assets[`char_r${realmIdx}_beam_sheet`];
-        const beamSingleAsset = this.assets && this.assets[`char_r${realmIdx}_beam`];
-        if ((beamSheetAsset && beamSheetAsset.loaded) || (beamSingleAsset && beamSingleAsset.loaded)) {
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.translate(swordTipX, swordTipY);
-          ctx.rotate(swordAngle);
-          const beamH = (isMobile ? 36 : 54) * (1.0 + keyPulse * 0.35);
-          ctx.globalAlpha = Math.min(1.0, 0.82 + keyPulse * 0.18);
-          ctx.shadowColor = curSwordColor;
-          ctx.shadowBlur = 18 + keyPulse * 12;
-
-          if (beamSheetAsset && beamSheetAsset.loaded) {
-            const frameIdx = Math.floor(this.time * 14) % 4;
-            const fw = Math.floor(beamSheetAsset.img.width / 4);
-            const fh = beamSheetAsset.img.height;
-            ctx.drawImage(
-              beamSheetAsset.img,
-              frameIdx * fw,
-              0,
-              fw,
-              fh,
-              0,
-              -beamH / 2,
-              distToTarget,
-              beamH
-            );
-          } else if (beamSingleAsset && beamSingleAsset.loaded) {
-            ctx.drawImage(
-              beamSingleAsset.img,
-              0,
-              -beamH / 2,
-              distToTarget,
-              beamH
-            );
-          }
-          ctx.restore();
-        }
-
-        // 3.5 TUYỆT KỸ TIA BẮN ĐẶC TRƯNG TỪNG CẢNH GIỚI (REALM-SPECIFIC BEAM SIGNATURES)
-        if (realmIdx === 1) {
-          // Trúc Cơ: Song Kiếm Hàn Băng Xoắn Kép (Twin Frost Helix)
-          ctx.strokeStyle = "#67E8F9";
-          ctx.lineWidth = 2.0;
-          ctx.beginPath();
-          for (let step = 0; step <= 16; step++) {
-            const u = step / 16;
-            const hw = Math.sin(u * Math.PI * 4 - this.time * 18) * (isMobile ? 7 : 12);
-            const hx = swordTipX + (targetX - swordTipX) * u + perpX * hw;
-            const hy = swordTipY + (targetY - swordTipY) * u + perpY * hw;
-            if (step === 0) ctx.moveTo(hx, hy);
-            else ctx.lineTo(hx, hy);
-          }
-          ctx.stroke();
-        } else if (realmIdx === 2) {
-          // Kim Đan: Hỏa Liên Nhật Viêm Trụ (Solar Core Pulse Rings)
-          ctx.strokeStyle = "#FEF08A";
-          ctx.lineWidth = 2.6;
-          ctx.beginPath();
-          ctx.moveTo(swordTipX, swordTipY);
-          ctx.lineTo(targetX, targetY);
-          ctx.stroke();
-        } else if (realmIdx === 3) {
-          // Nguyên Anh: Tử Điện Lôi Mạch (Jagged Lightning Chain + Chibi Companion Tether)
-          ctx.strokeStyle = "#E9D5FF";
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.moveTo(swordTipX, swordTipY);
-          for (let z = 1; z <= 8; z++) {
-            const u = z / 8;
-            const jit = z < 8 ? (Math.sin(this.time * 35 + z * 4.1) * 10) : 0;
-            ctx.lineTo(
-              swordTipX + (targetX - swordTipX) * u + perpX * jit,
-              swordTipY + (targetY - swordTipY) * u + perpY * jit,
-            );
-          }
-          ctx.stroke();
-
-          // Tia lôi điện phụ từ Chibi Nguyên Anh Hộ Đạo bên vai trái
-          const chibiX = baseX - (isMobile ? 58 : 86);
-          const chibiY = baseY - (isMobile ? 105 : 148);
-          ctx.strokeStyle = gameState.chibiAttackFlash > 0 ? "#FDE047" : "rgba(192, 132, 252, 0.65)";
-          ctx.lineWidth = gameState.chibiAttackFlash > 0 ? 3.0 : 1.5;
-          ctx.beginPath();
-          ctx.moveTo(chibiX, chibiY);
-          ctx.quadraticCurveTo((chibiX + targetX) / 2, (chibiY + targetY) / 2 - 24, targetX, targetY);
-          ctx.stroke();
-        } else if (realmIdx >= 4) {
-          // Độ Kiếp: Chân Long Đế Quang Mạch (Coiling Golden Dragon Spine Wave)
-          ctx.strokeStyle = "#FDE047";
-          ctx.lineWidth = 3.0;
-          ctx.beginPath();
-          for (let step = 0; step <= 20; step++) {
-            const u = step / 20;
-            const dw = Math.sin(u * Math.PI * 5 - this.time * 22) * (isMobile ? 9 : 15);
-            const dx = swordTipX + (targetX - swordTipX) * u + perpX * dw;
-            const dy = swordTipY + (targetY - swordTipY) * u + perpY * dw;
-            if (step === 0) ctx.moveTo(dx, dy);
-            else ctx.lineTo(dx, dy);
-          }
-          ctx.stroke();
-        }
-
-        // 4. VÒNG LINH PHÙ XOAY TRÒN CHẠY DỌC THEO TIA BẮN (TRAVELING RUNIC RINGS)
-        const ringProgress = (this.time * 2.2) % 1.0;
-        for (let r = 0; r < 3; r++) {
-          const prog = (ringProgress + r * 0.33) % 1.0;
-          const rx = swordTipX + (targetX - swordTipX) * prog;
-          const ry = swordTipY + (targetY - swordTipY) * prog;
-          ctx.save();
-          ctx.translate(rx, ry);
-          ctx.rotate(swordAngle + Math.PI / 2);
-          ctx.strokeStyle = prog < 0.5 ? curSwordColor : "#FEF08A";
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.ellipse(
-            0,
-            0,
-            isMobile ? 7 : 11,
-            isMobile ? 3 : 5,
-            0,
-            0,
-            Math.PI * 2,
-          );
-          ctx.stroke();
-          ctx.restore();
-        }
-
-        // 5. HẠT LINH KHÍ XUNG KÍCH CHẠY DỌC TIA KIẾM
-        for (let sp = 0; sp < 4; sp++) {
-          const sProg = (this.time * 4.5 + sp * 0.25) % 1.0;
-          const sx =
-            swordTipX +
-            (targetX - swordTipX) * sProg +
-            (Math.random() - 0.5) * 6;
-          const sy =
-            swordTipY +
-            (targetY - swordTipY) * sProg +
-            (Math.random() - 0.5) * 6;
-          ctx.fillStyle = "#FFFBEB";
-          ctx.shadowColor = curSwordColor;
-          ctx.shadowBlur = 12;
-          ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
-        }
-
-        ctx.restore();
-
-        // HÀO QUANG ĐỌT KIẾM & HIỆU ỨNG BẮN RA ĐỘC BẢN TỪNG NHÂN VẬT (CHARACTER MUZZLE FIRING BURST)
-        ctx.save();
-        const tipPulse = 1.0 + Math.sin(this.time * 12) * 0.3 + keyPulse;
-        const muzzleSheetAsset = this.assets && this.assets[`char_r${realmIdx}_muzzle_sheet`];
-        const muzzleSingleAsset = this.assets && this.assets[`char_r${realmIdx}_muzzle`];
-        const isFiringNow = (gameState && (gameState.catState === "WEAK_ATTACK" || gameState.catState === "ULTIMATE_BLAST")) || keyPulse > 0.08;
-
-        if ((muzzleSheetAsset && muzzleSheetAsset.loaded) || (muzzleSingleAsset && muzzleSingleAsset.loaded)) {
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.translate(swordTipX, swordTipY);
-          ctx.rotate(swordAngle);
-          const burstScale = isFiringNow ? (1.28 + keyPulse * 0.45) : (0.72 + Math.sin(this.time * 10) * 0.08);
-          const burstW = (isMobile ? 54 : 78) * burstScale;
-          const burstH = (isMobile ? 36 : 52) * burstScale;
-          ctx.globalAlpha = isFiringNow ? 0.98 : 0.78;
-          ctx.shadowColor = curSwordColor;
-          ctx.shadowBlur = isFiringNow ? 28 : 16;
-
-          if (muzzleSheetAsset && muzzleSheetAsset.loaded) {
-            const fIdx = Math.floor(this.time * (isFiringNow ? 22 : 12)) % 4;
-            const fw = Math.floor(muzzleSheetAsset.img.width / 4);
-            const fh = muzzleSheetAsset.img.height;
-            ctx.drawImage(
-              muzzleSheetAsset.img,
-              fIdx * fw,
-              0,
-              fw,
-              fh,
-              -burstW * 0.22,
-              -burstH / 2,
-              burstW,
-              burstH
-            );
-          } else if (muzzleSingleAsset && muzzleSingleAsset.loaded) {
-            ctx.drawImage(
-              muzzleSingleAsset.img,
-              -burstW * 0.22,
-              -burstH / 2,
-              burstW,
-              burstH
-            );
-          }
-          ctx.restore();
-        } else {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.shadowColor = curSwordColor;
-          ctx.shadowBlur = 24;
-          ctx.beginPath();
-          ctx.arc(swordTipX, swordTipY, 4.5 * tipPulse, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // PHÁP TRẬN BÁT QUÁI KHÓA MỤC TIÊU CỔ TRANG TẠI THIÊN THẠCH
-        ctx.translate(targetX, targetY);
-        const isMob =
-          (ctx.canvas && ctx.canvas.width <= 600) ||
-          (typeof window !== "undefined" && window.innerWidth <= 600);
-        const reticleRadius =
-          (currentTarget.radius || (isMob ? 38 : 46)) + (isMob ? 4 : 8);
-        const rot = this.time * 1.6;
-
-        // Vòng ngoài phong ấn đứt đoạn xoay chậm ôm sát ma thạch
-        ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
-        ctx.lineWidth = isMob ? 1.2 : 1.6;
-        ctx.setLineDash([6, 5]);
-        ctx.beginPath();
-        ctx.arc(0, 0, reticleRadius, rot, rot + Math.PI * 2);
+        ctx.quadraticCurveTo(midX, midY, aimTargetX, aimTargetY);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.restore();
 
-        // 4 Chữ triện phong ấn 4 phương [ 乾 坤 坎 离 ]
-        const seals = ["乾", "坤", "坎", "离"];
-        ctx.font = isMob
-          ? "bold 9px 'Cinzel', serif"
-          : "bold 10.5px 'Cinzel', serif";
-        ctx.fillStyle = "#FEF08A";
-        ctx.shadowColor = "#F59E0B";
-        ctx.shadowBlur = 8;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        for (let b = 0; b < 4; b++) {
-          ctx.save();
-          const ang = rot + b * (Math.PI / 2);
-          const tx = Math.cos(ang) * (reticleRadius + (isMob ? 2 : 3));
-          const ty = Math.sin(ang) * (reticleRadius + (isMob ? 2 : 3));
-          ctx.fillText(seals[b], tx, ty);
-          ctx.restore();
-        }
+        // Điểm sáng nhỏ tinh tế ở đầu mũi kiếm
+        ctx.save();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.shadowColor = curSwordColor;
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(swordTipX, swordTipY, 2.8, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       } else {
         // Không có mục tiêu: Kiếm hộ thân lơ lửng bồng bềnh bên vai phải

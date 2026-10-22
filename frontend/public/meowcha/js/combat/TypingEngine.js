@@ -673,18 +673,18 @@
       const curMode = (this.state && this.state.gameMode) || "DIRECT";
 
       const plaqueTitles = {
-        DIRECT: "TRỰC DIỆN TRẢM MA • TỐC ĐỘ",
-        CLOZE:  "NGỘ ĐẠO ĐÀI • ACTIVE RECALL",
-        AUDIO:  "THÍNH LÔI ĐÀI • AUDIO DICTATION"
+        DIRECT: "TRỰC DIỆN TRẢM MA • THẦN TỐC XUẤT KIẾM",
+        CLOZE:  "NGỘ ĐẠO ĐÀI • TÂM PHÁP ĐOÁN TỰ",
+        AUDIO:  "THÍNH TIÊN ĐÀI • LẮNG NGHE CHÂN NGÔN"
       };
 
       if (!target || !target.word) {
         if (plaqueEl) plaqueEl.innerText = `[ 剑 ] KIẾM QUYẾT ĐÀI • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 诀 ]`;
         if (intentEl) {
           const idleMsgs = {
-            DIRECT: "[ 剑 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 斩 ]",
-            CLOZE:  "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT PHÁ GIẢI PHÙ CƠ [ 解 ]",
-            AUDIO:  "[ 听 ] THÍNH LÔI BIỆN ÂM • LẮNG NGHE TIÊN ÂM (PHÍM TAB ĐỂ NGHE LẠI) [ 音 ]"
+            DIRECT: "[ 斩 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 诀 ]",
+            CLOZE:  "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT ĐOÁN TỰ PHÁ PHÙ [ 诀 ]",
+            AUDIO:  "[ 听 ] THÍNH TIÊN BIỆN ÂM • LẮNG NGHE CHÂN NGÔN (PHÍM TAB NGHE LẠI) [ 诀 ]"
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }
@@ -701,26 +701,26 @@
         this.lastSlainDisplayTimer = null;
       }
 
-      if (plaqueEl) plaqueEl.innerText = `[ 剑 ] ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 决 ]`;
+      if (plaqueEl) plaqueEl.innerText = `[ 剑 ] ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 诀 ]`;
 
       const word = target.word;
       const typed = Math.min(target.typedLen, word.length);
       const pct = Math.round((typed / word.length) * 100);
 
-      // XỬ LÝ HIỂN THỊ CHỮ GÕ & CHỮ CHƯA GÕ TRÊN CUỘN THƯ BÍ KÍP:
+      // XỬ LÝ HIỂN THỊ CHỮ GÕ & CHỮ CHƯA GÕ TRÊN CUỘN THƯ BÍ KÍP (MỰC TÀU CỔ PHONG ĐẬM NÉT):
       let wordDisplayHtml = "";
 
       if (curMode === "CLOZE") {
-        // CHẾ ĐỘ NGỘ ĐẠO THÔNG LINH (ACTIVE RECALL):
-        // 1. Chữ đã gõ: Hiện màu xanh ngọc phát sáng
-        // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu
-        // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ
+        // CHẾ ĐỘ NGỘ ĐẠO THÔNG LINH (ĐOÁN TỰ):
+        // 1. Chữ đã gõ: Mực ngọc lục bảo đậm #065F46
+        // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu bằng mực chu sa #991B1B
+        // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ bằng mực chu sa #991B1B
         // 4. Ký tự ở giữa: Giấu kín tuyệt đối bằng ký hiệu gạch chân "_ "
         for (let i = 0; i < word.length; i++) {
           if (i < typed) {
             wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
           } else if (i === 0 && typed === 0) {
-            wordDisplayHtml += `<span class="altar-hint-char" style="color:#D97706">${word[0]}</span> `;
+            wordDisplayHtml += `<span class="altar-hint-char">${word[0]}</span> `;
           } else if (i === word.length - 1 && word.length >= 3) {
             wordDisplayHtml += `<span class="altar-hint-char">${word[i]}</span> `;
           } else {
@@ -728,8 +728,7 @@
           }
         }
       } else if (curMode === "AUDIO") {
-        // CHẾ ĐỘ THÍNH LÔI BIỆN ÂM (AUDIO DICTATION):
-        // Chữ chưa gõ giấu kín bằng ký hiệu gạch chân "_ "
+        // CHẾ ĐỘ THÍNH TIÊN BIỆN ÂM:
         for (let i = 0; i < word.length; i++) {
           if (i < typed) {
             wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
@@ -738,7 +737,7 @@
           }
         }
       } else {
-        // CHẾ ĐỘ TRỰC DIỆN TRẢM MA (DIRECT TYPING):
+        // CHẾ ĐỘ TRỰC DIỆN TRẢM MA:
         const typedPart = word.substring(0, typed);
         const untypedPart = word.substring(typed);
         wordDisplayHtml = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${untypedPart}</span>`;
@@ -751,22 +750,22 @@
       if (meaningEl) {
         if (curMode === "AUDIO") {
           meaningEl.innerHTML = `
-            <span style="color: #A855F7; font-weight: 700; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
-              [ 聽 ] TIÊN ÂM: ${target.ipa || '/.../'} • Bấm TAB để nghe lại
+            <span style="color: #581C87; font-weight: 800; font-size: 13px; text-shadow: 0 1px 0 rgba(255,255,255,0.8); cursor: pointer;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
+              [ 听 ] TIÊN ÂM: ${target.ipa || '/.../'} • Bấm TAB nghe lại
             </span>
           `;
         } else if (curMode === "CLOZE") {
           if (typed >= word.length) {
-            meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">[ 悟 • ĐÃ NGỘ ĐẠO ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+            meaningEl.innerHTML = `<span style="color: #064E3B; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 悟 • ĐÃ TRẢM ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
           } else {
-            meaningEl.innerHTML = `<span style="color: #FDE047; font-weight: 700;">[ 悟 ] Nghĩa: ${target.meaning || target.definition || "Đoán từ tiếng Anh"} • [${word.length} chữ]</span>`;
+            meaningEl.innerHTML = `<span style="color: #451A03; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 悟 ] Nghĩa: ${target.meaning || target.definition || "Đoán từ tiếng Anh"} • [${word.length} chữ]</span>`;
           }
         } else {
           // DIRECT TYPING: Trong lúc gõ CHỈ hiện từ tiếng Anh, gõ xong mới hiện đầy đủ IPA và nghĩa
           if (typed >= word.length) {
-            meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">[ 斩 • HOÀN THÀNH ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+            meaningEl.innerHTML = `<span style="color: #064E3B; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 斩 • HOÀN THÀNH ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
           } else {
-            meaningEl.innerHTML = `<span style="color: #94A3B8; font-weight: 600;">[ 斩 ] Gõ tiếng Anh: ${target.word} • [${typed}/${word.length}]</span>`;
+            meaningEl.innerHTML = `<span style="color: #1C1917; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 斩 ] Tiến độ xuất kiếm • [${typed}/${word.length}]</span>`;
           }
         }
       }

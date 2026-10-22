@@ -457,7 +457,7 @@
         this.vKeyboard.show();
       }
 
-      this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 3000);
+      this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 1600);
 
       // Sinh từ vựng đầu tiên
       setTimeout(() => this.spawnWord(), 400);
@@ -762,7 +762,7 @@
       this.cat.update(dt, this.gameState);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
-      const bottomThreshold = isMobile ? (this.canvas.height - 240) : (this.canvas.height - 128);
+      const bottomThreshold = isMobile ? (this.canvas.height - 256) : (this.canvas.height - 128);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
@@ -917,11 +917,15 @@
         // 8. TIA SÉT THIÊN KIẾP & CHỚP SÁNG MÀN HÌNH
         this.realmVFX.drawLightning(ctx, w, h, this.gameState.screenFlash);
 
-        // 9. Bong bóng thoại Mèo Tôn
+        // 9. Bong bóng thoại Mèo Tôn (Neo sát trên đầu Mèo Tôn, tự động ẩn khi thiên thạch rơi gần để không che khuất)
         if (this.gameState.speechText && performance.now() < this.gameState.speechTimer) {
           const isMob = w <= 768 || (h > w);
-          const speechY = isMob ? (h - 365) : (h - 260);
-          this.floatingText.drawSideSpeechBubble(ctx, w / 2, speechY, this.gameState.speechText);
+          const catY = (this.cat && typeof this.cat.y === "number") ? this.cat.y : (isMob ? (h - 252) : (h - 200));
+          const hasAsteroidNearCat = this.asteroids && this.asteroids.asteroids.some(a => a && Math.abs(a.y - catY) < 180);
+          if (!hasAsteroidNearCat) {
+            const speechY = Math.round(catY - 68);
+            this.floatingText.drawSideSpeechBubble(ctx, w / 2, speechY, this.gameState.speechText);
+          }
         }
       }
 

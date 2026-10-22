@@ -836,12 +836,12 @@
         this.hudCombo.innerText = s.combo > 1 ? `Combo x${s.combo}` : "";
       }
 
-      // Tốc độ WPM
+      // Tốc độ Kiếm Tự
       if (this.hudWpm) {
-        this.hudWpm.innerText = `${s.wpm} WPM`;
+        this.hudWpm.innerText = `${s.wpm} Tự/Phút`;
       }
 
-      // Cập nhật thông số Sảnh Thiền Định (Tầng 2: Mini Jade HP Bar, Tu Vi, Cổ Ngữ, WPM)
+      // Cập nhật thông số Sảnh Thiền Định (Tầng 2: Mini Jade HP Bar, Tu Vi, Cổ Ngữ, Kiếm Tốc)
       if (this.lobbyScoreText) this.lobbyScoreText.innerText = s.score.toLocaleString();
       const lobbyHighScoreEl = document.getElementById("lobbyHighScoreText");
       if (lobbyHighScoreEl) {
@@ -854,7 +854,7 @@
         const hpPct = Math.max(0, Math.min(100, (s.hp / (s.maxHp || 50)) * 100));
         this.lobbyHpBar.style.width = `${hpPct}%`;
       }
-      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} WPM`;
+      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} Tự/Phút`;
       if (this.lobbyCatTitle) this.lobbyCatTitle.innerText = realmData.title;
       if (this.lobbyLevelTag) this.lobbyLevelTag.innerText = `CẤP ${s.realmIdx}`;
 
@@ -1508,7 +1508,7 @@
         { label: "ĐIỂM KỶ LỤC (CAO NHẤT)", val: `${personalBest.toLocaleString()} PTS`, color: "#FDE047" },
         { label: "ĐIỂM VÁN HIỆN TẠI", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#34D399" },
         { label: "TỔNG TỪ ĐÃ HOÀN THÀNH", val: `${Math.max(s.wordsSlain || 0, Math.round(personalBest / 160))} TỪ`, color: "#38BDF8" },
-        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} WPM (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F472B6" }
+        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} Tự/Phút (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F472B6" }
       ];
 
       stats.forEach((st, idx) => {
@@ -1932,8 +1932,12 @@
     }
 
     async autoSubmitScoreToPantheon(forcedScore = null) {
-      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-      const submitScore = forcedScore !== null ? Number(forcedScore) : (this.state.score > 0 ? this.state.score : bestScore);
+      const bestScore = Math.max(
+        Number(this.state.highScore || 0),
+        Number(this.state.score || 0),
+        Number(this._safeGet("meowcha_high_score", 0))
+      );
+      const submitScore = forcedScore !== null ? Number(forcedScore) : bestScore;
       if (!submitScore || submitScore <= 0) return;
 
       // Tránh gửi trùng lặp điểm số cùng một phiên kết thúc
@@ -2030,7 +2034,7 @@
         const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
         const realmData = realms[this.state.realmIdx] || realms[0];
         const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} pts • Hiện tại: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • WPM: ${Math.round(this.state.wpm || 0)}`;
+        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} pts • Hiện tại: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • Kiếm Tốc: ${Math.round(this.state.wpm || 0)} Tự/Phút`;
       }
     }
 
@@ -2289,7 +2293,7 @@
       if (accEl) accEl.innerText = `${this.state.accuracy || 100}%`;
 
       const wpmEl = document.getElementById("profileModalWpm");
-      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} WPM`;
+      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} Tự/Phút`;
 
       const hpEl = document.getElementById("profileModalHp");
       if (hpEl) hpEl.innerText = `${this.state.hp} / ${this.state.maxHp} HP`;

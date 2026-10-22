@@ -5,19 +5,17 @@ import React, { useEffect, useState } from "react";
 export const dynamic = 'force-dynamic';
 
 export default function MeowchaGamePage() {
-  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=11.1");
+  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=11.4");
 
   useEffect(() => {
     try {
       const token = localStorage.getItem("oasis_token");
       const user = localStorage.getItem("oasis_user");
-      if (token || user) {
-        const params = new URLSearchParams();
-        params.set("v", "10.8");
-        if (token) params.set("token", token);
-        if (user) params.set("user", user);
-        setIframeSrc(`/meowcha/index.html?${params.toString()}`);
-      }
+      const params = new URLSearchParams();
+      params.set("v", "11.3");
+      if (token) params.set("token", token);
+      if (user) params.set("user", user);
+      setIframeSrc(`/meowcha/index.html?${params.toString()}`);
     } catch (e) {
       console.warn("[MeowchaPage] Could not read localStorage:", e);
     }

@@ -4444,7 +4444,7 @@
   transform: translateX(-50%) !important;
   right: auto !important;
   z-index: 45;
-  width: min(94vw, 580px);
+  width: min(94vw, 680px);
   /* BÀN THẦN MỘC SƠN MÀI ĐẬM ĐẶC NGUYÊN KHỐI (SOLID OPAQUE XIANXIA ALTAR - KHÔNG LÀM MỜ / KHÔNG TRONG SUỐT) */
   background: linear-gradient(180deg, #1C0F06 0%, #120904 55%, #0A0502 100%) !important;
   border: 2px solid #D4AF37 !important;
@@ -4615,49 +4615,47 @@
 }
 
 .altar-typed-txt {
-  color: #047857;
-  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  color: #065F46;
   font-weight: 900;
+  font-size: 20px;
+  text-shadow: 0 1px 2px rgba(6, 95, 70, 0.25);
 }
 
 .altar-untyped-txt {
-  color: #78350F;
-  font-weight: 800;
+  color: #292524;
+  font-weight: 900;
+  font-size: 20px;
 }
 
 /* KÝ TỰ CUỐI CÙNG LÀM GỢI Ý ĐOÁN TỪ CHO CHẾ ĐỘ CLOZE */
 .altar-hint-char {
-  color: #B45309;
+  color: #991B1B;
   font-weight: 900;
+  font-size: 20px;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
-  animation: hintGlow 1.6s ease-in-out infinite;
-}
-
-@keyframes hintGlow {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); }
-  50% { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8)); }
+  text-shadow: 0 1px 2px rgba(153, 27, 27, 0.35);
 }
 
 .altar-idle-msg {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #78350F;
+  font-size: 13px;
+  font-weight: 800;
+  color: #451A03;
   letter-spacing: 0.6px;
 }
 
 .altar-meaning-display {
   font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #065F46;
+  font-size: 14px;
+  font-weight: 800;
+  color: #451A03;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  line-height: 1.2;
+  line-height: 1.25;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .altar-gauge-track {
@@ -6773,9 +6771,9 @@
     transform: translateX(-50%) !important;
     width: 98vw !important;
     max-width: 98vw !important;
-    height: 46px !important;
-    min-height: 46px !important;
-    max-height: 50px !important;
+    height: 54px !important;
+    min-height: 54px !important;
+    max-height: 58px !important;
     padding: 2px 4px !important;
     background: linear-gradient(180deg, #231912 0%, #140F0B 100%) !important;
     border: 1.5px solid #F3C644 !important;
@@ -6798,8 +6796,8 @@
   #swordIntentBox .altar-parchment-scroll {
     width: 100% !important;
     max-width: 100% !important;
-    height: 38px !important;
-    min-height: 38px !important;
+    height: 48px !important;
+    min-height: 48px !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -6809,14 +6807,14 @@
 
   #swordIntentBox .parchment-roller {
     width: 8px !important;
-    height: 40px !important;
+    height: 48px !important;
     flex-shrink: 0 !important;
   }
 
   #swordIntentBox .parchment-body {
     flex: 1 !important;
     min-width: 0 !important;
-    height: 40px !important;
+    height: 48px !important;
     padding: 2px 8px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -6831,23 +6829,46 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
+    font-size: 17px !important;
+    font-weight: 900 !important;
     line-height: 1.2 !important;
     width: 100% !important;
     text-align: center !important;
-    letter-spacing: 0.5px !important;
+    letter-spacing: 1px !important;
+    color: #451A03 !important;
+  }
+
+  #swordIntentBox .altar-typed-txt {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #065F46 !important;
+    text-shadow: 0 1px 1px rgba(6, 95, 70, 0.3) !important;
+  }
+
+  #swordIntentBox .altar-untyped-txt {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #1C1917 !important;
+  }
+
+  #swordIntentBox .altar-hint-char {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #991B1B !important;
+    text-decoration: underline !important;
   }
 
   #swordIntentBox .altar-meaning-display {
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    line-height: 1.15 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     max-width: 100% !important;
-    margin-top: 1px !important;
+    margin-top: 2px !important;
+    color: #451A03 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   }
 
   #swordIntentBox .altar-gauge-track {
