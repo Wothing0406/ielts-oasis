@@ -2550,6 +2550,14 @@
   z-index: -9999;
 }
 
+.ipa-card-wrapper,
+#ipaToastContainer {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .ipa-card-wrapper {
   background: linear-gradient(145deg, rgba(28, 15, 7, 0.78) 0%, rgba(18, 9, 4, 0.78) 100%);
   backdrop-filter: blur(10px);

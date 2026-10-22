@@ -12,7 +12,7 @@ export default function MeowchaGamePage() {
       const token = localStorage.getItem("oasis_token");
       const user = localStorage.getItem("oasis_user");
       const params = new URLSearchParams();
-      params.set("v", "11.5");
+      params.set("v", "11.7");
       if (token) params.set("token", token);
       if (user) params.set("user", user);
       setIframeSrc(`/meowcha/index.html?${params.toString()}`);
@@ -28,8 +28,7 @@ export default function MeowchaGamePage() {
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
         title="Meowcha IELTS Game"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-        allow="autoplay; fullscreen; clipboard-write; clipboard-read"
-        scrolling="no"
+        allow="autoplay; fullscreen"
       />
     </main>
   );
