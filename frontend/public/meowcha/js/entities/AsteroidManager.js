@@ -454,15 +454,15 @@
         const isTarget = (ast.typedLen > 0) || (M.app && M.app.typing && M.app.typing.currentTarget === ast);
 
         // 4.1 XÁC ĐỊNH NỘI DUNG TIÊU ĐỀ & CHÂN GIẢI NGHĨA (CHUẨN CỔ PHONG TIÊN ĐẠO - KHÔNG DÙNG EMOJI THÔ)
-        let topTitle = "[ 斬 ] TRẢM MA PHÙ TRIỆU [ 诀 ]";
-        let bottomText = ast.meaning ? `[ 悟 ] ${ast.meaning}${ast.ipa ? ' • ' + ast.ipa : ''}` : (ast.ipa || '');
+        let topTitle = "[ 斬 ] TRỰC DIỆN TRẢM MA [ 诀 ]";
+        let bottomText = `[ 斩 ] Gõ từ tiếng Anh • [${word.length} Ký Tự]`;
 
         if (ast.isAudio) {
           topTitle = "[ 聽 ] LẮNG NGHE TIÊN ÂM [ 音 ]";
           bottomText = `[ 聽 ] Nghe lại • ${ast.ipa || '/.../'} • [${word.length} Âm]`;
         } else if (ast.isCloze) {
-          topTitle = "[ 悟 ] PHẢN XẠ GÕ TỪ [ 解 ]";
-          bottomText = `[ 悟 ] Phản xạ gõ từ • [${word.length} Ký Tự]`;
+          topTitle = "[ 悟 ] NGỘ ĐẠO THÔNG LINH [ 解 ]";
+          bottomText = ast.meaning ? `[ 悟 ] Nghĩa: ${ast.meaning}` : `[ 悟 ] Đoán từ • [${word.length} Ký Tự]`;
         }
 
         // 4.2 TÍNH TOÁN KÍCH THƯỚC CUỘN THƯ VỪA VẶN MỌI NỘI DUNG
@@ -701,12 +701,11 @@
               targetColor = "#7C3AED";
               targetGlow = "#A855F7";
             } else if (ast.isCloze) {
-              // CLOZE: Chữ đầu, chữ cuối và chữ giữa (nếu từ >= 6 chữ) hiện làm điểm tựa
-              const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
-              if (c === 0 || (c === word.length - 1 && word.length >= 3) || c === midIdx) {
+              // CLOZE: Chỉ hiện gợi ý chữ đầu (khi chưa gõ) và chữ cuối (nếu từ >= 3 ký tự)
+              if ((c === 0 && ast.typedLen === 0) || (c === word.length - 1 && word.length >= 3)) {
                 targetChar = letter;
-                targetColor = c === midIdx ? "#0284C7" : "#B45309";
-                targetGlow = c === midIdx ? "#38BDF8" : "#F59E0B";
+                targetColor = "#B45309";
+                targetGlow = "#F59E0B";
               } else {
                 targetChar = "_";
                 targetColor = "#0D9488";
@@ -746,16 +745,11 @@
               fillCol = "rgba(124, 58, 237, 0.85)";
               glowCol = "rgba(168, 85, 247, 0.5)";
             } else if (ast.isCloze) {
-              // CLOZE: Ký tự cuối cùng và ký tự giữa (nếu >= 6 chữ) luôn hiện làm gợi ý chốt đuôi!
-              const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
+              // CLOZE: Ký tự cuối cùng luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 ký tự
               if (c === word.length - 1 && word.length >= 3) {
                 displayChar = letter;
                 fillCol = "#B45309";
                 glowCol = "rgba(245, 158, 11, 0.6)";
-              } else if (c === midIdx) {
-                displayChar = letter;
-                fillCol = "#0369A1";
-                glowCol = "rgba(56, 189, 248, 0.6)";
               } else {
                 displayChar = "_";
                 fillCol = "rgba(13, 148, 136, 0.85)";
@@ -809,7 +803,16 @@
         ctx.fillStyle = btmTextColor;
         ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
         ctx.shadowBlur = 3;
-        ctx.fillText(bottomText, posX, btmBannerY + btmBannerH / 2);
+
+        let fitText = bottomText;
+        const maxTextW = btmBannerW - 14;
+        if (ctx.measureText(fitText).width > maxTextW) {
+          while (fitText.length > 4 && ctx.measureText(fitText + "...").width > maxTextW) {
+            fitText = fitText.slice(0, -1);
+          }
+          fitText += "...";
+        }
+        ctx.fillText(fitText, posX, btmBannerY + btmBannerH / 2);
 
         // 4.10 LINH THÚ HỘ ĐẠO (PLAYFUL GREEN CHIBI CAT COMPANION ON ACTIVE SCROLL)
         if (isTarget) {

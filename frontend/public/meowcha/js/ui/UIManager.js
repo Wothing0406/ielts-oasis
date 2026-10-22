@@ -1343,21 +1343,33 @@
       if (!ctx) return "";
 
       const s = this.state || {};
-      const realms = root.Meowcha?.CULTIVATION_REALMS || [];
-      const realmData = realms[s.realmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FDE047" };
+      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
 
       const user = this.getLoggedInUser();
       const userName = (user && user.name && user.name.trim()) ? user.name.trim() : "Tiểu Miêu Kiếm Sĩ";
+      
+      // Lấy điểm kỷ lục cao nhất (High Score) làm thước đo Chứng Đạo
       const personalBest = Math.max(
         Number(s.highScore || 0),
         Number(s.score || 0),
         Number(this._safeGet("meowcha_high_score", 0))
       );
 
+      // Phân định cảnh giới theo điểm kỷ lục cao nhất
+      let certRealmIdx = Math.max(0, s.realmIdx || 0);
+      for (let i = realms.length - 1; i >= 0; i--) {
+        if (personalBest >= realms[i].minScore) {
+          certRealmIdx = Math.max(certRealmIdx, i);
+          break;
+        }
+      }
+      const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FDE047" };
+      const rIdx = certRealmIdx;
+
       const modeNames = {
-        CLOZE: 'Ngộ Đạo Thông Linh (Active Recall)',
-        DIRECT: 'Trực Diện Trảm Ma (Direct Typing)',
-        AUDIO: 'Thính Lôi Biện Âm (Audio Dictation)'
+        CLOZE: 'Điền khuyết (Active Recall)',
+        DIRECT: 'Gõ trực tiếp (Direct Typing)',
+        AUDIO: 'Nghe chính tả (Audio Dictation)'
       };
       const curMode = s.gameMode || "DIRECT";
       const modeLabel = modeNames[curMode] || curMode;
@@ -1401,7 +1413,7 @@
       ctx.textAlign = "center";
       ctx.font = "900 15px 'Cinzel', sans-serif";
       ctx.fillStyle = "#94A3B8";
-      ctx.fillText("MEOW-CHA: VẠN KIẾM QUY TÔNG • TIÊN HIỆP TRÀ VIỆN", 600, 76);
+      ctx.fillText("MEOW-CHA • LUYỆN TỪ VỰNG IELTS", 600, 76);
 
       ctx.font = "900 36px 'Cinzel', serif";
       ctx.fillStyle = "#FDE047";
@@ -1490,14 +1502,14 @@
 
       ctx.font = "600 13px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#A78BFA";
-      ctx.fillText(`PHÁP MÔN: ${modeLabel}`, 470, 252);
+      ctx.fillText(`CHẾ ĐỘ: ${modeLabel}`, 470, 252);
 
-      // Lưới thông số (Stats grid: 4 ô)
+      // Lưới thông số (Stats grid: 4 ô) - Rõ ràng, khiêm tốn, đúng công năng
       const stats = [
-        { label: "KỶ LỤC TU VI PHONG THẦN", val: `${personalBest.toLocaleString()} PTS`, color: "#FDE047" },
-        { label: "TU VI VÁN HIỆN TẠI", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#34D399" },
-        { label: "CỔ NGỮ IELTS ĐÃ TRẢM", val: `${s.wordsSlain || 0} TỪ VỰNG`, color: "#38BDF8" },
-        { label: "KIẾM TỐC TRUY CẦU", val: `${Math.round(s.wpm || 0)} WPM (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F472B6" }
+        { label: "ĐIỂM KỶ LỤC (CAO NHẤT)", val: `${personalBest.toLocaleString()} PTS`, color: "#FDE047" },
+        { label: "ĐIỂM VÁN HIỆN TẠI", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#34D399" },
+        { label: "TỔNG TỪ ĐÃ HOÀN THÀNH", val: `${Math.max(s.wordsSlain || 0, Math.round(personalBest / 160))} TỪ`, color: "#38BDF8" },
+        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} WPM (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F472B6" }
       ];
 
       stats.forEach((st, idx) => {
@@ -1515,7 +1527,7 @@
         ctx.fill();
         ctx.stroke();
 
-        ctx.font = "700 11.5px 'Cinzel', sans-serif";
+        ctx.font = "700 11.5px 'Be Vietnam Pro', sans-serif";
         ctx.fillStyle = "#94A3B8";
         ctx.fillText(st.label, bx + 16, by + 27);
 
@@ -1524,12 +1536,12 @@
         ctx.fillText(st.val, bx + 16, by + 56);
       });
 
-      // Đạo Tâm Châm Ngôn & Dấu Triện Chu Sa
-      ctx.font = "italic 13.5px 'Cinzel', serif";
+      // Lời nhắn nhủ mộc mạc
+      ctx.font = "italic 13.5px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#E2E8F0";
-      ctx.fillText("“Ngụm trà đắng lắng ngàn kiếm ý • Chữ chữ khắc kim chứng đạo Bảng Vàng”", 470, 482);
+      ctx.fillText("“Mỗi ngày tích lũy từ vựng, rèn luyện phản xạ ngôn ngữ vững chắc.”", 470, 482);
 
-      // Dấu Triện Chu Sa [ CỰC PHẨM CHỨNG ĐẠO ]
+      // Dấu Triện Chu Sa [ CHỨNG NHẬN ĐẠO QUẢ ]
       ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
       ctx.strokeStyle = "#EF4444";
       ctx.lineWidth = 2.5;
@@ -1541,6 +1553,8 @@
 
       ctx.textAlign = "center";
       ctx.font = "900 13.5px 'Cinzel', serif";
+      ctx.fillStyle = "#F87171";
+      ctx.fillText("[ CHỨNG NHẬN ĐẠO QUẢ ]", 590, 537);
       ctx.fillStyle = "#EF4444";
       ctx.fillText("[ 极 品 ] TIÊN ĐẠO CHỨNG ĐẠO", 590, 537);
 

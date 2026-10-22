@@ -215,51 +215,57 @@
         this.particles.createBambooLeaves(target.x, target.y, 6);
         this.floatingText.add(target.x, target.y - 38, "[ 竹 ] TRÚC PHONG TRÌ HOÃN", "#34D399", isMobile ? 13 : 15);
       } else if (rIdx === 1) {
-        // Cảnh 1 (Trúc Cơ): Song Kiếm Hợp Bích - Tự động khắc +1 cổ tự & đẩy lùi ma thạch 22px
-        if (target.typedLen < target.word.length) {
+        // Cảnh 1 (Trúc Cơ): Song Kiếm Hợp Bích - Tự động khắc +1 cổ tự (ở chế độ thường) & đẩy lùi ma thạch 26px
+        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
         }
-        target.y = Math.max(-target.radius, target.y - 22);
+        target.y = Math.max(-target.radius, target.y - 26);
         this.projectiles.spawnSkyStrike(target.x, target.y, 1);
         if (this.animator) {
           this.animator.spawnVFXClip("vfx_slash_r1_sheet", target.x, target.y, { size: 124, fps: 22, color: "#38BDF8" });
         }
-        this.floatingText.add(target.x, target.y - 40, "[ 雙 ] SONG KIẾM TRẢM (+1 Tự)", "#38BDF8", isMobile ? 13 : 15);
+        const tag1 = this.state.gameMode === "CLOZE" ? "[ 雙 ] SONG KIẾM ĐẨY LÙI" : "[ 雙 ] SONG KIẾM TRẢM (+1 Tự)";
+        this.floatingText.add(target.x, target.y - 40, tag1, "#38BDF8", isMobile ? 13 : 15);
       } else if (rIdx === 2) {
-        // Cảnh 2 (Kim Đan): Kim Liên Bạo Phá - Tự động khắc +1 cổ tự, đẩy lùi 18px & +30 Tu Vi
-        if (target.typedLen < target.word.length) {
+        // Cảnh 2 (Kim Đan): Kim Liên Bạo Phá - Tự động khắc +1 cổ tự (ở chế độ thường), đẩy lùi 22px & +30 Tu Vi
+        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
         }
-        target.y = Math.max(-target.radius, target.y - 18);
+        target.y = Math.max(-target.radius, target.y - 22);
         this.state.addScore(30);
         this.projectiles.spawnSkyStrike(target.x, target.y, 2);
         if (this.animator) {
           this.animator.spawnVFXClip("vfx_slash_r2_sheet", target.x, target.y, { size: 128, fps: 22, color: "#FBBF24" });
         }
-        this.floatingText.add(target.x, target.y - 42, "[ 丹 ] KIM LIÊN BẠO (+1 Tự • +30 Tu Vi)", "#FBBF24", isMobile ? 13 : 15);
+        const tag2 = this.state.gameMode === "CLOZE" ? "[ 丹 ] KIM LIÊN BẠO (+30 Tu Vi)" : "[ 丹 ] KIM LIÊN BẠO (+1 Tự • +30 Tu Vi)";
+        this.floatingText.add(target.x, target.y - 42, tag2, "#FBBF24", isMobile ? 13 : 15);
       } else if (rIdx === 3) {
-        // Cảnh 3 (Nguyên Anh): Nguyên Anh Lôi Kích - Tự động khắc +1 cổ tự & Định thân ma thạch 0.75s
-        if (target.typedLen < target.word.length) {
+        // Cảnh 3 (Nguyên Anh): Nguyên Anh Lôi Kích - Định thân ma thạch 0.9s & tự động khắc +1 cổ tự (ở chế độ thường)
+        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
         }
-        target.freezeTimer = 0.75;
+        target.freezeTimer = 0.9;
         this.state.chibiAttackFlash = 1.0;
         this.projectiles.spawnSkyStrike(target.x, target.y, 3);
         if (this.animator) {
           this.animator.spawnVFXClip("vfx_slash_r3_sheet", target.x, target.y, { size: 132, fps: 22, color: "#C084FC" });
         }
-        this.floatingText.add(target.x, target.y - 42, "[ 雷 ] NGUYÊN ANH LÔI KÍCH (+1 Tự • Định Thân)", "#C084FC", isMobile ? 13 : 15);
+        const tag3 = this.state.gameMode === "CLOZE" ? "[ 雷 ] NGUYÊN ANH ĐỊNH THÂN" : "[ 雷 ] NGUYÊN ANH LÔI KÍCH (+1 Tự • Định Thân)";
+        this.floatingText.add(target.x, target.y - 42, tag3, "#C084FC", isMobile ? 13 : 15);
       } else if (rIdx >= 4) {
-        // Cảnh 4 (Độ Kiếp): Chân Long Phệ Thiên - Tự động khắc tới +2 cổ tự, đẩy lùi 32px & +50 Tu Vi
-        const carve = Math.min(2, Math.max(0, target.word.length - target.typedLen));
-        target.typedLen += carve;
-        target.y = Math.max(-target.radius, target.y - 32);
+        // Cảnh 4 (Độ Kiếp): Chân Long Phệ Thiên - Tự động khắc tới +2 cổ tự (ở chế độ thường), đẩy lùi 34px & +50 Tu Vi
+        if (this.state.gameMode !== "CLOZE") {
+          const carve = Math.min(2, Math.max(0, target.word.length - target.typedLen));
+          target.typedLen += carve;
+        }
+        target.y = Math.max(-target.radius, target.y - 34);
         this.state.addScore(50);
         this.projectiles.spawnSkyStrike(target.x, target.y, 4);
         if (this.animator) {
           this.animator.spawnVFXClip("vfx_slash_r4_sheet", target.x, target.y, { size: 142, fps: 24, color: "#F59E0B" });
         }
-        this.floatingText.add(target.x, target.y - 45, `[ 龍 ] CHÂN LONG TRẢM (+${Math.max(1, carve)} Tự)`, "#F59E0B", isMobile ? 14 : 16);
+        const tag4 = this.state.gameMode === "CLOZE" ? "[ 龍 ] CHÂN LONG PHỆ THIÊN (+50 Tu Vi)" : `[ 龍 ] CHÂN LONG TRẢM (+Tự)`;
+        this.floatingText.add(target.x, target.y - 45, tag4, "#F59E0B", isMobile ? 14 : 16);
       }
     }
 
@@ -283,9 +289,11 @@
               this.animator.spawnVFXClip("vfx_slash_r3_sheet", ast.x, ast.y, { size: 120, fps: 22, color: "#C084FC" });
             }
             ast.freezeTimer = Math.max(ast.freezeTimer || 0, 0.6);
-            if (ast.typedLen < ast.word.length - 1) {
+            if (this.state.gameMode !== "CLOZE" && ast.typedLen < ast.word.length - 1) {
               ast.typedLen++;
               this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO LÔI KÍCH (+1 Tự)", "#C084FC", isMobile ? 12 : 14);
+            } else {
+              this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO ĐỊNH THÂN", "#C084FC", isMobile ? 12 : 14);
             }
           }
         }
@@ -524,6 +532,22 @@
       if (idx !== -1) {
         this.asteroids.asteroids.splice(idx, 1);
       }
+
+      // Cập nhật thông tin từ vừa trảm xong lên đàn tế kiếm để người chơi kịp đọc giải nghĩa & phiên âm IPA
+      const meaningEl = document.getElementById("swordTargetMeaning");
+      if (meaningEl) {
+        const modePrefix = this.state.gameMode === "CLOZE" ? "[ 悟 • ĐÃ NGỘ ĐẠO ]" : "[ 斩 • ĐÃ TRẢM ]";
+        meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">${modePrefix} ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+        if (this.lastSlainDisplayTimer) clearTimeout(this.lastSlainDisplayTimer);
+        this.lastSlainDisplayTimer = setTimeout(() => {
+          this.lastSlainDisplayTimer = null;
+          if (!this.currentTarget) {
+            const mEl = document.getElementById("swordTargetMeaning");
+            if (mEl) mEl.innerText = "";
+          }
+        }, 3200);
+      }
+
       this.currentTarget = null;
       this.updateSwordAltarUI(null);
 
@@ -664,10 +688,17 @@
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }
-        if (meaningEl) meaningEl.innerText = "";
+        if (meaningEl && !this.lastSlainDisplayTimer) {
+          meaningEl.innerText = "";
+        }
         if (gaugeEl) gaugeEl.style.width = "0%";
         if (counterEl) counterEl.innerText = "0/0";
         return;
+      }
+
+      if (this.lastSlainDisplayTimer) {
+        clearTimeout(this.lastSlainDisplayTimer);
+        this.lastSlainDisplayTimer = null;
       }
 
       if (plaqueEl) plaqueEl.innerText = `[ 剑 ] ĐANG XUẤT CHIÊU • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 决 ]`;
@@ -684,8 +715,7 @@
         // 1. Chữ đã gõ: Hiện màu xanh ngọc phát sáng
         // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu
         // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ
-        // 4. Ký tự ở giữa: Hiện thêm gợi ý nếu từ dài >= 6 ký tự
-        const midIdx = word.length >= 6 ? Math.floor(word.length / 2) : -1;
+        // 4. Ký tự ở giữa: Giấu kín tuyệt đối bằng ký hiệu gạch chân "_ "
         for (let i = 0; i < word.length; i++) {
           if (i < typed) {
             wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
@@ -693,8 +723,6 @@
             wordDisplayHtml += `<span class="altar-hint-char" style="color:#D97706">${word[0]}</span> `;
           } else if (i === word.length - 1 && word.length >= 3) {
             wordDisplayHtml += `<span class="altar-hint-char">${word[i]}</span> `;
-          } else if (i === midIdx) {
-            wordDisplayHtml += `<span class="altar-hint-char" style="color:#0284C7">${word[i]}</span> `;
           } else {
             wordDisplayHtml += `<span class="altar-untyped-txt">_ </span>`;
           }
@@ -723,7 +751,7 @@
       if (meaningEl) {
         if (curMode === "AUDIO") {
           meaningEl.innerHTML = `
-            <span style="color: #7C3AED; font-weight: 700; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
+            <span style="color: #A855F7; font-weight: 700; cursor: pointer; user-select: none;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
               [ 聽 ] TIÊN ÂM: ${target.ipa || '/.../'} • Bấm TAB để nghe lại
             </span>
           `;
@@ -731,10 +759,15 @@
           if (typed >= word.length) {
             meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">[ 悟 • ĐÃ NGỘ ĐẠO ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
           } else {
-            meaningEl.innerHTML = `<span style="color: #D97706; font-weight: 700;">[ 悟 ] PHẢN XẠ GÕ TỪ: Gõ xong để ngộ đạo nghĩa từ (${word.length} Ký Tự)</span>`;
+            meaningEl.innerHTML = `<span style="color: #FDE047; font-weight: 700;">[ 悟 ] Nghĩa: ${target.meaning || target.definition || "Đoán từ tiếng Anh"} • [${word.length} chữ]</span>`;
           }
         } else {
-          meaningEl.innerText = `[ 悟 ] ${target.meaning || target.definition || ""}`;
+          // DIRECT TYPING: Trong lúc gõ CHỈ hiện từ tiếng Anh, gõ xong mới hiện đầy đủ IPA và nghĩa
+          if (typed >= word.length) {
+            meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">[ 斩 • HOÀN THÀNH ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+          } else {
+            meaningEl.innerHTML = `<span style="color: #94A3B8; font-weight: 600;">[ 斩 ] Gõ tiếng Anh: ${target.word} • [${typed}/${word.length}]</span>`;
+          }
         }
       }
 

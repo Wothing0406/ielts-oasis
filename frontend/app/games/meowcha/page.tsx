@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 export const dynamic = 'force-dynamic';
 
 export default function MeowchaGamePage() {
-  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.8");
+  const [iframeSrc, setIframeSrc] = useState("/meowcha/index.html?v=10.9");
 
   useEffect(() => {
     try {
@@ -28,7 +28,8 @@ export default function MeowchaGamePage() {
       <iframe
         src={iframeSrc}
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
-        title="Meowcha Xianxia Game Engine"
+        title="Meowcha IELTS Game"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
         allow="autoplay; fullscreen; clipboard-write; clipboard-read"
         scrolling="no"
       />
