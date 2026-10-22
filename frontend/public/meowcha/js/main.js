@@ -834,18 +834,10 @@
       // Cập nhật thanh HUD
       this.ui.updateHUD();
 
-      // Tự động làm trong suốt thanh HUD nếu có thiên thạch đang rơi vào khu vực này để không che khuất chữ
+      // HUD luôn sắc nét, vững chãi, hai dock trái phải không che khuất ma thạch rơi chính giữa trời
       const hudEl = document.querySelector(".sect-scroll-hud");
-      if (hudEl) {
-        const isMob = this.canvas.width <= 768;
-        const hudW = isMob ? this.canvas.width : 520;
-        const hudH = 115;
-        const hasAsteroidNearHUD = this.asteroids.asteroids.some(a => a && a.y < hudH + 20 && a.x < hudW + 30);
-        if (hasAsteroidNearHUD) {
-          hudEl.classList.add("hud-dimmed");
-        } else {
-          hudEl.classList.remove("hud-dimmed");
-        }
+      if (hudEl && hudEl.classList.contains("hud-dimmed")) {
+        hudEl.classList.remove("hud-dimmed");
       }
     }
 

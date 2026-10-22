@@ -569,45 +569,15 @@
 
         // LINH MIÊU THỦY MẶC (Fine Calligraphic Ink Spirit Cat with Auspicious Cloud & Jade Talisman)
         const leftMascotSvg = `
-          <div class="setup-mascot-flank left" title="Linh Miêu Thủy Mặc • Ngự Mây Hộ Đạo" aria-hidden="true">
-            <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="24" r="22" fill="rgba(45, 226, 141, 0.15)"/>
-              <path d="M8 38 C8 34 14 33 17 35 C20 31 28 31 31 35 C35 33 40 35 40 39 C40 43 10 44 8 38 Z" fill="#140F0B" stroke="#2DE28D" stroke-width="1.2"/>
-              <path d="M12 40 C16 38 22 41 26 39 C30 38 34 41 36 40" stroke="#FDE047" stroke-width="0.8" fill="none" stroke-linecap="round"/>
-              <path d="M16 36 C15 28 20 23 24 23 C28 23 33 28 32 36 Z" fill="#172554" stroke="#60A5FA" stroke-width="1.1"/>
-              <path d="M18 30 Q24 33 30 30" stroke="#2DE28D" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-              <circle cx="24" cy="18" r="8" fill="#0F172A" stroke="#93C5FD" stroke-width="1.1"/>
-              <path d="M17 14 L18 8 L22 12 Z" fill="#1E293B" stroke="#93C5FD" stroke-width="1"/>
-              <path d="M31 14 L30 8 L26 12 Z" fill="#1E293B" stroke="#93C5FD" stroke-width="1"/>
-              <ellipse cx="21" cy="17" rx="1.5" ry="1.8" fill="#34D399"/>
-              <ellipse cx="27" cy="17" rx="1.5" ry="1.8" fill="#34D399"/>
-              <circle cx="21" cy="16.6" r="0.6" fill="#FFFFFF"/>
-              <circle cx="27" cy="16.6" r="0.6" fill="#FFFFFF"/>
-              <rect x="25" y="20" width="7" height="12" rx="1.5" transform="rotate(12 25 20)" fill="#065F46" stroke="#34D399" stroke-width="1"/>
-              <circle cx="29" cy="22.5" r="0.8" fill="#FDE047"/>
-              <line x1="27" y1="25" x2="30" y2="26" stroke="#FDE047" stroke-width="0.8"/>
-              <path d="M29 32 Q31 37 30 41" stroke="#EF4444" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-            </svg>
+          <div class="setup-mascot-flank left" title="Linh Miêu Cưỡi Mây Ngậm Kim Phù • Hộ Đạo Trợ Uy" aria-hidden="true">
+            <img src="./assets/ui/mascot_spirit_cat.png" alt="Linh Miêu Hộ Đạo" class="mascot-img-flank cat-flank-anim" />
           </div>
         `;
 
-        // TRÀ ĐẠO CHƯỞNG MÔN (Incense Zen Cat Elder with Golden Hat & White Beard)
+        // TRÀ ĐẠO KIẾM ĐỒNG • ĐẢ TỌA (Authentic High-Res Transparent PNG)
         const rightMascotSvg = `
-          <div class="setup-mascot-flank right" title="Trà Đạo Trưởng Lão • Thanh Tâm Trợ Trận" aria-hidden="true">
-            <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="24" r="22" fill="rgba(253, 224, 71, 0.15)"/>
-              <ellipse cx="24" cy="39" rx="16" ry="4.5" fill="#1C140E" stroke="#B45309" stroke-width="1.2"/>
-              <ellipse cx="24" cy="39" rx="11" ry="2.5" stroke="#FDE047" stroke-width="0.7" fill="none"/>
-              <path d="M15 37 C15 27 33 27 33 37 Z" fill="#2E1C12" stroke="#D97706" stroke-width="1.1"/>
-              <circle cx="24" cy="22" r="7.5" fill="#FAF5FF" stroke="#A78BFA" stroke-width="1"/>
-              <polygon points="10,18 24,9 38,18" fill="#78350F" stroke="#FDE047" stroke-width="1.2"/>
-              <path d="M20 25 Q16 29 18 33" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-              <path d="M28 25 Q32 29 30 33" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-              <path d="M19.5 21 Q21.5 19.5 23 21" stroke="#451A03" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-              <path d="M25 21 Q26.5 19.5 28.5 21" stroke="#451A03" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-              <ellipse cx="14" cy="32" rx="4.5" ry="2.5" fill="#065F46" stroke="#34D399" stroke-width="0.9"/>
-              <path d="M14 30 C12 26 16 24 14 21" stroke="#6EE7B7" stroke-width="1" stroke-linecap="round" fill="none"/>
-            </svg>
+          <div class="setup-mascot-flank right" title="Trà Đạo Kiếm Đồng • Đả Tọa Nhập Định" aria-hidden="true">
+            <img src="./assets/ui/mascot_daoist_master.png" alt="Kiếm Đồng Đả Tọa" class="mascot-img-flank master-flank-anim" />
           </div>
         `;
 

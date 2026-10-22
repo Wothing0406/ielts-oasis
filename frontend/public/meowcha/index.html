@@ -475,13 +475,12 @@
               </div>
             </div>
 
-            <!-- LINH THÚ HỘ ĐẠO: CHIBI ANH LINH TIÊN MIÊU (Authentic Pixel Art Asset) -->
+            <!-- LINH THÚ HỘ ĐẠO: CHIBI ANH LINH TIÊN MIÊU (High-Res Transparent Companion Asset) -->
             <div class="mascot-cloud-cushion" title="Linh Miêu Hộ Đạo • Chibi Companion">
-              <div class="golden-cloud-pillow"></div>
               <img
-                src="./sprites/characters/realm3_nascent_soul/poses/chibi_companion.png"
+                src="./assets/ui/mascot_spirit_cat.png"
                 alt="Linh Miêu Hộ Đạo"
-                class="winged-cat-pixel-img"
+                class="companion-cat-img"
               />
             </div>
           </div>
@@ -490,6 +489,12 @@
           <div class="lobby-cta-sword-area">
             <!-- Nút Chơi Tiếp (Nếu có save) -->
             <button class="sword-talisman-cta continue-mode" id="btnContinueBattle" style="display: none;">
+              <div class="dragon-handle left" aria-hidden="true">
+                <svg width="22" height="30" viewBox="0 0 24 32" fill="none">
+                  <path d="M24 2 C14 4 6 10 3 16 C0 22 8 28 24 30 C16 26 10 21 10 16 C10 11 16 6 24 2 Z" fill="#FDE047" stroke="#92400E" stroke-width="1.2"/>
+                  <circle cx="14" cy="16" r="2.5" fill="#10B981"/>
+                </svg>
+              </div>
               <div class="sword-cta-hilt">
                 <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
                   <circle cx="5" cy="14" r="3" fill="#168553" stroke="#F3C644" stroke-width="1.5"/>
@@ -504,24 +509,27 @@
               <div class="sword-cta-tip">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3" fill="rgba(45,226,141,0.25)"></polygon></svg>
               </div>
+              <div class="dragon-handle right" aria-hidden="true">
+                <svg width="22" height="30" viewBox="0 0 24 32" fill="none" style="transform: scaleX(-1);">
+                  <path d="M24 2 C14 4 6 10 3 16 C0 22 8 28 24 30 C16 26 10 21 10 16 C10 11 16 6 24 2 Z" fill="#FDE047" stroke="#92400E" stroke-width="1.2"/>
+                  <circle cx="14" cy="16" r="2.5" fill="#10B981"/>
+                </svg>
+              </div>
             </button>
 
             <!-- Nút Chính: VÀO TRẬN ĐỘ KIẾP (Physical Celestial Flying Sword Button) -->
             <button class="sword-talisman-cta main-battle-start" id="btnStartBattle">
+              <div class="lobby-talisman-ear left" aria-hidden="true"><span>敕令</span></div>
               <div class="sword-cta-glow"></div>
               <!-- Chuôi Kiếm Rồng Chạm Khắc + Tua Rua Đỏ (Protruding Sword Hilt) -->
               <div class="sword-cta-hilt">
                 <svg class="dragon-hilt-svg" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Tua rua lụa đỏ rủ xuống từ đốc kiếm -->
                   <path d="M5 18 C2 23 3 29 6 33" stroke="#D44327" stroke-width="2.2" stroke-linecap="round"/>
                   <path d="M5 18 C0 22 1 28 3 32" stroke="#F3C644" stroke-width="1.2" stroke-linecap="round"/>
-                  <!-- Đốc kiếm ngọc (Pommel) -->
                   <polygon points="2,18 6,13 10,18 6,23" fill="#D44327" stroke="#F3C644" stroke-width="1.5"/>
-                  <!-- Tay cầm quấn dây vàng đen (Grip) -->
                   <rect x="10" y="15" width="11" height="6" rx="1" fill="#231912" stroke="#F3C644" stroke-width="1.4"/>
                   <line x1="13" y1="15" x2="15" y2="21" stroke="#F3C644" stroke-width="1.2"/>
                   <line x1="17" y1="15" x2="19" y2="21" stroke="#F3C644" stroke-width="1.2"/>
-                  <!-- Chắn kiếm Long Lân Hoàng Kim (Crossguard) -->
                   <path d="M21 4 L29 18 L21 32 L18 26 L22 18 L18 10 Z" fill="#F3C644" stroke="#78350F" stroke-width="1.4"/>
                   <circle cx="24" cy="18" r="2.5" fill="#2DE28D" stroke="#140F0B" stroke-width="1"/>
                 </svg>
@@ -538,12 +546,13 @@
                   <line x1="6" y1="14" x2="22" y2="14" stroke="#D44327" stroke-width="2"/>
                 </svg>
               </div>
+              <div class="lobby-talisman-ear right" aria-hidden="true"><span>鎮魔</span></div>
             </button>
 
             <!-- Nút Tẩy Tủy Chơi Lại (Ẩn/Hiện theo tiến trình) -->
             <button class="sword-talisman-restart" id="btnRestartGame" style="display: none;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-              <span>CHƠI LẠI TỪ ĐẦU</span>
+              <span>CHƠI LẠI TỪ ĐẦU (Tẩy Tủy Trùng Tu)</span>
             </button>
 
             <!-- COMPACT STAT PLAQUES (2 THẺ BÀI GỖ TỬ ĐÀN KHẮC ĐỒNG: BÌNH HỒ LÔ LINH ĐAN & PHI KIẾM NGỰ PHONG) -->
@@ -764,6 +773,9 @@
 
           <!-- GÓC PHẢI: NÚT ĐIỀU KHIỂN & TU VI, TỐC ĐỘ CHIẾN TRẬN (RIGHT DOCK) -->
           <div class="sect-hud-right-dock">
+            <div class="hud-talisman-decoration" aria-hidden="true">
+              <img src="./assets/ui/hanging_talismans.png" alt="Phù Chú Cổ Phong" class="hanging-talisman-img" />
+            </div>
             <!-- Cụm nút điều khiển chiến trận (Tích hợp ngay ngắn, không đè chữ) -->
             <div class="battle-controls-inline">
               <button
@@ -842,6 +854,13 @@
             src="./unity-webgl/index.html"
             scrolling="no"
           ></iframe>
+        </div>
+
+        <!-- LỜI THOẠI & KHẨU QUYẾT ĐẠO TRÀNG (SPEECH SCROLL) -->
+        <div class="altar-dialogue-wrap" id="altarDialogueWrap">
+          <div class="altar-dialogue-scroll">
+            <span class="dialogue-speech-txt" id="altarDialogueText">Ngoaooo! Định tâm dưỡng khí, không để ma thạch chạm đất!</span>
+          </div>
         </div>
 
         <!-- BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD) -->

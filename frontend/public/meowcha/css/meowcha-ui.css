@@ -7158,3 +7158,372 @@
     white-space: nowrap !important;
   }
 }
+
+
+/* =========================================================
+   XIANXIA AI REDESIGN ENHANCEMENTS (v11.7.5)
+   Based on User's AI Visual Designs (Lobby, Modal, Battle, Keyboard)
+   ========================================================= */
+
+/* 1. Cute Chibi Mascots in Modal Flanks */
+.setup-mascot-flank {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.mascot-img-flank {
+  width: 68px;
+  height: auto;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.85));
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cat-float-anim {
+  animation: floatCatMascot 3.2s ease-in-out infinite;
+}
+.master-meditate-anim {
+  animation: breatheMasterMascot 3.6s ease-in-out infinite;
+}
+@keyframes floatCatMascot {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.02); }
+}
+@keyframes breatheMasterMascot {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.85)); }
+  50% { transform: scale(1.03); filter: drop-shadow(0 8px 16px rgba(245, 158, 11, 0.45)); }
+}
+
+/* 2. Poetic Quote Ribbon in Lobby */
+.lobby-poetic-quote {
+  margin-top: 6px;
+  display: inline-block;
+  padding: 3px 14px;
+  background: linear-gradient(90deg, rgba(120, 53, 15, 0) 0%, rgba(120, 53, 15, 0.85) 20%, rgba(180, 83, 9, 0.95) 50%, rgba(120, 53, 15, 0.85) 80%, rgba(120, 53, 15, 0) 100%);
+  border-top: 1px solid rgba(253, 224, 71, 0.65);
+  border-bottom: 1px solid rgba(253, 224, 71, 0.65);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
+}
+.lobby-poetic-quote .quote-text {
+  font-family: var(--font-xianxia-body, 'Cinzel', serif);
+  font-size: 11.5px;
+  font-style: italic;
+  font-weight: 700;
+  color: #FEF08A;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+/* 3. Jade Bead Caps on 5 Realm Step Cards */
+.realm-step-card {
+  position: relative !important;
+}
+.realm-jade-bead-cap {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #A7F3D0 0%, #10B981 50%, #064E3B 100%);
+  border: 1.5px solid #FDE047;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.9), inset 0 0 4px #ECFDF5;
+  z-index: 6;
+  pointer-events: none;
+}
+.realm-step-card.realm-card-active .realm-jade-bead-cap {
+  box-shadow: 0 0 14px rgba(52, 211, 153, 1), 0 0 6px #FDE047, inset 0 0 5px #FFFFFF;
+}
+
+/* 4. Hanging Talismans Decoration in Battle HUD */
+.hud-talisman-decoration {
+  position: absolute;
+  top: 4px;
+  right: 175px;
+  pointer-events: none;
+  z-index: 10;
+}
+.hanging-talisman-img {
+  width: 48px;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8));
+  animation: gentleSwayTalisman 4s ease-in-out infinite;
+  transform-origin: top center;
+}
+@keyframes gentleSwayTalisman {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(2.5deg); }
+}
+
+/* 5. Emerald Jade Keystone Keys for Mobile Virtual Keyboard (Matching Image 4) */
+.kb-key.xianxia-key {
+  border-radius: 8px !important;
+  background: radial-gradient(circle at 35% 25%, #34D399 0%, #059669 45%, #064E3B 85%, #022C22 100%) !important;
+  border: 1.5px solid #FDE047 !important;
+  box-shadow: 0 3px 0 #022C22, 0 4px 8px rgba(0, 0, 0, 0.7), inset 0 1px 3px rgba(255, 255, 255, 0.5) !important;
+  color: #FEF08A !important;
+  font-family: var(--font-xianxia-body, 'Cinzel', serif) !important;
+  font-weight: 800 !important;
+  font-size: 15px !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  transition: transform 0.08s ease, filter 0.08s ease !important;
+}
+.kb-key.xianxia-key:active, .kb-key.xianxia-key.active {
+  transform: translateY(2px) !important;
+  background: radial-gradient(circle at 35% 25%, #6EE7B7 0%, #10B981 50%, #047857 100%) !important;
+  box-shadow: 0 1px 0 #022C22, 0 0 14px rgba(253, 224, 71, 0.9), inset 0 0 6px #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+/* Action Keys */
+.kb-action-key.kb-audio-key {
+  background: radial-gradient(circle at 35% 25%, #7C3AED 0%, #5B21B6 50%, #2E1065 100%) !important;
+  border-color: #C084FC !important;
+  color: #F3E8FF !important;
+  box-shadow: 0 3px 0 #1E0A3C, 0 4px 8px rgba(0, 0, 0, 0.7), inset 0 1px 3px rgba(255, 255, 255, 0.4) !important;
+}
+.kb-action-key.kb-space-key {
+  background: radial-gradient(circle at 40% 25%, #10B981 0%, #047857 50%, #022C22 100%) !important;
+  border: 2px solid #FDE047 !important;
+  box-shadow: 0 3px 0 #022C22, 0 0 14px rgba(16, 185, 129, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
+}
+.kb-action-key.kb-del-key {
+  background: radial-gradient(circle at 35% 25%, #DC2626 0%, #991B1B 50%, #450A0A 100%) !important;
+  border-color: #FCA5A5 !important;
+  color: #FEE2E2 !important;
+  box-shadow: 0 3px 0 #2A0505, 0 4px 8px rgba(0, 0, 0, 0.7), inset 0 1px 3px rgba(255, 255, 255, 0.4) !important;
+}
+
+@media (max-width: 768px) {
+  .hud-talisman-decoration {
+    right: 125px !important;
+    top: 2px !important;
+  }
+  .hanging-talisman-img {
+    width: 32px !important;
+  }
+  .setup-mascot-flank {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   REFINEMENTS V11.7.5: AUTHENTIC XIANXIA MASCOTS, LOBBY CTAS & HUD POSITIONING
+   ============================================================ */
+
+/* 1. Companion Spirit Cat on Tea Dais */
+.mascot-cloud-cushion {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  z-index: 25;
+  filter: drop-shadow(0 4px 12px rgba(45, 226, 141, 0.45));
+  animation: companionFloat 3.2s ease-in-out infinite alternate;
+}
+.companion-cat-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@keyframes companionFloat {
+  0% { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(-7px) rotate(2deg); }
+}
+
+/* 2. Dragon Handles on Continue Mode Button */
+.sword-talisman-cta.continue-mode {
+  overflow: visible !important;
+}
+.dragon-handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+.dragon-handle.left {
+  left: -13px;
+}
+.dragon-handle.right {
+  right: -13px;
+}
+
+/* 3. Hanging Talismans on Main Battle CTA (Trọng Tu Pháp Môn) */
+.sword-talisman-cta.main-battle-start {
+  overflow: visible !important;
+}
+.lobby-talisman-ear {
+  position: absolute;
+  top: -4px;
+  z-index: 10;
+  background: linear-gradient(180deg, #FDE047 0%, #F59E0B 100%);
+  color: #7F1D1D;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 10px;
+  padding: 3px 2px;
+  border-radius: 2px 2px 4px 4px;
+  border: 1px solid #78350F;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+.lobby-talisman-ear.left {
+  left: -15px;
+}
+.lobby-talisman-ear.right {
+  right: -15px;
+}
+
+/* 4. Dialogue Speech Banner above Altar */
+.altar-dialogue-wrap {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 6px auto;
+  pointer-events: none;
+  z-index: 30;
+}
+.altar-dialogue-scroll {
+  background: linear-gradient(90deg, rgba(254, 240, 138, 0.95) 0%, rgba(253, 230, 138, 0.98) 50%, rgba(254, 240, 138, 0.95) 100%);
+  border: 1.5px solid #854D0E;
+  border-radius: 6px;
+  padding: 4px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 0 6px rgba(180, 83, 9, 0.3);
+  position: relative;
+}
+.dialogue-speech-txt {
+  font-family: var(--font-xianxia-body, 'Be Vietnam Pro', sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  color: #451A03;
+  letter-spacing: 0.3px;
+  text-align: center;
+  display: block;
+}
+
+/* 5. Mascot Flanks in Modal */
+.setup-mascot-flank {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.mascot-img-flank {
+  width: 74px;
+  height: auto;
+  max-height: 85px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.85));
+  transition: transform 0.3s ease;
+}
+.cat-flank-anim {
+  animation: mascotCatHover 3.2s ease-in-out infinite alternate;
+}
+.master-flank-anim {
+  animation: mascotMasterHover 3.6s ease-in-out infinite alternate;
+}
+@keyframes mascotCatHover {
+  0% { transform: translateY(0) rotate(-1.5deg); }
+  100% { transform: translateY(-7px) rotate(2deg); }
+}
+@keyframes mascotMasterHover {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-5px) scale(1.02); }
+}
+
+/* 6. Reposition Hanging Talisman in Battle View */
+.hud-talisman-decoration {
+  position: absolute;
+  top: 4px;
+  right: 14px !important;
+  pointer-events: none;
+  z-index: 60;
+}
+
+@media (max-width: 768px) {
+  .setup-mascot-flank {
+    display: none !important;
+  }
+  .hud-talisman-decoration {
+    right: 6px !important;
+    top: 2px !important;
+  }
+  .hanging-talisman-img {
+    width: 26px !important;
+  }
+  .altar-dialogue-wrap {
+    max-width: 92%;
+    margin-bottom: 3px;
+  }
+  .dialogue-speech-txt {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+  .sect-hud-left-dock {
+    max-width: 142px !important;
+    padding: 4px 6px !important;
+  }
+  .sect-hud-right-dock {
+    max-width: 152px !important;
+    padding: 4px 6px !important;
+  }
+  .sect-row-title strong {
+    font-size: 11px !important;
+  }
+  .hp-val-text {
+    font-size: 11px !important;
+  }
+  .hp-mini-track {
+    width: 60px !important;
+  }
+  .sect-stats-inline {
+    gap: 4px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* DIALOGUE BANNER POSITIONING FIX: Sit comfortably right above altar */
+.altar-dialogue-wrap {
+  position: absolute !important;
+  bottom: 84px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  max-width: 440px !important;
+  display: flex !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  z-index: 44 !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .altar-dialogue-wrap {
+    position: fixed !important;
+    bottom: calc(var(--kb-height, 178px) + 58px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 92vw !important;
+    max-width: 360px !important;
+    margin: 0 !important;
+    z-index: 44 !important;
+  }
+  .altar-word-display,
+  #swordIntentText,
+  .altar-idle-msg {
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+  }
+}

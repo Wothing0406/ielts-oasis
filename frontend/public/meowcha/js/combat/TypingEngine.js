@@ -696,10 +696,11 @@
       if (!target || !target.word) {
         if (plaqueEl) plaqueEl.innerText = `[ 剑 ] KIẾM QUYẾT ĐÀI • ${plaqueTitles[curMode] || plaqueTitles.DIRECT} [ 诀 ]`;
         if (intentEl) {
+          const isMobile = (typeof window !== "undefined" && window.innerWidth <= 768);
           const idleMsgs = {
-            DIRECT: "[ 斩 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 诀 ]",
-            CLOZE:  "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT ĐOÁN TỰ PHÁ PHÙ [ 诀 ]",
-            AUDIO:  "[ 听 ] THÍNH TIÊN BIỆN ÂM • LẮNG NGHE CHÂN NGÔN (PHÍM TAB NGHE LẠI) [ 诀 ]"
+            DIRECT: isMobile ? "[ 斩 ] TRỰC DIỆN TRẢM MA" : "[ 斩 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 诀 ]",
+            CLOZE:  isMobile ? "[ 悟 ] NGỘ ĐẠO THÔNG LINH" : "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT ĐOÁN TỰ PHÁ PHÙ [ 诀 ]",
+            AUDIO:  isMobile ? "[ 听 ] THÍNH TIÊN BIỆN ÂM" : "[ 听 ] THÍNH TIÊN BIỆN ÂM • LẮNG NGHE CHÂN NGÔN (PHÍM TAB NGHE LẠI) [ 诀 ]"
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }
