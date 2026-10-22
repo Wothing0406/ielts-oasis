@@ -621,15 +621,7 @@
               <div class="setup-dual-btns-wrap">
                 <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
                   <div class="sword-token-glow"></div>
-                  <div class="sword-token-hilt">
-                    <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                      <polygon points="2,14 6,10 10,14 6,18" fill="#DC2626" stroke="#F3C644" stroke-width="1.3"/>
-                      <rect x="10" y="12" width="8" height="4" fill="#450A0A" stroke="#F3C644" stroke-width="1.2"/>
-                      <path d="M18 5 L24 14 L18 23 L16 18 L18 14 L16 10 Z" fill="#EF4444" stroke="#FEF08A" stroke-width="1.3"/>
-                    </svg>
-                  </div>
-                  <div class="sword-token-content">
-                    <span class="sword-token-main" style="color: #FEF08A">KHỞI MỞ TRẬN MỚI</span>
+                  <div class="sword-token-hilt"><svg width="26" height="26" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div><div class="sword-token-content"><span class="sword-token-main" style="color: #FEF08A">KHỞI MỞ TRẬN MỚI</span>
                     <span class="sword-token-sub">[ Bắt Đầu Từ Cấp 0 • Khí Huyết 50/50 ]</span>
                   </div>
                   <div class="sword-token-tip">
@@ -637,15 +629,7 @@
                   </div>
                 </button>
                 <button class="sword-token-btn continue-green" id="btnSetupContinue">
-                  <div class="sword-token-hilt">
-                    <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                      <polygon points="2,14 6,10 10,14 6,18" fill="#168553" stroke="#F3C644" stroke-width="1.3"/>
-                      <rect x="10" y="12" width="8" height="4" fill="#064E3B" stroke="#F3C644" stroke-width="1.2"/>
-                      <path d="M18 5 L24 14 L18 23 L16 18 L18 14 L16 10 Z" fill="#2DE28D" stroke="#F3C644" stroke-width="1.3"/>
-                    </svg>
-                  </div>
-                  <div class="sword-token-content">
-                    <span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC ĐẠO QUẢ</span>
+                  <div class="sword-token-hilt"><svg width="26" height="26" viewBox="0 0 512 512" fill="#34D399"><path d="M256.438 19.375c-47.71 0-95.422 14.41-136.094 43.22 13.022 15.09 26.314 30.127 39.156 44.468 16.038-11.682 32.482-18.857 48.688-22.282l9.875-9.874 6.625-6.625 6.593 6.626 7.72 7.72c78.735 5.644 140.54 95.133 101.406 175.53l118.5 118.5c54.447-90.673 42.59-209.88-35.625-288.094C377.17 42.45 316.806 19.376 256.44 19.376zM66.5 27.063L29.53 64.03c37.95 29.834 80.152 65.906 115 96.845l7.407 6.594-7 7-47.375 47.374L117.25 241.5l34.5-34.5 268.125 268.156 77.344 19.28-21.845-74.78-26.977-26.978.04-.053-117.75-117.75-.032.045L207.25 151.5l37.094-37.094-19.656-19.656-46.47 46.438-6.968 6.937-6.563-7.28C133.5 106.334 96.644 64.837 66.5 27.062zm-1.28 90.062C-1.735 209.41 6.38 339.035 89.593 422.25c52.93 52.93 124.633 75.448 193.562 67.625-131.5.997-246.804-128.563-207.125-263.156l-4.874-4.876 6.594-6.625 3.25-3.25c7.028-18.512 17.076-37.017 30.5-55.22-14.87-12.992-30.55-26.433-46.28-39.625zm120.374 46.03c12.283 0 22.22 9.968 22.22 22.25 0 2.224-.332 4.35-.94 6.376l236.94 236.97-13.19 13.188L194.47 205.813c-2.72 1.185-5.72 1.843-8.876 1.843-12.284 0-22.25-9.964-22.25-22.25 0-12.285 9.966-22.25 22.25-22.25z"/></svg></div><div class="sword-token-content"><span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC ĐẠO QUẢ</span>
                     <span class="sword-token-sub">${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'}</span>
                   </div>
                   <div class="sword-token-tip">
@@ -688,14 +672,7 @@
               ${leftMascotSvg}
               <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
                 <div class="sword-token-glow"></div>
-                <div class="sword-token-hilt">
-                  <svg class="sword-pommel-svg" width="30" height="30" viewBox="0 0 36 36" fill="none">
-                    <polygon points="2,18 6,13 10,18 6,23" fill="#D44327" stroke="#F3C644" stroke-width="1.4"/>
-                    <rect x="10" y="15" width="10" height="6" rx="1" fill="#231912" stroke="#F3C644" stroke-width="1.3"/>
-                    <path d="M20 5 L28 18 L20 31 L17 25 L21 18 L17 11 Z" fill="#F3C644" stroke="#78350F" stroke-width="1.4"/>
-                    <circle cx="23" cy="18" r="2.2" fill="#2DE28D"/>
-                  </svg>
-                </div>
+                <div class="sword-token-hilt"><svg width="28" height="28" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div>
                 <div class="sword-token-content">
                   <div class="sword-token-title-row">
                     <span class="sword-token-main" style="color: #FEF08A">BẮT ĐẦU ĐỘ KIẾP NGAY</span>
@@ -703,12 +680,7 @@
                   </div>
                   <span class="sword-token-sub">[ 剑 ] Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến [ 战 ]</span>
                 </div>
-                <div class="sword-token-tip">
-                  <svg class="molten-fire-svg animated-pulse" width="26" height="26" viewBox="0 0 28 28" fill="none">
-                    <polygon points="2,6 26,14 2,22 7,14" fill="#F3C644" stroke="#FEF08A" stroke-width="1.5"/>
-                    <line x1="6" y1="14" x2="22" y2="14" stroke="#D44327" stroke-width="2"/>
-                  </svg>
-                </div>
+                <div class="sword-token-tip"><svg width="22" height="22" viewBox="0 0 512 512" fill="#FDE047"><path d="M133.53 10.47c51.747 30.872 96.318 71.166 131.94 119.093C199.33 72.05 115.217 33.942 19.22 21.406c12.584 96.38 50.948 180.807 108.843 247.063-47.45-35.09-87.475-78.907-118.313-129.783v31.219C65.264 272.953 147.488 356.6 249.28 413.812 159.164 375.9 78.843 322.91 10.813 257.375l-.468 38.125C134.828 408.824 300.18 479.697 493.75 494.688c-14.992-193.573-85.27-358.92-198.594-483.407l-41.812.44c64.677 66.753 117.25 145.417 155.28 233.624-57.55-99.84-140.81-180.403-242.937-234.875H133.53zm22.22 149.5c36.29 16.732 71.624 40.59 103.97 68.343l60.717-60.157 34.47 34.438-37.376 23.375c58.01 69.636 105.07 147.97 134.908 230.686-82.466-29.758-160.62-76.55-230.094-134.312l-23.938 36.78-35.062-34.468 60.75-60.72c-27.75-32.335-51.607-67.668-68.344-103.967z"/></svg></div>
               </button>
               ${rightMascotSvg}
             `;
