@@ -2494,9 +2494,45 @@
 
   .talents-grid {
     grid-template-columns: 1fr;
-    max-height: 380px;
+    max-height: 65vh;
     overflow-y: auto;
-    gap: 12px;
+    gap: 10px;
+    padding-right: 4px;
+  }
+
+  .perk-card {
+    padding: 10px 10px 8px !important;
+  }
+
+  .perk-icon-wrapper {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto 4px !important;
+  }
+
+  .perk-icon-seal {
+    font-size: 22px !important;
+  }
+
+  .perk-name {
+    font-size: 14.5px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .perk-type {
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .perk-desc {
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .btn-linh-ngo {
+    padding: 6px 12px !important;
+    font-size: 11.5px !important;
   }
 }
 

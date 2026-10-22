@@ -762,7 +762,7 @@
       this.cat.update(dt, this.gameState);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
-      const bottomThreshold = isMobile ? (this.canvas.height - 256) : (this.canvas.height - 128);
+      const bottomThreshold = isMobile ? (this.canvas.height - 265) : (this.canvas.height - 130);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
