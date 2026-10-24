@@ -1,0 +1,415 @@
+/* Release 2026.10.24.2: authored art, readable controls and measured input dock.
+   Scoped overrides intentionally supersede legacy fixed-height/!important rules. */
+:root {
+  --mc-void: #100d12;
+  --mc-wood: #281711;
+  --mc-crimson: #761d20;
+  --mc-gold: #d4a849;
+  --mc-highlight: #ffe49a;
+  --mc-jade: #27685d;
+  --mc-ink: #fffbeb;
+  --mc-keyboard-height: 0px;
+}
+#lobbyView { backdrop-filter: none; }
+.cultivation-dais {
+  position: absolute;
+  bottom: 0;
+  width: 245px;
+  z-index: 2;
+  pointer-events: none;
+}
+.cultivation-dais img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.floating-stone-pavilion .lobby-cat-avatar {
+  margin-bottom: 28px !important;
+  filter: drop-shadow(0 5px 3px #100d1280) !important;
+}
+.windchime-medallion {
+  background: url('../assets/ui/menu_jade_cloud.png') center 3px / 43px 53px no-repeat !important;
+  min-width: 66px !important;
+  min-height: 74px !important;
+  box-shadow: none !important;
+}
+.windchime-medallion .windchime-icon-img { width: 19px !important; height: 19px !important; filter: brightness(0) saturate(100%) invert(88%) sepia(45%) saturate(480%) hue-rotate(345deg); }
+.windchime-knot-top, .windchime-tassel-bottom { visibility: hidden; }
+#gameAppWrapper .windchime-medallion { position: relative; width: 76px !important; min-width: 76px !important; min-height: 80px !important; }
+#gameAppWrapper .windchime-medallion .medallion-disc {
+  position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+  width: 34px !important; height: 34px !important;
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+  clip-path: none !important;
+}
+#gameAppWrapper .windchime-medallion .windchime-icon-img {
+  width: 18px !important; height: 18px !important;
+  filter: brightness(0) invert(90%) sepia(40%) saturate(400%) !important;
+}
+#gameAppWrapper .windchime-medallion .medallion-label {
+  position: absolute; bottom: 0; left: 0; right: 0; max-width: 100%;
+  white-space: normal !important; line-height: 1.15; text-align: center;
+  width: 100% !important; padding: 2px 3px !important; min-height: 24px;
+  display: flex; align-items: center; justify-content: center;
+}
+.windchime-medallion .medallion-label { font-size: 11px !important; letter-spacing: 0 !important; }
+.sword-token-btn, .sword-cta-button { text-shadow: none !important; }
+button:focus-visible, a:focus-visible, .setup-mode-card:focus-visible {
+  outline: 2px solid var(--mc-highlight) !important;
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; opacity: .5; filter: saturate(.4); }
+#gameAppWrapper [hidden] { display: none !important; }
+.setup-mode-card.active-mode { box-shadow: inset 0 0 0 1px var(--mc-jade) !important; }
+.setup-mode-card, .jade-medallion-card { text-shadow: none !important; }
+.setup-mode-icon, .mode-medallion-icon { filter: none !important; }
+.sword-token-tip { display: none !important; }
+.modal-content-box { overscroll-behavior: contain; scrollbar-gutter: stable; }
+.practice-summary {
+  color: var(--mc-ink); font-size: 12px; line-height: 1.65;
+  padding: 10px 12px; background: #100d1280; border-left: 3px solid var(--mc-jade);
+  white-space: normal; overflow-wrap: anywhere;
+}
+.board-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; margin: 8px 0; color: var(--mc-ink); }
+.board-filters select { background: var(--mc-wood); color: var(--mc-ink); border: 1px solid var(--mc-gold); min-height: 38px; padding: 4px 8px; max-width: 100%; }
+.board-note { color: #ddccb7; font-size: 11px; line-height: 1.5; }
+.hud-btn img { filter: brightness(0) invert(88%) sepia(45%) saturate(480%); }
+.kb-key, .kb-minimize-btn { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#gameAppWrapper #virtualKeyboardContainer {
+  max-height: none !important;
+  padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
+}
+#gameAppWrapper #virtualKeyboardContainer.user-force-opened {
+  visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+}
+#gameAppWrapper .kb-key {
+  max-width: none !important;
+  min-width: 0;
+  background: #302019 !important;
+  color: var(--mc-ink) !important;
+  border-color: #896936 !important;
+  box-shadow: 0 2px 0 #100d12 !important;
+}
+#gameAppWrapper .kb-key.active, #gameAppWrapper .kb-key:active { background: var(--mc-jade) !important; }
+#gameAppWrapper .kb-minimize-btn { min-height: 28px; font-size: 11px; }
+#gameAppWrapper .kb-row { gap: 3px; width: 100% !important; max-width: none !important; }
+#gameAppWrapper .meowcha-virtual-keyboard { width: 100% !important; max-width: none !important; flex: 1; }
+#gameAppWrapper .kb-key { flex: 1 !important; }
+html.keyboard-visible #gameAppWrapper #swordIntentBox { bottom: calc(var(--mc-keyboard-height) + 8px) !important; }
+.kb-seal-title { font-size: 11px !important; letter-spacing: 0 !important; }
+.kb-seal-title svg { display: none; }
+.key-action-label { font-size: 10px !important; }
+@media (max-width: 768px), (max-height: 550px) {
+  #gameAppWrapper .sect-scroll-hud {
+    display: grid !important; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px; padding: 5px !important; align-items: start;
+  }
+  #gameAppWrapper .sect-hud-left-dock, #gameAppWrapper .sect-hud-right-dock {
+    position: static !important; max-width: none !important; min-width: 0;
+    width: auto !important; padding: 5px 6px !important; gap: 4px !important;
+    background: #281711ed !important; box-shadow: 0 3px 6px #100d1260 !important;
+  }
+  #gameAppWrapper .sect-row-title { display: flex !important; flex-direction: column !important; align-items: start !important; gap: 2px !important; }
+  #gameAppWrapper #hudRealm { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px !important; }
+  #gameAppWrapper .sect-level-tag { font-size: 11px !important; white-space: nowrap; }
+  #gameAppWrapper .hp-label-title, #gameAppWrapper .sect-glyph { display: none; }
+  #gameAppWrapper .hp-val-text { font-size: 11px !important; }
+  #gameAppWrapper .sect-hp-container { flex-wrap: wrap; }
+  #gameAppWrapper .hp-mini-track { width: 100%; min-width: 65px; }
+  #gameAppWrapper .hud-talisman-decoration { display: none !important; }
+  #gameAppWrapper .battle-controls-inline { gap: 3px !important; flex-wrap: wrap; justify-content: end; }
+  #gameAppWrapper .hud-btn, #gameAppWrapper .hud-talisman-btn {
+    min-width: 32px !important; min-height: 36px !important; padding: 4px !important;
+    flex-shrink: 0; box-shadow: none !important;
+  }
+  #gameAppWrapper .hud-talisman-btn .talisman-btn-label { display: none !important; }
+  #gameAppWrapper .sect-stats-inline { flex-wrap: wrap; justify-content: end; gap: 4px; max-width: 190px; }
+  #gameAppWrapper .stat-mini, #gameAppWrapper #hudWpm { font-size: 11px !important; }
+  #gameAppWrapper #virtualKeyboardContainer { background: #1c1311fa !important; backdrop-filter: none !important; padding: 4px !important; padding-bottom: max(4px, env(safe-area-inset-bottom)) !important; }
+  #gameAppWrapper .meowcha-virtual-keyboard { padding: 0; gap: 4px; }
+  #gameAppWrapper .kb-key { height: 37px !important; min-height: 37px !important; max-height: none !important; font-size: 16px !important; }
+  #gameAppWrapper .kb-row-actions .kb-key { height: 32px !important; min-height: 32px !important; }
+  #gameAppWrapper #swordIntentBox {
+    bottom: calc(var(--mc-keyboard-height) + 5px) !important;
+    width: min(94vw, 540px) !important; max-width: calc(100vw - 16px) !important;
+    padding: 0 !important; transform: translateX(-50%) !important;
+  }
+  #gameAppWrapper .altar-guardian, #gameAppWrapper .altar-ribbon-banner { display: none !important; }
+  #gameAppWrapper .parchment-body { min-height: 48px !important; padding: 6px 12px !important; }
+  #gameAppWrapper #swordIntentText { font-size: clamp(14px, 4vw, 20px) !important; white-space: normal !important; overflow-wrap: anywhere; }
+  #gameAppWrapper #swordTargetMeaning { font-size: 11px !important; line-height: 1.35 !important; }
+  #gameAppWrapper .altar-dialogue-wrap { display: none !important; }
+  #gameAppWrapper .meowcha-modal-overlay { padding: 10px !important; }
+  #gameAppWrapper .modal-content-box { max-width: calc(100vw - 20px) !important; max-height: calc(100dvh - 20px) !important; overflow: auto !important; padding: 16px 12px !important; }
+  #gameAppWrapper .modal-content-box button { min-height: 38px; }
+  #gameAppWrapper .sword-token-content, #gameAppWrapper .sword-token-title-row { min-width: 0; flex-wrap: wrap; }
+  #gameAppWrapper .sword-token-main { font-size: 14px !important; white-space: normal !important; }
+  #gameAppWrapper .sword-token-sub, #gameAppWrapper .setup-sec-sub { font-size: 11px !important; white-space: normal !important; }
+  #gameAppWrapper .setup-mode-card { min-height: 84px; }
+  #gameAppWrapper .pantheon-row, #gameAppWrapper .pantheon-table-header { grid-template-columns: 32px minmax(80px, 1fr) 72px !important; gap: 5px; padding: 8px 5px !important; }
+  #gameAppWrapper .pantheon-row .realm-col, #gameAppWrapper .pantheon-row .words-col, #gameAppWrapper .pantheon-row .wpm-col { display: none !important; }
+  #gameAppWrapper .pantheon-table-header > :nth-child(3), #gameAppWrapper .pantheon-table-header > :nth-child(5), #gameAppWrapper .pantheon-table-header > :nth-child(6) { display: none; }
+  #gameAppWrapper .windchime-medallion { width: auto !important; flex: 1; min-width: 44px !important; min-height: 66px !important; background-size: 33px 41px !important; }
+  #gameAppWrapper .windchime-medallion .medallion-disc { width: 25px !important; height: 25px !important; }
+  #gameAppWrapper .windchime-medallion .medallion-label { font-size: 9px !important; }
+  #gameAppWrapper .windchime-icon-img { width: 16px !important; height: 16px !important; }
+  #gameAppWrapper .cultivation-dais { width: 210px; }
+}
+@media (max-height: 450px) and (orientation: landscape) {
+  #gameAppWrapper .sect-scroll-hud { grid-template-columns: 130px minmax(0, 1fr); }
+  #gameAppWrapper .sect-hud-right-dock { display: flex !important; flex-direction: column !important; align-items: stretch !important; }
+  #gameAppWrapper .sect-stats-inline { max-width: none !important; justify-content: end; }
+  #gameAppWrapper .kb-seal-header { display: none; }
+  #gameAppWrapper .kb-key { height: 30px !important; min-height: 30px !important; }
+  #gameAppWrapper .kb-row-actions .kb-key { height: 28px !important; min-height: 28px !important; }
+  #gameAppWrapper .parchment-body { min-height: 36px !important; padding: 2px 10px !important; }
+  html.scene-battle.keyboard-visible #gameCanvas { width: 52vw !important; }
+  html.scene-battle.keyboard-visible #gameAppWrapper #virtualKeyboardContainer {
+    width: 47vw !important; max-width: none !important; left: auto !important; right: 5px !important;
+    bottom: 8px !important; transform: none !important;
+  }
+  html.scene-battle.keyboard-visible #gameAppWrapper #swordIntentBox {
+    width: 48vw !important; left: 26vw !important; bottom: 8px !important;
+  }
+  html.scene-battle.keyboard-visible #gameAppWrapper .kb-key { height: 40px !important; min-height: 40px !important; }
+  html.scene-battle.keyboard-visible #gameAppWrapper .sect-scroll-hud { grid-template-columns: 48vw 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #gameAppWrapper *, #gameAppWrapper *::before, #gameAppWrapper *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ========================================================= */
+/* THANH KỸ NĂNG ĐỘT PHÁ CHỦ ĐỘNG (ACTIVE SKILLS BAR) */
+/* ========================================================= */
+.battle-active-skills-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.active-skill-btn {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  background: radial-gradient(circle at 50% 30%, #2f1d17 0%, #150d0a 100%);
+  border: 1.5px solid #d4a849;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7), inset 0 0 6px rgba(212, 168, 73, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.active-skill-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(212, 168, 73, 0.4), inset 0 0 10px rgba(255, 228, 154, 0.4);
+  border-color: #ffe49a;
+}
+
+.active-skill-btn:active {
+  transform: translateY(1px);
+}
+
+.active-skill-btn.ready-glow {
+  border-color: #f59e0b;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6), inset 0 0 8px rgba(245, 158, 11, 0.3);
+  animation: skillReadyPulse 2s infinite ease-in-out;
+}
+
+@keyframes skillReadyPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.5), inset 0 0 6px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 0 18px rgba(245, 158, 11, 0.8), inset 0 0 12px rgba(245, 158, 11, 0.4); border-color: #fde047; }
+}
+
+.active-skill-btn.ultimate-skill {
+  border-color: #ef4444;
+  background: radial-gradient(circle at 50% 30%, #3f1515 0%, #170707 100%);
+}
+
+.active-skill-btn.ultimate-skill.ready-glow {
+  border-color: #f59e0b;
+  animation: ultimatePulse 1.4s infinite ease-in-out;
+}
+
+@keyframes ultimatePulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.6), inset 0 0 6px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.9), inset 0 0 14px rgba(239, 68, 68, 0.5); border-color: #fef08a; }
+}
+
+.skill-hotkey-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #761d20;
+  color: #ffe49a;
+  border: 1px solid #d4a849;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.skill-level-badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  background: #1e3a2f;
+  color: #34d399;
+  border: 1px solid #10b981;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  line-height: 1;
+}
+
+.skill-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.skill-icon-wrap img {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.skill-name-label {
+  font-size: 9px;
+  color: #ddccb7;
+  line-height: 1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.skill-cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 13, 18, 0.78);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(1px);
+}
+
+.skill-cooldown-overlay .cd-num {
+  color: #ffe49a;
+  font-size: 14px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px #000;
+}
+
+.skill-cooldown-overlay.req-combo .cd-num {
+  color: #ef4444;
+  font-size: 12px;
+}
+
+/* ========================================================= */
+/* CƠ DUYÊN NGỘ ĐẠO MODAL CARDS */
+/* ========================================================= */
+.breakthrough-modal-subtitle {
+  text-align: center;
+  color: #ddccb7;
+  font-size: 13px;
+  font-style: italic;
+  margin-top: -6px;
+  margin-bottom: 14px;
+}
+
+.perk-card-top-badges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 10px;
+}
+
+.perk-rarity-pill {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.perk-path-pill {
+  color: #ffe49a;
+  font-weight: 600;
+}
+
+.perk-kind-pill {
+  background: rgba(118, 29, 32, 0.5);
+  border: 1px solid rgba(212, 168, 73, 0.5);
+  color: #fffbeb;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 9px;
+}
+
+.perk-stat-change {
+  font-size: 11px;
+  color: #d4a849;
+  font-weight: 700;
+  background: rgba(40, 23, 17, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 4px 0 6px 0;
+  border: 1px dashed rgba(212, 168, 73, 0.4);
+}
+
+@media (max-width: 768px) {
+  .battle-active-skills-bar {
+    gap: 6px;
+    bottom: calc(100% + 4px);
+  }
+  .active-skill-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .skill-icon-wrap img {
+    width: 20px;
+    height: 20px;
+  }
+  .skill-name-label {
+    display: none;
+  }
+}
+
+
+/* =========================================================
+   FOUR CORNER CELESTIAL FILIGREE
+   ========================================================= */
+.xianxia-corner-filigree {
+  display: block;
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 0 8px rgba(212, 168, 73, 0.45));
+}
+
+/* =========================================================
+   BREAKTHROUGH MODAL XIANXIA BOX & BADGES
+   ========================================================= */
+.xianxia-breakthrough-box {
+  position: relative;
+  background: radial-gradient(circle at 50% 20%, #2A1512 0%, #170A09 60%, #0E0505 100%) !important;
+  border: 2px solid #D4A849 !important;
+  box-shadow: 0 0 35px rgba(212, 168, 73, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8) !important;
+}

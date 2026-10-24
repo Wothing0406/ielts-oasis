@@ -16,7 +16,8 @@
   function getSafeStorage() {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
-        window.localStorage.getItem("__probe__");
+        window.localStorage.setItem('__meowcha_storage_probe__', '1');
+        window.localStorage.removeItem('__meowcha_storage_probe__');
         return window.localStorage;
       }
     } catch (e) {
@@ -28,22 +29,32 @@
   class SaveSystem {
     constructor() {
       this.storage = getSafeStorage();
+      let owner = 'guest';
+      try {
+        const params = new URLSearchParams(root.location ? root.location.search : '');
+        const user = JSON.parse(params.get('user') || this.storage.getItem('oasis_user') || 'null');
+        owner = String(user && (user.id || user.user_id || user.username) || 'guest');
+      } catch (_) {}
+      this.storageKey = `${STORAGE_KEY}:${owner}`;
+      this.reviewKey = `meowcha_srs_weaknesses:${owner}`;
+      this.pendingRunsKey = `meowcha_pending_runs:${owner}`;
+      const legacyOwner = this.storage.getItem('meowcha_legacy_save_owner');
+      this.canImportLegacy = !legacyOwner || legacyOwner === owner;
+      if (!legacyOwner) this.storage.setItem('meowcha_legacy_save_owner', owner);
       this.slots = this.loadLocalSlots();
+      this._pendingSlots = new Set([1, 2, 3].filter(id => this.slots[id].cloudDirty));
+      this._runStarts = new Map();
       this.syncSrsDeck();
     }
 
     syncSrsDeck() {
       try {
-        const words = this.getWeaknessWords();
+        const words = this.getWeaknessWords().sort((a, b) => (a.nextReviewAt || 0) - (b.nextReviewAt || 0));
         const M = root.Meowcha || {};
         if (M.TANG_KINH_DECKS && Array.isArray(M.TANG_KINH_DECKS)) {
           const srsDeck = M.TANG_KINH_DECKS.find(d => d.id === "flashcard_srs");
           if (srsDeck) {
-            srsDeck.words = words.length > 0 ? words : [
-              { word: "PERSEVERE", ipa: "/ˌpɜː.sɪˈvɪər/", type: "verb", meaning: "Kiên trì bền bỉ vượt nghịch cảnh" },
-              { word: "RESILIENT", ipa: "/rɪˈzɪl.jənt/", type: "adj", meaning: "Kiên cường dẻo dai trước thử thách" },
-              { word: "TRANSCEND", ipa: "/trænˈsend/", type: "verb", meaning: "Vượt qua giới hạn, phi thăng" }
-            ];
+            srsDeck.words = words;
             srsDeck.wordsCount = srsDeck.words.length;
           }
         }
@@ -55,7 +66,7 @@
     recordWeaknessWord(wordItem) {
       if (!wordItem || !wordItem.word) return;
       try {
-        const key = "meowcha_srs_weaknesses";
+        const key = this.reviewKey;
         const raw = this.storage.getItem(key);
         let list = raw ? JSON.parse(raw) : [];
         const wordUpper = wordItem.word.toUpperCase();
@@ -63,6 +74,9 @@
         if (existing) {
           existing.missCount = (existing.missCount || 1) + 1;
           existing.lastMissed = Date.now();
+          existing.nextReviewAt = Date.now() + 60000;
+          existing.intervalDays = 0;
+          existing.mastery = 0;
         } else {
           list.push({
             word: wordUpper,
@@ -70,25 +84,18 @@
             meaning: wordItem.meaning || "",
             type: wordItem.type || "vocab",
             missCount: 1,
-            lastMissed: Date.now()
+            lastMissed: Date.now(),
+            nextReviewAt: Date.now() + 60000,
+            intervalDays: 0,
+            mastery: 0,
+            history: [{ at: Date.now(), correct: false }]
           });
         }
         if (list.length > 200) list = list.slice(-200);
         this.storage.setItem(key, JSON.stringify(list));
         this.syncSrsDeck();
 
-        if (typeof fetch !== "undefined") {
-          fetch("/api/vocabulary", {
-            method: "POST",
-            headers: this.getAuthHeaders(),
-            body: JSON.stringify({
-              word: wordUpper,
-              definition: wordItem.meaning,
-              ipa: wordItem.ipa,
-              tag: "meowcha_weakness"
-            })
-          }).catch(() => {});
-        }
+        // Reviews stay local; do not create duplicate vocabulary records on every typo.
       } catch (e) {
         console.warn("[SaveSystem.recordWeaknessWord] Không thể ghi từ yếu:", e);
       }
@@ -96,10 +103,101 @@
 
     getWeaknessWords() {
       try {
-        const raw = this.storage.getItem("meowcha_srs_weaknesses");
+        const raw = this.storage.getItem(this.reviewKey) || (this.canImportLegacy ? this.storage.getItem('meowcha_srs_weaknesses') : null);
         if (raw) return JSON.parse(raw);
       } catch (e) {}
       return [];
+    }
+
+    recordReviewResult(wordItem, correct, now = Date.now()) {
+      if (!wordItem || !wordItem.word) return;
+      let list = this.getWeaknessWords();
+      const word = String(wordItem.word).toUpperCase();
+      let entry = list.find(w => w.word === word);
+      if (!entry && correct) return;
+      if (!entry) {
+        entry = { word, ipa: wordItem.ipa || '', meaning: wordItem.meaning || '', type: wordItem.type || 'vocab', missCount: 0 };
+        list.push(entry);
+      }
+      const previous = Number(entry.intervalDays) || 0;
+      entry.mastery = correct ? Math.min(5, (entry.mastery || 0) + 1) : 0;
+      entry.intervalDays = correct ? (previous ? Math.min(90, previous * 2) : 1) : 0;
+      entry.nextReviewAt = now + (correct ? entry.intervalDays * 86400000 : 60000);
+      entry.lastReviewed = now;
+      if (!correct) { entry.missCount = (entry.missCount || 0) + 1; entry.lastMissed = now; }
+      entry.history = [...(entry.history || []), { at: now, correct: !!correct }].slice(-20);
+      this.storage.setItem(this.reviewKey, JSON.stringify(list.slice(-200)));
+      this.syncSrsDeck();
+    }
+
+    getDueReviewWords(now = Date.now()) {
+      return this.getWeaknessWords().filter(w => (w.nextReviewAt || 0) <= now)
+        .sort((a, b) => (a.nextReviewAt || 0) - (b.nextReviewAt || 0));
+    }
+
+    startRun(state) {
+      if (!this.getAuthHeaders().Authorization || state.runFinished) return Promise.resolve(false);
+      if (this._runStarts.has(state.runId)) return this._runStarts.get(state.runId);
+      const request = fetch('/api/meowcha/runs', {
+        method: 'POST', headers: this.getAuthHeaders(),
+        body: JSON.stringify({ run_id: state.runId, game_mode: state.gameMode, deck_id: state.activeDeckId,
+          resumed: (state.activeElapsedMs || 0) > 0 })
+      }).then(r => { if (!r.ok) throw new Error(`Start run: ${r.status}`); return true; })
+        .catch(() => { this._runStarts.delete(state.runId); return false; });
+      this._runStarts.set(state.runId, request);
+      return request;
+    }
+
+    async submitRun(state) {
+      if (!this.getAuthHeaders().Authorization || !state.wordsSlain || !state.runId) return false;
+      state.calculateWPM();
+      const payload = { run_id: state.runId, score: Math.max(0, state.score - (state.baselineScore || 0)),
+        words_slain: Math.max(0, state.wordsSlain - (state.baselineWords || 0)),
+        realm_idx: state.realmIdx, active_ms: Math.round(state.activeElapsedMs),
+        correct_keystrokes: state.correctKeystrokes, total_keystrokes: state.totalKeystrokes,
+        assisted_keystrokes: state.assistedKeystrokes, assisted_words: state.assistedWords,
+        assisted: state.assisted, is_victory: state.hp > 0 };
+      if (!payload.words_slain) return false;
+      const pending = this.getPendingRuns();
+      pending[payload.run_id] = { payload, game_mode: state.gameMode, deck_id: state.activeDeckId };
+      this.storage.setItem(this.pendingRunsKey, JSON.stringify(pending));
+      if (!(await this.startRun(state))) return false;
+      try {
+        const response = await fetch('/api/meowcha/runs/complete', {
+          method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`Complete run: ${response.status}`);
+        const remaining = this.getPendingRuns();
+        delete remaining[payload.run_id];
+        this.storage.setItem(this.pendingRunsKey, JSON.stringify(remaining));
+        // A snapshot captured by submitRun must never finish a later/new run.
+        if (state.runId === payload.run_id) state.runFinished = true;
+        return true;
+      } catch (err) { console.warn('[Meowcha] Thành tích đang chờ đồng bộ:', err.message); return false; }
+    }
+
+    getPendingRuns() {
+      try { return JSON.parse(this.storage.getItem(this.pendingRunsKey) || '{}'); } catch (_) { return {}; }
+    }
+
+    async retryPendingRuns() {
+      if (this._retrying || !this.getAuthHeaders().Authorization) return;
+      this._retrying = true;
+      try {
+        for (const [runId, item] of Object.entries(this.getPendingRuns())) {
+          const started = await this.startRun({ runId, gameMode: item.game_mode, activeDeckId: item.deck_id,
+            activeElapsedMs: item.payload.active_ms });
+          if (!started) continue;
+          try {
+            const res = await fetch('/api/meowcha/runs/complete', { method: 'POST', headers: this.getAuthHeaders(),
+              body: JSON.stringify(item.payload) });
+            if (res.ok) {
+              const pending = this.getPendingRuns(); delete pending[runId];
+              this.storage.setItem(this.pendingRunsKey, JSON.stringify(pending));
+            }
+          } catch (_) { /* Retry on reconnect; the server deduplicates by run id. */ }
+        }
+      } finally { this._retrying = false; }
     }
 
     getDefaultModeState(mName, rData) {
@@ -114,7 +212,11 @@
         title: (rData && rData.title) || "Bạch Miêu Tiên Đồng",
         hp: 50,
         maxHp: 50,
-        talents: {}
+        talents: {},
+        unlockedSkills: [],
+        skillLevels: {},
+        selectedTalents: [],
+        passiveModifiers: {}
       };
     }
 
@@ -176,7 +278,8 @@
 
       // Chuẩn hóa cấu trúc độc lập 3 Pháp Môn (DIRECT, CLOZE, AUDIO)
       const existingModes = (slot.modes && typeof slot.modes === "object") ? slot.modes : {};
-      const activeMode = slot.activeMode || slot.gameMode || "DIRECT";
+      const candidateMode = slot.activeMode || slot.gameMode || 'DIRECT';
+      const activeMode = ['DIRECT', 'CLOZE', 'AUDIO'].includes(candidateMode) ? candidateMode : 'DIRECT';
 
       const normModes = {
         DIRECT: Object.assign(this.getDefaultModeState("DIRECT", rData), existingModes.DIRECT || {}),
@@ -202,6 +305,7 @@
       }
 
       return {
+        ...slot,
         slotId: slotId,
         slotName: slot.slotName || `Ngọc Giản ${slotId}`,
         isOccupied: isOccupied,
@@ -222,11 +326,12 @@
 
     loadLocalSlots() {
       const candidateKeys = [
-        STORAGE_KEY,
+        this.storageKey,
+        ...(this.canImportLegacy ? [STORAGE_KEY,
         "meowcha_save_slots_v2",
         "meowcha_save_slots",
         "meowcha_save_game",
-        "meowcha_save"
+        "meowcha_save"] : [])
       ];
 
       for (const k of candidateKeys) {
@@ -240,8 +345,8 @@
                 2: this.normalizeSlot(parsed[2] || (parsed.slotId === 2 ? parsed : null), 2),
                 3: this.normalizeSlot(parsed[3] || (parsed.slotId === 3 ? parsed : null), 3)
               };
-              if (res[1].isOccupied || res[2].isOccupied || res[3].isOccupied) {
-                try { this.storage.setItem(STORAGE_KEY, JSON.stringify(res)); } catch (se) {}
+              if (k === this.storageKey || res[1].isOccupied || res[2].isOccupied || res[3].isOccupied) {
+                try { this.storage.setItem(this.storageKey, JSON.stringify(res)); } catch (se) {}
                 console.log("[SaveSystem] Đã nạp và chuẩn hóa save từ key:", k);
                 return res;
               }
@@ -261,7 +366,7 @@
 
     saveLocalSlots() {
       try {
-        this.storage.setItem(STORAGE_KEY, JSON.stringify(this.slots));
+        this.storage.setItem(this.storageKey, JSON.stringify(this.slots));
       } catch (e) {
         console.warn("[SaveSystem] Không thể ghi LocalStorage:", e);
       }
@@ -355,6 +460,8 @@
       const newHighScore = Math.max(prevHighScore, gameState.highScore || 0, gameState.score || 0);
 
       const modeData = {
+        ...gameState.getRunMetrics(),
+        shieldCharges: gameState.shieldCharges,
         mode: curMode,
         isOccupied: true,
         dateStr: dateStr,
@@ -383,6 +490,7 @@
       currentSlot.words = gameState.wordsSlain;
       currentSlot.bandIdx = gameState.selectedBandIdx || 0;
       currentSlot.talents = modeData.talents;
+      Object.assign(currentSlot, gameState.getRunMetrics(), { shieldCharges: gameState.shieldCharges, updatedAt: Date.now(), cloudDirty: true });
 
       this.slots[targetSlot] = currentSlot;
       this.saveLocalSlots();
@@ -390,26 +498,7 @@
       if (gameState) gameState.activeSlotId = targetSlot;
 
       // Đồng bộ ngầm lên Backend SQL theo tài khoản người dùng
-      if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/saves/${targetSlot}`, {
-          method: 'POST',
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({
-            slot_id: targetSlot,
-            slot_name: currentSlot.slotName || `Đạo Quả [${realmData.title}]`,
-            is_occupied: true,
-            realm: currentSlot.realm,
-            realm_idx: currentSlot.realmIdx,
-            title: currentSlot.title,
-            hp: currentSlot.hp,
-            max_hp: currentSlot.maxHp,
-            score: currentSlot.score,
-            words_slain: currentSlot.words,
-            band_idx: currentSlot.bandIdx,
-            talents: currentSlot.talents
-          })
-        }).catch(err => console.log("[SaveSystem] Lưu offline cục bộ (API chưa kết nối)"));
-      }
+      this.scheduleCloudSave(targetSlot);
 
       return currentSlot;
     }
@@ -417,15 +506,12 @@
     deleteSlot(slotId) {
       const targetSlot = (slotId === 1 || slotId === 2 || slotId === 3) ? slotId : 1;
       this.slots[targetSlot] = this.getDefaultSlot(targetSlot);
+      this.slots[targetSlot].updatedAt = Date.now();
+      this.slots[targetSlot].cloudDirty = true;
       this.saveLocalSlots();
 
       // Đồng bộ xóa dứt điểm trên Backend SQL
-      if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/saves/${targetSlot}`, {
-          method: 'DELETE',
-          headers: this.getAuthHeaders()
-        }).catch(() => {});
-      }
+      this.scheduleCloudSave(targetSlot);
     }
 
     hasActiveSave(preferredSlotId = null, mode = null) {
@@ -475,7 +561,7 @@
         const otherModesOccupied = Object.keys(this.slots[targetId].modes || {}).some(
           m => m !== mode && this.slots[targetId].modes[m] && this.slots[targetId].modes[m].isOccupied
         );
-        if (!otherModesOccupied || this.slots[targetId].activeMode === mode || !this.slots[targetId].activeMode) {
+        if (!otherModesOccupied) {
           this.slots[targetId].isOccupied = false;
           this.slots[targetId].score = 0;
           this.slots[targetId].words = 0;
@@ -483,14 +569,14 @@
           this.slots[targetId].hp = 50;
 
           // Xóa dứt điểm trên database backend nếu không còn tiến trình
-          if (typeof fetch !== "undefined") {
-            fetch(`/api/meowcha/saves/${targetId}`, {
-              method: 'DELETE',
-              headers: this.getAuthHeaders()
-            }).catch(() => {});
-          }
+        } else {
+          const fallbackMode = Object.keys(this.slots[targetId].modes).find(m => this.slots[targetId].modes[m].isOccupied);
+          Object.assign(this.slots[targetId], this.slots[targetId].modes[fallbackMode], { activeMode: fallbackMode, isOccupied: true });
         }
+        this.slots[targetId].updatedAt = Date.now();
+        this.slots[targetId].cloudDirty = true;
         this.saveLocalSlots();
+        this.scheduleCloudSave(targetId);
         return;
       }
       this.deleteSlot(targetId);
@@ -499,7 +585,8 @@
     syncWithBackend() {
       if (typeof fetch === "undefined") return Promise.resolve(this.slots);
 
-      return fetch('/api/meowcha/saves', {
+      if (!this.getAuthHeaders().Authorization) return Promise.resolve(this.slots);
+      return fetch('/api/meowcha/save-snapshots', {
         headers: this.getAuthHeaders()
       })
         .then(r => {
@@ -510,6 +597,12 @@
           if (res && res.success && res.data) {
             for (let s = 1; s <= 3; s++) {
               const remote = res.data[s];
+              if (remote && remote.snapshot) {
+                if (!this._pendingSlots.has(s) && remote.snapshot.updatedAt > (this.slots[s].updatedAt || 0)) {
+                  this.slots[s] = this.normalizeSlot(remote.snapshot, s);
+                }
+                continue;
+              }
               if (remote && remote.is_occupied) {
                 this.slots[s] = this.normalizeSlot({
                   slotId: s,
@@ -536,6 +629,32 @@
           console.log("[SaveSystem] Dùng bộ nhớ cục bộ:", err ? err.message : "");
           return this.slots;
         });
+    }
+
+    scheduleCloudSave(slotId) {
+      this._pendingSlots.add(slotId);
+      if (this._cloudTimer) return;
+      this._cloudTimer = setTimeout(() => { this._cloudTimer = null; this.flushCloudSaves(); }, 5000);
+    }
+
+    async flushCloudSaves() {
+      if (this._cloudSaving || !this.getAuthHeaders().Authorization) return;
+      this._cloudSaving = true;
+      try {
+        for (const slotId of [...this._pendingSlots]) {
+          const snapshot = JSON.parse(JSON.stringify(this.slots[slotId]));
+          try {
+            const response = await fetch(`/api/meowcha/save-snapshots/${slotId}`, {
+              method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify({ snapshot })
+            });
+            if (response.ok && this.slots[slotId].updatedAt === snapshot.updatedAt) {
+              this._pendingSlots.delete(slotId);
+              this.slots[slotId].cloudDirty = false;
+              this.saveLocalSlots();
+            }
+          } catch (_) { /* Keep local progress and retry on the next save/online event. */ }
+        }
+      } finally { this._cloudSaving = false; }
     }
   }
 

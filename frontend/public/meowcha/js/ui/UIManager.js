@@ -3,6 +3,9 @@
  * Điều khiển thanh HP đan điền, tu vi, đếm combo, modal Ngọc Giản, đột phá thiên phú và Phong Thần Bảng
  */
 (function(root) {
+  const escapeHTML = value => String(value == null ? '' : value).replace(/[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const safeAvatar = value => /^https:\/\//i.test(String(value || '')) ? String(value) : '';
   class UIManager {
     constructor(gameState, saveSystem, audioManager, onStartBattle, onReturnLobby, onRestartBattle, assets = null) {
       this.state = gameState;
@@ -223,8 +226,9 @@
             AUDIO:  "Thính Lôi Biện Âm"
           };
           const modeName = modeLabels[curMode] || curMode;
-          this.showConfirm(`TẨY TỦY PHÁP MÔN [${modeName.toUpperCase()}]?`, `Đạo hữu sẽ bắt đầu lại pháp môn ${modeName} từ Luyện Khí Kỳ 0 điểm. Kỷ lục tu vi vẫn được bảo lưu vinh danh Bảng Phong Thần.`, () => {
+          this.showConfirm(`TRÙNG TU TỪ ĐẦU [${modeName.toUpperCase()}]?`, `Đạo hữu sẽ bắt đầu lại pháp môn ${modeName} từ Luyện Khí Kỳ 0 điểm. Kỷ lục tu vi vẫn được bảo lưu vinh danh Bảng Phong Thần.`, () => {
             const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+            this.finishSavedMode(curSlotId, curMode);
             this.saveSystem.resetActiveSave(curSlotId, curMode);
             this.state.resetForNewMode(curMode);
             this.updateLobbyButtons();
@@ -268,11 +272,11 @@
       const btnRestartPause = document.getElementById("btnRestartInPause");
       if (btnRestartPause) {
         btnRestartPause.onclick = () => {
-          this.showConfirm("TẨY TỦY TRỌNG SINH?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Tiến trình tu luyện hiện tại sẽ bắt đầu lại từ đầu. Đạo hữu có chắc chắn?", () => {
+          this.showConfirm("TRÙNG TU TỪ ĐẦU?", "Chiến tích cao nhất sẽ được khắc bia Bảng Phong Thần. Tiến trình tu luyện hiện tại sẽ bắt đầu lại từ đầu. Đạo hữu có chắc chắn?", () => {
             this.performPurificationRebirth(() => {
               this.hidePauseModal();
               this.audio.play("chime");
-              this.showStatus("[ 丹 ] [TẨY TỦY TRỌNG SINH] Kỷ lục đã vinh danh Bảng Phong Thần! Đã khởi tạo lại đạo quả!");
+              this.showStatus("[ 丹 ] [TRÙNG TU TỪ ĐẦU] Kỷ lục đã vinh danh Bảng Phong Thần! Đã khởi tạo lại đạo quả!");
               if (this.onReturnLobby) this.onReturnLobby();
             });
           });
@@ -338,7 +342,7 @@
       }
 
       // Nút Rút lui về Lobby
-      const btnExitLobby = document.getElementById("btnExitToLobby");
+      const btnExitLobby = document.getElementById("btnQuitToLobby") || document.getElementById("btnExitToLobby");
       if (btnExitLobby) {
         btnExitLobby.onclick = () => {
           this.hidePauseModal();
@@ -346,7 +350,7 @@
         };
       }
 
-      // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Cấp 0)
+      // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Luyện Khí sơ kỳ)
       const btnRebirth = document.getElementById("btnRebirth");
       const handleRebirthFromGameOver = (e) => {
         if (e) {
@@ -561,16 +565,29 @@
       const deckNames = {
         oxford_5000: 'Oxford 5000 Cốt Lõi',
         listening_1200: '1200 Thính Âm Listening',
-        reading_academic: 'Cambridge Academic 7.5+',
+        reading_academic: 'Từ vựng học thuật',
         flashcard_srs: 'Tái Hiện SRS Sổ Tay Tôi Luyện'
       };
       if (this.audio) this.audio.play('chime');
       this.showStatus(`[ TÀNG KINH CÁC ] Đã chọn ${deckNames[deckId] || deckId}`);
     }
 
+    finishSavedMode(slotId, mode) {
+      const saved = this.saveSystem.getSlotModeData(slotId, mode);
+      if (!saved || !saved.runId || !saved.words) return;
+      const captured = Object.assign(new root.Meowcha.GameState(), saved, {
+        gameMode: mode, wordsSlain: saved.words, activeElapsedMs: saved.activeElapsedMs || 0
+      });
+      this.saveSystem.submitRun(captured);
+    }
+
     openBattleSetupModal() {
       const modal = document.getElementById("modalBattleSetup");
       if (!modal) return;
+      if (this.state.currentScene === 'BATTLE') {
+        this.saveSystem.saveGame(this.state.activeSlotId, this.state);
+        this.state.isPaused = true;
+      }
 
       const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
       let selectedMode = (this.state && this.state.gameMode) || "DIRECT";
@@ -626,7 +643,7 @@
                 <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
                   <div class="sword-token-glow"></div>
                   <div class="sword-token-hilt"><svg width="26" height="26" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div><div class="sword-token-content"><span class="sword-token-main" style="color: #FEF08A">KHỞI MỞ TRẬN MỚI</span>
-                    <span class="sword-token-sub">[ Bắt Đầu Từ Cấp 0 • Khí Huyết 50/50 ]</span>
+                    <span class="sword-token-sub">[ Bắt Đầu Từ Luyện Khí sơ kỳ • Khí Huyết 50/50 ]</span>
                   </div>
                   <div class="sword-token-tip">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FEF08A" stroke-width="2.5"><polygon points="4 4 20 12 4 20 7 12" fill="rgba(239,68,68,0.4)"></polygon></svg>
@@ -645,6 +662,7 @@
             `;
 
             document.getElementById("btnSetupStartFresh").onclick = () => {
+              this.finishSavedMode(curSlotId, selectedMode);
               this.state.gameMode = selectedMode;
               this.saveSystem.resetActiveSave(curSlotId, selectedMode);
               this.state.resetForNewMode(selectedMode);
@@ -652,7 +670,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("slash");
-              this.showStatus(`KHỞI MỞ TRẬN MỚI • Bắt đầu ván mới pháp môn ${mName} từ Cấp 0!`);
+              this.showStatus(`KHỞI MỞ TRẬN MỚI • Bắt đầu ván mới pháp môn ${mName} từ Luyện Khí sơ kỳ!`);
               if (this.onStartBattle) this.onStartBattle();
             };
 
@@ -669,7 +687,7 @@
           }
         } else {
           if (detailEl) {
-            detailEl.innerHTML = `<span style="color:#F3C644">Khởi Nguyên Tu Vi:</span> Khởi đầu từ <b>Luyện Khí Kỳ (Cấp 0 - 0 Tu Vi)</b>`;
+            detailEl.innerHTML = `<span style="color:#F3C644">Khởi Nguyên Tu Vi:</span> Khởi đầu từ <b>Luyện Khí Kỳ (Luyện Khí sơ kỳ - 0 Tu Vi)</b>`;
           }
           if (actionsRow) {
             actionsRow.innerHTML = `
@@ -679,7 +697,7 @@
                 <div class="sword-token-hilt"><svg width="28" height="28" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div>
                 <div class="sword-token-content">
                   <div class="sword-token-title-row">
-                    <span class="sword-token-main" style="color: #FEF08A">BẮT ĐẦU ĐỘ KIẾP NGAY</span>
+                    <span class="sword-token-main" style="color: #FEF08A">KHAI TRẬN TRẢM MA</span>
                     <span class="sword-token-mode-tag">(${mName.toUpperCase()})</span>
                   </div>
                   <span class="sword-token-sub">[ 剑 ] Lệnh Bài Trảm Ma • Xuất Kiếm Khai Chiến [ 战 ]</span>
@@ -696,7 +714,7 @@
               this.updateLobbyButtons();
               this.updateHUD();
               this.audio.play("slash");
-              this.showStatus(`KHỞI NGUYÊN ĐỘ KIẾP • Pháp môn ${mName}!`);
+              this.showStatus(`KHAI TRẬN TRẢM MA • Pháp môn ${mName}!`);
               if (this.onStartBattle) this.onStartBattle();
             };
           }
@@ -735,6 +753,7 @@
     closeBattleSetupModal() {
       const modal = document.getElementById("modalBattleSetup");
       if (modal) modal.style.display = "none";
+      if (this.state.currentScene === 'BATTLE') this.state.isPaused = false;
     }
 
     selectBand(bandIdx) {
@@ -801,7 +820,7 @@
 
       // Danh hiệu Cảnh Giới & Cấp Độ
       if (this.hudLevelBadge) {
-        this.hudLevelBadge.innerText = `CẤP ${s.realmIdx}`;
+        this.hudLevelBadge.innerText = realmData.name;
       }
       if (this.hudRealm) {
         this.hudRealm.innerText = realmData.title;
@@ -815,7 +834,7 @@
 
       // Tốc độ Kiếm Tự
       if (this.hudWpm) {
-        this.hudWpm.innerText = `${s.wpm} Tự/Phút`;
+        this.hudWpm.innerText = `${s.wpm} TỪ/PHÚT (WPM)`;
       }
 
       // Cập nhật thông số Sảnh Thiền Định (Tầng 2: Mini Jade HP Bar, Tu Vi, Cổ Ngữ, Kiếm Tốc)
@@ -823,7 +842,7 @@
       const lobbyHighScoreEl = document.getElementById("lobbyHighScoreText");
       if (lobbyHighScoreEl) {
         const best = Math.max(s.highScore || 0, s.score || 0);
-        lobbyHighScoreEl.innerText = `Kỷ Lục: ${best.toLocaleString()} pts`;
+        lobbyHighScoreEl.innerText = `Kỷ Lục: ${best.toLocaleString()} Tu Vi`;
       }
       if (this.lobbyWordsText) this.lobbyWordsText.innerText = `${s.wordsSlain} Từ`;
       if (this.lobbyHpText) this.lobbyHpText.innerText = `${s.hp} / ${s.maxHp}`;
@@ -831,9 +850,9 @@
         const hpPct = Math.max(0, Math.min(100, (s.hp / (s.maxHp || 50)) * 100));
         this.lobbyHpBar.style.width = `${hpPct}%`;
       }
-      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} Tự/Phút`;
+      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} TỪ/PHÚT (WPM)`;
       if (this.lobbyCatTitle) this.lobbyCatTitle.innerText = realmData.title;
-      if (this.lobbyLevelTag) this.lobbyLevelTag.innerText = `CẤP ${s.realmIdx}`;
+      if (this.lobbyLevelTag) this.lobbyLevelTag.innerText = realmData.name;
 
       const lobbyCatImg = document.getElementById("lobbyCatImg");
       if (lobbyCatImg) {
@@ -900,6 +919,8 @@
 
       if (hasModeProgress) {
         if (btnContinue) {
+          btnContinue.hidden = false;
+          btnContinue.disabled = false;
           btnContinue.style.display = "flex";
           if (continueSub) {
             continueSub.innerText = `[ ${modeName}: ${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'} ]`;
@@ -911,14 +932,14 @@
         if (btnStart) {
           btnStart.style.display = "flex";
           if (startBtnText && startBtnText !== btnStart) {
-            startBtnText.innerText = "TRỌNG TU PHÁP MÔN";
+            startBtnText.innerText = "ĐỔI PHÁP MÔN";
           }
           if (startBtnSub) {
             startBtnSub.innerText = `[ Đổi Pháp Môn / Tàng Kinh Các (${modeName}) ]`;
           }
         }
       } else {
-        if (btnContinue) btnContinue.style.display = "none";
+        if (btnContinue) { btnContinue.hidden = true; btnContinue.disabled = true; btnContinue.style.display = "none"; }
         if (btnRestart) btnRestart.style.display = "none";
         if (btnStart) {
           btnStart.style.display = "flex";
@@ -926,7 +947,7 @@
             startBtnText.innerText = "VÀO TRẬN ĐỘ KIẾP";
           }
           if (startBtnSub) {
-            startBtnSub.innerText = `[ Pháp Môn: ${modeName} • Chạm để khai mở trận đồ ]`;
+            startBtnSub.innerText = `[ ${modeName} • Phím SPACE ]`;
           }
         }
       }
@@ -934,6 +955,7 @@
 
     showScene(scene) {
       this.state.currentScene = scene;
+      document.documentElement.classList.toggle('scene-battle', scene === 'BATTLE');
       if (this.lobbyView && this.battleView) {
         if (scene === "LOBBY") {
           this.lobbyView.style.display = "flex";
@@ -1147,23 +1169,56 @@
       const titleEl = document.getElementById("breakthroughRealmTitle");
 
       if (titleEl) {
-        titleEl.innerText = `ĐỘT PHÁ THÀNH CÔNG: ${targetRealm.name}!`;
-        titleEl.style.color = targetRealm.color;
+        titleEl.innerText = targetRealm ? `✦ CƠ DUYÊN NGỘ ĐẠO: ${(targetRealm.name || "").toUpperCase()} ✦` : "✦ CƠ DUYÊN NGỘ ĐẠO ✦";
+        if (targetRealm && targetRealm.color) titleEl.style.color = targetRealm.color;
       }
 
       if (cardsContainer) {
         cardsContainer.innerHTML = "";
+        const oldReview = this.modalBreakthrough.querySelector('.boss-review-note');
+        if (oldReview) oldReview.remove();
+        if (this.state.lastBossReview) {
+          const review = document.createElement('div'); review.className = 'practice-summary boss-review-note';
+          const note = document.createElement('p'); note.textContent = 'Từ gần nghĩa theo ngữ cảnh; không phải lúc nào cũng thay thế được cho nhau.';
+          review.appendChild(note);
+          for (const item of this.state.lastBossReview) {
+            const line = document.createElement('p'); line.textContent = `${item.word}: ${item.meaning}. ${item.example}`;
+            review.appendChild(line);
+          }
+          cardsContainer.parentNode.insertBefore(review, cardsContainer);
+        }
         talents.forEach((talent, idx) => {
           const card = document.createElement("div");
           card.className = "perk-card talent-card animate-card-pop";
           card.style.animationDelay = `${idx * 150}ms`;
 
+          const pathMap = {
+            KIEM_DAO: "Kiếm Đạo",
+            HO_DAO: "Hộ Đạo",
+            LINH_VUC: "Linh Vực",
+            NGO_DAO: "Ngộ Đạo"
+          };
+          const pathName = pathMap[talent.category] || talent.type || "Cơ Duyên";
+          const kindName = talent.kind === "ACTIVE" ? "CHỦ ĐỘNG" : talent.kind === "ULTIMATE" ? "THẦN THÔNG TỐI CAO" : talent.kind === "PASSIVE_ACTIVE" ? "CHỦ / BỊ ĐỘNG" : "BỊ ĐỘNG";
+          const rarityBadge = talent.rarityName || talent.rarity || "LINH PHẨM";
+          const rarityCol = talent.rarityColor || "#38BDF8";
+
+          let iconHtml = `<div class="perk-icon-seal">${talent.icon || "悟"}</div>`;
+          if (talent.iconSvg) {
+            iconHtml = `<img src="./assets/svg/${talent.iconSvg}.svg" width="36" height="36" alt="" class="perk-icon-art" onerror="this.outerHTML='<div class=\'perk-icon-seal\'>${talent.icon || '悟'}</div>';" />`;
+          }
+
           card.innerHTML = `
-            <div class="perk-icon-wrapper">
-              <div class="perk-icon-seal">${talent.icon}</div>
+            <div class="perk-card-top-badges">
+              <span class="perk-rarity-pill" style="border-color: ${rarityCol}; color: ${rarityCol};">${rarityBadge}</span>
+              <span class="perk-path-pill">[ ${pathName} ]</span>
+              <span class="perk-kind-pill">${kindName}</span>
             </div>
-            <div class="perk-name">${talent.name}</div>
-            <div class="perk-type">[ ${talent.type} ]</div>
+            <div class="perk-icon-wrapper">
+              ${iconHtml}
+            </div>
+            <div class="perk-name" style="color: ${rarityCol};">${talent.name}</div>
+            ${talent.statChange ? `<div class="perk-stat-change">${talent.statChange}</div>` : ""}
             <div class="perk-desc">${talent.desc}</div>
             <button class="btn-linh-ngo" type="button">
               LĨNH NGỘ [ Phím ${idx + 1} ]
@@ -1182,6 +1237,7 @@
       this.modalBreakthrough.style.display = "flex";
 
       // Hỗ trợ phím tắt 1, 2, 3
+      if (this._talentKeyHandler) window.removeEventListener('keydown', this._talentKeyHandler);
       const keyHandler = (e) => {
         const keyNum = parseInt(e.key, 10);
         if (keyNum >= 1 && keyNum <= talents.length) {
@@ -1190,18 +1246,114 @@
           if (onSelect) onSelect(talents[keyNum - 1]);
         }
       };
-      window.addEventListener("keydown", keyHandler, { once: true });
+      this._talentKeyHandler = keyHandler;
+      window.addEventListener("keydown", keyHandler);
     }
 
     hideTalentModal() {
+      if (this._talentKeyHandler) window.removeEventListener('keydown', this._talentKeyHandler);
+      this._talentKeyHandler = null;
       if (this.modalBreakthrough) this.modalBreakthrough.style.display = "none";
+          this.updateActiveSkillsHUD();
+    }
+
+    updateActiveSkillsHUD() {
+      const container = document.getElementById("battleActiveSkillsBar");
+      if (!container) return;
+      if (this.state.currentScene !== "BATTLE" || this.state.isGameOver) {
+        container.style.display = "none";
+        return;
+      }
+      container.style.display = "flex";
+
+      const M = root.Meowcha || {};
+      const skillsDef = M.BREAKTHROUGH_SKILLS || {};
+      const unlocked = this.state.unlockedSkills || [];
+      const levels = this.state.skillLevels || {};
+
+      const slotList = [
+        { slot: 1, id: "WIND_SWORD_DOMAIN", defaultName: "Thanh Phong", icon: "winged-sword" },
+        { slot: 2, id: "GOLDEN_CORE_REGEN", defaultName: "Kim Đan", icon: "cauldron" },
+        { slot: 3, id: "NASCENT_SOUL_FREEZE", defaultName: "Định Thân", icon: "yin-yang" },
+        { slot: 4, id: "TEN_THOUSAND_SWORDS", defaultName: "Vạn Kiếm", icon: "broadsword" }
+      ];
+
+      const activeSlots = slotList.filter(s => {
+        if (unlocked.includes(s.id) || (levels[s.id] && levels[s.id] > 0)) return true;
+        if (s.slot === 1 && this.state.realmIdx >= 1) return true;
+        if (s.slot === 2 && this.state.realmIdx >= 2) return true;
+        if (s.slot === 3 && this.state.realmIdx >= 3) return true;
+        if (s.slot === 4 && this.state.realmIdx >= 4) return true;
+        return false;
+      });
+
+      if (activeSlots.length === 0) {
+        container.innerHTML = "";
+        return;
+      }
+
+      let html = "";
+      for (const item of activeSlots) {
+        const sDef = skillsDef[item.id] || {};
+        const cd = Math.max(0, (this.state.skillCooldowns && this.state.skillCooldowns[item.id]) || 0);
+        const isReady = cd <= 0 && (item.id !== "TEN_THOUSAND_SWORDS" || this.state.combo >= 10);
+        const lv = (levels[item.id]) || 1;
+        const isUltimate = item.slot === 4;
+
+        html += `
+          <button class="active-skill-btn ${isReady ? 'ready-glow' : 'on-cooldown'} ${isUltimate ? 'ultimate-skill' : ''}"
+            data-slot="${item.slot}" data-skill="${item.id}" type="button" title="${sDef.name || item.defaultName} [ Phím ${item.slot} ]">
+            <div class="skill-hotkey-badge">[ ${item.slot} ]</div>
+            <div class="skill-level-badge">Lv.${lv}</div>
+            <div class="skill-icon-wrap">
+              <img src="./assets/svg/${item.icon}.svg" alt="" width="24" height="24" class="skill-svg-icon" />
+            </div>
+            <div class="skill-name-label">${sDef.name ? sDef.name.split(' ')[0] : item.defaultName}</div>
+            ${!isReady && cd > 0 ? `<div class="skill-cooldown-overlay"><span class="cd-num">${Math.ceil(cd)}s</span></div>` : ''}
+            ${!isReady && cd <= 0 && isUltimate ? `<div class="skill-cooldown-overlay req-combo"><span class="cd-num">x10</span></div>` : ''}
+          </button>
+        `;
+      }
+
+      if (container.dataset.renderedHtml !== html) {
+        container.innerHTML = html;
+        container.dataset.renderedHtml = html;
+
+        container.querySelectorAll(".active-skill-btn").forEach(btn => {
+          btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const slot = parseInt(btn.dataset.slot, 10);
+            if (window.__meowchaGame && window.__meowchaGame.typing) {
+              window.__meowchaGame.typing.activateSkillBySlot(slot, window.__meowchaGame.canvas);
+            } else if (this.state && this.state.activateSkill) {
+              const skillId = btn.dataset.skill;
+              this.state.activateSkill(skillId, null, this.audio);
+            }
+          };
+        });
+      }
     }
 
     togglePause() {
       this.state.isPaused = !this.state.isPaused;
       if (this.modalPause) {
         this.modalPause.style.display = this.state.isPaused ? "flex" : "none";
+        let summary = document.getElementById('typingPracticeStats');
+        if (!summary) {
+          summary = document.createElement('p'); summary.id = 'typingPracticeStats'; summary.className = 'practice-summary';
+          this.modalPause.querySelector('.modal-content-box').appendChild(summary);
+        }
+        summary.textContent = this.getPracticeSummary();
       }
+    }
+
+    getPracticeSummary() {
+      const s = this.state;
+      s.calculateWPM();
+      return `Tự gõ: ${s.correctKeystrokes}/${s.totalKeystrokes} phím đúng • Chính xác ${s.accuracy}% • ${s.wpm} TỪ/PHÚT (WPM) • Thời gian luyện ${Math.round(s.activeElapsedMs / 1000)}s. ` +
+        `Tự hoàn thành ${s.humanWords} từ; hỗ trợ ${s.assistedWords} từ / ${s.assistedKeystrokes} ký tự. ` +
+        `Từ đến hạn ôn: ${this.saveSystem.getDueReviewWords().length}. ${s.assisted ? 'Trận có hỗ trợ — bảng luyện tập hỗ trợ.' : 'Trận tự gõ — bảng luyện tập tự gõ.'}`;
     }
 
     hidePauseModal() {
@@ -1325,19 +1477,8 @@
       const user = this.getLoggedInUser();
       const userName = (user && user.name && user.name.trim()) ? user.name.trim() : "Tiểu Miêu Kiếm Sĩ";
       
-      const personalBest = Math.max(
-        Number(s.highScore || 0),
-        Number(s.score || 0),
-        Number(this._safeGet("meowcha_high_score", 0))
-      );
-
-      let certRealmIdx = Math.max(0, s.realmIdx || 0);
-      for (let i = realms.length - 1; i >= 0; i--) {
-        if (personalBest >= realms[i].minScore) {
-          certRealmIdx = Math.max(certRealmIdx, i);
-          break;
-        }
-      }
+      const personalBest = Number(s.score || 0);
+      const certRealmIdx = Math.min(4, Math.max(0, s.realmIdx || 0));
       const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FFE49A" };
       const rIdx = certRealmIdx;
 
@@ -1439,7 +1580,7 @@
       const catAsset = (this.assets && (this.assets[`char_r${rIdx}_ultimate`]?.img || this.assets[`char_r${rIdx}_idle`]?.img))
         || document.getElementById("lobbyCatImg");
 
-      if (catAsset && (catAsset.complete || catAsset.naturalWidth > 0)) {
+      if (catAsset && catAsset.naturalWidth > 0) {
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         ctx.shadowColor = "#D4A849";
@@ -1471,13 +1612,13 @@
       ctx.fillStyle = "#FFE49A";
       ctx.shadowColor = "rgba(212, 168, 73, 0.7)";
       ctx.shadowBlur = 8;
-      ctx.fillText(`TIÊN HỮU: ${userName.toUpperCase()}`, 470, 198);
+      ctx.fillText(`TIÊN HỮU: ${userName.toUpperCase()}`, 470, 198, 620);
       ctx.shadowBlur = 0;
 
       // CẢNH GIỚI & PHÁP MÔN
       ctx.font = "700 16px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#FEF3C7";
-      ctx.fillText(`CẢNH GIỚI: ${realmData.name.toUpperCase()} (CẤP ${rIdx}) • ${realmData.title}`, 470, 230);
+      ctx.fillText(`CẢNH GIỚI: ${realmData.name.toUpperCase()} • ${realmData.title}`, 470, 230, 620);
 
       ctx.font = "600 13px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#D4A849";
@@ -1485,10 +1626,10 @@
 
       // Lưới thông số (Stats grid: 4 ô) theo bảng màu Tiên Hiệp chuẩn
       const stats = [
-        { label: "ĐIỂM KỶ LỤC (CAO NHẤT)", val: `${personalBest.toLocaleString()} PTS`, color: "#FFE49A" },
-        { label: "ĐIỂM VÁN HIỆN TẠI", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#34D399" },
-        { label: "TỔNG TỪ ĐÃ TRẢM", val: `${Math.max(s.wordsSlain || 0, Math.round(personalBest / 160))} TỪ`, color: "#FEF08A" },
-        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} Tự/Phút (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F87171" }
+        { label: "TU VI VÁN NÀY", val: `${personalBest.toLocaleString()} TU VI`, color: "#FFE49A" },
+        { label: "ĐỘ CHÍNH XÁC TỰ GÕ", val: `${s.accuracy}%`, color: "#34D399" },
+        { label: "TỪ TỰ GÕ / TỪ HỖ TRỢ", val: `${s.humanWords || 0} / ${s.assistedWords || 0}`, color: "#FEF08A" },
+        { label: "TỐC ĐỘ TỰ GÕ (WPM)", val: `${Math.round(s.wpm || 0)} TỪ/PHÚT`, color: "#F87171" }
       ];
 
       stats.forEach((st, idx) => {
@@ -1513,7 +1654,7 @@
 
         ctx.font = "900 22px 'Cinzel', serif";
         ctx.fillStyle = st.color;
-        ctx.fillText(st.val, bx + 16, by + 56);
+        ctx.fillText(st.val, bx + 16, by + 56, 273);
       });
 
       // Khẩu quyết tiên gia
@@ -1570,6 +1711,12 @@
       if (finalWpmEl)   finalWpmEl.innerText   = Math.round(this.state.wpm || 0);
 
       this.modalGameOver.style.display = "flex";
+      let summary = this.modalGameOver.querySelector('.practice-summary');
+      if (!summary) {
+        summary = document.createElement('p'); summary.className = 'practice-summary';
+        this.modalGameOver.querySelector('.modal-content-box').appendChild(summary);
+      }
+      summary.textContent = this.getPracticeSummary();
 
       // Tự động truyền chiến tích của user login lên Bảng Phong Thần
       this.autoSubmitScoreToPantheon();
@@ -1846,6 +1993,7 @@
             }
           }
           return {
+            id: u.id || u.user_id || null,
             name: name || localName,
             avatar: avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png",
             token: token || "",
@@ -1885,7 +2033,8 @@
 
       // Đặt lại các chỉ số ván đấu về Luyện Khí Kỳ, giữ vĩnh viễn High Score
       const activeSlot = (this.state && this.state.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      this.saveSystem.resetActiveSave(activeSlot);
+      this.saveSystem.resetActiveSave(activeSlot, this.state.gameMode);
+      this.state.resetRunMetrics();
       this.state.revive();
       this.state.score = 0;
       this.state.wordsSlain = 0;
@@ -1909,82 +2058,24 @@
       }
     }
 
-    async autoSubmitScoreToPantheon(forcedScore = null) {
-      const bestScore = Math.max(
-        Number(this.state.highScore || 0),
-        Number(this.state.score || 0),
-        Number(this._safeGet("meowcha_high_score", 0))
-      );
-      const submitScore = forcedScore !== null ? Number(forcedScore) : bestScore;
-      if (!submitScore || submitScore <= 0) return;
-
-      // Tránh gửi trùng lặp điểm số cùng một phiên kết thúc
-      const sessionKey = `${submitScore}_${this.state.wordsSlain}_${this.state.realmIdx}`;
-      if (this.lastSubmittedSessionKey === sessionKey) {
-        return;
-      }
-      this.lastSubmittedSessionKey = sessionKey;
-
-      const user = this.getLoggedInUser();
-      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
-      const realmData = realms[this.state.realmIdx] || realms[0];
-
-      try {
-        const isCustomAvatar = user.avatar && !user.avatar.includes("sprites/characters") && !user.avatar.includes("idle.png");
-        const payload = {
-          player_name: user.name.slice(0, 40),
-          avatar_url: isCustomAvatar ? user.avatar : "",
-          score: submitScore,
-          words_slain: Math.max(1, this.state.wordsSlain),
-          realm: realmData.title || "Luyện Khí Kỳ",
-          accuracy: Math.round(this.state.accuracy || 100),
-          wpm: Math.round(this.state.wpm || 0)
-        };
-
-        const headers = { "Content-Type": "application/json" };
-        if (user.token) {
-          headers["Authorization"] = `Bearer ${user.token}`;
-        }
-
-        // 1. Đồng bộ vào Hồ Sơ Tu Chân Giả & Lịch Sử Trận Đấu
-        fetch("/api/meowcha/profile/sync", {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify({
-            score_earned: submitScore,
-            words_slain: Math.max(1, this.state.wordsSlain),
-            realm: realmData.title || "Luyện Khí Kỳ",
-            realm_idx: this.state.realmIdx || 0,
-            wpm: Math.round(this.state.wpm || 0),
-            accuracy: Math.round(this.state.accuracy || 100),
-            is_victory: (this.state.hp > 0)
-          })
-        }).catch(() => {});
-
-        // 2. Ghi danh Bảng Phong Thần
-        const resp = await fetch("/api/meowcha/leaderboard", {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify(payload)
-        });
-
-        if (resp.ok) {
-          // Ghi nhận thành công âm thầm, không in log console tránh hiểu lầm buff điểm
-        }
-        if (submitScore > (this.state.highScore || 0)) {
-          this.state.highScore = submitScore;
-          try {
-            this._safeSet("meowcha_high_score", String(this.state.highScore));
-          } catch (err) {}
-          if (typeof this.updateLobbyStats === "function") this.updateLobbyStats(); else this.updateHUD();
-        }
-      } catch (e) {
-        console.warn("[Meowcha] Lỗi tự động ghi danh Bảng Phong Thần:", e);
-      }
+    async autoSubmitScoreToPantheon() {
+      // Capture the current run before callers reset/change mode. Never submit all-time best
+      // with the current run's counters, and only mark success after a server acknowledgement.
+      const captured = Object.assign(Object.create(Object.getPrototypeOf(this.state)), this.state);
+      return this.saveSystem.submitRun(captured);
     }
 
     showPantheonModal() {
       if (!this.modalPantheon) return;
+      if (!this.modalPantheon.querySelector('.board-filters')) {
+        const filters = document.createElement('div'); filters.className = 'board-filters';
+        filters.innerHTML = `<label>Pháp môn <select id="boardMode"><option value="DIRECT">Tự gõ</option><option value="CLOZE">Nhớ chính tả</option><option value="AUDIO">Nghe chính tả</option><option value="LEGACY">Lưu trữ bảng cũ</option></select></label><label><input type="checkbox" id="boardAssisted" /> Có hỗ trợ</label><span class="board-note">Bảng luyện tập • Kiểm tra giới hạn dữ liệu, chưa xác minh toàn bộ trận.</span>`;
+        const list = document.getElementById('pantheonRankList'); list.parentNode.insertBefore(filters, list);
+        filters.querySelector('#boardMode').onchange = () => this.loadLeaderboardFromAPI();
+        filters.querySelector('#boardAssisted').onchange = () => this.loadLeaderboardFromAPI();
+      }
+      this.modalPantheon.querySelector('#boardMode').value = this.state.gameMode;
+      this.modalPantheon.querySelector('#boardAssisted').checked = !!this.state.assisted;
       this.modalPantheon.style.display = "flex";
       this.updatePantheonSelfStats();
       this.loadLeaderboardFromAPI();
@@ -2012,7 +2103,7 @@
         const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
         const realmData = realms[this.state.realmIdx] || realms[0];
         const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} pts • Hiện tại: ${this.state.score.toLocaleString()} pts • ${this.state.wordsSlain} từ • ${realmData.title} • Kiếm Tốc: ${Math.round(this.state.wpm || 0)} Tự/Phút`;
+        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} Tu Vi • Hiện tại: ${this.state.score.toLocaleString()} Tu Vi • ${this.state.wordsSlain} từ • ${realmData.title} • Kiếm Tốc: ${Math.round(this.state.wpm || 0)} TỪ/PHÚT (WPM)`;
       }
     }
 
@@ -2027,7 +2118,7 @@
       `;
 
       if (typeof fetch !== "undefined") {
-        fetch("/api/meowcha/leaderboard?limit=25")
+        fetch(`/api/meowcha/leaderboard?limit=25&game_mode=${this.modalPantheon.querySelector('#boardMode')?.value || this.state.gameMode}&assisted=${this.modalPantheon.querySelector('#boardAssisted')?.checked || false}&deck_id=${encodeURIComponent(this.state.activeDeckId)}`)
           .then(r => r.json())
           .then(res => {
             if (res.success && Array.isArray(res.data)) {
@@ -2050,7 +2141,7 @@
       const seenNames = new Set();
       const uniqueData = [];
       for (const item of (data || [])) {
-        const key = String(item.player_name || "").trim().toLowerCase();
+        const key = String(item.user_id || item.run_id || item.id || item.player_name || '');
         if (key && !seenNames.has(key)) {
           seenNames.add(key);
           uniqueData.push(item);
@@ -2066,7 +2157,7 @@
       if (userNameLower) {
         const myRankEntry = data.find(item => {
           const pName = (item.player_name || "").trim().toLowerCase();
-          return pName && pName === userNameLower;
+          return user.id && String(item.user_id) === String(user.id);
         });
 
         if (myRankEntry && typeof myRankEntry.score === 'number') {
@@ -2123,8 +2214,8 @@
               avatarEl.src = fallbackRealmAvatar;
             };
             // Ưu tiên hiển thị Avatar thực tế của User (Discord / Web Avatar)
-            if (itemData.avatar_url && itemData.avatar_url.trim()) {
-              avatarEl.src = itemData.avatar_url.trim();
+            if (safeAvatar(itemData.avatar_url)) {
+              avatarEl.src = safeAvatar(itemData.avatar_url);
             } else {
               avatarEl.src = fallbackRealmAvatar;
             }
@@ -2187,19 +2278,19 @@
           `;
         }
 
-        const avatarSrc = (item.avatar_url && item.avatar_url.trim()) 
-          ? item.avatar_url 
+        const avatarSrc = safeAvatar(item.avatar_url)
+          ? safeAvatar(item.avatar_url)
           : getAvatarByRealm(item.realm, item.score || 0);
 
         return `
           <div class="pantheon-row ${rowClass}">
             <span class="rank-col">${badgeHtml}</span>
-            <span class="name-col" title="${item.player_name}">
-              <img src="${avatarSrc}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${getAvatarByRealm(item.realm, item.score || 0)}';" />
-              <span class="name-text">${item.player_name || 'Vô Danh Tiên Khách'}</span>
+            <span class="name-col" title="${escapeHTML(item.player_name)}">
+              <img src="${escapeHTML(avatarSrc)}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${getAvatarByRealm(item.realm, item.score || 0)}';" />
+              <span class="name-text">${escapeHTML(item.player_name || 'Vô Danh Tiên Khách')}</span>
             </span>
-            <span class="realm-col">${item.realm || 'Luyện Khí Kỳ'}</span>
-            <span class="score-col">${(item.score || 0).toLocaleString()} pts</span>
+            <span class="realm-col">${escapeHTML(item.realm || 'Luyện Khí Kỳ')}</span>
+            <span class="score-col">${(item.score || 0).toLocaleString()} Tu Vi</span>
             <span class="words-col">${item.words_slain || 0} từ</span>
             <span class="wpm-col">${item.wpm || 0}</span>
           </div>
@@ -2208,8 +2299,7 @@
     }
 
     async submitScoreToPantheon() {
-      // Tự động chuyển hướng về autoSubmitScoreToPantheon
-      await this.autoSubmitScoreToPantheon();
+      this.showStatus('Thành tích được ghi một lần khi kết thúc trận hoặc trùng tu từ đầu.');
       this.loadLeaderboardFromAPI();
     }
 
@@ -2253,12 +2343,12 @@
       }
 
       const scoreEl = document.getElementById("profileModalScore");
-      if (scoreEl) scoreEl.innerText = `${this.state.score.toLocaleString()} pts`;
+      if (scoreEl) scoreEl.innerText = `${this.state.score.toLocaleString()} Tu Vi`;
 
       const highScoreEl = document.getElementById("profileModalHighScore");
       if (highScoreEl) {
         const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-        highScoreEl.innerText = `${bestScore.toLocaleString()} pts`;
+        highScoreEl.innerText = `${bestScore.toLocaleString()} Tu Vi`;
       }
 
       const wordsEl = document.getElementById("profileModalWords");
@@ -2268,7 +2358,7 @@
       if (accEl) accEl.innerText = `${this.state.accuracy || 100}%`;
 
       const wpmEl = document.getElementById("profileModalWpm");
-      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} Tự/Phút`;
+      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} TỪ/PHÚT (WPM)`;
 
       const hpEl = document.getElementById("profileModalHp");
       if (hpEl) hpEl.innerText = `${this.state.hp} / ${this.state.maxHp} HP`;

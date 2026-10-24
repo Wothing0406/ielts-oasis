@@ -5,11 +5,27 @@
 (function(root) {
   const CACHE = {};
   const FETCH_STATE = {};
+  const PENDING = {};
+  let localOxfordPromise;
+  const loadLocalOxford = () => {
+    if (!localOxfordPromise) localOxfordPromise = fetch('./data/oxford_5000.json').then(r => {
+      if (!r.ok) throw new Error('Local Oxford unavailable');
+      return r.json();
+    }).catch(err => { localOxfordPromise = null; throw err; });
+    return localOxfordPromise;
+  };
 
   const API_BASE = '/api/meowcha/vocab';
   const WORDS_PER_BAND = 2500;
 
-  async function _fetchBand(bandIdx) {
+  function _fetchBand(bandIdx) {
+    const key = String(bandIdx);
+    if (PENDING[key]) return PENDING[key];
+    PENDING[key] = _fetchBandOnce(bandIdx).finally(() => { delete PENDING[key]; });
+    return PENDING[key];
+  }
+
+  async function _fetchBandOnce(bandIdx) {
     const key = String(bandIdx);
     if (CACHE[key] && CACHE[key].length > 0) return CACHE[key];
     if (FETCH_STATE[key] === 'loading') return null;
@@ -43,6 +59,8 @@
               meaning: w.meaning || w.definition || w.vietnamese || '',
               type: w.type || w.pos || w.part_of_speech || 'vocab',
               audio_url: w.audio_url || '',
+              cefr: w.cefr || w.level || null,
+              example: w.example || '',
               band_level: w.band_level !== undefined ? w.band_level : bandIdx,
               asteroid_type: w.asteroid_type || 'FROST'
             });
@@ -62,9 +80,8 @@
     } catch (err) {
       console.warn('[VocabLoader] API fetch failed, trying local static ./data/oxford_5000.json:', err.message);
       try {
-        const localResp = await fetch('./data/oxford_5000.json');
-        if (localResp.ok) {
-          const allOxford = await localResp.json();
+        {
+          const allOxford = await loadLocalOxford();
           if (Array.isArray(allOxford)) {
             const levelMap = { 0: ['A1', 'A2'], 1: ['B1'], 2: ['B2'], 3: ['C1'] };
             const targetLevels = levelMap[bandIdx] || ['A1', 'A2'];
@@ -76,6 +93,8 @@
               meaning: w.meaning || '',
               type: w.type || 'vocab',
               audio_url: w.audio_url || '',
+              cefr: w.level || null,
+              example: w.example || '',
               band_level: bandIdx,
               asteroid_type: bandIdx === 0 ? 'FROST' : bandIdx === 1 ? 'FIRE' : bandIdx === 2 ? 'VOID' : 'THUNDER'
             }));
@@ -145,6 +164,8 @@
             meaning: w.meaning || w.definition || w.vietnamese || '',
             type:    w.type || w.pos || w.part_of_speech || 'vocab',
             audio_url: w.audio_url || '',
+            cefr: w.cefr || w.level || null,
+            example: w.example || '',
             band_level: w.band_level !== undefined ? w.band_level : band,
             asteroid_type: w.asteroid_type || 'FROST'
           };
@@ -159,19 +180,22 @@
           ? res.meta.has_more
           : (curPage * curPageSize < totalCount);
 
-        return {
-          words: wordsList,
-          total: totalCount,
-          page: curPage,
-          hasMore: hasMore
-        };
+        if (wordsList.length || totalCount > 0) {
+          return { words: wordsList, total: totalCount, page: curPage, hasMore };
+        }
       }
     } catch (e) {
       console.warn('[VocabLoader.searchVocab] Fallback to local memory:', e.message);
     }
 
     // Fallback tìm kiếm trên cache hoặc static deck
-    let pool = CACHE[String(band)] || _getStaticFallback(band);
+    let pool;
+    if (band === null || band === undefined) {
+      await preloadAllBands();
+      pool = [...new Map(Object.values(CACHE).flat().map(w => [w.word, w])).values()];
+    } else {
+      pool = CACHE[String(band)] || await _fetchBand(band);
+    }
     if (search && search.trim()) {
       const q = search.trim().toUpperCase();
       pool = pool.filter(w => w.word.includes(q) || (w.meaning && w.meaning.toUpperCase().includes(q)));

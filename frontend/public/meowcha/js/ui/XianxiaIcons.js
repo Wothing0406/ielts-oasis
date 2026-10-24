@@ -85,16 +85,9 @@
       render512Icon("flying-dagger", size, color, extraClass, style),
 
     // 15. Hoa Văn Mây Cát Tường & Vân Hồi Cổ Phong (Auspicious Cloud & Meander Corner)
-    meanderCorner: function(size = 36, color = "#FDE047") {
-      return `<svg width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" class="xianxia-corner-meander">
-        <!-- Họa tiết Vân Hồi Thương Chu (Leiwen Meander) -->
-        <path d="M2 2h44v8H10v34H2V2z" fill="${color}" fill-opacity="0.9"/>
-        <path d="M14 14h24v6H20v18h-6V14z" fill="${color}" fill-opacity="0.75"/>
-        <path d="M24 24h10v4h-6v6h-4V24z" fill="${color}" fill-opacity="0.6"/>
-        <!-- Dải Mây Cát Tường (Auspicious Cloud curl) -->
-        <circle cx="36" cy="36" r="4.5" stroke="${color}" stroke-width="1.5" fill="none"/>
-        <path d="M32 37.5c-2.5 0-4.5-2-4.5-4.5 0-3 3-5 6.5-4.5 1-2.5 3.5-4.5 6.5-4 3 .5 5 3 5 6 0 4-3.5 7-8 7z" stroke="${color}" stroke-width="1.2" fill="${color}" fill-opacity="0.25"/>
-      </svg>`;
+    meanderCorner: function(size = 36) {
+      const px = Math.min(96, Math.max(12, Number(size) || 36));
+      return `<img src="./assets/svg/cloud-corner.svg" width="${px}" height="${px}" alt="" aria-hidden="true" class="xianxia-corner-meander" />`;
     },
 
     // 16. Dấu Chân Móng Mèo Tiên Mạ Vàng

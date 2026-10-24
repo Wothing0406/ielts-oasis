@@ -27,13 +27,32 @@
     }
 
     processKey(char, canvas) {
-      if (this.state.isGameOver || this.state.isPaused || this.state.catState === "BREAKTHROUGH") return;
+      if (this.state.currentScene !== 'BATTLE' || this.state.isGameOver || this.state.isPaused || this.state.catState === "BREAKTHROUGH") return;
+      if (char === 'Tab') { this.replayCurrentAudio(); return; }
+      if (char === 'Backspace') {
+        this.state.setSpeech('Chữ đúng đã xuất kiếm, không xóa. Chữ sai không được ghi vào từ.', 1800);
+        return;
+      }
+      if (char === ' ' || char === 'Space') {
+        const targets = this.asteroids.asteroids;
+        if (targets.length) {
+          const next = (targets.indexOf(this.currentTarget) + 1) % targets.length;
+          this.currentTarget = targets[next];
+          this.updateSwordAltarUI(this.currentTarget);
+        }
+        return;
+      }
+      if (['1', '2', '3', '4'].includes(char)) {
+        this.activateSkillBySlot(parseInt(char, 10), canvas);
+        return;
+      }
 
       const upper = (char || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").replace(/Đ/g, "D").toUpperCase();
-      this.state.totalKeystrokes++;
+      if (!/^[A-Z]$/.test(upper)) return;
 
       const activeList = this.asteroids.asteroids;
       if (activeList.length === 0) return;
+      this.state.totalKeystrokes++;
 
       // 1. Kiểm tra thiên thạch đang gõ dở
       let target = null;
@@ -78,7 +97,7 @@
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
-        const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
+        const catY = root.Meowcha.getBattleLayout(canvas).catY;
 
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
@@ -112,19 +131,33 @@
           this.updateSwordAltarUI(target);
         }
       } else {
+        const missedTarget = this.currentTarget || activeList[0];
+        if (missedTarget) missedTarget.hadTypo = true;
+        this.state.typoCount++;
+        this.state.humanWordCombo = 0;
+        // Immunity prevents punishment, but never hides a learning mistake.
+        if (this.state.talents.typoImmune) {
+          this.state.calculateWPM();
+          return;
+        }
         // GÕ NHẦM (KHÔNG CÓ TỪ NÀO TRÊN MÀN HÌNH KHỚP PHÍM)
         this.mistakeStreak++;
         if (this.mistakeStreak >= 2 && this.currentTarget && this.saveSystem && !this.currentTarget.isBoss) {
           this.saveSystem.recordWeaknessWord(this.currentTarget);
         }
+        if (this.state.passiveModifiers && this.state.passiveModifiers.mindHint && this.mistakeStreak >= 2 && this.currentTarget) {
+          const nextChar = this.currentTarget.word[this.currentTarget.typedLen] || '';
+          if (nextChar && this.floatingText) {
+            this.floatingText.add(this.currentTarget.x, this.currentTarget.y - 32, `[ 慧 ] ${nextChar}`, "#C084FC", isMobile ? 14 : 16);
+          }
+        }
         this.state.combo = 0;
-        this.state.typoCount++;
         this.audio.play("hurt");
 
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
-        const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
+        const catY = root.Meowcha.getBattleLayout(canvas).catY;
 
         this.state.setCatState("HURT", 140);
         this.state.screenShake = 2.5; // Rung nhẹ nhàng 2.5px, không gây giật lag
@@ -182,6 +215,29 @@
       this.state.calculateWPM();
     }
 
+    activateSkillBySlot(slotNum, canvas) {
+      const slotMap = {
+        1: "WIND_SWORD_DOMAIN",
+        2: "GOLDEN_CORE_REGEN",
+        3: "NASCENT_SOUL_FREEZE",
+        4: "TEN_THOUSAND_SWORDS"
+      };
+      const skillId = slotMap[slotNum];
+      if (!skillId) return false;
+      const success = this.state.activateSkill(skillId, this, this.audio);
+      if (success && this.floatingText) {
+        const D = root.Meowcha && root.Meowcha.Device;
+        const isMobile = D ? D.info.isMobile : (canvas ? canvas.width <= 768 : false);
+        const catX = canvas ? canvas.width / 2 : 400;
+        const catY = canvas ? root.Meowcha.getBattleLayout(canvas).catY : 500;
+        const M = root.Meowcha || {};
+        const sDef = M.BREAKTHROUGH_SKILLS && M.BREAKTHROUGH_SKILLS[skillId];
+        const name = sDef ? sDef.name : skillId;
+        this.floatingText.add(catX, catY - 80, `[ 绝 ] ${name}!`, "#FDE047", isMobile ? 15 : 18);
+      }
+      return success;
+    }
+
     triggerLightningHazard(canvas) {
       if (this.isLightningHazard) return;
       this.isLightningHazard = true;
@@ -220,6 +276,7 @@
         // Cảnh 1 (Trúc Cơ): Song Kiếm Hợp Bích - Tự động khắc +1 cổ tự (ở chế độ thường) & đẩy lùi ma thạch 26px
         if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
+          this.state.markAssistance(target);
         }
         target.y = Math.max(-target.radius, target.y - 26);
         this.projectiles.spawnSkyStrike(target.x, target.y, 1);
@@ -232,6 +289,7 @@
         // Cảnh 2 (Kim Đan): Kim Liên Bạo Phá - Tự động khắc +1 cổ tự (ở chế độ thường), đẩy lùi 22px & +30 Tu Vi
         if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
+          this.state.markAssistance(target);
         }
         target.y = Math.max(-target.radius, target.y - 22);
         this.state.addScore(30);
@@ -245,6 +303,7 @@
         // Cảnh 3 (Nguyên Anh): Nguyên Anh Lôi Kích - Định thân ma thạch 0.9s & tự động khắc +1 cổ tự (ở chế độ thường)
         if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
           target.typedLen++;
+          this.state.markAssistance(target);
         }
         target.freezeTimer = 0.9;
         this.state.chibiAttackFlash = 1.0;
@@ -259,6 +318,7 @@
         if (this.state.gameMode !== "CLOZE") {
           const carve = Math.min(2, Math.max(0, target.word.length - target.typedLen));
           target.typedLen += carve;
+          this.state.markAssistance(target, carve);
         }
         target.y = Math.max(-target.radius, target.y - 34);
         this.state.addScore(50);
@@ -284,7 +344,7 @@
             const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas && canvas.width <= 768);
             const catX = canvas ? canvas.width / 2 : 400;
-            const catY = canvas ? (isMobile ? canvas.height - 232 : canvas.height - 128) : 500;
+            const catY = canvas ? root.Meowcha.getBattleLayout(canvas).catY : 500;
             this.state.chibiAttackFlash = 1.0;
             this.projectiles.spawn(catX - 70, catY - 60, ast.x, ast.y, 3, "#C084FC");
             this.projectiles.spawnSkyStrike(ast.x, ast.y, 3);
@@ -294,6 +354,7 @@
             ast.freezeTimer = Math.max(ast.freezeTimer || 0, 0.6);
             if (this.state.gameMode !== "CLOZE" && ast.typedLen < ast.word.length - 1) {
               ast.typedLen++;
+              this.state.markAssistance(ast);
               this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO LÔI KÍCH (+1 Tự)", "#C084FC", isMobile ? 12 : 14);
             } else {
               this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO ĐỊNH THÂN", "#C084FC", isMobile ? 12 : 14);
@@ -349,8 +410,17 @@
       }
     }
 
-    handleWordSlain(target, canvas) {
+    handleWordSlain(target, canvas, assisted = false) {
+      if (!target || !this.asteroids.asteroids.includes(target)) return;
+      if (assisted) this.state.markAssistance(target, Math.max(0, target.word.length - target.typedLen));
+      if (target.assistedKeystrokes) this.state.assistedWords++;
+      else { this.state.humanWords++; this.state.humanWordCombo++; }
+      if (!target.assistedKeystrokes && this.saveSystem && this.saveSystem.recordReviewResult) {
+        this.saveSystem.recordReviewResult(target, !target.hadTypo && !target.assistedKeystrokes);
+      }
       if (target.isBoss) {
+        const learned = target.shields[target.currentShieldIdx];
+        this.state.setSpeech(`${learned.word}: ${learned.meaning}. ${learned.example || ''}`, 4500);
         this.playWordAudio(target);
         this.state.wordsSlain++;
         this.state.combo++;
@@ -363,8 +433,12 @@
           target.word = nextShield.word.toUpperCase();
           target.ipa = nextShield.ipa;
           target.meaning = nextShield.meaning;
+          target.example = nextShield.example;
+          target.hadTypo = false;
+          target.assistedKeystrokes = 0;
           target.typedLen = 0;
           this.currentTarget = null;
+          if (this.state.gameMode === 'AUDIO') this.playWordAudio(target);
 
           this.audio.play("shatter");
           this.audio.play("chime");
@@ -378,6 +452,7 @@
           return;
         } else {
           // ĐÃ PHÁ HẾT CẢ 3 HỘ THUẪN: BOSS TÂM MA BỊ TIÊU DIỆT HOÀN TOÀN!
+          this.state.lastBossReview = target.shields.map(shield => ({ ...shield }));
           this.audio.play("explosion");
           this.audio.play("chime");
           this.state.screenShake = 24;
@@ -412,7 +487,7 @@
       const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const catX = canvas.width / 2;
-      const catY = isMobile ? (canvas.height - 232) : (canvas.height - 128);
+      const catY = root.Meowcha.getBattleLayout(canvas).catY;
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
       this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
@@ -425,15 +500,34 @@
         });
       }
 
-      // Nội tại Hồi Huyết Kim Đan (Cảnh 2: mỗi 4 từ hồi +3 HP) & Hộ Thuẫn Độ Kiếp (Cảnh 4: mỗi 5 từ +1 Khiên)
-      if (this.state.realmIdx === 2 && this.state.wordsSlain % 4 === 0 && this.state.hp < this.state.maxHp) {
-        this.state.hp = Math.min(this.state.maxHp, this.state.hp + 3);
+      // Nội tại Đột Phá theo Cảnh Giới:
+      // 1. Luyện Khí (Kiếm Khí Hộ Thể): Sau mỗi 5 từ hoàn thành không sai -> +1 Hộ Thuẫn (tối đa 2)
+      const hasQiShield = (this.state.isSkillUnlocked && this.state.isSkillUnlocked("QI_SHIELD_PASSIVE")) || this.state.realmIdx >= 0;
+      if (hasQiShield && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 5 === 0 && (this.state.shieldCharges || 0) < 2) {
+        this.state.shieldCharges = Math.min(2, (this.state.shieldCharges || 0) + 1);
+        this.state.talents.shieldCharges = this.state.shieldCharges;
+        this.state.notify("shield");
+        this.floatingText.add(catX, catY - 75, "[ 盾 ] KIẾM KHÍ HỘ THỂ (+1 Khiên)", "#10B981", isMobile ? 13 : 15);
+      }
+      // 2. Kim Đan (Kim Đan Hồi Nguyên): Mỗi 4 từ đúng liên tiếp hồi 3-4 HP
+      const hasCoreRegen = (this.state.isSkillUnlocked && this.state.isSkillUnlocked("GOLDEN_CORE_REGEN")) || this.state.realmIdx === 2;
+      if (hasCoreRegen && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 4 === 0 && this.state.hp < this.state.maxHp) {
+        const heal = (this.state.getSkillLevel && this.state.getSkillLevel("GOLDEN_CORE_REGEN") >= 3) ? 4 : 3;
+        this.state.hp = Math.min(this.state.maxHp, this.state.hp + heal);
         this.state.notify("hp");
-        this.floatingText.add(catX, catY - 75, "[ 丹 ] KIM ĐAN HỒI HUYẾT (+3 HP)", "#34D399", isMobile ? 13 : 15);
-      } else if (this.state.realmIdx >= 4 && this.state.wordsSlain % 5 === 0 && (this.state.shieldCharges || 0) < 3) {
+        this.floatingText.add(catX, catY - 75, `[ 丹 ] KIM ĐAN HỒI NGUYÊN (+${heal} HP)`, "#34D399", isMobile ? 13 : 15);
+      }
+      // 3. Độ Kiếp (Chân Long Hộ Thuẫn): Mỗi 5 từ hồi +1 khiên (tối đa 3)
+      if (this.state.realmIdx >= 4 && this.state.wordsSlain % 5 === 0 && (this.state.shieldCharges || 0) < 3) {
         this.state.shieldCharges = (this.state.shieldCharges || 0) + 1;
+        this.state.talents.shieldCharges = this.state.shieldCharges;
         this.state.notify("shield");
         this.floatingText.add(catX, catY - 75, "[ 盾 ] CHÂN LONG HỘ THUẪN (+1)", "#FDE047", isMobile ? 13 : 15);
+      }
+      // 4. Thưởng gõ từ dài (>= 7 ký tự)
+      if (target.word.length >= 7) {
+        this.state.addScore(25);
+        this.floatingText.add(catX, catY - 90, `[ 豪 ] ĐẠI TỰ THƯỞNG (+25 Tu Vi)`, "#F59E0B", isMobile ? 12 : 14);
       }
 
       // 2. Đại chiêu KIẾM KHÍ CHÉM NỔ MA THẠCH (Trảm đúng thì chỉ vung kiếm chém ma thạch, không đánh sét vào người)
@@ -540,19 +634,32 @@
       const meaningEl = document.getElementById("swordTargetMeaning");
       if (meaningEl) {
         const modePrefix = this.state.gameMode === "CLOZE" ? "[ 悟 • ĐÃ NGỘ ĐẠO ]" : "[ 斩 • ĐÃ TRẢM ]";
-        meaningEl.innerHTML = `<span style="color: #10B981; font-weight: 800;">${modePrefix} ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
+        meaningEl.textContent = `${modePrefix} ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})`;
         if (this.lastSlainDisplayTimer) clearTimeout(this.lastSlainDisplayTimer);
+        const meaningDur = (this.state.passiveModifiers && this.state.passiveModifiers.meaningDisplayDuration) || 3200;
         this.lastSlainDisplayTimer = setTimeout(() => {
           this.lastSlainDisplayTimer = null;
           if (!this.currentTarget) {
             const mEl = document.getElementById("swordTargetMeaning");
             if (mEl) mEl.innerText = "";
           }
-        }, 3200);
+        }, meaningDur);
       }
 
       this.currentTarget = null;
       this.updateSwordAltarUI(null);
+
+      // Automatic kills cannot trigger a chain of procs or skip a boss shield.
+      if (!assisted) {
+        const candidates = this.asteroids.asteroids.filter(a => !a.isBoss);
+        const auto = this.state.talents.autoKill && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 3 === 0;
+        const crit = Math.random() < (this.state.talents.critChance || 0);
+        if ((auto || crit) && candidates.length) {
+          this.handleWordSlain(candidates.sort((a, b) => b.y - a.y)[0], canvas, true);
+        } else if (auto || crit) {
+          this.pendingAutoKill = true;
+        }
+      }
 
       // Kích hoạt callback nếu có (để kiểm tra đột phá)
       if (this.onWordCompleted) {
@@ -676,7 +783,7 @@
         if (this.audio) this.audio.play("type");
         const altarSub = document.getElementById("swordTargetMeaning");
         if (altarSub && this.state && this.state.gameMode === "AUDIO") {
-          altarSub.innerHTML = `<span style="color: #A78BFA; animation: pulse 0.8s infinite;">[ 聽 ] Đang phát lại tiên âm: ${target.ipa || '/.../'}</span>`;
+          altarSub.textContent = `[ 聽 ] Đang phát lại tiên âm: ${target.ipa || '/.../'}`;
         }
         return true;
       }
@@ -808,25 +915,16 @@
       }
 
       if (meaningEl) {
-        if (curMode === "AUDIO") {
-          meaningEl.innerHTML = `
-            <span style="color: #581C87; font-weight: 800; font-size: 13px; text-shadow: 0 1px 0 rgba(255,255,255,0.8); cursor: pointer;" onclick="window.__meowchaReplayAudio && window.__meowchaReplayAudio()" title="Bấm hoặc gõ phím TAB để nghe lại">
-              [ 听 ] TIÊN ÂM: ${target.ipa || '/.../'} • Bấm TAB nghe lại
-            </span>
-          `;
-        } else if (curMode === "CLOZE") {
-          if (typed >= word.length) {
-            meaningEl.innerHTML = `<span style="color: #064E3B; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 悟 • ĐÃ TRẢM ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
-          } else {
-            meaningEl.innerHTML = `<span style="color: #451A03; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 悟 ] Nghĩa: ${target.meaning || target.definition || "Đoán từ tiếng Anh"} • [${word.length} chữ]</span>`;
-          }
+        meaningEl.onclick = null;
+        if (curMode === "AUDIO" && typed < word.length) {
+          meaningEl.textContent = 'Nghe và gõ chính tả • Tab hoặc THÍNH ÂM để nghe lại';
+          meaningEl.onclick = () => this.processKey('Tab', { width: 0, height: 0 });
+        } else if (typed >= word.length) {
+          meaningEl.textContent = `${target.word}: ${target.meaning || target.definition || ''} (${target.ipa || ''})`;
+        } else if (curMode === 'CLOZE') {
+          meaningEl.textContent = `Nghĩa: ${target.meaning || target.definition || 'Đoán từ tiếng Anh'} • ${word.length} chữ`;
         } else {
-          // DIRECT TYPING: Trong lúc gõ CHỈ hiện từ tiếng Anh, gõ xong mới hiện đầy đủ IPA và nghĩa
-          if (typed >= word.length) {
-            meaningEl.innerHTML = `<span style="color: #064E3B; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 斩 • HOÀN THÀNH ] ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})</span>`;
-          } else {
-            meaningEl.innerHTML = `<span style="color: #1C1917; font-weight: 800; font-size: 13.5px; text-shadow: 0 1px 0 rgba(255,255,255,0.8);">[ 斩 ] Tiến độ xuất kiếm • [${typed}/${word.length}]</span>`;
-          }
+          meaningEl.textContent = `Tiến độ xuất kiếm: ${typed}/${word.length}${target.cefr ? ' • CEFR ' + target.cefr : ''}`;
         }
       }
 

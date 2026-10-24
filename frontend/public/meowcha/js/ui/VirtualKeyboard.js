@@ -120,11 +120,7 @@
         }
         btnAudio.classList.add("active");
         setTimeout(() => btnAudio.classList.remove("active"), 80);
-        if (window.__meowchaReplayAudio) {
-          window.__meowchaReplayAudio();
-        } else if (this.onKeyPress) {
-          this.onKeyPress("Tab");
-        }
+        if (this.onKeyPress) this.onKeyPress('Tab');
       });
       actionRow.appendChild(btnAudio);
 
@@ -132,10 +128,10 @@
       const btnSpace = document.createElement("button");
       btnSpace.className = "kb-key xianxia-key kb-action-key kb-space-key";
       btnSpace.type = "button";
-      btnSpace.title = "Xuất kiếm (Space)";
+      btnSpace.title = "Chọn mục tiêu kế tiếp (Space) — không tự gõ chữ";
       btnSpace.innerHTML = `
         <svg class="key-action-svg" width="16" height="16" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg>
-        <span class="key-action-label">TRẢM MA</span>
+        <span class="key-action-label">ĐỔI MỤC TIÊU</span>
       `;
       btnSpace.addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -153,14 +149,14 @@
       const btnBackspace = document.createElement("button");
       btnBackspace.className = "kb-key xianxia-key kb-action-key kb-del-key";
       btnBackspace.type = "button";
-      btnBackspace.title = "Xóa (Backspace)";
+      btnBackspace.title = "Chữ đúng đã xuất kiếm, chữ sai không ghi vào từ (Backspace)";
       btnBackspace.innerHTML = `
         <svg class="key-action-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2.2">
           <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" fill="rgba(212,67,39,0.25)"/>
           <line x1="18" y1="9" x2="12" y2="15"/>
           <line x1="12" y1="9" x2="18" y2="15"/>
         </svg>
-        <span class="key-action-label">XÓA</span>
+        <span class="key-action-label">KHÔNG XÓA</span>
       `;
       btnBackspace.addEventListener("pointerdown", (e) => {
         e.preventDefault();

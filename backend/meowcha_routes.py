@@ -19,6 +19,8 @@ from schemas import (
     MeowchaBattleLogResponse
 )
 from auth_routes import get_current_user
+from meowcha_integrity import (MeowchaRun, MeowchaSaveSnapshot, RunStart, RunComplete,
+    SaveSnapshotPayload, start_run, complete_run, require_user)
 
 from services.oxford_dataset_service import OxfordDatasetService
 
@@ -43,7 +45,7 @@ def get_meowcha_user_from_token(
         user_id_int = int(uid)
         return db.query(User).filter(User.id == user_id_int).first()
     except (ValueError, TypeError):
-        return db.query(User).filter((User.username == str(uid)) | (User.email == str(uid))).first()
+        return db.query(User).filter(User.username == str(uid)).first()
 
 
 def api_response(data: Any = None, success: bool = True, error: Optional[Dict[str, str]] = None, meta: Optional[Dict[str, Any]] = None):
@@ -56,6 +58,51 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
     if meta is not None:
         res["meta"] = meta
     return res
+
+
+@router.post('/runs')
+def create_run(payload: RunStart, user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
+    run = start_run(db, user, payload)
+    return api_response({'run_id': run.run_id, 'completed': bool(run.completed_at)})
+
+
+@router.post('/runs/complete')
+def finish_run(payload: RunComplete, user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
+    return api_response(complete_run(db, user, payload))
+
+
+@router.get('/save-snapshots')
+def get_save_snapshots(user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
+    require_user(user)
+    rows = db.query(MeowchaSaveSnapshot).filter(MeowchaSaveSnapshot.user_id == user.id).all()
+    result = {str(row.slot_id): {'snapshot': row.snapshot} for row in rows}
+    # Non-destructive migration: old cloud slots remain readable until first v2 save.
+    legacy = db.query(MeowchaSave).filter(MeowchaSave.user_id == user.id, MeowchaSave.is_occupied == True).all()
+    for row in legacy:
+        result.setdefault(str(row.slot_id), {'is_occupied': True, 'slot_name': row.slot_name,
+            'realm': row.realm, 'realm_idx': row.realm_idx, 'title': row.title,
+            'hp': row.hp, 'max_hp': row.max_hp, 'score': row.score,
+            'words_slain': row.words_slain, 'band_idx': row.band_idx, 'talents': row.talents})
+    return api_response(result)
+
+
+@router.post('/save-snapshots/{slot_id}')
+def put_save_snapshot(slot_id: int, payload: SaveSnapshotPayload,
+    user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
+    require_user(user)
+    if slot_id not in (1, 2, 3):
+        raise HTTPException(400, 'Invalid slot')
+    db.query(User).filter(User.id == user.id).with_for_update().one()
+    row = db.query(MeowchaSaveSnapshot).filter(MeowchaSaveSnapshot.user_id == user.id,
+        MeowchaSaveSnapshot.slot_id == slot_id).with_for_update().first()
+    if row and payload.snapshot.get('updatedAt', 0) < row.snapshot.get('updatedAt', 0):
+        raise HTTPException(409, 'A newer cloud save exists; local progress has been preserved')
+    if not row:
+        row = MeowchaSaveSnapshot(user_id=user.id, slot_id=slot_id)
+        db.add(row)
+    row.snapshot, row.updated_at = payload.snapshot, datetime.utcnow()
+    db.commit()
+    return api_response({'saved': True, 'slot_id': slot_id})
 
 
 # =========================================================================
@@ -103,6 +150,8 @@ def get_vocab_deck(
                 "type": v.part_of_speech or "vocab",
                 "meaning": v.meaning or "",
                 "audio_url": v.audio_url or "",
+                "cefr": None,
+                "difficulty_source": "legacy_band",
                 "band_level": v.band_level if v.band_level is not None else (band if band is not None else 0),
                 "asteroid_type": v.asteroid_type or ("FROST" if v.band_level == 0 else "INFERNO" if v.band_level == 1 else "VOID" if v.band_level == 2 else "BLOOD_THUNDER"),
                 "difficulty_score": v.difficulty_score or (len(v.word or "") * 5)
@@ -187,6 +236,8 @@ def get_vocab_deck(
                     "type": v.get("type", "noun"),
                     "meaning": v.get("meaning", ""),
                     "audio_url": v.get("audio_url", ""),
+                    "cefr": v.get("level"),
+                    "example": v.get("example", ""),
                     "band_level": to_band_level(v.get("level", "B1")),
                     "asteroid_type": to_ast_type(v.get("level", "B1")),
                     "difficulty_score": len(v.get("word", "")) * 5
@@ -225,6 +276,7 @@ def get_all_save_slots(
     Lấy danh sách tóm tắt 3 Slots lưu trữ của người chơi.
     Tự động phân lập dữ liệu theo tài khoản User hoặc guest_token.
     """
+    require_user(user)
     try:
         slots_data = {}
         for s_id in (1, 2, 3):
@@ -294,6 +346,7 @@ def get_save_slot(
             detail={"code": "INVALID_SLOT", "message": "Slot ID chỉ nhận giá trị 1, 2 hoặc 3."}
         )
 
+    require_user(user)
     try:
         query = db.query(MeowchaSave).filter(MeowchaSave.slot_id == slot_id)
         if user:
@@ -355,6 +408,7 @@ def save_progress_to_slot(
             detail={"code": "INVALID_SLOT", "message": "Slot ID chỉ nhận giá trị 1, 2 hoặc 3."}
         )
 
+    require_user(user)
     try:
         query = db.query(MeowchaSave).filter(MeowchaSave.slot_id == slot_id)
         if user:
@@ -456,6 +510,7 @@ def delete_save_slot(
             detail={"code": "INVALID_SLOT", "message": "Slot ID chỉ nhận giá trị 1, 2 hoặc 3."}
         )
 
+    require_user(user)
     try:
         query = db.query(MeowchaSave).filter(MeowchaSave.slot_id == slot_id)
         if user:
@@ -495,172 +550,52 @@ def delete_save_slot(
 # =========================================================================
 # 3. BẢNG PHONG THẦN / LEADERBOARD (/api/meowcha/leaderboard)
 # =========================================================================
-@router.get("/leaderboard", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+@router.get("/leaderboard", response_model=Dict[str, Any])
 def get_leaderboard(
     limit: int = Query(10, ge=1, le=50),
+    game_mode: str = Query("DIRECT", pattern="^(DIRECT|CLOZE|AUDIO|LEGACY)$"),
+    assisted: bool = Query(False),
+    deck_id: str = Query("oxford_5000", max_length=40),
     db: Session = Depends(get_db)
 ):
-    """
-    Lấy Top bảng xếp hạng cao thủ Meow-Cha sắp xếp theo Tu Vi (Score) giảm dần.
-    Quy tắc: Mỗi user chỉ xuất hiện đúng 1 lần trên Top với điểm cao nhất.
-    """
-    try:
-        raw_entries = db.query(MeowchaLeaderboard)\
-            .order_by(MeowchaLeaderboard.score.desc(), MeowchaLeaderboard.created_at.desc())\
-            .all()
-
-        seen_players = set()
-        unique_entries = []
-        for e in raw_entries:
-            key = (e.player_name or "").strip().lower()
-            if not key:
-                key = f"user_{e.id}"
-            if key not in seen_players:
-                seen_players.add(key)
-                unique_entries.append(e)
-                if len(unique_entries) >= limit:
-                    break
-
-        # Batch load matching users to resolve Discord avatar (Triệt tiêu hoàn toàn lỗi N+1 Query)
-        user_ids = [e.user_id for e in unique_entries if e.user_id]
-        names = [(e.player_name or "").strip().lower() for e in unique_entries if e.player_name]
-
-        users_by_id = {}
-        users_by_name = {}
-        if user_ids or names:
-            filter_clauses = []
-            if user_ids:
-                filter_clauses.append(User.id.in_(user_ids))
-            if names:
-                filter_clauses.append(func.lower(User.username).in_(names))
-            matched_users = db.query(User).filter(or_(*filter_clauses)).all()
-            for u in matched_users:
-                users_by_id[u.id] = u
-                if u.username:
-                    users_by_name[u.username.strip().lower()] = u
-
-        results = []
-        for idx, e in enumerate(unique_entries):
-            u_matched = users_by_id.get(e.user_id) or users_by_name.get((e.player_name or "").strip().lower())
-            resolved_avatar = ""
-            if u_matched and u_matched.avatar_url and u_matched.avatar_url.startswith("http"):
-                resolved_avatar = u_matched.avatar_url
-            elif e.avatar_url and e.avatar_url.startswith("http"):
-                resolved_avatar = e.avatar_url
-
-            results.append({
-                "id": e.id,
-                "rank": idx + 1,
-                "player_name": e.player_name,
-                "score": e.score,
-                "words_slain": e.words_slain,
-                "realm": e.realm,
-                "accuracy": round(e.accuracy, 1),
-                "wpm": e.wpm,
-                "avatar_url": resolved_avatar,
-                "created_at": e.created_at.strftime("%d/%m/%Y") if e.created_at else ""
-            })
-
-        return api_response(data=results, success=True)
-    except Exception as e:
-        logger.error(f"Lỗi khi đọc Bảng Phong Thần: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "INTERNAL_SERVER_ERROR", "message": str(e)}
-        )
+    """Practice boards separate modes/decks/assistance; retain a legacy archive."""
+    if game_mode == "LEGACY":
+        entries = db.query(MeowchaLeaderboard).order_by(MeowchaLeaderboard.score.desc()).all()
+        seen, result = set(), []
+        for entry in entries:
+            identity = ("user", entry.user_id) if entry.user_id else ("legacy", entry.id)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            result.append({"id": entry.id, "user_id": entry.user_id, "rank": len(result) + 1,
+                "player_name": entry.player_name, "score": entry.score, "realm": entry.realm,
+                "words_slain": entry.words_slain, "accuracy": entry.accuracy, "wpm": entry.wpm,
+                "avatar_url": "", "game_mode": "LEGACY", "verification": "legacy_unverified"})
+            if len(result) >= limit:
+                break
+        return api_response(result, meta={"verification": "legacy_unverified"})
+    from sqlalchemy import select
+    ranked = select(MeowchaRun.run_id, func.row_number().over(
+        partition_by=MeowchaRun.user_id,
+        order_by=[MeowchaRun.score.desc(), MeowchaRun.completed_at.desc()]
+    ).label("position")).where(
+        MeowchaRun.completed_at.isnot(None), MeowchaRun.game_mode == game_mode,
+        MeowchaRun.assisted == assisted, MeowchaRun.deck_id == deck_id
+    ).subquery()
+    runs = db.query(MeowchaRun).join(ranked, ranked.c.run_id == MeowchaRun.run_id).filter(
+        ranked.c.position == 1).order_by(MeowchaRun.score.desc(), MeowchaRun.completed_at.desc()).limit(limit).all()
+    return api_response([{**run.result, "rank": i + 1} for i, run in enumerate(runs)],
+        meta={"game_mode": game_mode, "assisted": assisted, "deck_id": deck_id,
+              "verification": "plausibility_checked", "competitive": False})
 
 
-@router.post("/leaderboard", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+@router.post("/leaderboard", response_model=Dict[str, Any])
 def submit_score_to_leaderboard(
-    payload: MeowchaLeaderboardCreate,
+    payload: RunComplete,
+    user: Optional[User] = Depends(get_meowcha_user_from_token),
     db: Session = Depends(get_db)
 ):
-    """
-    Ghi danh chiến tích mới vào Bảng Phong Thần.
-    Mỗi user chỉ giữ lại 1 bản ghi với số điểm cao nhất.
-    """
-    try:
-        player_clean = payload.player_name.strip() or "Tiểu Miêu Kiếm Sĩ"
-        matched_user = db.query(User).filter(func.lower(User.username) == func.lower(player_clean)).first()
-        user_avatar = matched_user.avatar_url if (matched_user and matched_user.avatar_url and matched_user.avatar_url.startswith("http")) else None
-        final_avatar = (payload.avatar_url.strip() if (payload.avatar_url and payload.avatar_url.startswith("http")) else None) or user_avatar
-        user_id_val = matched_user.id if matched_user else None
-
-        # Tìm bản ghi hiện có của người chơi (không phân biệt chữ hoa thường)
-        existing = db.query(MeowchaLeaderboard).filter(
-            func.lower(MeowchaLeaderboard.player_name) == func.lower(player_clean)
-        ).first()
-
-        if existing:
-            # Cập nhật liên kết user_id và avatar nếu có
-            if user_id_val and not existing.user_id:
-                existing.user_id = user_id_val
-            if final_avatar:
-                existing.avatar_url = final_avatar
-
-            # Nếu điểm mới cao hơn, cập nhật thành tích cao nhất
-            if payload.score > existing.score:
-                existing.score = payload.score
-                existing.words_slain = max(existing.words_slain, payload.words_slain)
-                existing.realm = payload.realm or existing.realm
-                existing.accuracy = min(100.0, max(0.0, payload.accuracy))
-                existing.wpm = max(existing.wpm, payload.wpm)
-                existing.created_at = datetime.utcnow()
-                db.commit()
-                db.refresh(existing)
-            else:
-                db.commit()
-            active_entry = existing
-        else:
-            new_entry = MeowchaLeaderboard(
-                user_id=user_id_val,
-                player_name=player_clean,
-                score=max(0, payload.score),
-                words_slain=max(0, payload.words_slain),
-                realm=payload.realm or "Luyện Khí Kỳ",
-                accuracy=min(100.0, max(0.0, payload.accuracy)),
-                wpm=max(0, payload.wpm),
-                avatar_url=final_avatar,
-                created_at=datetime.utcnow()
-            )
-            db.add(new_entry)
-            db.commit()
-            db.refresh(new_entry)
-            active_entry = new_entry
-
-        # Tính toán thứ hạng duy nhất của người chơi
-        all_leaders = db.query(MeowchaLeaderboard)\
-            .order_by(MeowchaLeaderboard.score.desc())\
-            .all()
-        
-        seen = set()
-        current_rank = 1
-        for leader in all_leaders:
-            pname = (leader.player_name or "").strip().lower()
-            if pname not in seen:
-                seen.add(pname)
-                if pname == player_clean.lower():
-                    break
-                current_rank += 1
-
-        return api_response(
-            data={
-                "id": active_entry.id,
-                "rank": current_rank,
-                "player_name": active_entry.player_name,
-                "score": active_entry.score,
-                "realm": active_entry.realm,
-                "avatar_url": active_entry.avatar_url or ""
-            },
-            success=True
-        )
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Lỗi khi ghi danh Bảng Phong Thần: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "DB_TRANSACTION_FAILED", "message": str(e)}
-        )
+    return api_response(complete_run(db, user, payload))
 
 
 # =========================================================================
@@ -714,7 +649,7 @@ def get_cultivator_profile(
         db.commit()
         db.refresh(profile)
 
-    player_name = user.full_name or user.username or (user.email.split("@")[0] if user.email else "Tiên Hữu")
+    player_name = getattr(user, 'full_name', None) or user.username or 'Tiên Hữu'
     avatar_url = getattr(user, "avatar_url", None) or getattr(user, "discord_avatar", None) or ""
 
     return api_response(
@@ -739,98 +674,14 @@ def get_cultivator_profile(
     )
 
 
-@router.post("/profile/sync", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
+@router.post("/profile/sync", response_model=Dict[str, Any])
 def sync_cultivator_profile(
-    payload: MeowchaUserProfileSync,
+    payload: RunComplete,
     user: Optional[User] = Depends(get_meowcha_user_from_token),
     db: Session = Depends(get_db)
 ):
-    """
-    Đồng bộ chiến tích tu vi sau ván đấu:
-    - Cập nhật MeowchaUserProfile
-    - Ghi lại bản ghi MeowchaBattleLog
-    - Tự động cập nhật / vinh danh kỷ lục trên MeowchaLeaderboard
-    """
-    try:
-        user_id = user.id if user else None
-        player_name = (user.full_name or user.username or "Tiểu Miêu Kiếm Sĩ") if user else "Tiểu Miêu Kiếm Sĩ"
-        avatar_url = getattr(user, "avatar_url", None) or getattr(user, "discord_avatar", None) if user else ""
-
-        # 1. Ghi Battle Log
-        battle_log = MeowchaBattleLog(
-            user_id=user_id,
-            guest_token=None if user else "guest_meowcha",
-            score=payload.score_earned,
-            words_slain=payload.words_slain,
-            realm=payload.realm or "Luyện Khí Kỳ",
-            accuracy=payload.accuracy or 100.0,
-            wpm=payload.wpm or 0,
-            band_level=payload.realm_idx or 0,
-            is_victory=payload.is_victory or False,
-            created_at=datetime.utcnow()
-        )
-        db.add(battle_log)
-
-        # 2. Cập nhật Profile nếu đã đăng nhập
-        if user:
-            profile = db.query(MeowchaUserProfile).filter(MeowchaUserProfile.user_id == user.id).first()
-            if not profile:
-                profile = MeowchaUserProfile(user_id=user.id)
-                db.add(profile)
-            
-            profile.total_score += max(0, payload.score_earned)
-            profile.total_words_slain += max(0, payload.words_slain)
-            profile.games_played += 1
-            if payload.wpm and payload.wpm > profile.highest_wpm:
-                profile.highest_wpm = payload.wpm
-            if (payload.realm_idx or 0) > profile.highest_realm_idx:
-                profile.highest_realm_idx = payload.realm_idx or 0
-                profile.highest_realm = payload.realm or profile.highest_realm
-            profile.spirit_stones += max(1, payload.words_slain * 2)
-            profile.updated_at = datetime.utcnow()
-
-        # 3. Tự động khắc bia trên Leaderboard nếu có điểm
-        if payload.score_earned > 0:
-            existing_lb = None
-            if user_id:
-                existing_lb = db.query(MeowchaLeaderboard).filter(MeowchaLeaderboard.user_id == user_id).first()
-            
-            if existing_lb:
-                if payload.score_earned > existing_lb.score:
-                    existing_lb.score = payload.score_earned
-                    existing_lb.words_slain = payload.words_slain
-                    existing_lb.realm = payload.realm or existing_lb.realm
-                    existing_lb.wpm = max(existing_lb.wpm, payload.wpm or 0)
-                    existing_lb.accuracy = payload.accuracy or existing_lb.accuracy
-                    existing_lb.avatar_url = avatar_url or existing_lb.avatar_url
-                    existing_lb.created_at = datetime.utcnow()
-            else:
-                new_lb = MeowchaLeaderboard(
-                    user_id=user_id,
-                    player_name=player_name,
-                    score=payload.score_earned,
-                    words_slain=payload.words_slain,
-                    realm=payload.realm or "Luyện Khí Kỳ",
-                    accuracy=payload.accuracy or 100.0,
-                    wpm=payload.wpm or 0,
-                    avatar_url=avatar_url,
-                    created_at=datetime.utcnow()
-                )
-                db.add(new_lb)
-
-        db.commit()
-
-        return api_response(
-            data={"synced": True, "player_name": player_name, "score": payload.score_earned},
-            success=True
-        )
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Lỗi khi đồng bộ profile Meowcha: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SYNC_FAILED", "message": str(e)}
-        )
+    # Shared transaction and run idempotency key for every completion endpoint.
+    return api_response(complete_run(db, user, payload))
 
 
 @router.get("/battle-logs", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
@@ -842,6 +693,7 @@ def get_battle_logs(
     """
     Lấy danh sách lịch sử các trận độ kiếp gần nhất của người chơi.
     """
+    require_user(user)
     try:
         query = db.query(MeowchaBattleLog)
         if user:

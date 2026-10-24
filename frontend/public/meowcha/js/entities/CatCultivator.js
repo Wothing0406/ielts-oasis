@@ -39,7 +39,7 @@
       const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const BASE_X = canvas.width / 2;
       // Trên mobile: Đặt Miêu Tôn trang nghiêm trên đài phù vân, cách thanh thư cuộn bên dưới khoảng cách thoáng đãng
-      const BASE_Y = isMobile ? (canvas.height - 252) : (canvas.height - 128);
+      const BASE_Y = root.Meowcha.getBattleLayout(canvas).catY;
       const renderSize = isMobile ? 125 : 180;
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
       let drawX = BASE_X - renderSize / 2;
@@ -58,27 +58,12 @@
       ctx.save();
       const t = this.time * 2.5;
 
-      // 1.5 BỆ ĐÀI PHÙ VÂN / ĐÀI SEN HOÀNG KIM NÂNG ĐỠ CHÂN MIÊU TÔN
-      ctx.save();
-      const daisW = isMobile ? 120 : 160;
-      const daisH = isMobile ? 18 : 24;
-      const daisY = BASE_Y - 4;
-
-      const cloudGrad = ctx.createRadialGradient(BASE_X, daisY, 4, BASE_X, daisY, daisW / 2);
-      cloudGrad.addColorStop(0, "rgba(254, 240, 138, 0.75)");
-      cloudGrad.addColorStop(0.5, "rgba(245, 158, 11, 0.45)");
-      cloudGrad.addColorStop(1, "transparent");
-      ctx.fillStyle = cloudGrad;
-      ctx.beginPath();
-      ctx.ellipse(BASE_X, daisY, daisW / 2, daisH, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = "rgba(212, 175, 55, 0.65)";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.ellipse(BASE_X, daisY, daisW * 0.42, daisH * 0.5, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+      // Authored pixel-art dais shared by the lobby and battlefield.
+      const dais = this.assets.cultivation_dais;
+      if (dais && dais.loaded) {
+        const width = isMobile ? 150 : 190;
+        ctx.drawImage(dais.img, BASE_X - width / 2, BASE_Y - 12, width, width * 763 / 2062);
+      }
 
       // 2. PHÁP TƯỚNG & NỀN ĐÀI RIÊNG BIỆT CHO TỪNG CẢNH GIỚI (VẼ PHÍA SAU MÈO)
       if (realmIdx === 0) {

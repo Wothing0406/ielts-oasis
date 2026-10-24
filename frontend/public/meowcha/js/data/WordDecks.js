@@ -1841,7 +1841,7 @@
     {
       id: "oxford_5000",
       name: "Cửu Chuyển Hỗn Độn Đan",
-      subName: "Oxford 5000 Toàn Tập (Band 4.0 - 9.0)",
+      subName: "Kho Oxford • Nhãn CEFR A1–C1 từ dữ liệu nguồn",
       desc: "5,946 từ vựng đại thiên bao la, phân tầng theo 5 đại cảnh giới tu tiên.",
       badge: "TOÀN DIỆN",
       wordsCount: 5946,
@@ -1851,7 +1851,7 @@
     {
       id: "listening_1200",
       name: "Thính Lôi Trực Điểm",
-      subName: "1200 Từ Listening Hay Viết Sai (Band 6.0 - 8.0)",
+      subName: "54 từ luyện nghe và chính tả • Bộ tuyển chọn",
       desc: "Chuyên trảm các từ có phụ âm đôi, đuôi -tion, -ment, tên đường, ngày tháng.",
       badge: "LISTENING CHUYÊN SÂU",
       wordsCount: 54,
@@ -2187,7 +2187,7 @@
     {
       id: "reading_academic",
       name: "Thánh Điển Tàng Thư",
-      subName: "Cambridge Academic Reading (Band 7.5 - 9.0)",
+      subName: "43 từ học thuật • Không quy đổi thành điểm IELTS",
       desc: "Thuật ngữ học thuật chuyên sâu về khảo cổ, vũ trụ, sinh thái và công nghệ.",
       badge: "READING HỌC THUẬT",
       wordsCount: 43,
@@ -2457,7 +2457,7 @@
     {
       id: "flashcard_srs",
       name: "Bản Mệnh Linh Từ",
-      subName: "Kho Flashcard Cá Nhân của Đạo Hữu",
+      subName: "Từ yếu và lịch ôn trên thiết bị này",
       desc: "Trảm lại những từ từng bị Tâm Ma quấy nhiễu (gõ sai trong các trận trước).",
       badge: "ÔN TẬP SRS",
       wordsCount: 0,

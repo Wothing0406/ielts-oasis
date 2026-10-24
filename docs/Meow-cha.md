@@ -1,203 +1,148 @@
-# MASTER GAME DESIGN DOCUMENT (GDD) & KIẾN TRÚC KỸ THUẬT
-# MEOW-CHA: VẠN KIẾM QUY TÔNG (萬劍歸宗)
+# MEOW-CHA TRÀ ĐẠO — gameplay và kiến trúc hiện tại
 
-> **Hệ sinh thái:** IELTS Oasis (`ieltsoasis.site`)  
-> **Phiên bản Kiến trúc:** v9.0 (Self-Contained Character Sprite Architecture, Multi-Frame SpriteAnimator, 5-Realm Functional Combat & IELTS Mastery Roadmap)  
-> **Thể loại:** Vertical Typing Action RPG × Xianxia Roguelike Cultivation × Active Recall / Spaced Repetition (SRS)  
-> **Nền tảng:** Web Browser (PC / Laptop & Mobile iOS / Android) — 60 FPS HTML5 Canvas 2D + Web Audio Synthesizer  
-> **Nhánh GitHub Backup:** `origin/game/meowcha-cultivation`
+Phiên bản tài nguyên: `2026.10.24.2`. Nhánh làm việc: `game/meowcha-cultivation`.
 
----
+## Engine thực thi
 
-## MỤC LỤC
-1. [GIÁ TRỊ HỌC TIẾNG ANH / IELTS HIỆN TẠI CỦA GAME](#1-giá-trị-học-tiếng-anh--ielts-hiện-tại-của-game)
-2. [KIẾN TRÚC THƯ MỤC SPRITE TỰ CHỦ MỚI (`sprites/ v3.0`)](#2-kiến-trúc-thư-mục-sprite-tự-chủ-mới-sprites-v30)
-3. [HỆ THỐNG 5 ĐẠI CẢNH GIỚI, THẦN THÔNG BỊ ĐỘNG & BỘ SPRITE ĐỘC BẢN](#3-hệ-thống-5-đại-cảnh-giới-thần-thông-bị-động--bộ-sprite-độc-bản)
-4. [KIẾN TRÚC MODULAR ENGINE (`frontend/public/meowcha/js/`)](#4-kiến-trúc-modular-engine-frontendpublicmeowchajs)
-5. [ĐỀ XUẤT NÂNG CẤP HỌC THUẬT ("HỌC TIẾNG ANH TU TIÊN" CHUYÊN SÂU)](#5-đề-xuất-nâng-cấp-học-thuật-học-tiếng-anh-tu-tiên-chuyên-sâu)
-6. [LỘ TRÌNH SẢN PHẨM ĐẠT 1.000+ NGƯỜI DÙNG (PRODUCT & GROWTH ROADMAP)](#6-lộ-trình-sản-phẩm-đạt-1000-người-dùng-product--growth-roadmap)
+`frontend/app/games/meowcha/page.tsx` mở iframe cùng origin tới
+`/meowcha/index.html`. Engine Canvas nằm trong `frontend/public/meowcha/js/`;
+các component React Meowcha cũ và Unity bridge là phần tương thích, không phải
+đường thực thi chính được sửa trong đợt này.
 
----
+- `main.js`: vòng lặp, vòng đời trận, input vật lý, sinh từ và kết nối các module.
+- `core/GameState.js`: trạng thái chuẩn, mã trận, bộ đếm tự gõ/hỗ trợ và đồng hồ.
+- `core/SaveSystem.js`: save từng slot/pháp môn, lịch ôn và hàng đợi đồng bộ.
+- `core/BattleLayout.js`: đo HUD/bàn phím, vị trí nhân vật và đường va chạm chung.
+- `combat/TypingEngine.js`: chọn mục tiêu, nhập ký tự, thiên phú và phản hồi từ.
+- `combat/BreakthroughFlow.js`: boss ba từ theo ngữ cảnh, đột phá và chọn thiên phú.
+- `ui/UIManager.js`: sảnh, modal, bảng luyện tập, thống kê, chứng đạo PNG.
+- `backend/meowcha_routes.py` và `backend/meowcha_integrity.py`: API vocab/save/run.
 
-## 1. GIÁ TRỊ HỌC TIẾNG ANH / IELTS HIỆN TẠI CỦA GAME
+## Quy tắc input và chỉ số
 
-Hiện tại, **Meow-Cha: Vạn Kiếm Quy Tông** giúp người học rèn luyện **4 kỹ năng nền tảng** thông qua cơ chế phản xạ gõ phím áp lực thời gian:
+| Input | Hành vi |
+| --- | --- |
+| A–Z | Chung một đường xử lý cho bàn phím vật lý và ảo; không ghi lượt gõ khi không có mục tiêu, khi pause hoặc đang đột phá |
+| Space | Chọn mục tiêu kế tiếp; không tự nhập chữ, không tính lỗi |
+| Backspace | Giải thích rằng chữ đúng đã xuất kiếm; chữ sai không được thêm vào từ nên không cần xóa |
+| Tab / Thính Âm | Nghe lại từ hiện tại, không tính lượt gõ |
+| Escape | Tạm dừng/tiếp tục qua giao diện |
+| Phím hệ thống, tổ hợp Ctrl/Alt/Meta, key-repeat | Bỏ qua trong bộ đếm gõ |
 
-1. **Chính tả Phản xạ & Trí nhớ Cơ bắp (Orthographic Muscle Memory):**
-   - Trong bài thi IELTS Listening & Writing, người học rất dễ mất điểm đáng tiếc vì viết sai chính tả các từ dài có phụ âm kép (*accommodate, mediterranean, conscientious, resilience*).
-   - Việc nhìn từ và gõ chính xác từng ký tự dưới áp lực thiên thạch rơi giúp não bộ ghi nhớ cấu trúc chữ cái tự động vào trí nhớ cơ bắp (Procedural Memory).
-2. **Đa Giác Quan: Nhìn Chữ + Gõ Phím + Nghe Phát Âm IPA (`IPAToast.js`):**
-   - Ngay khi trảm vỡ một thiên thạch từ vựng, hệ thống lập tức bật thẻ **IPA Toast** hiển thị: **Từ vựng + Phiên âm quốc tế IPA + Loại từ (POS) + Nghĩa tiếng Việt** và tự động đọc phát âm chuẩn bản xứ (`SpeechSynthesisUtterance` `en-US`).
-   - Kết nối trực tiếp 3 kênh: **Thị giác (Chữ viết) → Vận động (Gõ phím) → Thính giác (Phát âm IPA)**.
-3. **Phân Tầng Từ Vựng Oxford 5000 Theo Cảnh Giới Tu Tiên (`VocabLoader.js`):**
-   - Từ vựng được chia theo đúng tiến trình đột phá từ cơ bản đến học thuật chuyên sâu:
-     - **Luyện Khí Kỳ (Band 4.0–5.0):** Từ vựng nền tảng CEFR A2–B1.
-     - **Trúc Cơ Kỳ (Band 5.5–6.0):** Từ vựng giao tiếp & học thuật B1–B2.
-     - **Kim Đan Kỳ (Band 6.5–7.0):** Từ vựng học thuật C1 (Reading / Writing Task 2).
-     - **Nguyên Anh & Độ Kiếp Kỳ (Band 7.5–9.0):** Từ vựng C1–C2 nâng cao.
-4. **Sổ Tay Linh Từ ("Tàng Kinh Các" / Vocabulary Vault):**
-   - Toàn bộ các từ người chơi đã trảm thành công hoặc để lọt mất máu đều được lưu vào **Linh Từ Đã Thu Thập (`collectedWords`)**, cho phép tra cứu lại nghĩa, IPA và nghe lại phát âm bất cứ lúc nào tại Sảnh Chờ.
-5. **Bộ Gõ Tiếng Việt Không Lỗi (`IME Safe Interceptor`):**
-   - Bắt phím ở tầng vật lý (`event.code`), giúp người học Việt Nam đang bật sẵn Unikey/EVKey vẫn gõ từ tiếng Anh mượt mà mà không bị biến dạng chữ (`w` thành `ư`, `as` thành `á`).
+WPM = số phím **người chơi tự gõ đúng** / 5 / số phút hoạt động.
+Đồng hồ không tính pause, sảnh, thời gian chọn thiên phú hoặc lúc đang đột phá.
+Thời gian thực của một frame chậm vẫn được tính, dù bước vật lý bị giới hạn.
+Accuracy = phím đúng / tổng phím thực nhập; giá trị 0% được giữ nguyên.
 
----
+`humanWords`, `assistedWords`, `assistedKeystrokes` và `assisted` tách phần
+trợ giúp của nội tại/thiên phú. Các chữ tự động không làm tăng WPM/accuracy.
+Modal nghỉ và kết thúc trận có thống kê; chứng đạo dùng đúng số liệu ván hiện tại,
+không suy ra số từ hoặc cảnh giới từ kỷ lục điểm.
 
-## 2. KIẾN TRÚC THƯ MỤC SPRITE TỰ CHỦ MỚI (`sprites/ v3.0`)
+## Thiên phú
 
-Toàn bộ tài nguyên hình ảnh tại `frontend/public/meowcha/sprites/` đã được tái cấu trúc triệt để thành **3 phân khu chuẩn hóa** (`characters/`, `asteroids/`, `maps/`) cùng [`manifest.json`](file:///c:/Users/QuangDev/Downloads/Projects/web/ielts-oasis/frontend/public/meowcha/sprites/manifest.json). Mỗi nhân vật sở hữu thư mục độc lập chứa đầy đủ **Tư thế (`poses/`), Hoạt ảnh đa frame (`sheets/`), Vũ khí & Đạn (`weapon/`), Tia bắn (`beam/`) và Hiệu ứng bắn ra / nổ / chém (`vfx/`)**:
+| Thiên phú | Hiệu lực |
+| --- | --- |
+| Cố Bản Bồi Nguyên | +25 HP tối đa và hồi đầy |
+| Định Thần Thanh Tâm | Hệ số rơi ×0,75, cộng dồn có sàn 0,3 |
+| Nhất Kiếm Phân Thần | +35% cơ hội trảm thêm một ma thạch thường, tối đa 100%; nếu chỉ có một ma thạch thì giữ một lượt cho quả tiếp theo |
+| Thần Niệm Tỏa Định | +0,5 hệ số Tu Vi, tối đa ×3; gõ sai vẫn bị ghi nhận để học nhưng không gây hình phạt tâm ma |
+| Kim Chung Hộ Thể | +2 lần hấp thụ sát thương; lưu chính xác số khiên còn lại |
+| Vạn Kiếm Tự Động Trận | Mỗi ba từ người chơi tự hoàn thành có một lượt trảm hỗ trợ; không tạo chuỗi tự kích hoạt, không bỏ qua hộ thuẫn boss |
 
-```text
-frontend/public/meowcha/sprites/
-├── manifest.json                        # Registry trung tâm quản lý toàn bộ 305 đường dẫn sprite
-├── characters/
-│   ├── realm0_qi_refining/              # Cảnh 0: Luyện Khí Kỳ — Linh Trà Đạo Miêu
-│   │   ├── animation.json               # Metadata FPS, số frame & đường dẫn của Cảnh 0
-│   │   ├── poses/                       # 5 ảnh tư thế đơn (idle, attack, ultimate, hurt, defeated)
-│   │   ├── sheets/                      # 5 sprite sheet đa frame 4-frame (idle_sheet..defeated_sheet)
-│   │   ├── weapon/                      # sword.png, sword_sheet.png, projectile.png, projectile_sheet.png
-│   │   ├── beam/                        # beam.png, beam_sheet.png (Thanh Trúc Phong Tuyến)
-│   │   └── vfx/
-│   │       ├── muzzle.png               # Hiệu ứng bắn ra tại đầu kiếm (Thanh Trúc Phát Chiêu)
-│   │       ├── muzzle_sheet.png         # Hoạt ảnh bắn ra 4-frame
-│   │       ├── hit.png                  # Hiệu ứng nổ khi trúng thiên thạch (Thanh Trúc Linh Bạo)
-│   │       ├── hit_sheet.png            # Hoạt ảnh nổ 4-frame
-│   │       ├── slash.png                # Vết chém vũ khí (Thanh Trúc Trảm)
-│   │       └── slash_sheet.png          # Hoạt ảnh vết chém 4-frame
-│   │
-│   ├── realm1_foundation/               # Cảnh 1: Trúc Cơ Kỳ — Thanh Vân Ngự Kiếm Miêu
-│   │   └── (poses/, sheets/, weapon/, beam/, vfx/{muzzle,hit,slash} + animation.json)
-│   ├── realm2_golden_core/              # Cảnh 2: Kim Đan Kỳ — Bát Quái Kim Đan Miêu
-│   │   └── (poses/, sheets/, weapon/, beam/, vfx/{muzzle,hit,slash} + animation.json)
-│   ├── realm3_nascent_soul/             # Cảnh 3: Nguyên Anh Kỳ — Nguyên Anh Đại Năng
-│   │   └── (poses/ + chibi_companion.png, sheets/, weapon/, beam/, vfx/{muzzle,hit,slash} + animation.json)
-│   └── realm4_tribulation/              # Cảnh 4: Độ Kiếp Kỳ — Vạn Kiếm Chí Tôn
-│       └── (poses/, sheets/, weapon/, beam/, vfx/{muzzle,hit,slash} + animation.json)
-│
-├── asteroids/                           # Thư mục Thiên Thạch Rơi Xuống
-│   ├── ice.png                          # Hàn Băng Thạch (FROST)
-│   ├── fire.png                         # Hỏa Diệm Tinh Thạch (FIRE)
-│   ├── void.png                         # Hư Không Ám Thạch (VOID)
-│   └── thunder.png                      # Thiên Lôi Thạch (THUNDER)
-│
-└── maps/                                # Thư mục Map, Bối Cảnh & Hiệu Ứng Môi Trường
-    ├── bg_study_sanctuary.jpg           # Động phủ tu luyện 16-bit
-    ├── mystic_cloud.png                 # Linh vân / chướng khí trôi ngang
-    ├── tea_explosion.png                # Vụ nổ linh trà cổ điển
-    └── impact_burst_sheet.png           # Hoạt ảnh nổ môi trường 4-frame
-```
+Các hiệu ứng dùng `state.talents` làm nguồn chuẩn và còn hiệu lực sau load save.
 
----
+## Pháp môn và cảnh giới
 
-## 3. HỆ THỐNG 5 ĐẠI CẢNH GIỚI, THẦN THÔNG BỊ ĐỘNG & BỘ SPRITE ĐỘC BẢN
+DIRECT luyện phản xạ, CLOZE luyện nhớ chính tả dựa trên nghĩa, AUDIO luyện nghe
+chép chính tả. AUDIO che từ chưa gõ, dùng lại cùng bộ xử lý và nút nghe lại.
+Boss có ba lớp từ gần nghĩa, mỗi từ có nghĩa theo ngữ cảnh và câu ví dụ; không
+khẳng định các từ thay thế được cho nhau trong mọi câu. Nội dung ôn boss xuất hiện
+khi chọn thiên phú.
 
-Không còn tình trạng các nhân vật cấp cao chỉ dùng chung hiệu ứng màu mè — mỗi cảnh giới hiện có **cơ chế chiến đấu thực chiến riêng biệt** tác động trực tiếp lên thiên thạch, tốc độ rơi và số ký tự cần gõ:
+| Cảnh giới | Tu Vi tối thiểu | Từ tối thiểu | Nguồn từ mở thêm |
+| --- | ---: | ---: | --- |
+| Luyện Khí Kỳ | 0 | 0 | Oxford A1–A2 |
+| Trúc Cơ Kỳ | 2.000 | 15 | Oxford B1 |
+| Kim Đan Kỳ | 6.000 | 40 | Oxford B2 |
+| Nguyên Anh Kỳ | 14.000 | 85 | Oxford B2–C1 |
+| Độ Kiếp Kỳ | 30.000 | 150 | Ôn tổng hợp A1–C1 |
 
-| Cảnh Giới | Đạo Hiệu | Vũ Khí & Đạn (`weapon/`) | Tia Bắn (`beam/`) | Hiệu Ứng Bắn Ra & Nổ (`vfx/`) | Thần Thông Bị Động Thực Chiến |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **0. Luyện Khí Kỳ** | **Linh Trà Đạo Miêu** | Thanh Trúc Linh Kiếm & Kiếm Khí Lá Trúc | **Thanh Trúc Phong Tuyến** (Lục quang dây trúc) | **Thanh Trúc Phát Chiêu** / **Thanh Trúc Linh Bạo** | **Trúc Phong Trì Hoãn:** Mỗi phím gõ đúng làm chậm thiên thạch đang khóa **-22% tốc độ rơi** trong `2.8s`. |
-| **1. Trúc Cơ Kỳ** | **Thanh Vân Ngự Kiếm Miêu** | Thanh Ngọc Song Kiếm & Hàn Băng Song Kiếm Khí | **Hàn Băng Song Kiếm Tuyến** (Xoắn kép băng tinh) | **Hàn Băng Phát Chiêu** / **Hàn Băng Tinh Bạo** | **Song Kiếm Hợp Bích:** Mỗi **6 phím đúng** phóng kiếm thứ 2 tự động chém thêm **+1 ký tự** & đẩy lùi thiên thạch `22px`. |
-| **2. Kim Đan Kỳ** | **Bát Quái Kim Đan Miêu** | Thái Dương Kim Kiếm & Kim Liên Phượng Hoàng | **Kim Đan Nhật Viêm Trụ** (Đài sen & vòng nhật luân) | **Kim Liên Phát Chiêu** / **Kim Liên Nhật Bạo** | **Kim Liên Bạo Phá:** Mỗi **5 phím đúng** kích nổ Kim Liên tự chém **+1 ký tự**, cộng thêm điểm Tu Vi & đẩy lùi `16px`. |
-| **3. Nguyên Anh Kỳ** | **Nguyên Anh Đại Năng** | Tử Điện Thần Kiếm & Tử Điện Lôi Kích | **Cửu Thiên Tử Điện Mạch** (Hồ quang lôi điện tím) | **Tử Điện Phát Chiêu** / **Cửu Thiên Tử Điện Bạo** | **Nguyên Anh Hộ Đạo:** Mỗi **4 phím đúng** giáng thiên lôi **đóng băng thiên thạch `0.75s`**; linh thể Chibi bên vai trái tự động bắn phụ trợ chém thêm **+1 ký tự**. |
-| **4. Độ Kiếp Kỳ** | **Vạn Kiếm Chí Tôn** | Chân Long Đế Kiếm & Đầu Rồng Chân Long | **Chân Long Đế Quang Mạch** (Đầu rồng phun kim hỏa) | **Chân Long Phát Chiêu** / **Chân Long Đế Viêm Bạo** | **Chân Long Phệ Thiên:** Mỗi **4 phím đúng** triệu hồi Chân Long **tự động nuốt trọn +2 ký tự**, đẩy lùi thiên thạch `32px` và tăng `+50%` điểm Tu Vi. |
+Cần vượt boss để đột phá. Các ngưỡng trên cũng giới hạn cảnh giới API có thể nhận.
+Nhãn CEFR được giữ từ dữ liệu nguồn; bản ghi SQL cũ không có nhãn thì trả `null`.
+Không suy CEFR hay điểm IELTS từ độ dài của từ.
 
----
+`oxford_5000` dùng dữ liệu Oxford có sẵn và fallback JSON trên thiết bị.
+ID cũ `listening_1200` được giữ để tương thích save nhưng bộ tuyển chọn thực tế có
+**54 từ**; `reading_academic` có **43 từ**. Chúng không phải chứng nhận điểm IELTS.
+Độ dài chỉ là giới hạn ký tự chơi được; CEFR/kinh quyển chọn nguồn từ. Kinh quyển
+chuyên biệt không bị kho Oxford thay thế ở các cảnh giới cao.
 
-## 4. KIẾN TRÚC MODULAR ENGINE (`frontend/public/meowcha/js/`)
+## Ôn tập từ yếu
 
-Toàn bộ logic vận hành game được phân tách thành các module chuyên biệt:
+`flashcard_srs` dùng lịch ôn cục bộ: `nextReviewAt`, `intervalDays`, `mastery`,
+`lastReviewed` và 20 kết quả gần nhất. Đúng không hỗ trợ: 1 ngày, 2 ngày, 4 ngày…
+tối đa 90 ngày. Sai: đặt lại mức thành thạo và ôn sau một phút. Từ đến hạn được ưu
+tiên; có thể ôn sớm các từ yếu nếu chưa có từ đến hạn. Không thêm từ mẫu giả vào
+danh sách cá nhân. Không POST trùng bản ghi vào kho Vocabulary sau mỗi lỗi.
 
-```text
-frontend/public/meowcha/js/
-├── data/
-│   ├── RealmsData.js           # Chỉ số 5 cảnh giới (máu, tu vi, tỷ lệ rơi, tốc độ)
-│   ├── WordDecks.js            # Kho từ vựng Oxford 5000 & 4 Đại Ngọc Giản Tàng Kinh Các
-│   ├── TalentsData.js          # Hệ thống thiên phú khi đột phá
-│   └── SpeechesData.js         # Khẩu quyết tiên đạo & câu thoại miêu tiên
-│
-├── core/
-│   ├── GameState.js            # Quản lý trạng thái phiên chơi (tu vi, máu, activeDeckId, gameMode)
-│   ├── SaveSystem.js           # Hệ thống 3 ngọc giản lưu trữ độc lập
-│   ├── AudioManager.js         # Bộ tổng hợp âm thanh Web Audio API cổ phong
-│   ├── SpriteAnimator.js       # Engine hoạt ảnh đa frame 60 FPS
-│   └── VocabLoader.js          # Nạp từ vựng linh hoạt theo Deck và Cảnh giới
-│
-├── entities/
-│   ├── CatCultivator.js        # Thực thể mèo tiên, vị trí, tư thế, đài sen & thú cưng
-│   ├── AsteroidManager.js      # Ma thạch 3D, Active Recall Cloze masking & bảng nghĩa tiếng Việt
-│   └── ProjectileSystem.js     # Tia năng lượng, phi kiếm, muzzle firing & đạn bay
-│
-├── combat/
-│   ├── TypingEngine.js         # Bắt phím IME-safe, tính WPM, combo, tính sát thương
-│   └── BreakthroughFlow.js     # Xử lý độ kiếp thiên kiếp sấm sét & mở thiên phú
-│
-├── effects/
-│   ├── ParticleEngine.js       # Hạt linh khí, tàn tro, sao băng
-│   ├── RealmVFX.js             # Hiệu ứng kiếm trận đặc thù 5 cảnh giới
-│   └── FloatingText.js         # Chữ sát thương, bạo kích, tu vi bay lên
-│
-└── ui/
-    ├── XianxiaIcons.js         # Thư viện SVG cổ phong (thay thế triệt để 100% emojis)
-    ├── UIManager.js            # Điều khiển HUD, Sảnh Chờ, Tàng Kinh Các & Modals
-    ├── IPAToast.js             # Thẻ hiển thị từ vựng, phiên âm IPA & Web Speech API
-    ├── VirtualKeyboard.js      # Bàn phím phù thạch khảm ngọc cho Mobile & PC
-    └── UnityBridge.js          # Cầu nối đồng bộ WebGL 2D (tùy chọn)
-```
+Lịch ôn này nằm trên thiết bị, chưa đồng bộ hai chiều với hệ thống SRS toàn trang.
+Không mô tả nó như một hệ thống SRS toàn nền tảng đã hoàn thiện.
 
----
+## Save và dữ liệu người chơi
 
-## 5. HỆ THỐNG PHÁP MÔN TU LUYỆN & TÀNG KINH CÁC ĐÃ HOÀN TẤT (PEDAGOGY UPGRADE)
+Mỗi slot chứa riêng DIRECT/CLOZE/AUDIO, HP, khiên, thiên phú, kinh quyển, runId,
+đồng hồ và bộ đếm. Xóa/trùng tu một pháp môn giữ hai pháp môn còn lại. Bản xóa có
+timestamp được giữ để save cũ không sống lại. Save v3 cũ vẫn được nhập; save không
+có đồng hồ/mã trận được xem là luyện tập hỗ trợ.
 
-Hệ thống đã nâng cấp toàn diện cơ chế học thuật từ **Copy-Typing thuần túy** thành **Học Tiếng Anh Chủ Động Đa Phương Thức**:
+LocalStorage được phân vùng theo người dùng. Save tức thời cục bộ; gom các lần
+upload trong khoảng 5 giây, lưu cờ bẩn để thử lại sau reload, gửi lại khi online.
+Cloud snapshot không ghi đè phiên bản có timestamp mới hơn: trả 409 và giữ bản
+cục bộ. Chỉ tài khoản xác thực được dùng cloud save; khách vẫn chơi/lưu trên máy.
 
-1. **Pháp Môn 1 — "Ngộ Đạo Thông Linh" (Active Recall Cloze Mode):**
-   - Thiên thạch ma thạch chỉ hiển thị ký tự đầu/cuối, toàn bộ ký tự ở giữa bị ẩn bằng dấu phù ấn gạch dưới `_` (`[ R E _ _ _ _ E N T ]`).
-   - Phía dưới ma thạch hiển thị bảng gỗ mộc bản viền chu sa chứa **Nghĩa Tiếng Việt chính xác** của từ vựng.
-   - Người học buộc phải vận dụng **Active Recall (tái hiện từ vựng từ trí nhớ dài hạn)** dựa trên nghĩa tiếng Việt để gõ từng ký tự. Khi gõ đúng, phù ấn bích ngọc bừng sáng rực rỡ `#34D399`.
-2. **Pháp Môn 2 — "Trực Diện Trảm Ma" (Direct Typing Mode):**
-   - Chế độ gõ toàn diện toàn bộ ký tự từ vựng dưới áp lực thời gian để rèn luyện tốc độ WPM và phản xạ chính tả cơ bắp (Muscle Memory).
-3. **Pháp Môn 3 — "Thính Lôi Biện Âm" (Audio Dictation Mode):**
-   - Ma thạch phát âm thanh bản xứ qua Web Speech API kèm bảng phiên âm IPA (`Tiên Âm: /.../`), rèn luyện khả năng nhận diện âm thanh và chính tả chuẩn xác cho IELTS Listening Section 1 & 4.
-4. **Tàng Kinh Các (4 Chuyên Đề Từ Vựng IELTS Chuyên Sâu):**
-   - **`oxford_5000` (Cửu Chuyển Hỗn Độn Đan):** Toàn tập 5,900+ từ vựng cốt lõi CEFR A1-C1 phân theo 5 cảnh giới tu tiên.
-   - **`listening_1200` (Thính Lôi Trực Điểm):** 1,200 từ vựng Listening hay bẫy chính tả (*accommodation, mediterranean, conscientious, entrepreneur*).
-   - **`reading_academic` (Thánh Điển Tàng Thư):** Cambridge Reading Academic Band 7.5+ (*biodiversity, archaeological, stratification, photosynthesis*).
-   - **`flashcard_srs` (Bản Mệnh Linh Từ):** Sổ tay tự động gom các từ gõ sai để tôi luyện theo phương pháp lặp lại ngắt quãng (SRS).
-5. **Chuẩn Mực Giao Diện Cổ Phong — Không Sử Dụng Emoji Đơn Giản:**
-   - Triệt tiêu 100% các icon emoji thông thường (`⚔️`, `📜`, `✨`, `🗑️`, `⚡`, `🧧`, `✕`, `★`, `✓`).
-   - Thay thế bằng hệ thống vector SVG cổ điển sắc nét từ `XianxiaIcons.js`: Móng Mèo Tiên, Phi Kiếm Thanh Vân, Cuộn Trục Ngọc Giản, Đài Sen Kim Đan, Lôi Ấn Cửu Thiên, Lư Đồng Phong Ấn Hóa Vàng, và Dấu Triện Chu Sa.
-6. **Đại Yêu Thú Boss "Tâm Ma Khảo Nghiệm" (IELTS Synonym Boss Fight):**
-   - Khi người chơi tích lũy đủ Tu Vi để đột phá cảnh giới, Đại Yêu Thú Boss Tâm Ma sẽ giáng thế mang theo một từ gốc IELTS (ví dụ: `DIFFICULT`, `IMPORTANT`, `DANGEROUS`, `CHANGE`). Người chơi phải trảm vỡ lần lượt **3 lớp hộ thuẫn tương ứng với 3 từ đồng nghĩa Band 7.5+** (ví dụ: `ARDUOUS` -> `FORMIDABLE` -> `DEMANDING`) để phá giáp, tiêu diệt Tâm Ma và chính thức phi thăng cảnh giới mới.
-7. **Trình Xuất "Chứng Đạo Đồ" (Shareable Cultivation Certificate PNG Generator):**
-   - Tích hợp công cụ Canvas 2D xuất thẻ bài tổng kết **Chứng Đạo Kim Đồ (1200×630px Canvas PNG)** đạt chuẩn tỷ lệ chia sẻ mạng xã hội (Facebook, Twitter/X, Discord) hiển thị chân dung Miêu Tiên theo cảnh giới, Đạo hiệu, Điểm Tu Vi, Kiếm tốc WPM, Số từ IELTS đã trảm, Dấu triện Chu Sa và liên kết tỷ thí. Hỗ trợ tải ảnh PNG trực tiếp và sao chép link thách đấu.
-8. **Đồng Bộ Hai Chiều Với Kho Flashcard SRS của IELTS Oasis:**
-   - Mọi từ vựng gõ sai liên tiếp hoặc để thiên thạch chạm đáy đan điền đều tự động được ghi nhận vào kho `meowcha_srs_weaknesses` (đồng bộ ngầm lên `/api/vocabulary` với tag `#meowcha_weakness`). Bộ đề **Bản Mệnh Linh Từ (`flashcard_srs`)** trong Tàng Kinh Các sẽ ưu tiên lấy danh sách này để người chơi tôi luyện lặp lại ngắt quãng (Spaced Repetition).
+API mới:
+- `POST /api/meowcha/runs`: đăng ký UUID của trận với tài khoản, pháp môn, kinh quyển.
+- `POST /api/meowcha/runs/complete`: kết thúc trận và cộng hồ sơ trong cùng giao dịch.
+- `POST /api/meowcha/profile/sync` và `POST /leaderboard`: alias dùng cùng hợp đồng kết thúc trận.
+- `GET /api/meowcha/leaderboard`: lọc `game_mode`, `deck_id`, `assisted`; mỗi user một vị trí.
+- `GET /api/meowcha/leaderboard?game_mode=LEGACY`: dữ liệu bảng cũ, được đánh dấu chưa xác minh.
+- `GET /api/meowcha/save-snapshots`, `POST /save-snapshots/{slot}`: snapshot đầy đủ ba pháp môn.
 
----
+Kết thúc trận kiểm tra quyền sở hữu, giới hạn bộ đếm, thời gian server, tốc độ gõ,
+điểm và ngưỡng cảnh giới. Server tự tính WPM/accuracy; tên/avatar lấy từ tài khoản,
+không tìm người chơi bằng tên do client gửi. UUID và ghi có điều kiện trong DB
+chặn cộng lặp Tu Vi, số từ, số trận, linh thạch và battle log. Kết quả chưa gửi
+được nằm trong hàng đợi bền vững theo tài khoản, thử lại cùng UUID.
 
-## 6. LỘ TRÌNH SẢN PHẨM ĐẠT 1.000+ NGƯỜI DÙNG (PRODUCT & GROWTH ROADMAP)
+**Giới hạn:** đây là bảng luyện tập được kiểm tra tính hợp lý, không phải chống
+gian lận tuyệt đối. Client vẫn mô phỏng trận; để xếp hạng có giải thưởng cần server
+cấp chuỗi từ/seed, xác minh từng sự kiện và phát lại kết quả phía server.
+Trận offline nhập lại hoặc không có phiên server gốc được phân loại hỗ trợ.
 
-Để đưa **Meow-Cha: Vạn Kiếm Quy Tông** từ một mini-game thành một **Product giữ chân 1.000+ người dùng hoạt động (MAU/DAU)**, cần triển khai 4 trụ cột Product Growth:
+## Mỹ thuật và responsive
 
-### 6.1. Vòng Lặp Giữ Chân Hàng Ngày (Daily Retention Loop — D1 / D7 / D30)
-- **Nhiệm Vụ Tu Luyện Hàng Ngày ("Nhật Thường Tông Môn"):**
-  - *Trảm 30 Linh Từ hôm nay*, *Đạt chuỗi Combo 50 không sai*, *Ôn tập 10 Tâm Ma Từ Vựng cũ*. Hoàn thành nhận **Linh Thạch** và giữ chuỗi **Streak Tu Luyện (Đạo Tâm Liên Tiếp)**.
-- **Thử Thách "Bí Cảnh Hàng Ngày" (Daily Seed Challenge):**
-  - Mỗi ngày toàn server có chung 1 bộ 25 từ IELTS theo chủ đề (*Environment, Technology, Education, Health*). Mọi người chơi thi đấu trên cùng 1 seed để tranh ngôi **Đệ Nhất Kiếm Tôn Trong Ngày**.
+Xem [kiểm toán asset](meowcha-art-audit.md). Giữ nền/sprite pixel, tái sử dụng
+ngọc bội có sẵn, thêm bệ đá có pháp trận do công cụ tạo ảnh sinh ra. Không blur
+sprite để giả HD. Giảm decor cạnh tranh, thống nhất trạng thái focus/pressed,
+tôn trọng reduced-motion. Bàn phím mặc định bật trên thiết bị cảm ứng và có nút
+bật thủ công trên PC. Màn ngang thấp tách bàn phím sang bên phải; canvas/nhân vật/
+đường va chạm dùng cùng kích thước đo được.
 
-### 6.2. Tính Năng Xã Hội & Lan Truyền Tự Nhiên (Viral & Social Mechanics)
-- **Thẻ "Chứng Đạo Đồ" Chia Sẻ Mạng Xã Hội (Shareable Cultivation Card):**
-  - Khi người chơi Đột Phá Cảnh Giới hoặc lập kỷ lục WPM, xuất ngay 1 tấm ảnh Pixel Art cực đẹp (in hình nhân vật Miêu Tiên của họ, Cảnh giới, Tốc độ gõ WPM, Lượng từ IELTS Band 7.0+ đã trảm, kèm mã QR về `ieltsoasis.site`) để khoe lên Facebook Group IELTS / TikTok / Discord.
-- **Tông Môn Đại Chiến & Tỷ Thí Đạo Hữu (1v1 Typing Duel / Sect Leaderboard):**
-  - Cho phép tạo phòng thách đấu gõ từ vựng IELTS thời gian thực 1v1 (qua WebSocket) với bạn bè: Ai gõ xong từ nhanh hơn sẽ phóng thiên thạch sang màn hình đối phương.
+## Kiểm tra và triển khai
 
-### 6.3. Mở Rộng Kho Nội Dung & Tùy Biến (Meta-Progression & Monetization/Engagement)
-- **Chọn Bộ Đề Theo Mục Tiêu Thi Thật (Custom Deck Selector):**
-  - Cho phép người chơi trước khi vào trận chọn đúng bộ từ mình cần: *IELTS Listening 1200 Words often misspelled*, *Cambridge IELTS 18–19 Reading Academic*, *Writing Task 2 Band 8.0 Collocations*, hoặc *Chính bộ Flashcard cá nhân của tôi*.
-- **Bảo Khố Pháp Bảo & Linh Thú (Cosmetic Shop bằng Linh Thạch học tập):**
-  - Dùng điểm Tu Vi / Linh Thạch kiếm được từ việc học để mở khóa các ngoại trang phi kiếm, hiệu ứng đài trà, hoặc danh hiệu độc quyền trên Bảng Phong Thần.
+- Engine: `cd frontend; npm run test:meowcha`.
+- API riêng biệt: `python -m unittest discover -s backend/tests -p test_meowcha_integrity.py -v`.
+- Build/lint: `cd frontend; npm run build`, `npm run lint`.
+- Preview dùng SQLite trong RAM: `python -m uvicorn meowcha_preview:app --app-dir backend/tests --host 127.0.0.1 --port 8124`, mở `/preview/meowcha`.
+- Kết quả cụ thể và giới hạn xác minh: [task và nghiệm thu](meowcha-hardening-tasks.md).
 
-### 6.4. Hạ Tầng Kỹ Thuật Cho 1.000+ Concurrent Users (Production Engineering)
-- **Chống Gian Lận Bảng Phong Thần (Server-Side Anti-Cheat Validation):**
-  - Xác thực WPM tối đa hợp lệ, thời gian phiên chơi (`session_duration`), và chữ ký HMAC/Token khi gửi điểm lên `/api/meowcha/leaderboard` để ngăn chặn việc gửi điểm ảo bằng script.
-- **Tối Ưu Tải Tài Nguyên (Progressive Asset Preloading & WebP/Caching):**
-  - Chỉ tải trước Cảnh giới hiện tại của người chơi (`realmX`) khi vào trận (`< 500KB`), còn các cảnh giới sau tải ngầm (Lazy Preload) trong lúc chơi để thời gian vào game trên 4G Mobile đạt `< 0.8 giây`.
+Migration cộng thêm hai bảng `meowcha_runs`, `meowcha_save_snapshots`, không
+sửa/xóa bảng cũ: `python backend/migrations/meowcha_runs_v1.py`. Startup API cũng
+tạo hai bảng nếu thiếu. Triển khai backend/migration trước frontend; client cũ
+thiếu runId sẽ nhận 422 khi gửi điểm, nhưng các save và leaderboard cũ vẫn được giữ.
+Đợt công việc này không chạy migration hay triển khai trên dữ liệu production.
+
+Cache: cùng release `2026.10.24.2` cho iframe và tất cả CSS/JS trong HTML; test
+kiểm tra các phiên bản thống nhất. Iframe đọc login cùng origin, không đặt bearer
+token hay hồ sơ người dùng vào URL.

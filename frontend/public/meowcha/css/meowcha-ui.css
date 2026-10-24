@@ -7876,8 +7876,8 @@ body.platform-mobile #virtualKeyboardContainer {
 }
 
 /* 4. KHÓA CỨNG BÀN PHÍM ẢO TRÊN PC: KHÔNG BAO GIỜ TỰ HIỆN TRÊN DESKTOP */
-html.platform-pc #virtualKeyboardContainer,
-body.platform-pc #virtualKeyboardContainer,
+html.platform-pc #virtualKeyboardContainer:not(.user-force-opened),
+body.platform-pc #virtualKeyboardContainer:not(.user-force-opened),
 .platform-pc #virtualKeyboardContainer:not(.user-force-opened) {
   display: none !important;
   visibility: hidden !important;

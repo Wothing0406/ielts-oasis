@@ -39,6 +39,7 @@
         word: word,
         ipa: firstShield.ipa,
         meaning: firstShield.meaning,
+        example: firstShield.example,
         isCloze: false,
         isAudio: false,
         x: cW / 2,
@@ -232,6 +233,8 @@
       const curMode = (appState && appState.gameMode) || "DIRECT";
 
       const asteroid = {
+        cefr: wordItem.cefr || wordItem.level || null,
+        example: wordItem.example || '',
         id: Date.now() + Math.random(),
         word: word,
         ipa: wordItem.ipa || "/.../",
@@ -274,13 +277,14 @@
       return asteroid;
     }
 
-    update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth, isLightningHazard = false) {
+    update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth, isLightningHazard = false, domainSlow = 0) {
       this.time += dt;
       this.isLightningHazard = isLightningHazard;
       const cWidth = canvasWidth || this.canvasWidth || (typeof window !== "undefined" ? window.innerWidth : 800);
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
+        if (domainSlow > 0) { statusSpeedMult *= Math.max(0.2, 1.0 - domainSlow); }
         let statusSpeedMult = 1.0;
         if (ast.freezeTimer && ast.freezeTimer > 0) {
           ast.freezeTimer = Math.max(0, ast.freezeTimer - dt);

@@ -11,9 +11,9 @@
       baseWord: "DIFFICULT",
       baseMeaning: "Gian nan, khó khăn",
       shields: [
-        { word: "ARDUOUS", ipa: "/ˈɑː.dʒu.əs/", meaning: "Gian nan đầy thử thách khốc liệt" },
-        { word: "FORMIDABLE", ipa: "/ˈfɔː.mɪ.də.bəl/", meaning: "Đáng gờm, dữ dội, ghê gớm" },
-        { word: "DEMANDING", ipa: "/dɪˈmɑːn.dɪŋ/", meaning: "Đòi hỏi khắt khe, áp lực cao" }
+        { word: "CHALLENGING", ipa: "/ˈtʃæl.ɪn.dʒɪŋ/", meaning: "Khó, đòi hỏi nỗ lực (một nhiệm vụ)", example: "The task is challenging." },
+        { word: "TOUGH", ipa: "/tʌf/", meaning: "Khó thực hiện (thân mật hơn)", example: "It was a tough assignment." },
+        { word: "DEMANDING", ipa: "/dɪˈmɑːn.dɪŋ/", meaning: "Đòi hỏi nhiều công sức hoặc kỹ năng", example: "The course is demanding." }
       ]
     },
     {
@@ -22,9 +22,9 @@
       baseWord: "IMPORTANT",
       baseMeaning: "Quan trọng, cốt yếu",
       shields: [
-        { word: "CRUCIAL", ipa: "/ˈkruː.ʃəl/", meaning: "Cực kỳ then chốt, quyết định" },
-        { word: "PARAMOUNT", ipa: "/ˈpær.ə.maʊnt/", meaning: "Tối quan trọng, tối cao" },
-        { word: "IMPERATIVE", ipa: "/ɪmˈper.ə.tɪv/", meaning: "Bắt buộc, cấp thiết, không thể thiếu" }
+        { word: "CRUCIAL", ipa: "/ˈkruː.ʃəl/", meaning: "Có tính quyết định trong một tình huống", example: "Timing is crucial for success." },
+        { word: "ESSENTIAL", ipa: "/ɪˈsen.ʃəl/", meaning: "Thiết yếu, không thể thiếu", example: "Water is essential for life." },
+        { word: "VITAL", ipa: "/ˈvaɪ.təl/", meaning: "Cực kỳ quan trọng hoặc cần thiết", example: "Accurate information is vital." }
       ]
     },
     {
@@ -33,9 +33,9 @@
       baseWord: "DANGEROUS",
       baseMeaning: "Nguy hiểm, hiểm họa",
       shields: [
-        { word: "PERILOUS", ipa: "/ˈper.əl.əs/", meaning: "Hiểm nguy khôn lường, chực chờ tai họa" },
-        { word: "HAZARDOUS", ipa: "/ˈhæz.ə.dəs/", meaning: "Hiểm họa, độc hại, rủi ro cao" },
-        { word: "TREACHEROUS", ipa: "/ˈtretʃ.ər.əs/", meaning: "Trắc trở hiểm ác, nguy nan" }
+        { word: "PERILOUS", ipa: "/ˈper.əl.əs/", meaning: "Rất nguy hiểm (thường dùng với hành trình)", example: "They began a perilous journey." },
+        { word: "HAZARDOUS", ipa: "/ˈhæz.ə.dəs/", meaning: "Gây nguy hiểm (vật liệu hoặc điều kiện)", example: "Workers handle hazardous materials." },
+        { word: "RISKY", ipa: "/ˈrɪs.ki/", meaning: "Có khả năng gây tổn thất (một hành động)", example: "Driving in fog is risky." }
       ]
     },
     {
@@ -44,9 +44,9 @@
       baseWord: "CHANGE",
       baseMeaning: "Biến đổi, chuyển biến",
       shields: [
-        { word: "METAMORPHOSE", ipa: "/ˌmet.əˈmɔː.fəʊz/", meaning: "Lột xác biến hình thăng hoa" },
-        { word: "TRANSFIGURE", ipa: "/trænsˈfɪɡ.ər/", meaning: "Hóa thân rực rỡ, đổi mới linh hồn" },
-        { word: "REVOLUTIONIZE", ipa: "/ˌrev.əˈluː.ʃən.aɪz/", meaning: "Cách mạng hóa, biến đổi toàn diện" }
+        { word: "ALTER", ipa: "/ˈɔːl.tər/", meaning: "Thay đổi một phần hoặc đặc điểm", example: "We need to alter the plan." },
+        { word: "MODIFY", ipa: "/ˈmɒd.ɪ.faɪ/", meaning: "Điều chỉnh để phù hợp mục đích", example: "Modify the design to reduce costs." },
+        { word: "TRANSFORM", ipa: "/trænsˈfɔːm/", meaning: "Biến đổi lớn về dạng hoặc tính chất", example: "The project transformed the town." }
       ]
     }
   ];
@@ -62,6 +62,7 @@
       this.onShowTalentModal = null;
       this.onSpawnBoss = null;
       this.isBossEncounterActive = false;
+      this._generation = 0;
     }
 
     checkProgress(asteroidManager = null) {
@@ -113,6 +114,8 @@
     }
 
     triggerBreakthrough(newRealmIdx) {
+      const generation = this._generation;
+      const runId = this.state.runId;
       this.state.pendingBreakthrough = true;
       this.pendingRealmIdx = newRealmIdx;
       this.state.setCatState("BREAKTHROUGH", 3500);
@@ -130,13 +133,14 @@
 
       // ĐỘ TRỄ 3.5 GIÂY (3500ms) THEO ĐÚNG YÊU CẦU NGƯỜI CHƠI
       setTimeout(() => {
+        if (generation !== this._generation || runId !== this.state.runId || this.state.currentScene !== 'BATTLE' || this.state.isGameOver) return;
         this.state.realmIdx = newRealmIdx;
         this.state.pendingBreakthrough = false;
 
-        // Chọn ngẫu nhiên 3 thiên phú từ TALENT_POOL
-        const pool = [...(root.Meowcha.TALENT_POOL || [])];
-        const shuffled = pool.sort(() => Math.random() - 0.5);
-        const selectedTalents = shuffled.slice(0, 3);
+        // Sinh 3 lựa chọn Cơ Duyên Ngộ Đạo chuẩn hóa theo 4 hướng tu luyện & kỹ năng đột phá
+        const selectedTalents = (root.Meowcha && typeof root.Meowcha.generateBreakthroughChoices === "function")
+          ? root.Meowcha.generateBreakthroughChoices(this.state, targetRealm)
+          : [...(root.Meowcha.TALENT_POOL || [])].sort(() => Math.random() - 0.5).slice(0, 3);
 
         if (this.onShowTalentModal) {
           this.onShowTalentModal(selectedTalents, targetRealm);
@@ -144,9 +148,23 @@
       }, 3500);
     }
 
+    cancel() {
+      this._generation++;
+      this.isBossEncounterActive = false;
+      this.pendingRealmIdx = null;
+      this.state.pendingBreakthrough = false;
+    }
+
     selectTalent(talent) {
       if (!talent) return;
-      talent.apply(this.state);
+      if (typeof talent.apply === "function") {
+        talent.apply(this.state);
+      }
+      if (!talent.isSkill && this.state.selectedTalents) {
+        if (!this.state.selectedTalents.includes(talent.id)) {
+          this.state.selectedTalents.push(talent.id);
+        }
+      }
       this.audio.play("chime");
       this.state.setSpeech(`Đã đắc ngộ: [${talent.name}]!`, 2500);
       this.state.setCatState("IDLE");

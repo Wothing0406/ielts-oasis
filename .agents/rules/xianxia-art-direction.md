@@ -1,32 +1,28 @@
-# MANDATORY RULE: PRODUCTION-QUALITY ART DIRECTION & XIANXIA DESIGN STANDARD
+# RÀNG BUỘC MỸ THUẬT BẮT BUỘC: XIANXIA ART DIRECTION & SVG QUALITY REFACTOR
 
-Bạn là Senior Game UI Artist kiêm Art Director chuyên game Chinese Xianxia Fantasy và Senior Frontend Engineer.
-Mọi tác vụ thiết kế và code giao diện trong Meowcha Cultivation Game BẮT BUỘC tuân thủ các quy tắc sau:
+Áp dụng cho toàn bộ codebase Meow-Cha (`frontend/public/meowcha/` và `frontend/app/games/meowcha/`).
 
-## 1. PHONG CÁCH CHỦ ĐẠO & BẢNG MÀU CƠ SỞ
-- **Phong cách:** Premium Chinese Xianxia / Wuxia Fantasy Game UI (Sơn mài đỏ son, gỗ trầm tối, vàng kim cổ, ngọc bích, giấy tuyên chỉ).
-- **Màu sắc cơ sở:**
-  - Nền tối (Void Dark): `#100D12`
-  - Nền gỗ trầm (Dark Sandalwood): `#281711`
-  - Đỏ son (Imperial Cinnabar): `#761D20`
-  - Vàng kim cổ (Antique Gold): `#D4A849`
-  - Vàng sáng điểm nhấn (Gold Highlight): `#FFE49A`
-  - Ngọc bích (Spirit Jade): `#27685D`
-  - Chữ sáng: Kem ngà / Giấy tuyên chỉ (`#FFFBEB`, `#FEF3C7`)
+1. **Phân loại 3 nhóm Asset rõ ràng:**
+   - **Functional Icons:** SVG vector đơn sắc chuẩn tỉ lệ, độ dày nét nhất quán, màu theo design token.
+   - **Decorative UI Assets:** Khung, góc chạm khắc (Như Ý, Hồi Văn), huy hiệu, lệnh bài phải có hoa văn cổ phong đối xứng, đa tầng chất liệu (gỗ tử đàn, gấm thêu, chỉ vàng, chu sa).
+   - **Illustrated Game Assets:** Kiếm, đan dược, pháp bảo, bệ đứng, nhân vật phải dùng sprite pixel-art hoặc illustration/vector cao cấp.
 
-## 2. NGHIÊM CẤM GIẢI PHÁP ĐỒ HỌA SƠ SÀI
-- CẤM: Khung chỉ gồm hình chữ nhật và stroke viền vàng đơn điệu.
-- CẤM: SVG vẽ vài đường line, polygon, path ngẫu nhiên méo mó giả lập kiếm, quai rồng hay hoa văn.
-- CẤM: Cyberpunk/neon glow chói lóa, gradient mặc định phẳng lì.
-- CẤM: Emoji Unicode phóng lớn (🍵, ⚔️, 📜, ❤️, ⚡...).
-- CẤM: Đánh đồng việc "code chạy được / không lỗi cú pháp" với việc "đạt chất lượng mỹ thuật".
+2. **Cấm tuyệt đối các giải pháp đồ họa sơ sài:**
+   - CẤM 4 góc chữ L gấp khúc thô sơ (`xianxia-corner`, `meanderCorner()`).
+   - CẤM ghép polygon và rect giả lập chuôi kiếm (`sword-cta-hilt`, `sword-token-hilt`) và đầu kiếm (`sword-cta-tip`, `sword-token-tip`).
+   - CẤM bệ đá polygon đen/xám thô sơ đè lên nhân vật (`stone-cliff-platform-svg`).
+   - CẤM icon tài liệu văn phòng (doc, clipboard) trong thế giới Tiên Hiệp.
+   - CẤM màu neon cyan `#38BDF8` / tím cyberpunk `#C084FC` trên thẻ từ vựng và khung game.
+   - CẤM emoji Unicode phóng lớn thay cho asset game.
 
-## 3. QUY TRÌNH 8 BƯỚC BẮT BUỘC KHI NÂNG CẤP MỸ THUẬT
-1. Kiểm tra cấu trúc component & asset hiện có.
-2. Lập danh sách thành phần chất lượng thấp cần nâng cấp.
-3. Xây dựng Art Direction & Design System nhất quán.
-4. Lập danh sách asset thay thế / tạo mới (SVG vector chuẩn Game-Icons hoặc raster chuyên nghiệp).
-5. Triển khai trong codebase, giữ nguyên 100% logic nghiệp vụ.
-6. Kiểm tra trực quan qua screenshot rendered thực tế.
-7. Kiểm tra responsive PC & Mobile, states, contrast, border, font.
-8. Tinh chỉnh liên tục đến khi đạt chuẩn sản phẩm thương mại.
+3. **Bảng màu Tiên Hiệp cốt lõi:**
+   - Nền tối: `#100D12`
+   - Nền gỗ trầm tử đàn: `#281711`
+   - Đỏ son chu sa: `#761D20`
+   - Vàng kim cổ: `#D4A849`
+   - Vàng sáng điểm nhấn: `#FFE49A` / `#FEF08A`
+   - Ngọc bích: `#1A433A` / `#27685D`
+   - Chữ sáng: Kem ngà thư pháp `#FDF4DC` / `#FEF3C7`
+
+4. **Nghiệm thu bắt buộc qua Render Thực Tế (Chrome CDP):**
+   - Mọi thay đổi mỹ thuật phải được kiểm tra trực quan qua ảnh chụp screenshot thực tế trên cả Desktop (1280x800) và Mobile (390x844). Không kết luận hoàn thành chỉ dựa trên đọc code.

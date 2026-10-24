@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:meowcha": "node --test tests/meowcha-engine.test.cjs",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

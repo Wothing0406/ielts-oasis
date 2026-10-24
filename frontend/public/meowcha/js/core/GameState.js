@@ -43,6 +43,7 @@
       this.startTime = 0;
       this.wpm = 0;
       this.accuracy = 100;
+      this.resetRunMetrics();
 
       // Trạng thái nhân vật & hoạt ảnh
       this.catState = "IDLE"; // IDLE | WEAK_ATTACK | ULTIMATE_BLAST | HURT | DEFEATED | BREAKTHROUGH
@@ -69,6 +70,34 @@
         autoKill: false,
         typoImmune: false
       };
+      this.unlockedSkills = [];
+      this.skillLevels = {};
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
+      this.selectedTalents = [];
+      this.passiveModifiers = {
+        damageReduction: 0,
+        comboBonus: 0.08,
+        meaningDisplayDuration: 3200,
+        weakWordWeight: 1.0,
+        hazardDurationBonus: 1.0,
+        mindHint: false
+      };
+
+      // Kỹ năng đột phá theo cảnh giới & Bổ trợ chuyên sâu
+      this.unlockedSkills = [];
+      this.skillLevels = {};
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
+      this.selectedTalents = [];
+      this.passiveModifiers = {
+        damageReduction: 0,
+        comboBonus: 0.08,
+        meaningDisplayDuration: 3200,
+        weakWordWeight: 1.0,
+        hazardDurationBonus: 1.0,
+        mindHint: false
+      };
 
       this.selectedBandIdx = 0;
       this.activeSlotId = this.activeSlotId || 1;
@@ -93,6 +122,63 @@
         { max: 4, name: "CHÂN LONG PHỆ THIÊN", color: "#F59E0B" }
       ];
       return configs[Math.min(4, Math.max(0, this.realmIdx || 0))];
+    }
+
+    resetRunMetrics() {
+      this.runId = (root.crypto && root.crypto.randomUUID) ? root.crypto.randomUUID() :
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = Math.floor(Math.random() * 16);
+          return (c === 'x' ? r : (r & 3) | 8).toString(16);
+        });
+      this.activeElapsedMs = 0;
+      this.correctKeystrokes = 0;
+      this.totalKeystrokes = 0;
+      this.assistedKeystrokes = 0;
+      this.assistedWords = 0;
+      this.humanWords = 0;
+      this.humanWordCombo = 0;
+      this.assisted = false;
+      this.runFinished = false;
+      this.baselineScore = 0;
+      this.baselineWords = 0;
+      this.wpm = 0;
+      this.accuracy = 100;
+    }
+
+    advanceClock(dt) {
+      if (this.currentScene === 'BATTLE' && !this.isPaused && !this.isGameOver &&
+          this.catState !== 'BREAKTHROUGH') {
+        this.activeElapsedMs += Math.max(0, dt * 1000);
+      }
+    }
+
+    getRunMetrics() {
+      const fields = ['runId', 'activeElapsedMs', 'correctKeystrokes', 'totalKeystrokes',
+        'assistedKeystrokes', 'assistedWords', 'humanWords', 'humanWordCombo', 'assisted',
+        'runFinished', 'baselineScore', 'baselineWords', 'maxCombo', 'typoCount', 'activeDeckId',
+        'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers'];
+      return Object.fromEntries(fields.map(k => [k, this[k]]));
+    }
+
+    restoreRunMetrics(data) {
+      this.resetRunMetrics();
+      if (data && data.runId && !data.runFinished) {
+        for (const key of Object.keys(this.getRunMetrics())) {
+          if (data[key] !== undefined) this[key] = data[key];
+        }
+      } else if (data && (data.score || data.words)) {
+        // Old saves have no verifiable typing clock; retain progress as assisted practice.
+        this.assisted = true;
+        this.baselineScore = data.score || 0;
+        this.baselineWords = data.words || 0;
+      }
+      this.calculateWPM();
+    }
+
+    markAssistance(target, count = 1) {
+      this.assisted = true;
+      this.assistedKeystrokes += count;
+      if (target) target.assistedKeystrokes = (target.assistedKeystrokes || 0) + count;
     }
 
     triggerStun(durationMs = 160) {
@@ -175,7 +261,8 @@
     }
 
     addScore(points) {
-      const bonus = Math.round(points * (1 + this.combo * 0.08) * (this.talents.scoreMultiplier || 1.0));
+      const comboRate = (this.passiveModifiers && this.passiveModifiers.comboBonus) ? this.passiveModifiers.comboBonus : 0.08;
+      const bonus = Math.round(points * (1 + this.combo * comboRate) * (this.talents.scoreMultiplier || 1.0));
       this.score += bonus;
       if (this.score > this.highScore) {
         this.highScore = this.score;
@@ -191,14 +278,19 @@
     takeDamage(amount) {
       if (this.shieldCharges > 0) {
         this.shieldCharges--;
+        this.talents.shieldCharges = this.shieldCharges;
         this.screenShake = 6;
         this.setCatState("HURT", 350);
         this.notify("shield");
         return { absorbed: true, remainingShields: this.shieldCharges };
       }
 
-      this.hp = Math.max(0, this.hp - amount);
+      const reduction = (this.passiveModifiers && this.passiveModifiers.damageReduction) ? this.passiveModifiers.damageReduction : 0;
+      const effectiveAmount = Math.max(1, Math.round(amount * (1 - reduction)));
+
+      this.hp = Math.max(0, this.hp - effectiveAmount);
       this.combo = 0;
+      this.humanWordCombo = 0;
       this.screenShake = 14;
       this.setCatState("HURT", 450);
       this.notify("hp");
@@ -212,19 +304,148 @@
       return { absorbed: false, currentHp: this.hp };
     }
 
+    getSkillLevel(skillId) {
+      return (this.skillLevels && this.skillLevels[skillId]) || 0;
+    }
+
+    isSkillUnlocked(skillId) {
+      return (this.unlockedSkills && this.unlockedSkills.includes(skillId)) || (this.getSkillLevel(skillId) > 0);
+    }
+
+    getSkillCooldown(skillId) {
+      return Math.max(0, (this.skillCooldowns && this.skillCooldowns[skillId]) || 0);
+    }
+
+    canActivateSkill(skillId) {
+      if (this.currentScene !== "BATTLE" || this.isPaused || this.isGameOver || this.catState === "BREAKTHROUGH") return false;
+      if (!this.isSkillUnlocked(skillId)) return false;
+      if (this.getSkillCooldown(skillId) > 0) return false;
+      if (skillId === "TEN_THOUSAND_SWORDS") {
+        return this.combo >= 10;
+      }
+      return true;
+    }
+
+    activateSkill(skillId, engine, audioManager) {
+      if (!this.canActivateSkill(skillId)) return false;
+      const M = root.Meowcha || {};
+      const skillDef = M.BREAKTHROUGH_SKILLS && M.BREAKTHROUGH_SKILLS[skillId];
+      if (!skillDef) return false;
+
+      const curLevel = this.getSkillLevel(skillId) || 1;
+      const lvData = (skillDef.levels && skillDef.levels[curLevel - 1]) || (skillDef.levels && skillDef.levels[0]) || {};
+
+      this.skillCooldowns = this.skillCooldowns || {};
+      this.activeSkillEffects = this.activeSkillEffects || {};
+
+      if (skillId === "WIND_SWORD_DOMAIN") {
+        const cd = lvData.cd || 25;
+        const dur = lvData.duration || 6;
+        const slow = lvData.slowPct || 0.4;
+        this.skillCooldowns[skillId] = cd;
+        this.activeSkillEffects.windSwordTimer = dur;
+        this.activeSkillEffects.windSwordSlow = slow;
+        if (audioManager) audioManager.play("type");
+        this.setSpeech(`[ KIẾM VỰC ] Thanh Phong Kiếm Vực (${Math.round(slow * 100)}% Chậm)!`, 2200);
+        this.notify("skillActivated");
+        return true;
+      }
+
+      if (skillId === "GOLDEN_CORE_REGEN") {
+        const cd = lvData.cd || 35;
+        const heal = lvData.activeHeal || 8;
+        this.skillCooldowns[skillId] = cd;
+        this.hp = Math.min(this.maxHp, this.hp + heal);
+        if (audioManager) audioManager.play("chime");
+        this.setSpeech(`[ KIM ĐAN ] Đan Điền hồi phục +${heal} Khí Huyết!`, 2200);
+        this.notify("hp");
+        this.notify("skillActivated");
+        return true;
+      }
+
+      if (skillId === "NASCENT_SOUL_FREEZE") {
+        const cd = lvData.cd || 30;
+        const freeze = lvData.freezeDuration || 4;
+        this.skillCooldowns[skillId] = cd;
+        if (engine && engine.asteroids && engine.asteroids.asteroids.length > 0) {
+          const target = engine.currentTarget || engine.asteroids.asteroids[0];
+          if (target) {
+            target.freezeTimer = Math.max(target.freezeTimer || 0, freeze);
+            if (engine.playWordAudio) engine.playWordAudio(target);
+          }
+        }
+        if (audioManager) audioManager.play("lightning");
+        this.setSpeech(`[ ĐỊNH THÂN ] Nguyên Anh xuất khiếu, định thân ${freeze}s!`, 2200);
+        this.notify("skillActivated");
+        return true;
+      }
+
+      if (skillId === "TEN_THOUSAND_SWORDS") {
+        if (this.combo < 10) return false;
+        this.skillCooldowns[skillId] = 40;
+        if (engine) {
+          engine.isCloudHazard = false;
+          engine.isLightningHazard = false;
+          engine.hazardTimer = 0;
+          engine.mistakeStreak = 0;
+          if (engine.realmVFX) engine.realmVFX.clearClouds();
+
+          const nonBoss = engine.asteroids.asteroids.filter(a => !a.isBoss);
+          if (nonBoss.length > 0) {
+            const lowest = nonBoss.sort((a, b) => b.y - a.y)[0];
+            engine.handleWordSlain(lowest, { width: 800, height: 600 }, true);
+          }
+        }
+        this.screenShake = 16;
+        this.screenFlash = 0.8;
+        if (audioManager) {
+          audioManager.play("explosion");
+          audioManager.play("chime");
+        }
+        this.setSpeech(`[ VẠN KIẾM ] VẠN KIẾM QUY TÔNG • TIÊU DIỆT TÂM MA!`, 3000);
+        this.notify("skillActivated");
+        return true;
+      }
+
+      return false;
+    }
+
+    updateSkills(dt = 0.016) {
+      if (this.isPaused) return;
+      let changed = false;
+      if (this.skillCooldowns) {
+        for (const sKey of Object.keys(this.skillCooldowns)) {
+          if (this.skillCooldowns[sKey] > 0) {
+            this.skillCooldowns[sKey] = Math.max(0, this.skillCooldowns[sKey] - dt);
+            changed = true;
+          }
+        }
+      }
+      if (this.activeSkillEffects) {
+        if (this.activeSkillEffects.windSwordTimer > 0) {
+          this.activeSkillEffects.windSwordTimer = Math.max(0, this.activeSkillEffects.windSwordTimer - dt);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.notify("skillCooldown");
+      }
+    }
+
     calculateWPM() {
-      if (!this.startTime) return 0;
-      const elapsedMin = Math.max(0.1, (Date.now() - this.startTime) / 60000);
+      const elapsedMin = Math.max(1000, this.activeElapsedMs || 0) / 60000;
       const wpm = Math.round((this.correctKeystrokes / 5) / elapsedMin);
-      this.wpm = Math.min(180, Math.max(0, wpm));
+      this.wpm = Math.max(0, wpm);
 
       const total = Math.max(1, this.totalKeystrokes);
-      this.accuracy = Math.round((this.correctKeystrokes / total) * 100);
+      this.accuracy = this.totalKeystrokes ? Math.round((this.correctKeystrokes / total) * 100) : 100;
       return this.wpm;
     }
 
     loadFromSlot(slot) {
       if (!slot) return;
+      this.restoreRunMetrics(slot);
+      this.gameMode = slot.activeMode || slot.mode || this.gameMode;
       this.maxHp = slot.maxHp || 50;
       if (typeof slot.hp === 'number' && slot.hp > 0) {
         this.hp = Math.min(this.maxHp, slot.hp);
@@ -256,7 +477,18 @@
         autoKill: false,
         typoImmune: false
       }, slot.talents || {});
-      this.shieldCharges = this.talents.shieldCharges || 0;
+      this.shieldCharges = slot.shieldCharges !== undefined ? slot.shieldCharges : (this.talents.shieldCharges || 0);
+      this.unlockedSkills = Array.isArray(slot.unlockedSkills) ? [...slot.unlockedSkills] : [];
+      this.skillLevels = (slot.skillLevels && typeof slot.skillLevels === 'object') ? { ...slot.skillLevels } : {};
+      this.selectedTalents = Array.isArray(slot.selectedTalents) ? [...slot.selectedTalents] : [];
+      this.passiveModifiers = Object.assign({
+        damageReduction: 0,
+        comboBonus: 0.08,
+        meaningDisplayDuration: 3200,
+        weakWordWeight: 1.0,
+        hazardDurationBonus: 1.0,
+        mindHint: false
+      }, slot.passiveModifiers || {});
       this.notify("hp");
       this.notify("score");
       this.notify("highScore");
@@ -266,6 +498,7 @@
 
     loadFromModeData(modeData, modeName = null) {
       if (!modeData) return;
+      this.restoreRunMetrics(modeData);
       if (modeName) this.gameMode = modeName;
       this.maxHp = modeData.maxHp || 50;
       this.hp = (typeof modeData.hp === "number" && modeData.hp > 0) ? Math.min(this.maxHp, modeData.hp) : this.maxHp;
@@ -288,7 +521,18 @@
         autoKill: false,
         typoImmune: false
       }, modeData.talents || {});
-      this.shieldCharges = this.talents.shieldCharges || 0;
+      this.shieldCharges = modeData.shieldCharges !== undefined ? modeData.shieldCharges : (this.talents.shieldCharges || 0);
+      this.unlockedSkills = Array.isArray(modeData.unlockedSkills) ? [...modeData.unlockedSkills] : [];
+      this.skillLevels = (modeData.skillLevels && typeof modeData.skillLevels === 'object') ? { ...modeData.skillLevels } : {};
+      this.selectedTalents = Array.isArray(modeData.selectedTalents) ? [...modeData.selectedTalents] : [];
+      this.passiveModifiers = Object.assign({
+        damageReduction: 0,
+        comboBonus: 0.08,
+        meaningDisplayDuration: 3200,
+        weakWordWeight: 1.0,
+        hazardDurationBonus: 1.0,
+        mindHint: false
+      }, modeData.passiveModifiers || {});
       this.isGameOver = false;
       this.isPaused = false;
       this.isStunned = false;
@@ -303,6 +547,7 @@
     }
 
     resetForNewMode(modeName) {
+      this.resetRunMetrics();
       if (modeName) this.gameMode = modeName;
       this.maxHp = 50;
       this.hp = 50;
@@ -320,6 +565,19 @@
         shieldCharges: 0,
         autoKill: false,
         typoImmune: false
+      };
+      this.unlockedSkills = [];
+      this.skillLevels = {};
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
+      this.selectedTalents = [];
+      this.passiveModifiers = {
+        damageReduction: 0,
+        comboBonus: 0.08,
+        meaningDisplayDuration: 3200,
+        weakWordWeight: 1.0,
+        hazardDurationBonus: 1.0,
+        mindHint: false
       };
       this.shieldCharges = 0;
       this.isGameOver = false;
