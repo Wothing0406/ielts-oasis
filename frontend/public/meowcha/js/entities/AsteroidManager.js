@@ -168,20 +168,20 @@
       // KHU VỰC CHÍNH GIỮA (CENTER SKY) LÀ KHOẢNG TRỐNG HOÀN HẢO ĐỂ MA THẠCH RƠI TỰ DO:
       let minX, maxX;
       if (isMobile) {
-        minX = Math.max(safeMargin, canvasWidth * 0.20);
-        maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.80);
-        if (maxX <= minX + 30) {
-          minX = canvasWidth * 0.22;
-          maxX = canvasWidth * 0.78;
+        minX = Math.max(safeMargin, canvasWidth * 0.22);
+        maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.78);
+        if (maxX <= minX + 20) {
+          minX = canvasWidth * 0.18;
+          maxX = canvasWidth * 0.82;
         }
       } else {
-        const leftAvoidW = 270;
-        const rightAvoidW = 290;
+        const leftAvoidW = 285;
+        const rightAvoidW = 305;
         minX = Math.max(safeMargin, leftAvoidW);
         maxX = Math.min(canvasWidth - safeMargin, canvasWidth - rightAvoidW);
-        if (maxX <= minX + 60) {
-          minX = canvasWidth * 0.22;
-          maxX = canvasWidth * 0.78;
+        if (maxX <= minX + 40) {
+          minX = Math.max(safeMargin, canvasWidth * 0.28);
+          maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.72);
         }
       }
       const spawnX = minX + Math.random() * (maxX - minX);
@@ -325,11 +325,17 @@
         const charW = isMobileScreen ? 15 : 20;
         const halfWordW = ((ast.word && ast.word.length) ? ast.word.length : 6) * charW / 2;
         const safeMargin = Math.max((ast.radius || 46) + 24, halfWordW + 36);
-        if (ast.x < safeMargin) {
-          ast.x = safeMargin;
+        let effectiveLeft = safeMargin;
+        let effectiveRight = cWidth - safeMargin;
+        if (!isMobileScreen && ast.y < 108) {
+          effectiveLeft = Math.max(safeMargin, 280);
+          effectiveRight = Math.min(cWidth - safeMargin, cWidth - 300);
+        }
+        if (ast.x < effectiveLeft) {
+          ast.x = effectiveLeft;
           ast.vx = Math.abs(ast.vx);
-        } else if (ast.x > cWidth - safeMargin) {
-          ast.x = cWidth - safeMargin;
+        } else if (ast.x > effectiveRight) {
+          ast.x = effectiveRight;
           ast.vx = -Math.abs(ast.vx);
         }
 

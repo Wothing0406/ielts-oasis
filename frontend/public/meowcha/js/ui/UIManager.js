@@ -1356,12 +1356,16 @@
       this.state.isPaused = !this.state.isPaused;
       if (this.modalPause) {
         this.modalPause.style.display = this.state.isPaused ? "flex" : "none";
-        let summary = document.getElementById('typingPracticeStats');
-        if (!summary) {
-          summary = document.createElement('p'); summary.id = 'typingPracticeStats'; summary.className = 'practice-summary';
-          this.modalPause.querySelector('.modal-content-box').appendChild(summary);
+        try {
+          let summary = document.getElementById('typingPracticeStats');
+          if (!summary) {
+            summary = document.createElement('p'); summary.id = 'typingPracticeStats'; summary.className = 'practice-summary';
+            this.modalPause.querySelector('.modal-content-box').appendChild(summary);
+          }
+          summary.textContent = this.getPracticeSummary();
+        } catch (e) {
+          console.warn('[Meowcha UI practice summary error]', e);
         }
-        summary.textContent = this.getPracticeSummary();
       }
     }
 

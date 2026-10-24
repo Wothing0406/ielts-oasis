@@ -56,11 +56,11 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.1" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.1" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.1" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.1" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=12.1" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.2" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.2" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.2" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.2" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=12.2" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -1357,8 +1357,8 @@
                 <img src="./assets/svg/winged-sword.svg" style="width: 18px; height: 18px; filter: drop-shadow(0 0 4px #FDE047);" alt="" />
                 <span>TIẾP TỤC ĐỘ KIẾP [ ESC ]</span>
               </button>
-              <button class="btn-xianxia-seal secondary" id="btnQuitToLobby" style="padding: 10px 18px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <img src="./assets/svg/pagoda.svg" style="width: 18px; height: 18px; filter: drop-shadow(0 0 3px #FEF08A);" alt="" />
+              <button class="btn-xianxia-seal secondary" id="btnQuitToLobby" onclick="if(window.MeowchaGameInstance){window.MeowchaGameInstance.returnToLobby();}" ontouchend="if(window.MeowchaGameInstance){window.MeowchaGameInstance.returnToLobby();}" style="padding: 12px 20px; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#FDE047" style="filter: drop-shadow(0 0 4px #F59E0B);"><path d="M12 2L2 9h3v13h14V9h3L12 2zm0 3.5L17 7H7l5-1.5zM7 11h10v9H7v-9z"/></svg>
                 <span>THU THUYỀN VỀ SẢNH</span>
               </button>
             </div>
@@ -1587,7 +1587,11 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder2">
-                  <img src="./assets/svg/winged-sword.svg" style="width: 28px; height: 28px; filter: drop-shadow(0 0 5px #E2E8F0);" alt="Bạch Ngân" />
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="#E2E8F0" style="filter: drop-shadow(0 0 6px #CBD5E1);">
+                    <path d="M14.5 17.5L3 6V3H6L17.5 14.5" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13 19L19 13M16 16L20 20" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="20" cy="20" r="1.5" fill="#94A3B8"/>
+                  </svg>
                 </div>
               </div>
               <div class="podium-name" id="podiumName2">Đang chờ vị thứ</div>
@@ -1626,7 +1630,10 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder1">
-                  <img src="./assets/svg/dragon-shield.svg" style="width: 32px; height: 32px; filter: drop-shadow(0 0 8px #FFE49A);" alt="Chí Tôn" />
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="#FDE047" style="filter: drop-shadow(0 0 8px #F59E0B);">
+                    <path d="M12 2L4 5V11.5C4 16.5 7.4 21.1 12 22.3C16.6 21.1 20 16.5 20 11.5V5L12 2Z" fill="rgba(253, 224, 71, 0.25)" stroke="#FDE047" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M12 6L9 9H11V14H13V9H15L12 6Z" fill="#FEF08A"/>
+                  </svg>
                 </div>
               </div>
               <div class="podium-name" id="podiumName1">Chưa có Chí Tôn</div>
@@ -1665,7 +1672,12 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder3">
-                  <img src="./assets/svg/cauldron.svg" style="width: 28px; height: 28px; filter: drop-shadow(0 0 5px #F59E0B);" alt="Thanh Đồng" />
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="#F97316" style="filter: drop-shadow(0 0 6px #EA580C);">
+                    <path d="M5 7H19V14C19 17.3 16.3 20 13 20H11C7.7 20 5 17.3 5 14V7Z" fill="rgba(249, 115, 22, 0.25)" stroke="#F97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="3" y1="7" x2="21" y2="7" stroke="#F97316" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="7" y1="20" x2="6" y2="23" stroke="#EA580C" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="17" y1="20" x2="18" y2="23" stroke="#EA580C" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
                 </div>
               </div>
               <div class="podium-name" id="podiumName3">Đang chờ vị thứ</div>
@@ -1919,37 +1931,37 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=12.1"></script>
-    <script src="./js/data/WordDecks.js?v=12.1"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=12.1"></script>
-    <script src="./js/data/TalentsData.js?v=12.1"></script>
-    <script src="./js/data/SpeechesData.js?v=12.1"></script>
+    <script src="./js/data/RealmsData.js?v=12.2"></script>
+    <script src="./js/data/WordDecks.js?v=12.2"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=12.2"></script>
+    <script src="./js/data/TalentsData.js?v=12.2"></script>
+    <script src="./js/data/SpeechesData.js?v=12.2"></script>
 
-    <script src="./js/core/AudioManager.js?v=12.1"></script>
-    <script src="./js/core/SaveSystem.js?v=12.1"></script>
-    <script src="./js/core/GameState.js?v=12.1"></script>
-    <script src="./js/core/BattleLayout.js?v=12.1"></script>
-    <script src="./js/core/SpriteAnimator.js?v=12.1"></script>
+    <script src="./js/core/AudioManager.js?v=12.2"></script>
+    <script src="./js/core/SaveSystem.js?v=12.2"></script>
+    <script src="./js/core/GameState.js?v=12.2"></script>
+    <script src="./js/core/BattleLayout.js?v=12.2"></script>
+    <script src="./js/core/SpriteAnimator.js?v=12.2"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=12.1"></script>
-    <script src="./js/effects/RealmVFX.js?v=12.1"></script>
-    <script src="./js/effects/FloatingText.js?v=12.1"></script>
+    <script src="./js/effects/ParticleEngine.js?v=12.2"></script>
+    <script src="./js/effects/RealmVFX.js?v=12.2"></script>
+    <script src="./js/effects/FloatingText.js?v=12.2"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=12.1"></script>
-    <script src="./js/entities/AsteroidManager.js?v=12.1"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=12.1"></script>
+    <script src="./js/entities/CatCultivator.js?v=12.2"></script>
+    <script src="./js/entities/AsteroidManager.js?v=12.2"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=12.2"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=12.1"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=12.1"></script>
+    <script src="./js/combat/TypingEngine.js?v=12.2"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=12.2"></script>
 
-    <script src="./js/ui/IPAToast.js?v=12.1"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=12.1"></script>
-    <script src="./js/ui/UnityBridge.js?v=12.1"></script>
-    <script src="./js/core/VocabLoader.js?v=12.1"></script>
-    <script src="./js/ui/UIManager.js?v=12.1"></script>
+    <script src="./js/ui/IPAToast.js?v=12.2"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=12.2"></script>
+    <script src="./js/ui/UnityBridge.js?v=12.2"></script>
+    <script src="./js/core/VocabLoader.js?v=12.2"></script>
+    <script src="./js/ui/UIManager.js?v=12.2"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=12.1"></script>
-    <script src="./js/main.js?v=12.1"></script>
+    <script src="./js/core/DeviceDetector.js?v=12.2"></script>
+    <script src="./js/main.js?v=12.2"></script>
   </body>
 </html>
