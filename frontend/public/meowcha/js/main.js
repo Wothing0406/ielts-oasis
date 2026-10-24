@@ -603,6 +603,11 @@
       } finally {
         if (this.ui) {
           try { this.ui.hidePauseModal(); } catch (_) {}
+          try { if (typeof this.ui.closeBattleSetupModal === "function") this.ui.closeBattleSetupModal(); } catch (_) {}
+          try { if (typeof this.ui.hideGameOverModal === "function") this.ui.hideGameOverModal(); } catch (_) {}
+          try { if (typeof this.ui.hidePantheonModal === "function") this.ui.hidePantheonModal(); } catch (_) {}
+          try { if (typeof this.ui.hideSavesModal === "function") this.ui.hideSavesModal(); } catch (_) {}
+          try { if (typeof this.ui.hideVocabVaultModal === "function") this.ui.hideVocabVaultModal(); } catch (_) {}
           try { this.ui.showScene("LOBBY"); } catch (_) {}
           try { if (typeof this.ui.updateLobbyButtons === "function") this.ui.updateLobbyButtons(); } catch (_) {}
           try { if (typeof this.ui.updateHUD === "function") this.ui.updateHUD(); } catch (_) {}
