@@ -13,7 +13,7 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/UIManager.js']) {
+  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'entities/AsteroidManager.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
@@ -311,4 +311,23 @@ test('save and load seamlessly preserve unlocked skills, levels, and passive mod
   freshState.loadFromModeData(slotData, 'DIRECT');
   assert.equal(freshState.getSkillLevel('WIND_SWORD_DOMAIN'), 2);
   assert.equal(freshState.passiveModifiers.damageReduction, 0.25);
+});
+
+test('domainSlow slows asteroids smoothly and pendingAutoKill consumes on next asteroid', () => {
+  const r = runtime();
+  const am = new r.M.AsteroidManager({});
+  const ast = { ...word('FAST'), vy: 2.0, y: 50 };
+  am.asteroids.push(ast);
+  // Update with domainSlow = 0.40 (verifies no statusSpeedMult TDZ ReferenceError)
+  am.update(0.1, 700, () => {}, 800, false, 0.40);
+  assert.ok(ast.y > 50);
+
+  // Test pendingAutoKill consumption in updateHazard
+  r.asteroids.asteroids.push(word('SLOW'));
+  r.engine.pendingAutoKill = true;
+  assert.equal(r.asteroids.asteroids.length, 1);
+  r.engine.updateHazard(0.1, r.canvas);
+  assert.equal(r.engine.pendingAutoKill, false);
+  assert.equal(r.asteroids.asteroids.length, 0);
+  assert.equal(r.state.assistedWords, 1);
 });

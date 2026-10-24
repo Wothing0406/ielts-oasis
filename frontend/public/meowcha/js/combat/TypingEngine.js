@@ -332,6 +332,16 @@
     }
 
     updateHazard(dt, canvas) {
+      // Tự động giải phóng đòn trảm dồn (pendingAutoKill từ Nhất Kiếm Phân Thần / Vạn Kiếm Tự Động Trận)
+      if (this.pendingAutoKill && !this.state.isPaused && !this.state.isGameOver && this.state.catState !== "BREAKTHROUGH") {
+        const candidates = this.asteroids.asteroids.filter(a => !a.isBoss);
+        if (candidates.length > 0) {
+          this.pendingAutoKill = false;
+          const lowest = candidates.sort((a, b) => b.y - a.y)[0];
+          this.handleWordSlain(lowest, canvas, true);
+        }
+      }
+
       // NGUYÊN ANH HỘ ĐẠO (Cảnh 3): Chibi Nguyên Anh tự động phóng Tử Điện Lôi Kích mỗi 3.2s
       if (this.state.realmIdx === 3 && this.asteroids.asteroids.length > 0 && !this.state.isPaused && !this.state.isGameOver) {
         this.chibiAutoTimer = (this.chibiAutoTimer || 0) + dt;

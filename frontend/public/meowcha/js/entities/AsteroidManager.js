@@ -284,8 +284,10 @@
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
-        if (domainSlow > 0) { statusSpeedMult *= Math.max(0.2, 1.0 - domainSlow); }
+        if (!ast) continue;
+        ast.trail = ast.trail || [];
         let statusSpeedMult = 1.0;
+        if (domainSlow > 0) { statusSpeedMult *= Math.max(0.2, 1.0 - domainSlow); }
         if (ast.freezeTimer && ast.freezeTimer > 0) {
           ast.freezeTimer = Math.max(0, ast.freezeTimer - dt);
           statusSpeedMult = 0.0; // Định thân hoàn toàn bởi Nguyên Anh Lôi Kích
