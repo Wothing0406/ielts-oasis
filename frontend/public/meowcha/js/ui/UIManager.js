@@ -341,13 +341,28 @@
         btnResume.onclick = () => this.togglePause();
       }
 
-      // Nút Rút lui về Lobby
+      // Nút Rút lui về Lobby (Thu Thuyền Về Sảnh)
       const btnExitLobby = document.getElementById("btnQuitToLobby") || document.getElementById("btnExitToLobby");
       if (btnExitLobby) {
-        btnExitLobby.onclick = () => {
-          this.hidePauseModal();
-          if (this.onReturnLobby) this.onReturnLobby();
+        const handleQuitAction = (e) => {
+          if (e) {
+            try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+          }
+          console.log("[Meowcha UI] Thu Thuyền Về Sảnh triggered");
+          try { this.hidePauseModal(); } catch (_) {}
+          if (this.onReturnLobby) {
+            try {
+              this.onReturnLobby();
+            } catch (err) {
+              console.error("[Meowcha UI] onReturnLobby error:", err);
+              this.showScene("LOBBY");
+            }
+          } else {
+            this.showScene("LOBBY");
+          }
         };
+        btnExitLobby.onclick = handleQuitAction;
+        btnExitLobby.ontouchend = handleQuitAction;
       }
 
       // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Luyện Khí sơ kỳ)
@@ -883,12 +898,14 @@
         topAvatarEl.referrerPolicy = "no-referrer";
         topAvatarEl.onerror = () => {
           topAvatarEl.onerror = null;
-          topAvatarEl.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
+          topAvatarEl.src = "./assets/ui/mascot_spirit_cat.png";
         };
-        topAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
+        // Prefer authentic Xianxia mascot cat over non-game webcam/desktop screenshots
+        const isGameOrMascot = user.avatar && !user.avatar.includes("discordapp");
+        topAvatarEl.src = isGameOrMascot ? user.avatar : "./assets/ui/mascot_spirit_cat.png";
       }
       if (topNameLabel && user.isLoggedIn && user.name) {
-        topNameLabel.innerText = user.name.slice(0, 8);
+        topNameLabel.innerText = user.name.length > 9 ? user.name.slice(0, 8) + "…" : user.name;
       }
 
       this.updateMonolithLocks();
@@ -2213,11 +2230,19 @@
               avatarEl.onerror = null;
               avatarEl.src = fallbackRealmAvatar;
             };
-            // Ưu tiên hiển thị Avatar thực tế của User (Discord / Web Avatar)
-            if (safeAvatar(itemData.avatar_url)) {
+            // Hiển thị Avatar Tiên Hiệp theo Cảnh Giới & Tôn Hiệu (Không dùng webcam / chụp màn hình)
+            const isDiscordOrDoc = itemData.avatar_url && itemData.avatar_url.includes("discordapp");
+            if (safeAvatar(itemData.avatar_url) && !isDiscordOrDoc) {
               avatarEl.src = safeAvatar(itemData.avatar_url);
             } else {
-              avatarEl.src = fallbackRealmAvatar;
+              // Top 1: Đạo Tôn Hoàng Kim | Top 2: Bạch Ngân Linh Miêu | Top 3: Kim Đan Hộ Pháp
+              if (rankIdx === 1) {
+                avatarEl.src = "./assets/ui/mascot_daoist_master.png";
+              } else if (rankIdx === 2) {
+                avatarEl.src = "./assets/ui/mascot_spirit_cat.png";
+              } else {
+                avatarEl.src = fallbackRealmAvatar;
+              }
             }
             avatarEl.style.display = "block";
           }

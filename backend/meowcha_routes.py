@@ -584,7 +584,40 @@ def get_leaderboard(
     ).subquery()
     runs = db.query(MeowchaRun).join(ranked, ranked.c.run_id == MeowchaRun.run_id).filter(
         ranked.c.position == 1).order_by(MeowchaRun.score.desc(), MeowchaRun.completed_at.desc()).limit(limit).all()
-    return api_response([{**run.result, "rank": i + 1} for i, run in enumerate(runs)],
+    
+    results = [{**run.result, "rank": i + 1} for i, run in enumerate(runs)]
+    
+    # SEAMLESS BACKFILL FROM meowcha_leaderboard:
+    if len(results) < limit:
+        legacy_entries = db.query(MeowchaLeaderboard).order_by(MeowchaLeaderboard.score.desc()).all()
+        existing_names = {r.get("player_name") for r in results}
+        for entry in legacy_entries:
+            if entry.player_name in existing_names:
+                continue
+            avatar_url = ""
+            if entry.user_id:
+                u = db.query(User).filter(User.id == entry.user_id).first()
+                if u and u.avatar_url:
+                    avatar_url = u.avatar_url
+            results.append({
+                "id": entry.id,
+                "user_id": entry.user_id,
+                "rank": len(results) + 1,
+                "player_name": entry.player_name,
+                "score": entry.score,
+                "realm": entry.realm or "Luyện Khí Kỳ",
+                "words_slain": entry.words_slain,
+                "accuracy": entry.accuracy or 100,
+                "wpm": entry.wpm or 0,
+                "avatar_url": avatar_url,
+                "game_mode": game_mode,
+                "verification": "plausibility_checked"
+            })
+            existing_names.add(entry.player_name)
+            if len(results) >= limit:
+                break
+                
+    return api_response(results,
         meta={"game_mode": game_mode, "assisted": assisted, "deck_id": deck_id,
               "verification": "plausibility_checked", "competitive": False})
 

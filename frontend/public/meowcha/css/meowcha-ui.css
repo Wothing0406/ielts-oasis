@@ -9064,3 +9064,142 @@ body.platform-pc #virtualKeyboardContainer:not(.user-force-opened),
   padding: 8px 14px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85) !important;
 }
+
+/* ==========================================================================
+   XIANXIA LUMINOUS JADE & GOLD TOP BAR & MEDALLIONS (V12.1 MASTER REFACTOR)
+   ========================================================================== */
+.lobby-top-bar,
+#lobbyView .lobby-top-bar {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 8px 18px !important;
+}
+
+.lobby-top-actions,
+#lobbyView .lobby-top-actions {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.windchime-medallion {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transform-origin: top center !important;
+  animation: windchimeGentleSway 4.8s ease-in-out infinite alternate !important;
+}
+
+.windchime-knot-top {
+  display: block !important;
+  width: 12px !important;
+  height: 8px !important;
+  background: radial-gradient(circle at 50% 35%, #EF4444 0%, #B91C1C 70%, #7F1D1D 100%) !important;
+  border: 1px solid #F3C644 !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 6px rgba(243, 198, 68, 0.6) !important;
+  margin-bottom: 2px !important;
+}
+
+.windchime-medallion .medallion-disc {
+  width: 44px !important;
+  height: 44px !important;
+  clip-path: none !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 30%, #10B981 0%, #059669 45%, #064E3B 80%, #022C22 100%) !important;
+  border: 2px solid #F3C644 !important;
+  outline: 1.5px solid #34D399 !important;
+  outline-offset: -3px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 16px rgba(52, 211, 153, 0.4), inset 0 0 8px rgba(254, 240, 138, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.windchime-medallion:hover .medallion-disc {
+  transform: translateY(-3px) scale(1.1) !important;
+  border-color: #FEF08A !important;
+  outline-color: #6EE7B7 !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.8), 0 0 24px rgba(243, 198, 68, 0.85), inset 0 0 12px rgba(254, 240, 138, 0.7) !important;
+}
+
+.windchime-icon-svg {
+  display: block !important;
+  transition: transform 0.25s ease !important;
+}
+
+.windchime-medallion:hover .windchime-icon-svg {
+  transform: scale(1.15) !important;
+}
+
+.windchime-medallion .medallion-label {
+  margin-top: 4px !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #FFFBEB !important;
+  background: linear-gradient(180deg, #3A2016 0%, #1C0C07 100%) !important;
+  border: 1.2px solid #D4AF37 !important;
+  border-radius: 4px !important;
+  padding: 2px 7px !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 2px #000, 0 0 6px rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(254, 240, 138, 0.3) !important;
+  letter-spacing: 0.8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.windchime-medallion:hover .medallion-label {
+  color: #FEF08A !important;
+  border-color: #FEF08A !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.65) !important;
+}
+
+.windchime-tassel-bottom {
+  display: block !important;
+  width: 3px !important;
+  height: 12px !important;
+  background: linear-gradient(180deg, #F3C644 0%, #DC2626 50%, #7F1D1D 100%) !important;
+  border-radius: 1px !important;
+  margin-top: 2px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* User Profile Avatar Medallion */
+.windchime-medallion.profile-medallion .medallion-disc {
+  background: radial-gradient(circle at 35% 30%, #451A03 0%, #291002 60%, #120701 100%) !important;
+  border: 2px solid #F3C644 !important;
+  outline: 1.5px solid #D97706 !important;
+  padding: 2px !important;
+}
+
+.medallion-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+/* Modal Corners Filigree Fix */
+.cloud-corner-svg,
+.xianxia-corner-filigree {
+  width: 48px !important;
+  height: 48px !important;
+  filter: drop-shadow(0 0 6px rgba(243, 198, 68, 0.5)) !important;
+}

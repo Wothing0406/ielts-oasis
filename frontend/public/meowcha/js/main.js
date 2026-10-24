@@ -172,14 +172,14 @@
         });
       }
       if (typeof ResizeObserver !== 'undefined') {
-        this.layoutObserver = new ResizeObserver(() => M.refreshBattleLayout(this.canvas));
+        this.layoutObserver = new ResizeObserver(() => { if (typeof M.refreshBattleLayout === 'function') if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas); });
         [kbContainer, document.querySelector('.sect-scroll-hud'), document.getElementById('swordIntentBox')]
           .filter(Boolean).forEach(el => this.layoutObserver.observe(el));
       }
       const keyboardToggle = document.getElementById('btnToggleVirtualKeyboard');
       if (keyboardToggle) keyboardToggle.onclick = () => {
         M.Device.toggleVirtualKeyboard();
-        M.refreshBattleLayout(this.canvas);
+        if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas);
       };
 
       // Nút khôi phục bàn phím ảo khi người dùng di động bấm thu gọn
@@ -424,7 +424,7 @@
       if (!this.canvas) return;
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
-      if (M.refreshBattleLayout) M.refreshBattleLayout(this.canvas);
+      if (M.refreshBattleLayout) if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas);
     }
 
     bindWindowEvents() {
@@ -578,35 +578,41 @@
     }
 
     returnToLobby() {
-      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
-      if (this.gameState.isGameOver || this.gameState.hp <= 0) {
-        // Đạo tiêu thân vong: Tuyệt đối không lưu lại trạng thái đã chết!
-        this.saveSystem.resetActiveSave(activeSlot, curMode);
-        this.gameState.reset();
-      } else {
-        // Chỉ lưu khi người chơi còn sống chủ động dừng trận vào đúng ngọc giản đang trảm ma
-        this.saveSystem.saveGame(activeSlot, this.gameState);
-      }
-      this.gameState.currentScene = "LOBBY";
-      this.saveSystem.flushCloudSaves();
-      this.gameState.isPaused = false;
-      this.gameState.isGameOver = false;
-      this.gameState.isStunned = false;
-      this.gameState.setCatState("IDLE");
-
-      this.purgeAllBattleState();
-
-      this.ui.showScene("LOBBY");
-      this.ui.updateLobbyButtons();
-      this.ui.updateHUD();
-      // Giữ nguyên khúc Cổ Cầm thiền định để sảnh chờ luôn có nhạc nền thanh tịnh
-      if (this.audio && this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
-        this.audio.startZenGuqin();
-      }
-
-      if (this.vKeyboard) {
-        this.vKeyboard.hide();
+      try {
+        const activeSlot = (this.gameState && this.gameState.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
+        const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
+        if (this.gameState && (this.gameState.isGameOver || this.gameState.hp <= 0)) {
+          if (this.saveSystem) this.saveSystem.resetActiveSave(activeSlot, curMode);
+          if (this.gameState) this.gameState.reset();
+        } else if (this.saveSystem && this.gameState) {
+          this.saveSystem.saveGame(activeSlot, this.gameState);
+        }
+        if (this.gameState) {
+          this.gameState.currentScene = "LOBBY";
+          this.gameState.isPaused = false;
+          this.gameState.isGameOver = false;
+          this.gameState.isStunned = false;
+          this.gameState.setCatState("IDLE");
+        }
+        if (this.saveSystem && typeof this.saveSystem.flushCloudSaves === "function") {
+          this.saveSystem.flushCloudSaves();
+        }
+        this.purgeAllBattleState();
+      } catch (err) {
+        console.warn("[Meowcha returnToLobby Safe Caught]", err);
+      } finally {
+        if (this.ui) {
+          try { this.ui.hidePauseModal(); } catch (_) {}
+          try { this.ui.showScene("LOBBY"); } catch (_) {}
+          try { if (typeof this.ui.updateLobbyButtons === "function") this.ui.updateLobbyButtons(); } catch (_) {}
+          try { if (typeof this.ui.updateHUD === "function") this.ui.updateHUD(); } catch (_) {}
+        }
+        if (this.audio && this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
+          try { this.audio.startZenGuqin(); } catch (_) {}
+        }
+        if (this.vKeyboard) {
+          try { this.vKeyboard.hide(); } catch (_) {}
+        }
       }
     }
 
@@ -859,7 +865,7 @@
       this.gameState.calculateWPM();
       const DPlatform = root.Meowcha && root.Meowcha.Device;
       const isMobile = DPlatform ? DPlatform.info.isMobile : (this.canvas.width <= 768);
-      const catTargetY = M.getBattleLayout(this.canvas).catY;
+      const catTargetY = (typeof M.getBattleLayout === 'function') ? M.getBattleLayout(this.canvas).catY : (this.canvas ? this.canvas.height * 0.72 : 450);
 
       // 1. Cập nhật Choáng, Sấm Sét và Đồng bộ Bàn Phím Ảo
       this.gameState.updateStun(dt);
@@ -903,7 +909,7 @@
       if (this.gameState.updateSkills) this.gameState.updateSkills(dt);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
-      const bottomThreshold = M.getBattleLayout(this.canvas).bottomThreshold;
+      const bottomThreshold = (typeof M.getBattleLayout === 'function') ? M.getBattleLayout(this.canvas).bottomThreshold : (this.canvas ? this.canvas.height * 0.70 : 420);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       const domainSlow = (this.gameState.activeSkillEffects && this.gameState.activeSkillEffects.windSwordTimer > 0)
         ? (this.gameState.activeSkillEffects.windSwordSlow || 0.4) : 0;

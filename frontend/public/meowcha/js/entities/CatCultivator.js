@@ -39,7 +39,10 @@
       const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const BASE_X = canvas.width / 2;
       // Trên mobile: Đặt Miêu Tôn trang nghiêm trên đài phù vân, cách thanh thư cuộn bên dưới khoảng cách thoáng đãng
-      const BASE_Y = root.Meowcha.getBattleLayout(canvas).catY;
+      const layout = (root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function')
+        ? root.Meowcha.getBattleLayout(canvas)
+        : { catY: (canvas.height || 600) * 0.75, bottomThreshold: (canvas.height || 600) * 0.72 };
+      const BASE_Y = layout.catY;
       const renderSize = isMobile ? 125 : 180;
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
       let drawX = BASE_X - renderSize / 2;

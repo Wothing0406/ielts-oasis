@@ -4,7 +4,7 @@ export default function MeowchaGamePage() {
   return (
     <main className="fixed inset-0 w-screen h-[100dvh] overflow-hidden bg-[#05040a] z-50 p-0 m-0 border-none select-none">
       <iframe
-        src="/meowcha/index.html?v=12.0"
+        src="/meowcha/index.html?v=12.1"
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
         title="Meowcha IELTS Game"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"

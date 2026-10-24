@@ -97,7 +97,7 @@
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
-        const catY = root.Meowcha.getBattleLayout(canvas).catY;
+        const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
@@ -157,7 +157,7 @@
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
         const catX = canvas.width / 2;
-        const catY = root.Meowcha.getBattleLayout(canvas).catY;
+        const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
         this.state.setCatState("HURT", 140);
         this.state.screenShake = 2.5; // Rung nhẹ nhàng 2.5px, không gây giật lag
@@ -229,7 +229,7 @@
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas ? canvas.width <= 768 : false);
         const catX = canvas ? canvas.width / 2 : 400;
-        const catY = canvas ? root.Meowcha.getBattleLayout(canvas).catY : 500;
+        const catY = canvas ? ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450)) : 500;
         const M = root.Meowcha || {};
         const sDef = M.BREAKTHROUGH_SKILLS && M.BREAKTHROUGH_SKILLS[skillId];
         const name = sDef ? sDef.name : skillId;
@@ -354,7 +354,7 @@
             const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas && canvas.width <= 768);
             const catX = canvas ? canvas.width / 2 : 400;
-            const catY = canvas ? root.Meowcha.getBattleLayout(canvas).catY : 500;
+            const catY = canvas ? ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450)) : 500;
             this.state.chibiAttackFlash = 1.0;
             this.projectiles.spawn(catX - 70, catY - 60, ast.x, ast.y, 3, "#C084FC");
             this.projectiles.spawnSkyStrike(ast.x, ast.y, 3);
@@ -497,7 +497,7 @@
       const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
       const catX = canvas.width / 2;
-      const catY = root.Meowcha.getBattleLayout(canvas).catY;
+      const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
       this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
