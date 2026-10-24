@@ -7,47 +7,138 @@
 
   class MeowchaApp {
     constructor() {
+      root.Meowcha = root.Meowcha || {};
+      root.Meowcha.app = this;
       this.canvas = document.getElementById("gameCanvas");
       this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
-      // Khởi tạo Asset Loader
+      // Khởi tạo Asset Loader theo cấu trúc thư mục phân tầng chuẩn (characters/, asteroids/, maps/)
       this.assets = {
-        bg: { src: "./bg_study_sanctuary.jpg", img: new Image(), loaded: false },
-        cat_idle: { src: "./sprites/cat_idle.png", img: new Image(), loaded: false },
-        cat_weak_attack: { src: "./sprites/cat_weak_attack.png", img: new Image(), loaded: false },
-        cat_golden_core: { src: "./sprites/cat_golden_core.png", img: new Image(), loaded: false },
-        cat_nascent_soul: { src: "./sprites/cat_nascent_soul.png", img: new Image(), loaded: false },
-        cat_celestial_sovereign: { src: "./sprites/cat_celestial_sovereign.png", img: new Image(), loaded: false },
-        cat_hurt: { src: "./sprites/cat_hurt.png", img: new Image(), loaded: false },
-        cat_defeated: { src: "./sprites/cat_defeated.png", img: new Image(), loaded: false },
-        cat_ultimate_blast: { src: "./sprites/cat_ultimate_blast.png", img: new Image(), loaded: false },
-        prop_asteroid: { src: "./sprites/prop_asteroid.png", img: new Image(), loaded: false },
-        prop_asteroid_ice: { src: "./sprites/prop_asteroid_ice.png", img: new Image(), loaded: false },
-        prop_asteroid_fire: { src: "./sprites/prop_asteroid_fire.png", img: new Image(), loaded: false },
-        prop_asteroid_void: { src: "./sprites/prop_asteroid_void.png", img: new Image(), loaded: false },
-        prop_asteroid_thunder: { src: "./sprites/prop_asteroid_thunder.png", img: new Image(), loaded: false },
-        prop_bamboo_sword: { src: "./sprites/prop_bamboo_sword.png", img: new Image(), loaded: false },
-        prop_jade_sword: { src: "./sprites/prop_jade_sword.png", img: new Image(), loaded: false },
-        sword_realm3_thunder: { src: "./sprites/sword_realm3_thunder.png", img: new Image(), loaded: false },
-        sword_realm4_dragon: { src: "./sprites/sword_realm4_dragon.png", img: new Image(), loaded: false },
-        prop_sword_slash: { src: "./sprites/prop_sword_slash.png", img: new Image(), loaded: false },
-        prop_tea_explosion: { src: "./sprites/prop_tea_explosion.png", img: new Image(), loaded: false },
-        prop_mystic_cloud: { src: "./sprites/prop_mystic_cloud.png", img: new Image(), loaded: false }
+        bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: new Image(), loaded: false },
+        cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: new Image(), loaded: false },
+        cat_weak_attack: { src: "./sprites/characters/realm0_qi_refining/poses/attack.png", img: new Image(), loaded: false },
+        cat_golden_core: { src: "./sprites/characters/realm2_golden_core/poses/idle.png", img: new Image(), loaded: false },
+        cat_nascent_soul: { src: "./sprites/characters/realm3_nascent_soul/poses/idle.png", img: new Image(), loaded: false },
+        cat_celestial_sovereign: { src: "./sprites/characters/realm4_tribulation/poses/idle.png", img: new Image(), loaded: false },
+        cat_hurt: { src: "./sprites/characters/realm0_qi_refining/poses/hurt.png", img: new Image(), loaded: false },
+        cat_defeated: { src: "./sprites/characters/realm0_qi_refining/poses/defeated.png", img: new Image(), loaded: false },
+        cat_ultimate_blast: { src: "./sprites/characters/realm0_qi_refining/poses/ultimate.png", img: new Image(), loaded: false },
+        prop_asteroid: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
+        prop_asteroid_ice: { src: "./sprites/asteroids/ice.png", img: new Image(), loaded: false },
+        prop_asteroid_fire: { src: "./sprites/asteroids/fire.png", img: new Image(), loaded: false },
+        prop_asteroid_void: { src: "./sprites/asteroids/void.png", img: new Image(), loaded: false },
+        prop_asteroid_thunder: { src: "./sprites/asteroids/thunder.png", img: new Image(), loaded: false },
+        prop_bamboo_sword: { src: "./sprites/characters/realm0_qi_refining/weapon/sword.png", img: new Image(), loaded: false },
+        prop_jade_sword: { src: "./sprites/characters/realm1_foundation/weapon/sword.png", img: new Image(), loaded: false },
+        prop_golden_sword: { src: "./sprites/characters/realm2_golden_core/weapon/sword.png", img: new Image(), loaded: false },
+        sword_realm3_thunder: { src: "./sprites/characters/realm3_nascent_soul/weapon/sword.png", img: new Image(), loaded: false },
+        sword_realm4_dragon: { src: "./sprites/characters/realm4_tribulation/weapon/sword.png", img: new Image(), loaded: false },
+        prop_sword_slash: { src: "./sprites/characters/realm0_qi_refining/vfx/slash.png", img: new Image(), loaded: false },
+        prop_tea_explosion: { src: "./sprites/maps/tea_explosion.png", img: new Image(), loaded: false },
+        prop_mystic_cloud: { src: "./sprites/maps/mystic_cloud.png", img: new Image(), loaded: false },
+        vfx_impact_burst_sheet: { src: "./sprites/maps/impact_burst_sheet.png", img: new Image(), loaded: false },
+        chibi_companion: { src: "./sprites/characters/realm3_nascent_soul/poses/chibi_companion.png", img: new Image(), loaded: false }
       };
+
+      // Đăng ký động 5 Cảnh Giới Nhân Vật (Poses + Sheets + Weapon + Beam + VFX riêng cho từng nhân vật)
+      const realmFolders = [
+        "realm0_qi_refining",
+        "realm1_foundation",
+        "realm2_golden_core",
+        "realm3_nascent_soul",
+        "realm4_tribulation"
+      ];
+      const stateKeys = ["idle", "attack", "ultimate", "hurt", "defeated"];
+      realmFolders.forEach((folder, rIdx) => {
+        stateKeys.forEach((st) => {
+          this.assets[`char_r${rIdx}_${st}`] = {
+            src: `./sprites/characters/${folder}/poses/${st}.png`,
+            img: new Image(),
+            loaded: false
+          };
+          this.assets[`char_r${rIdx}_${st}_sheet`] = {
+            src: `./sprites/characters/${folder}/sheets/${st}_sheet.png`,
+            img: new Image(),
+            loaded: false
+          };
+        });
+        // Vũ khí, đạn phi kiếm, tia bắn & hiệu ứng chém riêng của từng nhân vật
+        this.assets[`char_r${rIdx}_sword`] = {
+          src: `./sprites/characters/${folder}/weapon/sword.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_sword_sheet`] = {
+          src: `./sprites/characters/${folder}/weapon/sword_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_projectile`] = {
+          src: `./sprites/characters/${folder}/weapon/projectile.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_projectile_sheet`] = {
+          src: `./sprites/characters/${folder}/weapon/projectile_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_beam`] = {
+          src: `./sprites/characters/${folder}/beam/beam.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_beam_sheet`] = {
+          src: `./sprites/characters/${folder}/beam/beam_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_slash`] = {
+          src: `./sprites/characters/${folder}/vfx/slash.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`vfx_slash_r${rIdx}_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/slash_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_muzzle`] = {
+          src: `./sprites/characters/${folder}/vfx/muzzle.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_muzzle_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/muzzle_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_hit`] = {
+          src: `./sprites/characters/${folder}/vfx/hit.png`,
+          img: new Image(),
+          loaded: false
+        };
+        this.assets[`char_r${rIdx}_hit_sheet`] = {
+          src: `./sprites/characters/${folder}/vfx/hit_sheet.png`,
+          img: new Image(),
+          loaded: false
+        };
+      });
 
       // Các hệ thống con
       this.gameState = new M.GameState();
       this.audio = new M.AudioManager();
       this.saveSystem = new M.SaveSystem();
+      this.animator = M.SpriteAnimator ? new M.SpriteAnimator(this.assets) : null;
       this.particles = new M.ParticleEngine();
       this.realmVFX = new M.RealmVFX(this.assets);
       this.floatingText = new M.FloatingText();
-      this.cat = new M.CatCultivator(this.assets, this.realmVFX);
-      this.asteroids = new M.AsteroidManager(this.assets);
-      this.projectiles = new M.ProjectileSystem(this.assets);
+      this.cat = new M.CatCultivator(this.assets, this.realmVFX, this.animator);
+      this.asteroids = new M.AsteroidManager(this.assets, this.gameState);
+      this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
       this.unityBridge = new M.UnityBridge("unityCharFrame", "unityCharacterMount");
       this.breakthrough = new M.BreakthroughFlow(this.gameState, this.audio, this.unityBridge);
-      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge);
+      this.typing = new M.TypingEngine(this.gameState, this.asteroids, this.projectiles, this.particles, this.audio, this.floatingText, this.realmVFX, this.unityBridge, this.animator, this.saveSystem);
 
       this.ipaToast = null;
       this.vKeyboard = null;
@@ -80,13 +171,36 @@
         });
       }
 
+      // Nút khôi phục bàn phím ảo khi người dùng di động bấm thu gọn
+      const restoreBtn = document.getElementById("floatingKbRestoreBtn");
+      if (restoreBtn) {
+        restoreBtn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const D = root.Meowcha && root.Meowcha.Device;
+          if (D) D.setUserPrefKeyboard(true);
+          else if (this.vKeyboard) this.vKeyboard.show();
+          restoreBtn.style.display = "none";
+        });
+      }
+
+      // Khi người dùng bấm phím cứng thực tế -> Tự động ẩn bàn phím ảo nếu đang vô tình bật trên PC
+      if (root.Meowcha && root.Meowcha.Device) {
+        root.Meowcha.Device.onPhysicalKeyboardUsed = () => {
+          if (root.Meowcha.Device.info.isDesktop && this.vKeyboard) {
+            this.vKeyboard.hide();
+          }
+        };
+      }
+
       this.ui = new M.UIManager(
         this.gameState,
         this.saveSystem,
         this.audio,
         () => this.startBattle(),
         () => this.returnToLobby(),
-        () => this.restartBattle()
+        () => this.restartBattle(),
+        this.assets
       );
 
       // Kết nối callback khi trảm từ hoàn tất
@@ -95,8 +209,21 @@
         const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
         this.saveSystem.saveGame(currentSlot, this.gameState);
 
+        // Hiển thị chữ Ngộ Đạo trực tiếp trên chiến trường (trên đỉnh đầu mèo, rõ ràng và không che khuất góc nhìn)
+        if (this.floatingText && slainWord && (slainWord.meaning || slainWord.ipa)) {
+          const catTargetY = (this.canvas ? this.canvas.height : 600) * 0.72;
+          const meaningText = slainWord.meaning ? `[ 悟 ] ${slainWord.meaning}` : `[ 悟 ] ${slainWord.ipa || ''}`;
+          this.floatingText.add(
+            (this.canvas ? this.canvas.width : 400) / 2,
+            catTargetY - 45,
+            meaningText,
+            "#34D399",
+            20
+          );
+        }
+
         // Kiểm tra điều kiện đột phá
-        const triggered = this.breakthrough.checkProgress();
+        const triggered = this.breakthrough.checkProgress(this.asteroids);
         if (!triggered) {
           // Lên lịch sinh từ tiếp theo
           setTimeout(() => this.spawnWord(), 600);
@@ -104,6 +231,14 @@
       };
 
       // Callback hiển thị bảng thiên phú đột phá
+      this.breakthrough.onSpawnBoss = (bossPool, newRealmIdx) => {
+        const bossAst = this.asteroids.spawnBoss(bossPool, this.canvas.width);
+        this.typing.currentTarget = bossAst;
+        this.typing.onBossDefeated = () => {
+          this.breakthrough.onBossSlain(newRealmIdx);
+        };
+      };
+
       this.breakthrough.onShowTalentModal = (talents, targetRealm) => {
         // ĐÓNG BĂNG TRẬN CHIẾN & QUÉT SẠCH MA THẠCH ĐANG RƠI ĐỂ NGƯỜI CHƠI KHÔNG BỊ MẤT MÁU OAN
         this.gameState.isPaused = true;
@@ -124,6 +259,11 @@
       };
 
       this.bindWindowEvents();
+      window.__meowchaReplayAudio = () => {
+        if (this.typing && this.gameState.currentScene === "BATTLE") {
+          this.typing.replayCurrentAudio();
+        }
+      };
 
       // Lắng nghe thay đổi HP và Game Over để lập tức xử lý và lưu chuẩn xác
       this.gameState.addListener((changeKey) => {
@@ -156,30 +296,75 @@
       console.log("[Meowcha] Động cơ Meowcha IELTS đã khởi tạo hoàn tất!");
     }
 
+    purgeAllBattleState() {
+      this.asteroids.clear();
+      this.projectiles.clear();
+      this.particles.clear();
+      this.floatingText.clear();
+      this.recentWordHistory = [];
+      this.spawnTimer = 0;
+      this.gameOverModalShown = false;
+      if (this.typing) {
+        this.typing.currentTarget = null;
+        this.typing.isLightningHazard = false;
+        this.typing.isCloudHazard = false;
+        this.typing.hazardTimer = 0;
+        this.typing.hazardLightningTimer = 0;
+        this.typing.mistakeStreak = 0;
+        this.typing.cloudMistakeCount = 0;
+        this.typing.cloudPurifiedCount = 0;
+        this.typing.purifiedWordsStreak = 0;
+        this.typing.updateSwordAltarUI(null);
+      }
+      if (this.realmVFX) {
+        this.realmVFX.clearClouds();
+        this.realmVFX.cloudAlpha = 0;
+        this.realmVFX.isPunishCloud = false;
+        this.realmVFX.cloudTimer = 0;
+      }
+      if (this.gameState) {
+        this.gameState.screenShake = 0;
+        this.gameState.screenFlash = 0;
+        this.gameState.isStunned = false;
+        this.gameState.stunTimer = 0;
+      }
+    }
+
     handleGameOver() {
       if (this.gameOverModalShown) return;
       this.gameOverModalShown = true;
       this.gameState.isGameOver = true;
       this.gameState.hp = 0;
 
-      // ĐẠO TIÊU THÂN VONG: Xóa ngay lập tức save slot hiện tại trên LocalStorage & Backend SQL
-      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      this.saveSystem.resetActiveSave(activeSlot);
+      // Khắc bia kỷ lục cao nhất lên Bảng Phong Thần khi tử trận
+      const best = Math.max(this.gameState.score || 0, this.gameState.highScore || 0);
+      if (best > (this.gameState.highScore || 0)) {
+        this.gameState.highScore = best;
+        try {
+          localStorage.setItem("meowcha_high_score", String(best));
+        } catch (e) {}
+      }
+      if (best > 0 && this.ui) {
+        this.ui.autoSubmitScoreToPantheon(best);
+      }
 
-      this.asteroids.clear();
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
+      // ĐẠO TIÊU THÂN VONG: Xóa dứt điểm dữ liệu của slot hiện tại
+      const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
+      this.saveSystem.resetActiveSave(activeSlot, curMode);
+
+      // Dập tắt triệt để toàn bộ âm rung thiền định/drone gây ù tai khi tử trận
+      if (this.audio) {
+        this.audio.silenceAll();
       }
-      if (this.realmVFX) {
-        this.realmVFX.clearClouds();
-      }
+
+      this.purgeAllBattleState();
       if (this.unityBridge) {
         this.unityBridge.triggerDefeated();
       }
-      this.audio.play("hurt");
+      if (this.audio) {
+        this.audio.play("hurt");
+      }
       this.ui.updateHUD();
       this.ui.showGameOverModal();
     }
@@ -202,18 +387,38 @@
     bindWindowEvents() {
       // Bàn phím phần cứng
       window.addEventListener("keydown", (e) => {
+        if (this.gameState.currentScene === "LOBBY") {
+          // Không kích hoạt nếu đang mở các modal
+          const openModal = document.querySelector(".meowcha-modal-overlay[style*='display: flex']");
+          if (!openModal && (e.code === "Space" || e.key === " " || e.key === "Enter")) {
+            e.preventDefault();
+            this.startBattle();
+            return;
+          }
+        }
         if (this.gameState.currentScene !== "BATTLE") return;
+        if (e.key === "Tab" || e.code === "Tab") {
+          e.preventDefault();
+          if (this.typing) {
+            this.typing.replayCurrentAudio();
+          }
+          return;
+        }
         if (e.key === "Escape") {
           this.ui.togglePause();
           return;
         }
-        if (e.key.length === 1 && /[a-zA-Z]/i.test(e.key)) {
-          this.typing.processKey(e.key, this.canvas);
+        // Chuẩn hóa gõ phím tiếng Việt (Telex/VNI/Unikey) sang ký tự Latinh thuần túy
+        const rawKey = e.key;
+        const normalizedChar = rawKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d");
+        if (normalizedChar.length === 1 && /[a-zA-Z]/i.test(normalizedChar)) {
+          this.typing.processKey(normalizedChar, this.canvas);
         }
       });
 
       // Lắng nghe lệnh từ trang Next.js cha
       window.addEventListener("message", (event) => {
+        if (!event.origin || event.origin !== window.location.origin) return;
         if (!event.data) return;
         if (event.data.type === "MEOWCHA_LOAD_SLOT") {
           const slot = event.data.data;
@@ -234,21 +439,27 @@
         }
       });
 
-      // Tự động mở khóa âm thanh khi người dùng tương tác lần đầu
-      const unlockAudio = () => {
+      // Tự động mở khóa âm thanh và phát khúc Cổ Cầm thiền định ngay khi tương tác ở sảnh
+      const unlockAudioAndStartBGM = () => {
         if (this.audio) {
+          this.audio.init();
           this.audio.unlockAudioContext();
+          if (this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
+            this.audio.startZenGuqin();
+          }
         }
       };
-      window.addEventListener("pointerdown", unlockAudio, { once: true });
-      window.addEventListener("keydown", unlockAudio, { once: true });
-      window.addEventListener("touchstart", unlockAudio, { once: true });
+      window.addEventListener("pointerdown", unlockAudioAndStartBGM);
+      window.addEventListener("keydown", unlockAudioAndStartBGM);
+      window.addEventListener("touchstart", unlockAudioAndStartBGM);
+      window.addEventListener("click", unlockAudioAndStartBGM);
 
       // Tự động co giãn canvas và chuyển đổi bàn phím ảo khi thay đổi kích thước màn hình
       window.addEventListener("resize", () => {
         this.initCanvasSize();
         if (this.vKeyboard && this.gameState.currentScene === "BATTLE") {
-          if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+          const D = root.Meowcha && root.Meowcha.Device;
+          if (D && D.shouldShowVirtualKeyboard()) {
             this.vKeyboard.show();
           } else {
             this.vKeyboard.hide();
@@ -274,30 +485,23 @@
         this.gameState.hp = this.gameState.maxHp || 50;
       }
       this.gameState.startTime = Date.now();
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
-
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      
+      this.purgeAllBattleState();
 
       this.ui.showScene("BATTLE");
       this.ui.updateHUD();
       this.audio.init();
       this.audio.startZenGuqin();
 
-      // Tự động hiển thị bàn phím ảo trên thiết bị di động / cảm ứng
-      if (this.vKeyboard && (window.innerWidth <= 768 || 'ontouchstart' in window)) {
+      // Tự động hiển thị bàn phím ảo CHỈ KHI LÀ THIẾT BỊ DI ĐỘNG / TOUCH NATIVE
+      const D = root.Meowcha && root.Meowcha.Device;
+      if (this.vKeyboard && D && D.shouldShowVirtualKeyboard()) {
         this.vKeyboard.show();
+      } else if (this.vKeyboard) {
+        this.vKeyboard.hide();
       }
 
-      this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 3000);
+      this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 1600);
 
       // Sinh từ vựng đầu tiên
       setTimeout(() => this.spawnWord(), 400);
@@ -305,9 +509,10 @@
 
     returnToLobby() {
       const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
       if (this.gameState.isGameOver || this.gameState.hp <= 0) {
         // Đạo tiêu thân vong: Tuyệt đối không lưu lại trạng thái đã chết!
-        this.saveSystem.resetActiveSave(activeSlot);
+        this.saveSystem.resetActiveSave(activeSlot, curMode);
         this.gameState.reset();
       } else {
         // Chỉ lưu khi người chơi còn sống chủ động dừng trận vào đúng ngọc giản đang trảm ma
@@ -318,21 +523,16 @@
       this.gameState.isGameOver = false;
       this.gameState.isStunned = false;
       this.gameState.setCatState("IDLE");
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
 
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      this.purgeAllBattleState();
+
       this.ui.showScene("LOBBY");
+      this.ui.updateLobbyButtons();
       this.ui.updateHUD();
-      this.audio.stopZenGuqin();
+      // Giữ nguyên khúc Cổ Cầm thiền định để sảnh chờ luôn có nhạc nền thanh tịnh
+      if (this.audio && this.audio.soundEnabled && !this.audio.zenMusicPlaying) {
+        this.audio.startZenGuqin();
+      }
 
       if (this.vKeyboard) {
         this.vKeyboard.hide();
@@ -353,42 +553,39 @@
       }
 
       const activeSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
-      this.saveSystem.resetActiveSave(activeSlot);
+      const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
+      this.saveSystem.resetActiveSave(activeSlot, curMode);
+
       this.gameState.reset();
+      this.gameState.gameMode = curMode;
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;
       this.gameState.revive();
       this.gameState.startTime = Date.now();
-      this.gameOverModalShown = false;
-      this.typing.currentTarget = null;
-      if (this.typing) {
-        this.typing.isLightningHazard = false;
-        this.typing.isCloudHazard = false;
-        this.typing.hazardTimer = 0;
-      }
 
-      this.asteroids.clear();
-      this.projectiles.clear();
-      this.particles.clear();
-      this.floatingText.clear();
+      this.purgeAllBattleState();
 
       this.ui.showScene("BATTLE");
       this.ui.updateHUD();
       this.audio.play("breakthrough");
       this.audio.startZenGuqin();
 
-      if (this.vKeyboard && (window.innerWidth <= 768 || 'ontouchstart' in window)) {
+      const DRestart = root.Meowcha && root.Meowcha.Device;
+      if (this.vKeyboard && DRestart && DRestart.shouldShowVirtualKeyboard()) {
         this.vKeyboard.show();
+      } else if (this.vKeyboard) {
+        this.vKeyboard.hide();
       }
 
-      this.gameState.setSpeech("Tẩy Tủy Hoàn Tất! Trùng Tu Kiếm Đạo!", 3500);
-      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "[ 丹 ] TẨY TỦY TRỌNG SINH!", "#38BDF8", 30);
+      this.gameState.setSpeech("Trọng Sinh Quy Lai! Trùng Tu Kiếm Đạo!", 3500);
+      this.floatingText.add(this.canvas.width / 2, this.canvas.height / 2 - 50, "[ 丹 ] TRỌNG SINH TRẬN MỚI!", "#38BDF8", 30);
 
       setTimeout(() => this.spawnWord(), 500);
     }
 
     spawnWord() {
-      if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver) return;
+      if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver || this.gameState.isPaused || this.gameState.catState === "BREAKTHROUGH") return;
+      if (this.breakthrough && this.breakthrough.isBossEncounterActive) return;
       // QUY CHUẨN ĐỘ KIẾP: TUYỆT ĐỐI CHỈ RƠI 1 QUẢ DUY NHẤT TẠI MỘT THỜI ĐIỂM!
       // Không bao giờ rơi chồng chéo 2-3 quả. Trảm xong quả này thì quả mới mới xuất hiện!
       if (this.asteroids.count >= 1) return;
@@ -455,8 +652,15 @@
         targetMinLen = 10; targetMaxLen = 16; targetDeckIdx = 3;
       }
 
-      // Lấy từ vựng phù hợp từ kho
+      // Lấy từ vựng phù hợp từ kho (Hỗ trợ 4 Bộ Pháp Điển Tàng Kinh Các chuyên sâu)
       let sourceList = realmDecks[targetDeckIdx] || realmDecks[rIdx] || realmDecks[0] || [];
+      const curDeckId = this.gameState.activeDeckId || "oxford_5000";
+      if (curDeckId !== "oxford_5000" && M.TANG_KINH_DECKS) {
+        const specializedDeck = M.TANG_KINH_DECKS.find(d => d.id === curDeckId);
+        if (specializedDeck && specializedDeck.words && specializedDeck.words.length > 0) {
+          sourceList = specializedDeck.words;
+        }
+      }
       if (rIdx >= 4) {
         // Cảnh 4: Thần Cảnh Vô Cực - Ngẫu nhiên toàn bộ kho từ điển Oxford 5000
         const combined = [];
@@ -498,8 +702,18 @@
         candidatePool = matchedList;
       }
 
-      const wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
-      if (!wordItem) return;
+      let wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+      if (!wordItem) {
+        // Fallback kiên cố nếu danh sách tạm thời rỗng để game không bao giờ bị dừng
+        const fallbackWords = [
+          { word: "PEACE", ipa: "/piːs/", meaning: "Hòa bình, thanh tịnh", type: "noun" },
+          { word: "WISDOM", ipa: "/ˈwɪzdəm/", meaning: "Trí tuệ, thông thái", type: "noun" },
+          { word: "COURAGE", ipa: "/ˈkʌrɪdʒ/", meaning: "Lòng dũng cảm", type: "noun" },
+          { word: "CLARITY", ipa: "/ˈklærəti/", meaning: "Sự sáng suốt, rõ ràng", type: "noun" },
+          { word: "SERENITY", ipa: "/səˈrenəti/", meaning: "Sự tĩnh lặng, thanh bình", type: "noun" }
+        ];
+        wordItem = fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+      }
 
       // Đưa vào hàng đợi lịch sử để không lặp lại trong ít nhất 60 từ tiếp theo
       this.recentWordHistory.push(wordItem.word);
@@ -515,6 +729,13 @@
         targetDeckIdx,
         chosenType
       );
+
+      // Trong chế độ Thính Lôi Biện Âm (AUDIO): Phát âm từ vựng ngay khi ma thạch xuất hiện!
+      if (ast && ast.isAudio && this.typing) {
+        setTimeout(() => {
+          if (this.typing) this.typing.playWordAudio(ast);
+        }, 150);
+      }
     }
 
     gameLoop(now) {
@@ -544,8 +765,9 @@
     }
 
     update(dt) {
-      const isMobile = this.canvas.width <= 768 || (this.canvas.height > this.canvas.width);
-      const catTargetY = isMobile ? (this.canvas.height * 0.61 - 40) : (this.canvas.height - 110);
+      const DPlatform = root.Meowcha && root.Meowcha.Device;
+      const isMobile = DPlatform ? DPlatform.info.isMobile : (this.canvas.width <= 768);
+      const catTargetY = isMobile ? (this.canvas.height - 232) : (this.canvas.height - 128);
 
       // 1. Cập nhật Choáng, Sấm Sét và Đồng bộ Bàn Phím Ảo
       this.gameState.updateStun(dt);
@@ -584,12 +806,17 @@
         this.particles.createHitSparks(this.canvas.width / 2, catTargetY, "#FDE047", 10);
         this.audio.play("type");
       });
+      if (this.animator) this.animator.update(dt, this.gameState);
       this.cat.update(dt, this.gameState);
 
-      // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên đỉnh bàn phím ảo)
-      const bottomThreshold = isMobile ? (this.canvas.height * 0.61 - 15) : (this.canvas.height - 120);
+      // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
+      const bottomThreshold = isMobile ? (this.canvas.height - 265) : (this.canvas.height - 130);
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
+        if (!missedAst || missedAst.isBoss) return;
+        if (this.saveSystem && !missedAst.isBoss) {
+          this.saveSystem.recordWeaknessWord(missedAst);
+        }
         // Ma thạch đập vào đan điền: Sát thương phân cấp theo loại ma thạch
         const baseDmg = missedAst.damage || (missedAst.asteroidType === 'thunder' ? 22 : missedAst.asteroidType === 'void' ? 16 : missedAst.asteroidType === 'fire' ? 12 : 8);
         const damage = Math.max(5, baseDmg);
@@ -607,8 +834,14 @@
           this.particles.createExplosion(missedAst.x, bottomThreshold, missedAst.coreColor || "#EF4444", 24);
           this.floatingText.add(missedAst.x, bottomThreshold - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
 
-          // Rung chấn màn hình theo độ lớn của sát thương
-          this.gameState.screenShake = Math.min(26, 10 + damage * 0.6);
+          const hurtQuotes = (root.Meowcha && root.Meowcha.HURT_SPEECHES) || [];
+          if (hurtQuotes.length > 0) {
+            const hq = hurtQuotes[Math.floor(Math.random() * hurtQuotes.length)];
+            this.gameState.setSpeech(hq, 2200);
+          }
+
+          // Rung chấn màn hình êm dịu, không giật mạnh gây xé hình hay hoa mắt
+          this.gameState.screenShake = Math.min(5.0, 2.5 + damage * 0.12);
 
           // Bị ma thạch chạm đáy tổn thất đan điền: Kích hoạt cảnh báo Ma Vân Tụ Khí
           if (this.typing && !this.gameState.isGameOver) {
@@ -630,26 +863,18 @@
         this.particles.createHitSparks(hitProj.targetX, hitProj.targetY, hitProj.color, 6);
       });
 
-      // Rung màn hình (Screen Shake decay)
+      // Rung màn hình suy giảm cực nhanh (Screen Shake decay nhanh 45x dt)
       if (this.gameState.screenShake > 0) {
-        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 25);
+        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 45);
       }
 
       // Cập nhật thanh HUD
       this.ui.updateHUD();
 
-      // Tự động làm trong suốt thanh HUD nếu có thiên thạch đang rơi vào khu vực này để không che khuất chữ
+      // HUD luôn sắc nét, vững chãi, hai dock trái phải không che khuất ma thạch rơi chính giữa trời
       const hudEl = document.querySelector(".sect-scroll-hud");
-      if (hudEl) {
-        const isMob = this.canvas.width <= 768;
-        const hudW = isMob ? this.canvas.width : 520;
-        const hudH = 115;
-        const hasAsteroidNearHUD = this.asteroids.asteroids.some(a => a && a.y < hudH + 20 && a.x < hudW + 30);
-        if (hasAsteroidNearHUD) {
-          hudEl.classList.add("hud-dimmed");
-        } else {
-          hudEl.classList.remove("hud-dimmed");
-        }
+      if (hudEl && hudEl.classList.contains("hud-dimmed")) {
+        hudEl.classList.remove("hud-dimmed");
       }
     }
 
@@ -659,36 +884,44 @@
       const w = this.canvas.width;
       const h = this.canvas.height;
 
+      // 1. Reset ma trận transform và xóa sạch toàn bộ khung hình canvas (Triệt tiêu 100% xé hình & bóng ma mép màn hình)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
       ctx.save();
 
-      // Hiệu ứng rung màn hình
+      // Hiệu ứng rung màn hình êm dịu (tối đa 4.5px, làm tròn pixel)
       if (this.gameState.screenShake > 0) {
-        const sx = (Math.random() - 0.5) * this.gameState.screenShake;
-        const sy = (Math.random() - 0.5) * this.gameState.screenShake;
+        const shakeMag = Math.min(4.5, this.gameState.screenShake);
+        const sx = Math.round((Math.random() - 0.5) * shakeMag);
+        const sy = Math.round((Math.random() - 0.5) * shakeMag);
         ctx.translate(sx, sy);
       }
 
-      // 1. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực)
+      // 2. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực kèm overscan 80px chống hở mép khi rung chấn)
+      const overscan = 80;
       if (this.assets.bg.loaded) {
         const img = this.assets.bg.img;
+        const targetW = w + overscan * 2;
+        const targetH = h + overscan * 2;
         const imgRatio = img.width / img.height;
-        const canvasRatio = w / h;
+        const canvasRatio = targetW / targetH;
         let renderW, renderH, offsetX, offsetY;
         if (canvasRatio > imgRatio) {
-          renderW = w;
-          renderH = w / imgRatio;
-          offsetX = 0;
-          offsetY = (h - renderH) / 2;
+          renderW = targetW;
+          renderH = targetW / imgRatio;
+          offsetX = -overscan;
+          offsetY = -overscan + (targetH - renderH) / 2;
         } else {
-          renderH = h;
-          renderW = h * imgRatio;
-          offsetX = (w - renderW) / 2;
-          offsetY = 0;
+          renderH = targetH;
+          renderW = targetH * imgRatio;
+          offsetX = -overscan + (targetW - renderW) / 2;
+          offsetY = -overscan;
         }
         ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
       } else {
         ctx.fillStyle = "#1E120A";
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
       }
 
       // Lớp phủ bóng mờ viền màn hình (Vignette)
@@ -696,28 +929,26 @@
       grad.addColorStop(0, "rgba(0, 0, 0, 0.0)");
       grad.addColorStop(1, "rgba(10, 5, 2, 0.72)");
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
 
       // Viền phù văn góc cổ phong Trung Hoa
       this.realmVFX.drawRetroPixelVignette(ctx, w, h);
 
       if (this.gameState.currentScene === "BATTLE") {
-        // 2. Mây mù cổ phong ở tầng nền xa (Không bao giờ che khuất ma thạch và từ vựng)
-        this.realmVFX.drawMysticClouds(ctx, w, h);
-
         // 3. Vẽ Phi Kiếm
         this.projectiles.draw(ctx);
 
         // 4. Vẽ Ma Thạch & Cổ Phù Từ Vựng
         this.asteroids.draw(ctx, this.gameState.screenFlash);
 
-        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Khi bị phạt Ma Vân Tụ Khí, dải sương mù lượn lờ trôi ngang quấy nhiễu tầm nhìn)
+        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Chỉ kích hoạt khi bị phạt Ma Vân Tụ Khí)
         if (this.realmVFX && this.realmVFX.isPunishCloud) {
           this.realmVFX.drawMysticClouds(ctx, w, h, true);
         }
 
-        // 5. Vẽ Hạt hiệu ứng
+        // 5. Vẽ Hạt hiệu ứng & VFX Clips
         this.particles.draw(ctx);
+        if (this.animator) this.animator.drawVFXClips(ctx);
 
         // 6. Vẽ Nhân vật Mèo Tôn kèm Phi Kiếm & Sợi Tơ Kiếm Ý Khóa Mục Tiêu
         this.cat.draw(ctx, this.canvas, this.gameState, this.typing.currentTarget);
@@ -728,19 +959,27 @@
         // 8. TIA SÉT THIÊN KIẾP & CHỚP SÁNG MÀN HÌNH
         this.realmVFX.drawLightning(ctx, w, h, this.gameState.screenFlash);
 
-        // 9. Bong bóng thoại Mèo Tôn
+        // 9. Bong bóng thoại Mèo Tôn (Neo sát trên đầu Mèo Tôn, tự động ẩn khi thiên thạch rơi gần để không che khuất)
         if (this.gameState.speechText && performance.now() < this.gameState.speechTimer) {
-          this.floatingText.drawSideSpeechBubble(ctx, w / 2, h - 180, this.gameState.speechText);
+          const isMob = w <= 768 || (h > w);
+          const catY = (this.cat && typeof this.cat.y === "number") ? this.cat.y : (isMob ? (h - 252) : (h - 200));
+          const hasAsteroidNearCat = this.asteroids && this.asteroids.asteroids.some(a => a && Math.abs(a.y - catY) < 180);
+          if (!hasAsteroidNearCat) {
+            const speechY = Math.round(catY - 68);
+            this.floatingText.drawSideSpeechBubble(ctx, w / 2, speechY, this.gameState.speechText);
+          }
         }
       }
 
       ctx.restore();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
   }
 
   // Khởi động khi DOM sẵn sàng
   window.addEventListener("DOMContentLoaded", () => {
     window.MeowchaGameInstance = new MeowchaApp();
+    root.Meowcha.app = window.MeowchaGameInstance;
     window.MeowchaGameInstance.init();
   });
 
