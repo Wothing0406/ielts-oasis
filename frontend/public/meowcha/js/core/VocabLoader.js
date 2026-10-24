@@ -60,39 +60,8 @@
       }
       return words;
     } catch (err) {
-      console.warn('[VocabLoader] API fetch failed, trying local static ./data/oxford_5000.json:', err.message);
-      try {
-        const localResp = await fetch('./data/oxford_5000.json');
-        if (localResp.ok) {
-          const allOxford = await localResp.json();
-          if (Array.isArray(allOxford)) {
-            const levelMap = { 0: ['A1', 'A2'], 1: ['B1'], 2: ['B2'], 3: ['C1'] };
-            const targetLevels = levelMap[bandIdx] || ['A1', 'A2'];
-            const filtered = allOxford.filter(w => targetLevels.includes(w.level) && w.word && w.word.length >= 3 && !w.word.includes(' ') && !w.word.includes('-'));
-            const words = filtered.map((w, i) => ({
-              id: bandIdx * 10000 + i,
-              word: w.word.trim().toUpperCase(),
-              ipa: w.phonetic || '/.../',
-              meaning: w.meaning || '',
-              type: w.type || 'vocab',
-              audio_url: w.audio_url || '',
-              band_level: bandIdx,
-              asteroid_type: bandIdx === 0 ? 'FROST' : bandIdx === 1 ? 'FIRE' : bandIdx === 2 ? 'VOID' : 'THUNDER'
-            }));
-            if (words.length > 0) {
-              CACHE[key] = words;
-              FETCH_STATE[key] = 'done';
-              var M = root.Meowcha || {};
-              if (M.REALM_DECKS) M.REALM_DECKS[bandIdx] = words;
-              console.log(`[VocabLoader] Loaded ${words.length} Oxford words from local static data for Band ${bandIdx}`);
-              return words;
-            }
-          }
-        }
-      } catch (localErr) {
-        console.warn('[VocabLoader] Local static fetch failed:', localErr.message);
-      }
       FETCH_STATE[key] = 'error';
+      console.warn('[VocabLoader] Band ' + bandIdx + ' fetch failed:', err.message, '-- sử dụng static fallback');
       return _getStaticFallback(bandIdx);
     }
   }
@@ -144,7 +113,6 @@
             ipa:     w.ipa || w.phonetic || w.default_ipa || '/.../',
             meaning: w.meaning || w.definition || w.vietnamese || '',
             type:    w.type || w.pos || w.part_of_speech || 'vocab',
-            audio_url: w.audio_url || '',
             band_level: w.band_level !== undefined ? w.band_level : band,
             asteroid_type: w.asteroid_type || 'FROST'
           };
@@ -186,30 +154,8 @@
     };
   }
 
-  function getRandomWords(bandIdx, n, deckId) {
+  function getRandomWords(bandIdx, n) {
     n = n || 12;
-    var M = root.Meowcha || {};
-    var activeDeck = deckId || (M.app && M.app.gameState && M.app.gameState.activeDeckId) || "oxford_5000";
-
-    // 1. Nếu chọn Ngọc Giản chuyên sâu (Listening 1200 / Reading Academic / Flashcard SRS)
-    if (activeDeck && activeDeck !== "oxford_5000" && M.TANG_KINH_DECKS) {
-      const specializedDeck = M.TANG_KINH_DECKS.find(d => d.id === activeDeck);
-      if (specializedDeck && specializedDeck.words && specializedDeck.words.length > 0) {
-        const pool = specializedDeck.words;
-        const result = [];
-        const used = {};
-        const attempts = pool.length * 2;
-        for (let i = 0; i < attempts && result.length < n; i++) {
-          const idx = Math.floor(Math.random() * pool.length);
-          if (!used[idx]) {
-            used[idx] = true;
-            result.push(pool[idx]);
-          }
-        }
-        if (result.length > 0) return result;
-      }
-    }
-
     var key = String(Math.max(0, Math.min(3, bandIdx)));
     var pool = CACHE[key];
     if (!pool || pool.length === 0) pool = _getStaticFallback(bandIdx);

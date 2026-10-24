@@ -1,7 +1,7 @@
 /**
  * VirtualKeyboard.js - Bàn Phím Trận Pháp Cổ Phù Cho Mobile & Tablet
  * Thiết kế chuẩn Đá Thạch Khắc Phù Văn (Ancient Rune Stone Array)
- * Không delay (0ms pointerdown), hỗ trợ rung haptic, nút Phát Âm (Tab), Space và Xóa.
+ * Không delay (0ms pointerdown), hỗ trợ rung haptic và trạng thái Choáng
  */
 (function(root) {
   const KB_ROWS = [
@@ -29,32 +29,11 @@
       const headerBar = document.createElement("div");
       headerBar.className = "kb-seal-header";
       headerBar.innerHTML = `
-        <span class="kb-seal-title">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="vertical-align: -1px; margin-right: 4px;"><polygon points="8,1 15,8 8,15 1,8" fill="#78350F" stroke="#F3C644" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#2DE28D"/></svg>
-          TRẬN PHÁP PHÙ THẠCH BÀN
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="vertical-align: -1px; margin-left: 4px;"><polygon points="8,1 15,8 8,15 1,8" fill="#78350F" stroke="#F3C644" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#2DE28D"/></svg>
-        </span>
+        <span class="kb-seal-title">◆ TRẬN PHÁP PHÙ THẠCH BÀN ◆</span>
         <span class="kb-stun-badge" id="kbStunBadge">TÂM MA NHIỄU LOẠN</span>
-        <button class="kb-minimize-btn" id="btnMinimizeKeyboard" type="button" title="Thu gọn bàn phím ảo">
-          <span>[ Ẩn Bàn Phím ▼ ]</span>
-        </button>
       `;
-
-      const btnMin = headerBar.querySelector("#btnMinimizeKeyboard");
-      if (btnMin) {
-        btnMin.addEventListener("pointerdown", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const D = root.Meowcha && root.Meowcha.Device;
-          if (D) D.setUserPrefKeyboard(false);
-          else this.hide();
-          const restoreBtn = document.getElementById("floatingKbRestoreBtn");
-          if (restoreBtn) restoreBtn.style.display = "inline-flex";
-        });
-      }
       kbWrapper.appendChild(headerBar);
 
-      // 3 Hàng phím chữ cái chính
       KB_ROWS.forEach(row => {
         const rowEl = document.createElement("div");
         rowEl.className = "kb-row";
@@ -64,12 +43,17 @@
           keyBtn.className = "kb-key xianxia-key";
           keyBtn.type = "button";
           keyBtn.setAttribute("data-key", keyChar);
-          keyBtn.innerHTML = `<span class="key-char">${keyChar}</span>`;
+
+          keyBtn.innerHTML = `
+            <span class="key-char">${keyChar}</span>
+            <span class="key-rune-corner">᛭</span>
+          `;
 
           const triggerKey = (e) => {
             e.preventDefault();
             e.stopPropagation();
 
+            // Nếu đang bị Choáng: Chặn xuất chiêu, rung cảnh báo
             if (this.isStunned) {
               keyBtn.classList.add("stun-reject");
               setTimeout(() => keyBtn.classList.remove("stun-reject"), 150);
@@ -79,102 +63,26 @@
               return;
             }
 
+            // Rung phản hồi haptic xúc giác 15ms
             if (typeof navigator !== "undefined" && navigator.vibrate) {
-              try { navigator.vibrate(12); } catch (_) {}
+              try { navigator.vibrate(15); } catch (_) {}
             }
 
             keyBtn.classList.add("active");
-            setTimeout(() => keyBtn.classList.remove("active"), 80);
+            setTimeout(() => keyBtn.classList.remove("active"), 90);
 
             if (this.onKeyPress) this.onKeyPress(keyChar);
           };
 
+          // Pointerdown triệt tiêu hoàn toàn 300ms click delay trên mobile
           keyBtn.addEventListener("pointerdown", triggerKey);
+
           rowEl.appendChild(keyBtn);
         });
 
         kbWrapper.appendChild(rowEl);
       });
 
-      // Hàng 4: Hàng tiện ích (Phát Âm / Tab, Phím Cách Space, Phím Xóa Backspace)
-      const actionRow = document.createElement("div");
-      actionRow.className = "kb-row kb-row-actions";
-
-      // Nút Thính Âm / Replay Audio (Đặc biệt quan trọng cho chế độ Audio Mode)
-      const btnAudio = document.createElement("button");
-      btnAudio.className = "kb-key xianxia-key kb-action-key kb-audio-key";
-      btnAudio.type = "button";
-      btnAudio.title = "Nghe lại phát âm (Tab)";
-      btnAudio.innerHTML = `
-        <svg class="key-action-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F3C644" stroke-width="2.2">
-          <path d="M12 3 C8.5 3 7 6 7 11 L5 17 H19 L17 11 C17 6 15.5 3 12 3 Z" fill="rgba(243,198,68,0.2)"/>
-          <path d="M10 17 a2 2 0 0 0 4 0"/>
-        </svg>
-        <span class="key-action-label">THÍNH ÂM</span>
-      `;
-      btnAudio.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(15); } catch (_) {}
-        }
-        btnAudio.classList.add("active");
-        setTimeout(() => btnAudio.classList.remove("active"), 80);
-        if (window.__meowchaReplayAudio) {
-          window.__meowchaReplayAudio();
-        } else if (this.onKeyPress) {
-          this.onKeyPress("Tab");
-        }
-      });
-      actionRow.appendChild(btnAudio);
-
-      // Phím Cách / Trảm Ma Space
-      const btnSpace = document.createElement("button");
-      btnSpace.className = "kb-key xianxia-key kb-action-key kb-space-key";
-      btnSpace.type = "button";
-      btnSpace.title = "Xuất kiếm (Space)";
-      btnSpace.innerHTML = `
-        <svg class="key-action-svg" width="16" height="16" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg>
-        <span class="key-action-label">TRẢM MA</span>
-      `;
-      btnSpace.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(12); } catch (_) {}
-        }
-        btnSpace.classList.add("active");
-        setTimeout(() => btnSpace.classList.remove("active"), 80);
-        if (this.onKeyPress) this.onKeyPress(" ");
-      });
-      actionRow.appendChild(btnSpace);
-
-      // Phím Xóa Backspace
-      const btnBackspace = document.createElement("button");
-      btnBackspace.className = "kb-key xianxia-key kb-action-key kb-del-key";
-      btnBackspace.type = "button";
-      btnBackspace.title = "Xóa (Backspace)";
-      btnBackspace.innerHTML = `
-        <svg class="key-action-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2.2">
-          <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" fill="rgba(212,67,39,0.25)"/>
-          <line x1="18" y1="9" x2="12" y2="15"/>
-          <line x1="12" y1="9" x2="18" y2="15"/>
-        </svg>
-        <span class="key-action-label">XÓA</span>
-      `;
-      btnBackspace.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(15); } catch (_) {}
-        }
-        btnBackspace.classList.add("active");
-        setTimeout(() => btnBackspace.classList.remove("active"), 80);
-        if (this.onKeyPress) this.onKeyPress("Backspace");
-      });
-      actionRow.appendChild(btnBackspace);
-
-      kbWrapper.appendChild(actionRow);
       this.container.appendChild(kbWrapper);
     }
 

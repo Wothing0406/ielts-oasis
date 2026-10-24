@@ -56,3 +56,10 @@ patch_*
 *.bat
 *.db
 *.pdf
+
+# Local browser profiles, investigation scripts and generated verification output
+/scratch*/
+/agent-sprite-forge/
+/artifacts/
+/frontend/test-results/
+/frontend/playwright-report/

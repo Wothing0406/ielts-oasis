@@ -261,7 +261,6 @@ export const MeowchaGame: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameIdRef = useRef<number>(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const startTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Game Engine mutable state
   const asteroidsRef = useRef<Asteroid[]>([]);
@@ -331,33 +330,18 @@ export const MeowchaGame: React.FC<{
 
     // Preload sprites
     const assetList: { key: string; src: string }[] = [
-      { key: "bg", src: "/meowcha/sprites/maps/bg_study_sanctuary.jpg" },
-      { key: "cat_idle", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png" },
-      { key: "cat_golden_core", src: "/meowcha/sprites/characters/realm2_golden_core/poses/idle.png" },
-      { key: "cat_nascent_soul", src: "/meowcha/sprites/characters/realm3_nascent_soul/poses/idle.png" },
-      { key: "cat_celestial_sovereign", src: "/meowcha/sprites/characters/realm4_tribulation/poses/idle.png" },
-      { key: "cat_hurt", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/hurt.png" },
-      { key: "cat_defeated", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/defeated.png" },
-      { key: "cat_attack", src: "/meowcha/sprites/characters/realm0_qi_refining/poses/attack.png" },
-      { key: "prop_asteroid", src: "/meowcha/sprites/asteroids/ice.png" },
-      { key: "prop_slash", src: "/meowcha/sprites/characters/realm0_qi_refining/vfx/slash.png" },
-      { key: "prop_explosion", src: "/meowcha/sprites/maps/tea_explosion.png" }
+      { key: "bg", src: "/meowcha/bg_study_sanctuary.jpg" },
+      { key: "cat_idle", src: "/meowcha/sprites/cat_idle.png" },
+      { key: "cat_golden_core", src: "/meowcha/sprites/cat_golden_core.png" },
+      { key: "cat_nascent_soul", src: "/meowcha/sprites/cat_nascent_soul.png" },
+      { key: "cat_celestial_sovereign", src: "/meowcha/sprites/cat_celestial_sovereign.png" },
+      { key: "cat_hurt", src: "/meowcha/sprites/cat_hurt.png" },
+      { key: "cat_defeated", src: "/meowcha/sprites/cat_defeated.png" },
+      { key: "cat_attack", src: "/meowcha/sprites/cat_weak_attack.png" },
+      { key: "prop_asteroid", src: "/meowcha/sprites/prop_asteroid.png" },
+      { key: "prop_slash", src: "/meowcha/sprites/prop_sword_slash.png" },
+      { key: "prop_explosion", src: "/meowcha/sprites/prop_tea_explosion.png" }
     ];
-    const realmFolders = [
-      "realm0_qi_refining",
-      "realm1_foundation",
-      "realm2_golden_core",
-      "realm3_nascent_soul",
-      "realm4_tribulation"
-    ];
-    realmFolders.forEach((folder, rIdx) => {
-      ["idle", "attack", "ultimate", "hurt", "defeated"].forEach((st) => {
-        assetList.push({
-          key: `char_r${rIdx}_${st}`,
-          src: `/meowcha/sprites/characters/${folder}/poses/${st}.png`
-        });
-      });
-    });
 
     let loaded = 0;
     assetList.forEach(item => {
@@ -637,54 +621,18 @@ export const MeowchaGame: React.FC<{
     setShowBreakthroughModal(false);
     setViewMode("battle");
 
-    if (startTimerRef.current) clearTimeout(startTimerRef.current);
-    startTimerRef.current = setTimeout(() => spawnAsteroid(initialWord), 150);
+    setTimeout(() => spawnAsteroid(initialWord), 150);
   }, [loadedSave, spawnAsteroid]);
 
   // Handle external launch target word
   useEffect(() => {
     if (targetInitialWord) startBattle(targetInitialWord);
-    return () => {
-      if (startTimerRef.current) {
-        clearTimeout(startTimerRef.current);
-        startTimerRef.current = null;
-      }
-    };
   }, [targetInitialWord, startBattle]);
 
   // Handle external load save
   useEffect(() => {
     if (loadedSave) startBattle();
-    return () => {
-      if (startTimerRef.current) {
-        clearTimeout(startTimerRef.current);
-        startTimerRef.current = null;
-      }
-    };
   }, [loadedSave, startBattle]);
-
-  // 9. Breakthrough Check
-  const checkBreakthroughProgress = useCallback(() => {
-    const curScore = statsRef.current.score;
-    const curIdx = statsRef.current.realmIdx;
-
-    for (let i = CULTIVATION_REALMS.length - 1; i >= 0; i--) {
-      if (curScore >= CULTIVATION_REALMS[i].minScore) {
-        if (i > curIdx) {
-          // BREAKTHROUGH TRIGGERED!
-          statsRef.current.realmIdx = i;
-          setCurrentRealmIdx(i);
-          playSound("level");
-
-          // Pick 3 random talents
-          const shuffled = [...TALENT_POOL].sort(() => Math.random() - 0.5);
-          setTalentChoices(shuffled.slice(0, 3));
-          setShowBreakthroughModal(true);
-        }
-        break;
-      }
-    }
-  }, [playSound]);
 
   // 8. Keystroke Processor (Hardware keyboard & Virtual keyboard & Screen Touch)
   const processInputChar = useCallback((inputChar: string) => {
@@ -839,7 +787,30 @@ export const MeowchaGame: React.FC<{
       setCombo(0);
       playSound("hurt");
     }
-  }, [isGameOver, isPaused, playSound, spawnAsteroid, checkBreakthroughProgress]);
+  }, [isGameOver, isPaused, playSound, spawnAsteroid]);
+
+  // 9. Breakthrough Check
+  const checkBreakthroughProgress = useCallback(() => {
+    const curScore = statsRef.current.score;
+    const curIdx = statsRef.current.realmIdx;
+
+    for (let i = CULTIVATION_REALMS.length - 1; i >= 0; i--) {
+      if (curScore >= CULTIVATION_REALMS[i].minScore) {
+        if (i > curIdx) {
+          // BREAKTHROUGH TRIGGERED!
+          statsRef.current.realmIdx = i;
+          setCurrentRealmIdx(i);
+          playSound("level");
+
+          // Pick 3 random talents
+          const shuffled = [...TALENT_POOL].sort(() => Math.random() - 0.5);
+          setTalentChoices(shuffled.slice(0, 3));
+          setShowBreakthroughModal(true);
+        }
+        break;
+      }
+    }
+  }, [playSound]);
 
   // Select Talent from Breakthrough Modal
   const handleSelectTalent = (talent: typeof TALENT_POOL[0]) => {
@@ -1209,21 +1180,16 @@ export const MeowchaGame: React.FC<{
       }
 
       // Determine Sprite based on Realm & State
-      const rClamped = Math.min(4, Math.max(0, statsRef.current.realmIdx || 0));
-      const realm = CULTIVATION_REALMS[rClamped] || CULTIVATION_REALMS[0];
-      let stKey = "idle";
-      if (isGameOver) {
-        stKey = "defeated";
-      } else if (statsRef.current.catState === "HURT" || statsRef.current.stunTimer > 0) {
-        stKey = "hurt";
-      } else if (statsRef.current.catLunge > 0) {
-        stKey = "attack";
+      const realm = CULTIVATION_REALMS[statsRef.current.realmIdx] || CULTIVATION_REALMS[0];
+      let spriteKey = realm.spriteKey;
+
+      if (statsRef.current.catState === "HURT" || statsRef.current.stunTimer > 0) {
+        spriteKey = "cat_hurt";
+      } else if (isGameOver) {
+        spriteKey = "cat_defeated";
       }
 
-      const catImg =
-        assetsRef.current[`char_r${rClamped}_${stKey}`] ||
-        assetsRef.current[realm.spriteKey] ||
-        assetsRef.current["cat_idle"];
+      const catImg = assetsRef.current[spriteKey] || assetsRef.current["cat_idle"];
 
       // Draw Realm Aura Ring under Cat
       ctx.save();
@@ -1335,7 +1301,7 @@ export const MeowchaGame: React.FC<{
 
             {/* Cat sprite sitting on jade sword */}
             <img
-              src="/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png"
+              src="/meowcha/sprites/cat_idle.png"
               alt="Miêu Tiên Tọa Thiền"
               className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)] transition-transform hover:scale-105 duration-300 z-10"
             />
@@ -1413,7 +1379,7 @@ export const MeowchaGame: React.FC<{
         {/* Left: Avatar, Realm & HP Bar */}
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-lg bg-[#2c1a0f] border border-[#6d4a1b] p-0.5 overflow-hidden shadow">
-            <img src="/meowcha/sprites/characters/realm0_qi_refining/poses/idle.png" alt="Miêu Tiên" className="w-full h-full object-contain" />
+            <img src="/meowcha/sprites/cat_idle.png" alt="Miêu Tiên" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">

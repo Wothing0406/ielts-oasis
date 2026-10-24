@@ -313,40 +313,72 @@
     }
 
     // ============================================================
+    // 6. THIÊN KIẾP HIỂM CẢNH: MÂY MÙ U ÁM TRÔI NGANG (MYSTIC MIST HAZARD)
+    // ============================================================
+    // 6. THIÊN KIẾP HIỂM CẢNH: CHƯỚNG KHÍ U MINH MA VỤ DÀY ĐẶC
+    // ============================================================
     // 6. THIÊN KIẾP HIỂM CẢNH: TIÊN KHÍ SƯƠNG MỜ QUẤY RỐI TẦM NHÌN
-    // Chỉ kích hoạt khi bị phạt Ma Vân Tụ Khí với độ mờ dịu nhẹ, không che khuất ma thạch
+    // Khi bình thường: Sương khói nhẹ bay lượn ở 2 rìa màn hình
+    // Khi bị phạt Ma Vân Tụ Khí: 4 cụm sương ma tím lượn sóng trôi ngang qua lại quấy nhiễu tầm nhìn
     // ============================================================
     drawMysticClouds(ctx, width, height, isPunishMode = false) {
-      if (!isPunishMode || this.cloudAlpha <= 0.01) return;
+      if (this.cloudAlpha <= 0.01) return;
       ctx.save();
 
       const isMobile = width <= 768;
-      const t = this.time * 18;
-      const cloudCount = isMobile ? 2 : 4;
+      const t = this.time * (isPunishMode ? 28 : 18);
+      // Trên PC màn ngang: cần nhiều đám mây hơn để che khuất tầm nhìn
+      const cloudCount = isPunishMode ? (isMobile ? 4 : 8) : (isMobile ? 2 : 3);
       const cloudImg = this.assets?.prop_mystic_cloud?.loaded ? this.assets.prop_mystic_cloud.img : null;
-      const totalW = width + 400;
+      const totalW = width + 500;
 
       for (let i = 0; i < cloudCount; i++) {
-        const speedFactor = 0.35 + i * 0.18;
-        const cx = ((t * speedFactor + i * (totalW / cloudCount)) % totalW) - 200;
-        const baseY = height * (0.22 + (i % 3) * 0.18);
-        const cy = baseY + Math.sin(this.time * 1.2 + i * 1.5) * 15;
-        const cSize = isMobile ? 120 : 180;
+        const speedFactor = 0.4 + i * 0.22;
+        // Trôi ngang lượn sóng
+        const cx = ((t * speedFactor + i * (totalW / cloudCount)) % totalW) - 250;
+        // Vị trí độ cao: Phạt thì trôi rải đều từ 15% đến 80% màn hình để che khuất mạnh hơn
+        const baseY = isPunishMode 
+          ? height * (0.15 + (i % 5) * 0.14) 
+          : height * (0.18 + (i % 2) * 0.14);
+        const cy = baseY + Math.sin(this.time * 1.5 + i * 1.8) * 20;
+        // Kích thước mây lớn hơn trên PC để che khuất đủ
+        const cSize = isPunishMode 
+          ? (isMobile ? 200 : 320)
+          : (isMobile ? 110 : 180);
 
         ctx.save();
-        ctx.globalAlpha = Math.min(0.22, this.cloudAlpha * 0.35);
+        ctx.globalAlpha = isPunishMode 
+          ? Math.min(0.72, this.cloudAlpha * 1.3) 
+          : Math.min(0.25, this.cloudAlpha);
         ctx.translate(cx, cy);
-        ctx.rotate(Math.sin(this.time * 0.3 + i) * 0.08);
+        ctx.rotate(Math.sin(this.time * 0.4 + i) * 0.12);
 
         if (cloudImg) {
-          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingEnabled = false;
+          ctx.shadowColor = isPunishMode ? "#7E22CE" : "#A855F7";
+          ctx.shadowBlur = isPunishMode ? 32 : 16;
           ctx.drawImage(cloudImg, -cSize / 2, -cSize / 2, cSize, cSize);
         } else {
-          const baseR = cSize * 0.35;
-          ctx.fillStyle = "rgba(147, 51, 234, 0.25)";
+          // Fallback sương khói ma mị
+          const baseR = cSize * 0.38;
+          ctx.fillStyle = isPunishMode ? "rgba(88, 28, 135, 0.70)" : "rgba(147, 51, 234, 0.35)";
+          ctx.shadowColor = isPunishMode ? "#9333EA" : "#C084FC";
+          ctx.shadowBlur = isPunishMode ? 30 : 18;
           ctx.beginPath();
           ctx.arc(0, 0, baseR, 0, Math.PI * 2);
+          ctx.arc(-baseR * 0.6, 6, baseR * 0.65, 0, Math.PI * 2);
+          ctx.arc(baseR * 0.6, 4, baseR * 0.7, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        // Khi bị phạt: Thêm vài tia điện tím tí tách lướt trong mây ma
+        if (isPunishMode && Math.random() < 0.28) {
+          ctx.strokeStyle = "#E9D5FF";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo((Math.random() - 0.5) * cSize * 0.5, (Math.random() - 0.5) * cSize * 0.3);
+          ctx.lineTo((Math.random() - 0.5) * cSize * 0.5, (Math.random() - 0.5) * cSize * 0.3);
+          ctx.stroke();
         }
 
         ctx.restore();

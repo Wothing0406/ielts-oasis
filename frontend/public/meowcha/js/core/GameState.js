@@ -73,26 +73,6 @@
       this.selectedBandIdx = 0;
       this.activeSlotId = this.activeSlotId || 1;
       this.pendingBreakthrough = false;
-
-      // Tụ Khí Tuyệt Kỹ Theo Cảnh Giới (Realm Passive Skill Gauge)
-      this.realmPassiveCharge = 0;
-      this.realmPassiveMax = 5;
-      this.chibiAttackFlash = 0;
-
-      // Pháp Môn & Ngọc Giản Tu Luyện (IELTS Deck & Game Mode)
-      this.activeDeckId = this.activeDeckId || "oxford_5000"; // oxford_5000 | listening_1200 | reading_academic | flashcard_srs
-      this.gameMode = this.gameMode || "DIRECT"; // DIRECT (Chính Tả Phản Xạ) | CLOZE (Ngộ Đạo Thông Linh) | AUDIO (Thính Lôi Biện Âm)
-    }
-
-    getRealmPassiveConfig() {
-      const configs = [
-        { max: 5, name: "TRÚC PHONG TRÌ HOÃN", color: "#34D399" },
-        { max: 6, name: "SONG KIẾM HỢP BÍCH", color: "#38BDF8" },
-        { max: 5, name: "KIM LIÊN BẠO PHÁ", color: "#FBBF24" },
-        { max: 5, name: "NGUYÊN ANH LÔI KÍCH", color: "#C084FC" },
-        { max: 4, name: "CHÂN LONG PHỆ THIÊN", color: "#F59E0B" }
-      ];
-      return configs[Math.min(4, Math.max(0, this.realmIdx || 0))];
     }
 
     triggerStun(durationMs = 160) {
@@ -126,12 +106,9 @@
         }
         this.notify("stunEnd");
       }
-      // Giảm độ chói sấm sét & hào quang Nguyên Anh Hộ Đạo
+      // Giảm độ chói sấm sét
       if (this.screenFlash > 0) {
         this.screenFlash = Math.max(0, this.screenFlash - dt * 4.0);
-      }
-      if (this.chibiAttackFlash > 0) {
-        this.chibiAttackFlash = Math.max(0, this.chibiAttackFlash - dt * 2.5);
       }
     }
 
@@ -260,75 +237,6 @@
       this.notify("hp");
       this.notify("score");
       this.notify("highScore");
-      this.notify("realm");
-      this.notify("load");
-    }
-
-    loadFromModeData(modeData, modeName = null) {
-      if (!modeData) return;
-      if (modeName) this.gameMode = modeName;
-      this.maxHp = modeData.maxHp || 50;
-      this.hp = (typeof modeData.hp === "number" && modeData.hp > 0) ? Math.min(this.maxHp, modeData.hp) : this.maxHp;
-      this.score = modeData.score || 0;
-      if (modeData.highScore && modeData.highScore > this.highScore) {
-        this.highScore = modeData.highScore;
-        try {
-          localStorage.setItem("meowcha_high_score", String(this.highScore));
-        } catch (e) {}
-      }
-      this.wordsSlain = modeData.words || 0;
-      this.realmIdx = modeData.realmIdx || 0;
-      this.selectedBandIdx = Math.min(3, this.realmIdx);
-      this.talents = Object.assign({
-        hpBonus: 0,
-        slowFactor: 1.0,
-        critChance: 0.0,
-        scoreMultiplier: 1.0,
-        shieldCharges: 0,
-        autoKill: false,
-        typoImmune: false
-      }, modeData.talents || {});
-      this.shieldCharges = this.talents.shieldCharges || 0;
-      this.isGameOver = false;
-      this.isPaused = false;
-      this.isStunned = false;
-      this.stunTimer = 0;
-      this.combo = 0;
-      this.setCatState("IDLE");
-      this.notify("hp");
-      this.notify("score");
-      this.notify("highScore");
-      this.notify("realm");
-      this.notify("load");
-    }
-
-    resetForNewMode(modeName) {
-      if (modeName) this.gameMode = modeName;
-      this.maxHp = 50;
-      this.hp = 50;
-      this.score = 0;
-      this.wordsSlain = 0;
-      this.realmIdx = 0;
-      this.selectedBandIdx = 0;
-      this.combo = 0;
-      this.maxCombo = 0;
-      this.talents = {
-        hpBonus: 0,
-        slowFactor: 1.0,
-        critChance: 0.0,
-        scoreMultiplier: 1.0,
-        shieldCharges: 0,
-        autoKill: false,
-        typoImmune: false
-      };
-      this.shieldCharges = 0;
-      this.isGameOver = false;
-      this.isPaused = false;
-      this.isStunned = false;
-      this.stunTimer = 0;
-      this.setCatState("IDLE");
-      this.notify("hp");
-      this.notify("score");
       this.notify("realm");
       this.notify("load");
     }

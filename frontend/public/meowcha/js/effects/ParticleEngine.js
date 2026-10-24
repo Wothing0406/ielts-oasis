@@ -59,103 +59,6 @@
       }
     }
 
-    // VỤ NỔ CỔ NGỮ TIÊN ĐẠO • HOA SEN & SÓNG BÁT QUÁI (XIANXIA CELESTIAL WORD BURST)
-    createXianxiaWordBurst(x, y, realmIdx = 0) {
-      const paletteByRealm = [
-        ["#10B981", "#34D399", "#FDE047", "#6EE7B7"], // Realm 0: Trúc Phong Ngọc Bích
-        ["#06B6D4", "#38BDF8", "#E0F2FE", "#FDE047"], // Realm 1: Hàn Băng Song Kiếm
-        ["#F59E0B", "#FDE047", "#EF4444", "#FEF08A"], // Realm 2: Kim Đan Bát Quái
-        ["#8B5CF6", "#C084FC", "#38BDF8", "#FDE047"], // Realm 3: Cửu Thiên Tử Lôi
-        ["#FDE047", "#DC2626", "#F59E0B", "#FFFFFF"], // Realm 4: Vạn Kiếm Chân Long
-      ];
-      const colors = paletteByRealm[Math.min(4, Math.max(0, realmIdx))] || paletteByRealm[0];
-      const mainCol = colors[0];
-      const goldCol = "#FDE047";
-
-      // 1. Sóng xung kích vòng Bát Quái nở rộ (Expanding Shockwave Rings)
-      for (let r = 0; r < 2; r++) {
-        if (this.particles.length >= this.maxParticles) break;
-        this.particles.push({
-          x: x,
-          y: y,
-          vx: 0,
-          vy: 0,
-          size: 10 + r * 14,
-          vSize: 3.8 + r * 1.6,
-          color: r === 0 ? goldCol : mainCol,
-          lineWidth: 2.2 - r * 0.6,
-          alpha: 1.0,
-          decay: 0.038,
-          shape: "ring"
-        });
-      }
-
-      // 2. Cánh sen & tàn kiếm khí tiên đạo bung tỏa 8 phương (Lotus Petals)
-      const petalCount = 12;
-      for (let i = 0; i < petalCount; i++) {
-        if (this.particles.length >= this.maxParticles) break;
-        const angle = (i / petalCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
-        const speed = Math.random() * 4.5 + 3.0;
-        const col = colors[Math.floor(Math.random() * colors.length)];
-        this.particles.push({
-          x: x,
-          y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          rot: angle,
-          vRot: (Math.random() - 0.5) * 0.15,
-          color: col,
-          size: Math.random() * 5.0 + 4.5,
-          alpha: 1.0,
-          decay: 0.024,
-          gravity: 0.04,
-          shape: "petal"
-        });
-      }
-
-      // 3. Phù tự cổ phong bay bổng hóa giải ma khí (Ancient Daoist Hanzi Runes)
-      const runes = ["悟", "斬", "道", "仙", "破"];
-      const runeCount = 5;
-      for (let i = 0; i < runeCount; i++) {
-        if (this.particles.length >= this.maxParticles) break;
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 18;
-        this.particles.push({
-          x: x + Math.cos(angle) * dist,
-          y: y + Math.sin(angle) * dist,
-          vx: (Math.random() - 0.5) * 1.4,
-          vy: -(Math.random() * 2.2 + 1.2), // Bay bổng lên trời
-          color: goldCol,
-          glow: mainCol,
-          text: runes[i % runes.length],
-          size: 13,
-          alpha: 1.0,
-          decay: 0.022,
-          gravity: -0.02,
-          shape: "rune"
-        });
-      }
-
-      // 4. Tia kiếm khí bạo liệt (Sword Sparks)
-      for (let i = 0; i < 16; i++) {
-        if (this.particles.length >= this.maxParticles) break;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 7.0 + 3.0;
-        this.particles.push({
-          x: x,
-          y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color: Math.random() > 0.4 ? goldCol : mainCol,
-          size: Math.random() * 3.5 + 2.0,
-          alpha: 1.0,
-          decay: 0.035,
-          gravity: 0.06,
-          shape: "spark"
-        });
-      }
-    }
-
     // Tia kiếm khí va chạm khi gõ đúng chữ
     createHitSparks(x, y, color = "#FDE047", count = 8) {
       for (let i = 0; i < count; i++) {
@@ -229,7 +132,6 @@
         p.vy += p.gravity || 0;
         p.alpha -= p.decay;
         if (p.vRot) p.rot += p.vRot;
-        if (p.shape === "ring" && p.vSize) p.size += p.vSize;
 
         if (p.alpha <= 0) {
           this.particles.splice(i, 1);
@@ -244,38 +146,7 @@
         ctx.globalAlpha = Math.max(0, p.alpha);
         ctx.fillStyle = p.color;
 
-        if (p.shape === "ring") {
-          ctx.save();
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = p.lineWidth || 2.0;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        } else if (p.shape === "rune") {
-          ctx.save();
-          ctx.font = `900 ${p.size || 13}px 'Cinzel', serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.glow || "#F59E0B";
-          ctx.shadowBlur = 8;
-          ctx.fillText(p.text, p.x, p.y);
-          ctx.restore();
-        } else if (p.shape === "petal") {
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          if (p.rot) ctx.rotate(p.rot);
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 6;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, p.size, p.size * 0.45, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        } else if (p.shape === "spark") {
+        if (p.shape === "spark") {
           ctx.strokeStyle = p.color;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
