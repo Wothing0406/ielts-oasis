@@ -7884,3 +7884,1020 @@ body.platform-pc #virtualKeyboardContainer,
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+
+/* ==========================================================================
+   PRODUCTION-QUALITY COMMERCIAL XIANXIA ART DIRECTION (V11.9 SYSTEM)
+   Enforcing: Sandalwood, Imperial Cinnabar, Antique Gold & Spirit Jade
+   ========================================================================== */
+
+/* 1. HOA VĂN MÂY CÁT TƯỜNG GÓC KHUNG (RU YI CLOUD CORNER ORNAMENTS) */
+.modal-brass-corner {
+  position: absolute !important;
+  width: 38px !important;
+  height: 38px !important;
+  z-index: 15 !important;
+  pointer-events: none !important;
+}
+.modal-brass-corner.top-left { top: 0 !important; left: 0 !important; }
+.modal-brass-corner.top-right { top: 0 !important; right: 0 !important; }
+.modal-brass-corner.bottom-left { bottom: 0 !important; left: 0 !important; }
+.modal-brass-corner.bottom-right { bottom: 0 !important; right: 0 !important; }
+
+.cloud-corner-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)) !important;
+}
+
+/* 2. KHUNG MODAL TOÀN THỂ: SƠN MÀI GỖ TỬ ĐÀN NẠM CHỈ VÀNG (MULTI-LAYER DEPTH) */
+.battle-setup-modal-box,
+.pantheon-modal-box,
+.vocab-vault-modal-box,
+#modalPause .modal-content-box,
+#modalSaveSlots .modal-content-box,
+#modalBreakthrough .modal-content-box {
+  background: radial-gradient(ellipse at 50% 12%, #381A12 0%, #26110A 55%, #160A04 100%) !important;
+  border: 2px solid #8E2428 !important;
+  outline: 1.5px solid #D4A849 !important;
+  outline-offset: -5px !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.96),
+    0 0 30px rgba(212, 168, 73, 0.28),
+    inset 0 0 25px rgba(0, 0, 0, 0.9) !important;
+  position: relative !important;
+  color: #FEF3C7 !important;
+}
+
+/* Ẩn triệt để bùa dán ngoài mép khung */
+.floating-dao-talisman {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* 3. DẢI LỤA ĐỎ SON HOÀNG GIA TIÊU ĐỀ MODAL (SCARLET SILK TITLE BANNER) */
+.battle-setup-banner,
+.modal-header {
+  border-bottom: 1.5px solid #D4A849 !important;
+  background: linear-gradient(90deg, rgba(118, 29, 32, 0.2) 0%, rgba(155, 44, 48, 0.85) 50%, rgba(118, 29, 32, 0.2) 100%) !important;
+  padding-bottom: 8px !important;
+}
+
+.silk-title-box {
+  background: linear-gradient(90deg, #761D20 0%, #9B2C30 50%, #761D20 100%) !important;
+  border-top: 1.5px solid #D4A849 !important;
+  border-bottom: 1.5px solid #D4A849 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 228, 154, 0.3) !important;
+}
+
+.modal-title-xianxia,
+.modal-title {
+  color: #FFE49A !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 12px rgba(212, 168, 73, 0.5) !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  letter-spacing: 2px !important;
+}
+
+/* Nút Đóng Modal Ngọc Bích Viền Kim */
+.btn-modal-close {
+  background: radial-gradient(circle, #2A1711 0%, #160A04 100%) !important;
+  border: 1.5px solid #D4A849 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+  transition: all 0.2s ease !important;
+}
+.btn-modal-close:hover {
+  transform: rotate(90deg) scale(1.1) !important;
+  border-color: #FFE49A !important;
+  box-shadow: 0 0 12px rgba(212, 168, 73, 0.6) !important;
+}
+
+/* 4. BIỂN HIỆU THƯ PHÒNG SƠN MÀI GỖ TỬ ĐÀN SẢNH CHỜ (HANGING JADE PLAQUE) */
+.hanging-jade-title-plaque .plaque-body {
+  background: radial-gradient(ellipse at 50% 20%, #2A1711 0%, #1A0D07 80%, #120703 100%) !important;
+  border: 2px solid #D4A849 !important;
+  outline: 1.5px solid #8E2428 !important;
+  outline-offset: -4px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 16px rgba(212, 168, 73, 0.3) !important;
+}
+
+.cat-name-gold {
+  color: #FFE49A !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+}
+
+.cat-level-badge {
+  background: linear-gradient(135deg, #761D20 0%, #9B2C30 100%) !important;
+  border: 1px solid #D4A849 !important;
+  color: #FFFBEB !important;
+  font-weight: 800 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6) !important;
+}
+
+.plaque-vermilion-seal {
+  background: #761D20 !important;
+  border: 1.2px solid #D4A849 !important;
+  color: #FFE49A !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.7) !important;
+}
+
+.plaque-quote-scroll-wrap .plaque-quote-silk {
+  background: linear-gradient(90deg, #FDF4DC 0%, #FFFDF5 50%, #FDF4DC 100%) !important;
+  border: 1.2px solid #B48228 !important;
+  color: #422006 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6) !important;
+}
+
+/* 5. HỆ THỐNG THẺ CHỌN PHÁP MÔN: LỆNH BÀI CỔ PHONG ĐA TẦNG */
+.setup-mode-card {
+  background: linear-gradient(160deg, #26150B 0%, #170C06 100%) !important;
+  border: 1.5px solid rgba(212, 168, 73, 0.45) !important;
+  outline: 1px solid rgba(118, 29, 32, 0.35) !important;
+  outline-offset: -3px !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.22s ease !important;
+}
+
+.setup-mode-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: #D4A849 !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.75), 0 0 12px rgba(212, 168, 73, 0.3) !important;
+}
+
+.setup-mode-card.active-mode {
+  background: linear-gradient(160deg, #0A3D34 0%, #05241E 100%) !important;
+  border: 2px solid #34D399 !important;
+  outline: 1px solid #D4A849 !important;
+  outline-offset: -4px !important;
+  box-shadow: 
+    0 0 20px rgba(39, 104, 93, 0.6),
+    inset 0 1px 0 rgba(110, 231, 183, 0.35) !important;
+}
+
+.setup-card-name {
+  color: #FFE49A !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+}
+
+.setup-card-sub {
+  color: #D1C7BD !important;
+  font-size: 11px !important;
+}
+
+.setup-card-check-stamp {
+  background: #761D20 !important;
+  border: 1.5px solid #D4A849 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7) !important;
+}
+.setup-card-check-stamp .stamp-txt {
+  color: #FFE49A !important;
+  font-weight: 900 !important;
+}
+
+/* 6. TIẾN TRÌNH 5 CẢNH GIỚI: THẺ TRE TRÚC THƯ NẠM ĐỒNG (BAMBOO SLIPS) */
+.realm-step-card {
+  background: linear-gradient(180deg, #221208 0%, #150904 100%) !important;
+  border: 1px solid rgba(212, 168, 73, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+  transition: all 0.2s ease !important;
+}
+
+.realm-step-card:hover {
+  border-color: #D4A849 !important;
+}
+
+.realm-step-card.active-realm {
+  background: linear-gradient(180deg, #064E3B 0%, #022C22 100%) !important;
+  border: 1.5px solid #34D399 !important;
+  outline: 1px solid #D4A849 !important;
+  outline-offset: -3px !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.5) !important;
+}
+
+.realm-step-badge {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(212, 168, 73, 0.4) !important;
+  color: #D4A849 !important;
+}
+.realm-step-card.active-realm .realm-step-badge {
+  background: #10B981 !important;
+  border-color: #D4A849 !important;
+  color: #022C22 !important;
+  font-weight: 900 !important;
+}
+
+.realm-step-name {
+  color: #FFE49A !important;
+  font-weight: 800 !important;
+}
+
+.realm-step-vocab {
+  color: #D1C7BD !important;
+}
+
+/* 7. KHUNG SRS TÂM MA TẨY LUYỆN: THƯ TỊCH CỔ HOÀNG KIM (TRIỆT TIÊU NÉT ĐỨT TÍM NEON) */
+.setup-srs-banner {
+  background: linear-gradient(135deg, rgba(38, 20, 12, 0.95) 0%, rgba(24, 12, 6, 0.98) 100%) !important;
+  border: 1.5px solid #B45309 !important;
+  outline: 1px solid rgba(212, 168, 73, 0.35) !important;
+  outline-offset: -3px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 228, 154, 0.2) !important;
+}
+
+.srs-title {
+  color: #FFE49A !important;
+  font-weight: 800 !important;
+}
+
+/* 8. PHIẾN ĐÁ THÔNG BÁO: BÍCH NGỌC LƯU LY CHẠM KIM */
+.jade-comm-slab {
+  background: linear-gradient(135deg, #0A3D34 0%, #062822 100%) !important;
+  border: 1.5px solid #27685D !important;
+  outline: 1px solid #D4A849 !important;
+  outline-offset: -3px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 12px rgba(39, 104, 93, 0.35) !important;
+}
+.jade-slab-label {
+  color: #FFE49A !important;
+  font-weight: 800 !important;
+}
+
+/* 9. NÚT KHỞI TRẬN TRONG MODAL: LỆNH BÀI CHU SA HOÀNG KIM */
+.sword-token-btn.launch-flame {
+  background: linear-gradient(135deg, #761D20 0%, #9B2C30 50%, #541215 100%) !important;
+  border: 2px solid #D4A849 !important;
+  outline: 1.5px solid #FFE49A !important;
+  outline-offset: -4px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(212, 168, 73, 0.45) !important;
+  transition: all 0.22s ease !important;
+}
+.sword-token-btn.launch-flame:hover {
+  transform: translateY(-2px) scale(1.015) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 28px rgba(212, 168, 73, 0.7) !important;
+}
+
+.sword-token-btn.continue-green {
+  background: linear-gradient(135deg, #064E3B 0%, #047857 50%, #022C22 100%) !important;
+  border: 2px solid #34D399 !important;
+  outline: 1.5px solid #D4A849 !important;
+  outline-offset: -4px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 20px rgba(16, 185, 129, 0.45) !important;
+}
+
+.sword-token-main {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  color: #FFE49A !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+}
+
+.sword-token-sub {
+  color: #FEF3C7 !important;
+  opacity: 0.85 !important;
+  font-size: 10.5px !important;
+}
+
+/* ==========================================================================
+   PRODUCTION-QUALITY XIANXIA ART DIRECTION — EXTENDED SYSTEM (V11.95)
+   Senior Game UI Artist & Art Director Standard
+   Bảng màu: Gỗ Tử Đàn (#281711), Sơn Mài Chu Sa (#761D20), Vàng Kim Cổ (#D4A849), 
+             Hoàng Kim Sáng (#FFE49A), Ngọc Bích (#1A433A / #27685D), Giấy Điệp (#FDF4DC).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. HÀNG PHONG LINH NGỌC BỘI SẢNH CHỜ (TOP WINDCHIME MEDALLIONS)
+   -------------------------------------------------------------------------- */
+.lobby-top-bar {
+  background: linear-gradient(180deg, rgba(16, 13, 18, 0.96) 0%, rgba(28, 15, 10, 0.85) 75%, transparent 100%) !important;
+  border-bottom: 1.5px solid rgba(212, 168, 73, 0.35) !important;
+  padding: 8px 18px !important;
+}
+
+/* Nút quay về games (Quạt Xếp Hoàng Kim) */
+.btn-back-to-games {
+  background: linear-gradient(135deg, #2A140E 0%, #170A06 100%) !important;
+  border: 1.5px solid #D4A849 !important;
+  outline: 1px solid #761D20 !important;
+  outline-offset: -3px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 228, 154, 0.3) !important;
+  color: #FFE49A !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  padding: 5px 12px !important;
+  transition: all 0.22s ease !important;
+}
+.btn-back-to-games:hover {
+  transform: translateY(-2px) !important;
+  border-color: #FFE49A !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.9), 0 0 12px rgba(212, 168, 73, 0.5) !important;
+}
+
+/* Phong Linh Đĩa Ngọc / Huy Hiệu Đồng Khắc Kim */
+.windchime-medallion {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transform-origin: top center !important;
+  animation: windchimeGentleSway 4.8s ease-in-out infinite alternate !important;
+}
+.windchime-medallion:nth-child(1) { animation-delay: 0s !important; }
+.windchime-medallion:nth-child(2) { animation-delay: -0.9s !important; }
+.windchime-medallion:nth-child(3) { animation-delay: -1.8s !important; }
+.windchime-medallion:nth-child(4) { animation-delay: -2.7s !important; }
+.windchime-medallion:nth-child(5) { animation-delay: -3.6s !important; }
+.windchime-medallion:nth-child(6) { animation-delay: -4.5s !important; }
+
+/* Dây thắt nút Đồng Tâm Kết đỏ chu sa bện chỉ vàng kim */
+.windchime-knot-top {
+  display: block !important;
+  width: 14px !important;
+  height: 9px !important;
+  background: radial-gradient(circle at 50% 40%, #B91C1C 0%, #761D20 70%, #380C0E 100%) !important;
+  border: 1px solid #D4A849 !important;
+  border-radius: 3px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+  position: relative !important;
+}
+.windchime-knot-top::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -7px !important;
+  left: 5px !important;
+  width: 2px !important;
+  height: 7px !important;
+  background: linear-gradient(180deg, #D4A849 0%, #761D20 100%) !important;
+}
+
+/* Đĩa ngọc Bát Giác Kim Khắc Ngọc Bích */
+.windchime-medallion .medallion-disc {
+  width: 38px !important;
+  height: 38px !important;
+  clip-path: polygon(28% 0%, 72% 0%, 100% 28%, 100% 72%, 72% 100%, 28% 100%, 0% 72%, 0% 28%) !important;
+  background: radial-gradient(circle at 40% 35%, #1A433A 0%, #0F2D26 55%, #1C0F0A 100%) !important;
+  border: 2px solid #D4A849 !important;
+  outline: 1.2px solid #27685D !important;
+  outline-offset: -3px !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.9), 
+    0 0 10px rgba(212, 168, 73, 0.25),
+    inset 0 0 6px rgba(255, 228, 154, 0.3) !important;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.windchime-medallion:hover .medallion-disc {
+  transform: translateY(-2px) scale(1.1) !important;
+  border-color: #FFE49A !important;
+  outline-color: #34D399 !important;
+  box-shadow: 
+    0 6px 18px rgba(0, 0, 0, 0.95), 
+    0 0 16px rgba(212, 168, 73, 0.6),
+    inset 0 0 8px rgba(255, 228, 154, 0.5) !important;
+}
+
+/* Vector Game-Icons trong đĩa ngọc */
+.windchime-icon-img {
+  width: 20px !important;
+  height: 20px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)) drop-shadow(0 0 3px rgba(255, 228, 154, 0.6)) !important;
+  transition: transform 0.2s ease !important;
+}
+.windchime-medallion:hover .windchime-icon-img {
+  transform: scale(1.12) !important;
+}
+
+/* Chuông lắc tiên nhạc */
+.animated-bell {
+  animation: bellGentleChime 3.5s ease-in-out infinite alternate !important;
+}
+@keyframes bellGentleChime {
+  0% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+  100% { transform: rotate(-5deg); }
+}
+
+/* Đĩa ngọc chứa avatar nhân vật */
+.windchime-medallion.profile-medallion .medallion-disc {
+  clip-path: none !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #2A140E 0%, #160A04 100%) !important;
+  border: 2px solid #D4A849 !important;
+  outline: 1.5px solid #761D20 !important;
+  outline-offset: -3px !important;
+  padding: 2px !important;
+}
+.medallion-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+/* Thẻ tên Phong Linh (Thẻ Trúc Khắc Chu Thư) */
+.windchime-medallion .medallion-label {
+  margin-top: 3px !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  color: #FEF3C7 !important;
+  background: linear-gradient(180deg, #2A140E 0%, #170A06 100%) !important;
+  border: 1px solid #8C6721 !important;
+  border-radius: 3px !important;
+  padding: 1px 6px !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 2px #000 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.8) !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.2s ease !important;
+}
+.windchime-medallion:hover .medallion-label {
+  color: #FFE49A !important;
+  border-color: #D4A849 !important;
+  box-shadow: 0 0 8px rgba(212, 168, 73, 0.4) !important;
+}
+
+/* Dải tua rua đỏ son buông rủ đính hạt cườm ngọc vàng */
+.windchime-tassel-bottom {
+  display: block !important;
+  width: 3px !important;
+  height: 10px !important;
+  background: linear-gradient(180deg, #D4A849 0%, #9B2226 20%, #761D20 100%) !important;
+  border-radius: 0 0 2px 2px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
+  position: relative !important;
+}
+.windchime-tassel-bottom::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -2px !important;
+  width: 7px !important;
+  height: 3px !important;
+  background: #FFE49A !important;
+  border-radius: 2px !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. CHIẾN TRƯỜNG TRẢM MA: ĐÀI XUẤT KIẾM & CUỘN KINH THƯ HOÀNG KIM
+   -------------------------------------------------------------------------- */
+/* Toàn thể bàn thờ thần mộc xuất kiếm trảm ma */
+.sword-altar-hud, #swordIntentBox {
+  background: radial-gradient(ellipse at 50% 20%, #2A1711 0%, #1A0D07 65%, #0F0603 100%) !important;
+  border: 2px solid #D4A849 !important;
+  outline: 1.5px solid #761D20 !important;
+  outline-offset: -5px !important;
+  border-radius: 12px !important;
+  padding: 8px 16px 8px !important;
+  box-shadow: 
+    0 12px 36px rgba(0, 0, 0, 0.96),
+    0 0 20px rgba(212, 168, 73, 0.25),
+    inset 0 0 15px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Dải Lụa Đỏ Tiêu Đề Cổ Phong */
+.altar-ribbon-banner {
+  background: linear-gradient(90deg, #761D20 0%, #9B2C30 50%, #761D20 100%) !important;
+  border: 1.2px solid #D4A849 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 8px rgba(155, 44, 48, 0.5) !important;
+}
+.altar-ribbon-banner .ribbon-text {
+  color: #FFE49A !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(212, 168, 73, 0.4) !important;
+}
+.altar-ribbon-banner .ribbon-tail-l,
+.altar-ribbon-banner .ribbon-tail-r {
+  background: #5E1215 !important;
+  border: 1px solid #D4A849 !important;
+}
+
+/* Tả & Hữu Hộ Pháp */
+.altar-guardian {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Huy hiệu Long Hộ Pháp */
+.altar-dragon-emblem {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #2A1711 0%, #160A04 100%) !important;
+  border: 1.5px solid #D4A849 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), inset 0 0 4px rgba(212, 168, 73, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.guardian-dragon-svg {
+  width: 22px !important;
+  height: 22px !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)) !important;
+}
+.guardian-dragon-svg.flip-x {
+  transform: scaleX(-1) !important;
+}
+
+/* Đĩa Ngọc Lưỡng Nghi Âm Dương */
+.altar-yinyang-seal {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #1A433A 0%, #0F2A24 100%) !important;
+  border: 1.5px solid #D4A849 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.guardian-yinyang-svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+.rotating-slow {
+  animation: yinyangSpin 12s linear infinite !important;
+}
+@keyframes yinyangSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Huy hiệu Kiếm Ý */
+.intent-seal-flame {
+  background: linear-gradient(135deg, #761D20 0%, #9B2C30 100%) !important;
+  border: 1.2px solid #D4A849 !important;
+  border-radius: 4px !important;
+  padding: 3px 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 8px rgba(212, 168, 73, 0.3) !important;
+}
+.flame-sword-icon {
+  width: 16px !important;
+  height: 16px !important;
+  filter: drop-shadow(0 0 3px #FFE49A) !important;
+}
+.intent-seal-flame .flame-text {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #FFE49A !important;
+  letter-spacing: 1px !important;
+}
+
+/* Bộ Đếm Hộ Pháp */
+.altar-counter {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #FFE49A !important;
+  background: #1C0F0A !important;
+  border: 1px solid #8C6721 !important;
+  border-radius: 4px !important;
+  padding: 2px 7px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Cuộn Thư Giấy Điệp Hoàng Kim Ở Trung Tâm (Parchment Scroll) */
+.altar-parchment-scroll {
+  flex: 1 !important;
+  background: linear-gradient(180deg, #FBF4DE 0%, #F5E8C3 35%, #EAD5A0 70%, #DFC588 100%) !important;
+  border: 1.5px solid #8C6721 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 0 12px rgba(92, 45, 12, 0.35), 0 3px 10px rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  align-items: stretch !important;
+  position: relative !important;
+}
+
+/* Hai đầu trục gỗ tử đàn nạm núm đồng hoàng kim */
+.parchment-roller {
+  width: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #1C0E08 !important;
+  border: 1px solid #8C6721 !important;
+  flex-shrink: 0 !important;
+  padding: 1px 0 !important;
+}
+.parchment-roller.left { border-radius: 4px 0 0 4px !important; }
+.parchment-roller.right { border-radius: 0 4px 4px 0 !important; }
+
+.roller-knob {
+  width: 8px !important;
+  height: 5px !important;
+  background: linear-gradient(180deg, #FFE49A 0%, #D4A849 50%, #8C6721 100%) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+.roller-core {
+  flex: 1 !important;
+  width: 4px !important;
+  background: linear-gradient(90deg, #2A1711 0%, #4D2619 50%, #2A1711 100%) !important;
+}
+
+/* Thân chữ cuộn thư */
+.parchment-body {
+  flex: 1 !important;
+  padding: 6px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+}
+
+.altar-word-display {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  letter-spacing: 3px !important;
+  color: #381A12 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+.altar-idle-msg {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #6B3419 !important;
+  letter-spacing: 1.5px !important;
+}
+
+.altar-meaning-display {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #5C2D0C !important;
+}
+
+/* Thanh nạp Kiếm Ý */
+.altar-gauge-track {
+  width: 100% !important;
+  height: 5px !important;
+  background: rgba(42, 23, 17, 0.35) !important;
+  border-radius: 3px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(140, 103, 33, 0.4) !important;
+}
+.altar-gauge-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, #D4A849 0%, #27685D 50%, #34D399 100%) !important;
+  box-shadow: 0 0 6px #34D399 !important;
+  transition: width 0.15s ease !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. BỤC PHONG THẦN BẢNG (LEADERBOARD PODIUMS & RANKS)
+   -------------------------------------------------------------------------- */
+.pantheon-top-podium {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  margin: 16px 0 20px !important;
+}
+
+.podium-column {
+  flex: 1 !important;
+  max-width: 130px !important;
+  background: linear-gradient(180deg, #2A1711 0%, #160A04 100%) !important;
+  border: 1.5px solid #8C6721 !important;
+  border-radius: 8px 8px 4px 4px !important;
+  padding: 10px 8px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.85) !important;
+  position: relative !important;
+}
+
+/* Quán Quân (Top 1 Kim Thiềm) */
+.podium-rank-1 {
+  border-color: #D4A849 !important;
+  outline: 1.5px solid #761D20 !important;
+  outline-offset: -3px !important;
+  transform: translateY(-8px) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.95), 0 0 18px rgba(212, 168, 73, 0.35) !important;
+}
+.podium-rank-1 .podium-crown {
+  filter: drop-shadow(0 0 8px #FFE49A) !important;
+}
+
+/* Á Quân (Top 2 Bạch Ngân) */
+.podium-rank-2 {
+  border-color: #94A3B8 !important;
+}
+
+/* Quý Quân (Top 3 Thanh Đồng) */
+.podium-rank-3 {
+  border-color: #B45309 !important;
+}
+
+.podium-avatar-wrap {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  border: 2px solid #D4A849 !important;
+  padding: 2px !important;
+  background: #1C0F0A !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+  margin-bottom: 6px !important;
+}
+.podium-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+.podium-player-name {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #FEF3C7 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+}
+.podium-player-score {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #FFE49A !important;
+  margin-top: 2px !important;
+}
+
+/* Bảng Danh Sách Đệ Tử (Leaderboard Table) */
+.pantheon-rank-item {
+  background: linear-gradient(90deg, rgba(42, 23, 17, 0.8) 0%, rgba(22, 10, 4, 0.9) 100%) !important;
+  border: 1px solid rgba(212, 168, 73, 0.3) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  margin-bottom: 6px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+  transition: all 0.2s ease !important;
+}
+.pantheon-rank-item:hover {
+  border-color: #D4A849 !important;
+  background: linear-gradient(90deg, rgba(60, 30, 20, 0.9) 0%, rgba(35, 15, 8, 0.95) 100%) !important;
+  transform: translateX(3px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. TÀNG THƯ CÁC TỪ VỰNG (VOCAB VAULT MODAL)
+   -------------------------------------------------------------------------- */
+.vault-search-wrapper {
+  background: #1C0F0A !important;
+  border: 1.5px solid #8C6721 !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8) !important;
+}
+.vault-search-input {
+  background: transparent !important;
+  border: none !important;
+  color: #FEF3C7 !important;
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+}
+.vault-search-input::placeholder {
+  color: #A89578 !important;
+}
+
+/* Các Tab Phân Cấp Band 0, 1, 2, 3 */
+.vault-tab-btn {
+  background: linear-gradient(180deg, #2A1711 0%, #160A04 100%) !important;
+  border: 1.5px solid rgba(212, 168, 73, 0.4) !important;
+  color: #E6D5B8 !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-weight: 700 !important;
+  border-radius: 6px 6px 0 0 !important;
+  padding: 6px 14px !important;
+  transition: all 0.2s ease !important;
+}
+.vault-tab-btn:hover {
+  border-color: #D4A849 !important;
+  color: #FFE49A !important;
+}
+.vault-tab-btn.active {
+  background: linear-gradient(180deg, #761D20 0%, #5E1215 100%) !important;
+  border-color: #D4A849 !important;
+  border-bottom-color: transparent !important;
+  color: #FFFBEB !important;
+  box-shadow: 0 -2px 8px rgba(118, 29, 32, 0.5) !important;
+}
+
+/* Thẻ Từ Vựng Giấy Xuyến Chỉ Viền Kim */
+.vocab-card {
+  background: linear-gradient(180deg, #2A1711 0%, #160A04 100%) !important;
+  border: 1.2px solid rgba(212, 168, 73, 0.35) !important;
+  border-radius: 6px !important;
+  padding: 10px 12px !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.7) !important;
+  transition: all 0.2s ease !important;
+}
+.vocab-card:hover {
+  border-color: #D4A849 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.85), 0 0 8px rgba(212, 168, 73, 0.25) !important;
+}
+.vocab-card-word {
+  font-family: var(--font-xianxia-title, serif) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #FFE49A !important;
+}
+.vocab-card-def {
+  font-size: 12.5px !important;
+  color: #E6D5B8 !important;
+  margin-top: 3px !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. BẢO ĐẢM TƯƠNG THÍCH MOBILE VÀ CHỐNG CẮT MÉP
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .windchime-medallion .medallion-disc {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .windchime-icon-img {
+    width: 17px !important;
+    height: 17px !important;
+  }
+  .windchime-medallion .medallion-label {
+    font-size: 8.5px !important;
+    padding: 1px 3px !important;
+  }
+  .sword-altar-hud, #swordIntentBox {
+    padding: 6px 8px 6px !important;
+  }
+  .altar-word-display {
+    font-size: 18px !important;
+    letter-spacing: 1.5px !important;
+  }
+  .altar-dragon-emblem {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .guardian-dragon-svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* ==========================================================================
+   PRODUCTION-QUALITY FINAL REFINEMENTS (V11.95 FINAL POLISH)
+   ========================================================================== */
+
+/* 1. Modal Header No-Wrap & Elegance */
+.pantheon-modal-box .modal-header,
+.vocab-vault-modal-box .modal-header,
+.battle-setup-modal-box .modal-header {
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+}
+
+.pantheon-modal-box .modal-title,
+.vocab-vault-modal-box .modal-title {
+  font-size: 17px !important;
+  letter-spacing: 1.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* 2. Màu chữ từ vựng tiếng Anh trong Tàng Thư Các: Chuẩn Vàng Hoàng Kim Sáng (Triệt tiêu neon cyberpunk) */
+.vocab-word-title,
+.vocab-word-title.frost,
+.vocab-word-title.fire,
+.vocab-word-title.void,
+.vocab-word-title.thunder {
+  color: #FFE49A !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(212, 168, 73, 0.45) !important;
+  font-family: var(--font-xianxia-title, serif) !important;
+  letter-spacing: 1.2px !important;
+}
+
+.vocab-ipa-text {
+  color: #27685D !important;
+  font-weight: 700 !important;
+  background: rgba(39, 104, 93, 0.15) !important;
+  padding: 1px 6px !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(39, 104, 93, 0.35) !important;
+}
+
+.vocab-meaning-text {
+  color: #FEF3C7 !important;
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+}
+
+/* 3. Tinh chỉnh Mobile: 6 nút Phong Linh vừa khít màn hình 390px */
+@media (max-width: 640px) {
+  .lobby-top-bar {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+  }
+  .lobby-top-left {
+    gap: 6px !important;
+  }
+  .brand-name {
+    font-size: 13px !important;
+  }
+  .brand-sub {
+    display: none !important;
+  }
+  .btn-back-to-games {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  .lobby-top-actions {
+    gap: 2px !important;
+    justify-content: space-between !important;
+  }
+  .windchime-medallion {
+    padding: 0 1px !important;
+  }
+  .windchime-medallion .medallion-disc {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  .windchime-icon-img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+  .windchime-knot-top {
+    width: 10px !important;
+    height: 7px !important;
+  }
+  .windchime-medallion .medallion-label {
+    font-size: 7.5px !important;
+    padding: 0 2px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Mobile Battle HUD Top Docks: Không chạm nhau */
+  .sect-scroll-hud {
+    padding: 4px 6px !important;
+  }
+  .sect-hud-left-dock {
+    max-width: 135px !important;
+    padding: 3px 5px !important;
+    gap: 2px !important;
+  }
+  .sect-hud-right-dock {
+    max-width: 145px !important;
+    padding: 3px 5px !important;
+    gap: 2px !important;
+  }
+  .hud-talisman-decoration {
+    display: none !important;
+  }
+  .battle-controls-inline {
+    gap: 3px !important;
+  }
+  .hud-talisman-btn {
+    padding: 2px 4px !important;
+    font-size: 9px !important;
+  }
+  .hud-talisman-btn .talisman-btn-label {
+    display: none !important;
+  }
+}
