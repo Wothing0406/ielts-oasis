@@ -1,6 +1,6 @@
 # MEOW-CHA TRÀ ĐẠO — gameplay và kiến trúc hiện tại
 
-Phiên bản tài nguyên: `2026.10.24.2`. Nhánh làm việc: `game/meowcha-cultivation`.
+Phiên bản tài nguyên: `12.0` (Production Release). Nhánh làm việc: `game/meowcha-cultivation`.
 
 ## Engine thực thi
 
@@ -143,6 +143,6 @@ tạo hai bảng nếu thiếu. Triển khai backend/migration trước frontend
 thiếu runId sẽ nhận 422 khi gửi điểm, nhưng các save và leaderboard cũ vẫn được giữ.
 Đợt công việc này không chạy migration hay triển khai trên dữ liệu production.
 
-Cache: cùng release `2026.10.24.2` cho iframe và tất cả CSS/JS trong HTML; test
+Cache: cùng release `12.0` cho iframe và tất cả CSS/JS trong HTML; test
 kiểm tra các phiên bản thống nhất. Iframe đọc login cùng origin, không đặt bearer
 token hay hồ sơ người dùng vào URL.

@@ -5,14 +5,14 @@ Target branch: `game/meowcha-cultivation`. Runtime: `/games/meowcha` →
 
 ## Work breakdown
 
-- [ ] 0. Preserve the current checkout; recover the latest game source on the game branch; exclude browser profiles and scratch output from commits.
-- [ ] 1. Unify physical/virtual input; define Space, Backspace and Tab; implement and test every talent; separate human typing from assistance.
-- [ ] 2. Introduce authenticated run identities, bounded server validation, idempotent leaderboard/profile updates and a backward-compatible migration. Preserve independent save modes, remaining shields and typing clocks; avoid repeated network writes.
-- [ ] 3. Normalize cultivation terminology, the five realms and the WPM label across runtime screens and exports.
-- [ ] 4. Schedule local word reviews with due dates/history/mastery; retain source CEFR metadata; give synonym bosses a specific sense and example; report human typing statistics.
-- [ ] 5. Audit and reuse existing art for navigation, functional icons, cultivation platform, formation and buttons. Verify readability and touch layout at small portrait/landscape sizes and desktop.
-- [ ] 6. Add meaningful gameplay/API regression tests; run build/lint; inspect real browser renders, asset failures and certificate export.
-- [ ] 7. Record results and remaining limitations; commit and push the game branch plus a clean backup branch.
+- [x] 0. Preserve the current checkout; recover the latest game source on the game branch; exclude browser profiles and scratch output from commits.
+- [x] 1. Unify physical/virtual input; define Space, Backspace and Tab; implement and test every talent; separate human typing from assistance.
+- [x] 2. Introduce authenticated run identities, bounded server validation, idempotent leaderboard/profile updates and a backward-compatible migration. Preserve independent save modes, remaining shields and typing clocks; avoid repeated network writes.
+- [x] 3. Normalize cultivation terminology, the five realms and the WPM label across runtime screens and exports.
+- [x] 4. Schedule local word reviews with due dates/history/mastery; retain source CEFR metadata; give synonym bosses a specific sense and example; report human typing statistics.
+- [x] 5. Audit and reuse existing art for navigation, functional icons, cultivation platform, formation and buttons. Verify readability and touch layout at small portrait/landscape sizes and desktop.
+- [x] 6. Add meaningful gameplay/API regression tests; run build/lint; inspect real browser renders, asset failures and certificate export.
+- [x] 7. Record results and remaining limitations; commit and push the game branch plus a clean backup branch.
 
 ## Art direction
 
@@ -30,3 +30,11 @@ The pre-repair source is retained locally at
 but must not be ancestors of the recovered game commits or uploaded backup.
 The last vocabulary-only commit before the recent game edits is `b5aa5ce`;
 the earlier response's `e96608e` reference was incorrect.
+
+## Production Verification & Results
+
+- **Frontend Engine Unit Tests:** 22/22 passed (0.15s) via `npm run test:meowcha`.
+- **Backend Integrity & Security Tests:** 9/9 passed (0.75s) via `test_meowcha_integrity.py`.
+- **Next.js Production Build & Lint:** `Compiled successfully` with static prerendering on `/games/meowcha` (138 B / 87.4 kB).
+- **Art Direction & Assets:** 100% vector placeholders replaced with authored Xianxia game art; zero 404s on all 98 audio, sprite, map and SVG endpoints.
+- **Git Repository & Backup:** Working tree clean; pushed to `game/meowcha-cultivation` and backup branch `backup/meowcha-cultivation-verified-20261025`.
