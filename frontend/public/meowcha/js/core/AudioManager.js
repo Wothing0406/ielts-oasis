@@ -283,19 +283,28 @@
       if (this.droneGain && this.ctx) {
         try {
           const t = this.ctx.currentTime;
-          if (fade) {
-            this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, t);
-            this.droneGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+          const currentGain = Math.max(0.0001, this.droneGain.gain.value);
+          if (fade && currentGain > 0.001) {
+            this.droneGain.gain.setValueAtTime(currentGain, t);
+            this.droneGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
             setTimeout(() => {
               this._cleanDroneNodes();
-            }, 850);
+            }, 450);
           } else {
             this._cleanDroneNodes();
           }
         } catch (e) {
           this._cleanDroneNodes();
         }
+      } else {
+        this._cleanDroneNodes();
       }
+    }
+
+    // Triệt tiêu toàn bộ âm thanh liên tục (dập tắt drone oscillator, timer, chime)
+    silenceAll() {
+      this.stopZenGuqin(false);
+      this._cleanDroneNodes();
     }
 
     _cleanDroneNodes() {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CheckCircle2, XCircle, Lightbulb } from 'lucide-react';
 
 interface MatchaBookProps {
   initialReading?: string;
@@ -171,7 +172,7 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
             <div className="animate-fade-in">
               <h4 className="font-bold mb-2">Dán đoạn văn tiếng Anh để AI tạo bài tập Reading:</h4>
               <p className="text-xs text-primary mb-4 opacity-80 bg-primary/5 p-3 rounded-lg border border-primary/20">
-                💡 <b>Mẹo:</b> Để AI phân tích chính xác, hãy dùng định dạng JSON. Bạn có thể chép prompt này đưa cho Gemini/ChatGPT: 
+                <span className="inline-flex items-center gap-1 font-bold text-primary mr-1"><Lightbulb className="w-3.5 h-3.5 shrink-0" /> Mẹo:</span> Để AI phân tích chính xác, hãy dùng định dạng JSON. Bạn có thể chép prompt này đưa cho Gemini/ChatGPT: 
                 <br/><code className="bg-primary/20 px-1 py-0.5 rounded mt-1 inline-block select-all">
                   Hãy chuyển đoạn văn dưới đây thành 1 cấu trúc JSON có format: {`{"text": "nội dung đoạn văn..."}`}
                 </code>
@@ -299,9 +300,15 @@ export default function MatchaBook({ initialReading }: MatchaBookProps) {
                   {score && (
                     <div className="mt-3 text-sm font-bold">
                       {answers[q.id]?.toLowerCase().trim() === q.answer.toLowerCase().trim() ? (
-                        <span className="text-green-500">✅ Correct</span>
+                        <span className="text-emerald-600 inline-flex items-center gap-1.5 font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>Chính xác (Correct)</span>
+                        </span>
                       ) : (
-                        <span className="text-red-500">❌ Incorrect (Answer: {q.answer})</span>
+                        <span className="text-rose-600 inline-flex items-center gap-1.5 font-bold">
+                          <XCircle className="w-4 h-4 shrink-0" />
+                          <span>Chưa đúng (Đáp án: {q.answer})</span>
+                        </span>
                       )}
                     </div>
                   )}

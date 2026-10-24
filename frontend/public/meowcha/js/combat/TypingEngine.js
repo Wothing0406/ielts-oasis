@@ -764,7 +764,47 @@
       }
 
       if (intentEl) {
-        intentEl.innerHTML = wordDisplayHtml.trim();
+        intentEl.replaceChildren();
+        if (curMode === "CLOZE") {
+          for (let i = 0; i < word.length; i++) {
+            const span = document.createElement("span");
+            if (i < typed) {
+              span.className = "altar-typed-txt";
+              span.textContent = word[i] + " ";
+            } else if (i === 0 && typed === 0) {
+              span.className = "altar-hint-char";
+              span.textContent = word[0] + " ";
+            } else if (i === word.length - 1 && word.length >= 3) {
+              span.className = "altar-hint-char";
+              span.textContent = word[i] + " ";
+            } else {
+              span.className = "altar-untyped-txt";
+              span.textContent = "_ ";
+            }
+            intentEl.appendChild(span);
+          }
+        } else if (curMode === "AUDIO") {
+          for (let i = 0; i < word.length; i++) {
+            const span = document.createElement("span");
+            if (i < typed) {
+              span.className = "altar-typed-txt";
+              span.textContent = word[i] + " ";
+            } else {
+              span.className = "altar-untyped-txt";
+              span.textContent = "_ ";
+            }
+            intentEl.appendChild(span);
+          }
+        } else {
+          const typedSpan = document.createElement("span");
+          typedSpan.className = "altar-typed-txt";
+          typedSpan.textContent = word.substring(0, typed);
+          const untypedSpan = document.createElement("span");
+          untypedSpan.className = "altar-untyped-txt";
+          untypedSpan.textContent = word.substring(typed);
+          intentEl.appendChild(typedSpan);
+          intentEl.appendChild(untypedSpan);
+        }
       }
 
       if (meaningEl) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PenTool, CheckCircle, Sparkles, Send, Loader2, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,6 +10,16 @@ const WritingSanctuary = () => {
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, []);
 
   const handleAnalyze = async (mode?: string) => {
     if (!text) return;
@@ -23,22 +33,26 @@ const WritingSanctuary = () => {
       if (!startRes.ok) throw new Error(`Server error: ${startRes.status}`);
       const { task_id } = await startRes.json();
       
-      const poll = setInterval(async () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/writing/analyze/status/${task_id}`);
           if (statusRes.ok) {
             const data = await statusRes.json();
             if (data.status === "completed") {
-              clearInterval(poll);
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
               setAnalysis(data.result);
               setIsAnalyzing(false);
             } else if (data.status === "failed") {
-              clearInterval(poll);
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
               throw new Error(data.error || "Analysis failed");
             }
           }
         } catch (err: any) {
-          clearInterval(poll);
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
           console.error("Polling error:", err);
           alert(`Grading failed: ${err.message}`);
           setIsAnalyzing(false);
@@ -54,9 +68,9 @@ const WritingSanctuary = () => {
 
   return (
     <div className="flex flex-col h-full p-8 bg-cream-yellow/30 relative overflow-hidden">
-      {/* Bear Mascot Sticker */}
-      <div className="absolute top-6 right-8 w-24 h-24 pointer-events-none opacity-20">
-         <span className="text-6xl">✍️</span>
+      {/* Decorative Icon */}
+      <div className="absolute top-6 right-8 w-24 h-24 pointer-events-none opacity-15 flex items-center justify-center">
+         <PenTool className="w-16 h-16 text-primary" />
       </div>
 
       <div className="flex items-center gap-3 mb-8">

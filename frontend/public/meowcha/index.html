@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="vi">
   <head>
+  <script>
+    (function() {
+      try {
+        var ua = navigator.userAgent || "";
+        var isMobile = Boolean((navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua));
+        var isTablet = /iPad|Tablet|PlayBook|Silk|Kindle/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        var cls = (isMobile && !isTablet) ? "platform-mobile" : (isTablet ? "platform-tablet" : "platform-pc");
+        document.documentElement.className += " " + cls;
+      } catch(e) {}
+    })();
+  </script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -45,10 +56,10 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=11.7" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=11.7" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=11.7" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=11.7" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.0" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -174,21 +185,9 @@
               id="btnOpenVocabVault"
               title="Mở Tàng Thư Cốc Từ Vựng Oxford 5000"
             >
-              <span class="windchime-cord-top"></span>
+              <span class="windchime-knot-top"></span>
               <div class="medallion-disc">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path
-                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-                  ></path>
-                </svg>
+                <img src="./assets/svg/scroll-unfurled.svg" class="windchime-icon-img" alt="Tàng Thư" />
               </div>
               <span class="medallion-label">TÀNG THƯ</span>
               <span class="windchime-tassel-bottom"></span>
@@ -200,18 +199,9 @@
               id="btnOpenPantheon"
               title="Mở Bảng Phong Thần Tiên Giới"
             >
-              <span class="windchime-cord-top"></span>
+              <span class="windchime-knot-top"></span>
               <div class="medallion-disc">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z"></path>
-                </svg>
+                <img src="./assets/svg/pagoda.svg" class="windchime-icon-img" alt="Phong Thần" />
               </div>
               <span class="medallion-label">PHONG THẦN</span>
               <span class="windchime-tassel-bottom"></span>
@@ -223,20 +213,9 @@
               id="btnOpenCertLobby"
               title="Xuất Chứng Đạo Kim Đồ"
             >
-              <span class="windchime-cord-top"></span>
+              <span class="windchime-knot-top"></span>
               <div class="medallion-disc">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                  <path d="M7 9h10M7 13h6"></path>
-                  <circle cx="16" cy="14" r="2"></circle>
-                </svg>
+                <img src="./assets/svg/dragon-shield.svg" class="windchime-icon-img" alt="Chứng Đạo" />
               </div>
               <span class="medallion-label">CHỨNG ĐẠO</span>
               <span class="windchime-tassel-bottom"></span>
@@ -248,21 +227,9 @@
               id="btnToggleSoundLobby"
               title="Bật/Tắt Tiên Nhạc Cổ Cầm"
             >
-              <span class="windchime-cord-top"></span>
+              <span class="windchime-knot-top"></span>
               <div class="medallion-disc">
-                <svg
-                  id="soundIconOnLobby"
-                  class="nav-icon-svg animated-pulse"
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M12 3 C8 3 7 6 7 11 L5 17 L19 17 L17 11 C17 6 16 3 12 3 Z"></path>
-                  <path d="M10 17 a2 2 0 0 0 4 0"></path>
-                </svg>
+                <img src="./assets/svg/ringing-bell.svg" class="windchime-icon-img animated-bell" id="soundIconOnLobby" alt="Tiên Nhạc" />
               </div>
               <span class="medallion-label" id="soundStatusTextLobby">TIÊN NHẠC</span>
               <span class="windchime-tassel-bottom"></span>
@@ -274,21 +241,9 @@
               id="btnOpenSavesLobby"
               title="Mở Ngọc Giản Lưu Trữ"
             >
-              <span class="windchime-cord-top"></span>
+              <span class="windchime-knot-top"></span>
               <div class="medallion-disc">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <rect x="5" y="2" width="14" height="20" rx="2"></rect>
-                  <line x1="9" y1="6" x2="15" y2="6"></line>
-                  <line x1="9" y1="10" x2="15" y2="10"></line>
-                  <line x1="9" y1="14" x2="13" y2="14"></line>
-                </svg>
+                <img src="./assets/svg/dragon-orb.svg" class="windchime-icon-img" alt="Ngọc Giản" />
               </div>
               <span class="medallion-label">NGỌC GIẢN</span>
               <span class="windchime-tassel-bottom"></span>
@@ -296,19 +251,19 @@
 
             <!-- 6. Hồ Sơ Tu Chân Giản (User Avatar & Profile) -->
             <button
-              class="windchime-medallion"
+              class="windchime-medallion profile-medallion"
               id="btnOpenProfileLobby"
               title="Mở Tiên Đạo Ngọc Giản • Hồ Sơ Tu Chân"
             >
-              <span class="windchime-cord-top"></span>
-              <div class="medallion-disc" style="overflow: hidden; padding: 2px;">
+              <span class="windchime-knot-top"></span>
+              <div class="medallion-disc medallion-avatar-disc">
                 <img
                   id="lobbyUserAvatar"
                   src="./sprites/characters/realm0_qi_refining/poses/idle.png"
                   alt="Avatar"
                   referrerpolicy="no-referrer"
                   onerror="this.onerror=null; this.src='./sprites/characters/realm0_qi_refining/poses/idle.png';"
-                  style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
+                  class="medallion-avatar-img"
                 />
               </div>
               <span class="medallion-label" id="lobbyUserNameLabel">TU CHÂN</span>
@@ -507,21 +462,14 @@
             </div>
           </div>
 
-          <!-- NÚT ĐỘ KIẾP LỆNH BÀI PHI KIẾM & THẺ TRẠNG THÁI GỖ TỬ ĐÀN (Physical Celestial Flying Sword CTA & Plaques) -->
+          <!-- NÚT ĐỘ KIẾP LỆNH BÀI PHI KIẾM & THẺ TRẠNG THÁI GỖ TỬ ĐÀN (Chuẩn Vector Cổ Phong Tiên Hiệp) -->
           <div class="lobby-cta-sword-area">
             <!-- Nút Chơi Tiếp (Nếu có save) -->
             <button class="sword-talisman-cta continue-mode" id="btnContinueBattle" style="display: none;">
-              <div class="dragon-handle left" aria-hidden="true">
-                <svg width="22" height="30" viewBox="0 0 24 32" fill="none">
-                  <path d="M24 2 C14 4 6 10 3 16 C0 22 8 28 24 30 C16 26 10 21 10 16 C10 11 16 6 24 2 Z" fill="#FDE047" stroke="#92400E" stroke-width="1.2"/>
-                  <circle cx="14" cy="16" r="2.5" fill="#10B981"/>
-                </svg>
-              </div>
               <div class="sword-cta-hilt">
-                <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-                  <circle cx="5" cy="14" r="3" fill="#168553" stroke="#F3C644" stroke-width="1.5"/>
-                  <rect x="8" y="12" width="8" height="4" fill="#064E3B" stroke="#F3C644" stroke-width="1.2"/>
-                  <path d="M16 5 L21 14 L16 23 L14 19 L16 14 L14 9 Z" fill="#2DE28D" stroke="#F3C644" stroke-width="1.4"/>
+                <!-- SVG Phi Kiếm Ngự Phong Lorc Game-Icons -->
+                <svg width="24" height="24" viewBox="0 0 512 512" fill="#6EE7B7" class="xianxia-btn-icon">
+                  <path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/>
                 </svg>
               </div>
               <div class="sword-cta-content">
@@ -529,70 +477,49 @@
                 <span class="sword-cta-sub" id="continueBattleSub">[ Tiếp tục ván đấu đã lưu ]</span>
               </div>
               <div class="sword-cta-tip">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3" fill="rgba(45,226,141,0.25)"></polygon></svg>
-              </div>
-              <div class="dragon-handle right" aria-hidden="true">
-                <svg width="22" height="30" viewBox="0 0 24 32" fill="none" style="transform: scaleX(-1);">
-                  <path d="M24 2 C14 4 6 10 3 16 C0 22 8 28 24 30 C16 26 10 21 10 16 C10 11 16 6 24 2 Z" fill="#FDE047" stroke="#92400E" stroke-width="1.2"/>
-                  <circle cx="14" cy="16" r="2.5" fill="#10B981"/>
+                <!-- SVG Kiếm Khí Chỉ Sang Phải -->
+                <svg width="20" height="20" viewBox="0 0 512 512" fill="#6EE7B7">
+                  <path d="M133.53 10.47c51.747 30.872 96.318 71.166 131.94 119.093C199.33 72.05 115.217 33.942 19.22 21.406c12.584 96.38 50.948 180.807 108.843 247.063-47.45-35.09-87.475-78.907-118.313-129.783v31.219C65.264 272.953 147.488 356.6 249.28 413.812 159.164 375.9 78.843 322.91 10.813 257.375l-.468 38.125C134.828 408.824 300.18 479.697 493.75 494.688c-14.992-193.573-85.27-358.92-198.594-483.407l-41.812.44c64.677 66.753 117.25 145.417 155.28 233.624-57.55-99.84-140.81-180.403-242.937-234.875H133.53z"/>
                 </svg>
               </div>
             </button>
 
-            <!-- Nút Chính: VÀO TRẬN ĐỘ KIẾP (Physical Celestial Flying Sword Button) -->
+            <!-- Nút Chính: VÀO TRẬN ĐỘ KIẾP (Lệnh Bài Chu Sa Sơn Mài Khắc Kim) -->
             <button class="sword-talisman-cta main-battle-start" id="btnStartBattle">
-              <div class="lobby-talisman-ear left" aria-hidden="true"><span>敕令</span></div>
               <div class="sword-cta-glow"></div>
-              <!-- Chuôi Kiếm Rồng Chạm Khắc + Tua Rua Đỏ (Protruding Sword Hilt) -->
               <div class="sword-cta-hilt">
-                <svg class="dragon-hilt-svg" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 18 C2 23 3 29 6 33" stroke="#D44327" stroke-width="2.2" stroke-linecap="round"/>
-                  <path d="M5 18 C0 22 1 28 3 32" stroke="#F3C644" stroke-width="1.2" stroke-linecap="round"/>
-                  <polygon points="2,18 6,13 10,18 6,23" fill="#D44327" stroke="#F3C644" stroke-width="1.5"/>
-                  <rect x="10" y="15" width="11" height="6" rx="1" fill="#231912" stroke="#F3C644" stroke-width="1.4"/>
-                  <line x1="13" y1="15" x2="15" y2="21" stroke="#F3C644" stroke-width="1.2"/>
-                  <line x1="17" y1="15" x2="19" y2="21" stroke="#F3C644" stroke-width="1.2"/>
-                  <path d="M21 4 L29 18 L21 32 L18 26 L22 18 L18 10 Z" fill="#F3C644" stroke="#78350F" stroke-width="1.4"/>
-                  <circle cx="24" cy="18" r="2.5" fill="#2DE28D" stroke="#140F0B" stroke-width="1"/>
+                <!-- SVG Thần Kiếm Tiên Khí Lorc Broadsword Game-Icons -->
+                <svg width="26" height="26" viewBox="0 0 512 512" fill="#FDE047" class="xianxia-btn-icon">
+                  <path d="M490.5 21.5c-4.4 0-8.8 1.7-12.1 5L363.3 141.6l-50.5-50.5-22.6 22.6 39.2 39.2-181.7 181.7-45.3-45.3-22.6 22.6 34 34-82.3 82.3c-7.8 7.8-7.8 20.5 0 28.3 7.8 7.8 20.5 7.8 28.3 0l82.3-82.3 34 34 22.6-22.6-45.3-45.3 181.7-181.7 39.2 39.2 22.6-22.6-50.5-50.5L484.5 33.6c6.7-6.7 1.9-12.1-6-12.1z"/>
                 </svg>
               </div>
-              <!-- Thân Kiếm Khắc Danh Hiệu -->
               <div class="sword-cta-content">
                 <span class="sword-cta-main">VÀO TRẬN ĐỘ KIẾP</span>
                 <span class="sword-cta-sub" id="startBattleSub">[ Nhấn để bắt đầu • Phím SPACE ]</span>
               </div>
-              <!-- Mũi Kiếm Rực Lửa (Pointed Sword Tip) -->
               <div class="sword-cta-tip">
-                <svg class="animated-pulse" width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <polygon points="2,6 26,14 2,22 7,14" fill="#F3C644" stroke="#FEF08A" stroke-width="1.5"/>
-                  <line x1="6" y1="14" x2="22" y2="14" stroke="#D44327" stroke-width="2"/>
+                <!-- SVG Fast Arrow Kiếm Khí Phát Quang -->
+                <svg width="22" height="22" viewBox="0 0 512 512" fill="#FDE047" class="animated-pulse">
+                  <path d="M493.4 242.8L305.8 55.2l-22.6 22.6 150.2 150.2H20v32h413.4L283.2 410.2l22.6 22.6 187.6-187.6c3.1-3.1 4.6-7.2 4.6-11.2s-1.5-8.1-4.6-11.2z"/>
                 </svg>
               </div>
-              <div class="lobby-talisman-ear right" aria-hidden="true"><span>鎮魔</span></div>
             </button>
 
-            <!-- Nút Tẩy Tủy Chơi Lại (Ẩn/Hiện theo tiến trình) -->
+            <!-- Nút Tẩy Tủy Chơi Lại (Vòng Âm Dương Luân Hồi) -->
             <button class="sword-talisman-restart" id="btnRestartGame" style="display: none;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <svg width="15" height="15" viewBox="0 0 512 512" fill="#FDE047">
+                <path d="M256 23C127.424 23 23 127.424 23 256s104.424 233 233 233 233-104.424 233-233S384.576 23 256 23zm-6.094 18.09C128.036 47.807 130.066 256 256 256c125.215 0 127.935 205.872 8.168 214.83-2.71.1-5.432.17-8.168.17-118.848 0-215-96.152-215-215 0-116.81 92.883-211.69 208.906-214.91zM256 103c22.537 0 41 18.463 41 41s-18.463 41-41 41-41-18.463-41-41 18.463-41 41-41zm0 224c-22.537 0-41 18.463-41 41s18.463 41 41 41 41-18.463 41-41-18.463-41-41-41z"/>
+              </svg>
               <span>CHƠI LẠI TỪ ĐẦU (Tẩy Tủy Trùng Tu)</span>
             </button>
 
-            <!-- COMPACT STAT PLAQUES (2 THẺ BÀI GỖ TỬ ĐÀN KHẮC ĐỒNG: BÌNH HỒ LÔ LINH ĐAN & PHI KIẾM NGỰ PHONG) -->
+            <!-- COMPACT STAT PLAQUES (2 Thẻ Bài Gỗ Tử Đàn Nạm Chỉ Vàng Chuẩn Cổ Phong) -->
             <div class="compact-stat-pills">
-              <!-- Plaque 1: Khí Huyết (Bình Hồ Lô Linh Đan - Elixir Gourd SVG) -->
+              <!-- Plaque 1: Khí Huyết (Linh Đan Bảo Bình Delapouite Game-Icons) -->
               <div class="stat-pill jade-pill-hp sandalwood-stat-plaque">
                 <div class="pill-icon">
-                  <svg width="18" height="20" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Nút bần đỏ trên đỉnh hồ lô -->
-                    <rect x="10" y="1" width="4" height="3" rx="1" fill="#D44327" stroke="#F3C644" stroke-width="1"/>
-                    <!-- Bầu trên của Hồ Lô -->
-                    <circle cx="12" cy="8" r="4.5" fill="#991B1B" stroke="#F3C644" stroke-width="1.4"/>
-                    <!-- Bầu dưới của Hồ Lô chứa Linh Đan Dịch phát sáng -->
-                    <circle cx="12" cy="18" r="6.5" fill="#7F1D1D" stroke="#F3C644" stroke-width="1.5"/>
-                    <path d="M7 18 C9 16 15 20 17 18 C17 21.5 14.8 23.5 12 23.5 C9.2 23.5 7 21.5 7 18 Z" fill="#EF4444"/>
-                    <!-- Dây lụa đỏ thắt nút eo hồ lô -->
-                    <line x1="7" y1="12" x2="17" y2="12" stroke="#F3C644" stroke-width="1.8" stroke-linecap="round"/>
-                    <path d="M16 12 L20 15 M16 12 L19 17" stroke="#D44327" stroke-width="1.4" stroke-linecap="round"/>
+                  <svg width="20" height="20" viewBox="0 0 512 512" fill="#F87171">
+                    <path d="M256 16c-17.7 0-32 14.3-32 32v16h64V48c0-17.7-14.3-32-32-32zm-64 80v32h128V96H192zm-28 64c-35.3 0-64 28.7-64 64v192c0 44.2 35.8 80 80 80h152c44.2 0 80-35.8 80-80V224c0-35.3-28.7-64-64-64H164zm92 48c13.3 0 24 10.7 24 24v40h40c13.3 0 24 10.7 24 24s-10.7 24-24 24h-40v40c0 13.3-10.7 24-24 24s-24-10.7-24-24v-40h-40c-13.3 0-24-10.7-24-24s10.7-24 24-24h40v-40c0-13.3 10.7-24 24-24z"/>
                   </svg>
                 </div>
                 <div class="pill-text-wrap">
@@ -604,17 +531,11 @@
                 </div>
               </div>
 
-              <!-- Plaque 2: Tốc Độ WPM (Phi Kiếm Ngự Phong & Cuộn Trúc - Flying Sword & Scroll SVG) -->
+              <!-- Plaque 2: Tốc Độ Kiếm Ý (Phi Kiếm Ngự Phong Lorc Winged-Sword Game-Icons) -->
               <div class="stat-pill jade-pill-wpm sandalwood-stat-plaque">
                 <div class="pill-icon">
-                  <svg class="mini-flying-sword-svg" width="20" height="18" viewBox="0 0 26 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Cuộn thẻ trúc mở hé phía sau -->
-                    <rect x="4" y="4" width="14" height="14" rx="1.5" fill="#231912" stroke="#F3C644" stroke-width="1.2"/>
-                    <line x1="8" y1="4" x2="8" y2="18" stroke="#A16207" stroke-width="1"/>
-                    <line x1="13" y1="4" x2="13" y2="18" stroke="#A16207" stroke-width="1"/>
-                    <!-- Tiểu Phi Kiếm Ngọc Bích lướt ngang phát sáng -->
-                    <polygon points="8,11 25,6 19,14 8,13" fill="#2DE28D" stroke="#F3C644" stroke-width="1.2"/>
-                    <line x1="2" y1="14" x2="8" y2="12" stroke="#F3C644" stroke-width="2" stroke-linecap="round"/>
+                  <svg width="20" height="20" viewBox="0 0 512 512" fill="#34D399">
+                    <path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/>
                   </svg>
                 </div>
                 <div class="pill-text-wrap">
@@ -890,50 +811,56 @@
           <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong Viền Vàng Uốn Lượn -->
           <div class="altar-ribbon-banner" id="swordAltarRibbon">
             <span class="ribbon-tail-l"></span>
-            <span class="ribbon-text" id="swordAltarModeLabel">[ 剑 ] ĐANG XUẤT CHIÊU • NGỘ ĐẠO ĐÀI [ 诀 ]</span>
+            <span class="ribbon-text" id="swordAltarModeLabel">✦ ĐANG XUẤT CHIÊU • NGỘ ĐẠO ĐÀI ✦</span>
             <span class="ribbon-tail-r"></span>
           </div>
 
-          <!-- Tả Hộ Pháp: Tượng Rồng Đá Cổ + Âm Dương Bát Quái + Nút Kiếm Ý Rực Lửa -->
+          <!-- Tả Hộ Pháp: Bảo Phù Thanh Long + Lưỡng Nghi Âm Dương + Kiếm Ý -->
           <div class="altar-guardian left">
-            <svg class="dragon-guardian-svg" width="36" height="36" viewBox="0 0 64 64" fill="none">
-              <path d="M12 48C18 36 28 32 38 28C48 24 54 16 52 8C50 6 44 8 40 14C36 10 30 12 28 16C24 16 20 20 18 26C14 28 10 34 8 42C6 50 10 52 12 48Z" fill="#78716C" stroke="#D4AF37" stroke-width="1.8"/>
-              <circle cx="44" cy="12" r="2.5" fill="#EF4444"/>
-            </svg>
+            <div class="altar-dragon-emblem left" title="Thanh Long Hộ Pháp">
+              <img src="./assets/svg/dragon-head.svg" class="guardian-dragon-svg" alt="Long Hộ" />
+            </div>
             <div class="altar-yinyang-seal" title="Lưỡng Nghi Âm Dương">
-              <span class="yinyang-glyph">[ 阴阳 ]</span>
+              <img src="./assets/svg/yin-yang.svg" class="guardian-yinyang-svg" alt="Âm Dương" />
             </div>
             <div class="intent-seal-flame" id="swordIntentSealBadge">
-              <span class="flame-icon">[ 焰 ]</span>
+              <img src="./assets/svg/winged-sword.svg" class="flame-sword-icon" alt="Kiếm Ý" />
               <span class="flame-text">KIẾM Ý</span>
             </div>
           </div>
 
           <!-- Tâm Điểm: Cuộn Thư Hoàng Kim Cổ Phong (Parchment Scroll) -->
           <div class="altar-parchment-scroll">
-            <div class="parchment-roller left"></div>
+            <div class="parchment-roller left">
+              <span class="roller-knob top"></span>
+              <span class="roller-core"></span>
+              <span class="roller-knob bottom"></span>
+            </div>
             <div class="parchment-body">
               <div class="altar-word-display" id="swordIntentText">
-                <span class="altar-idle-msg">[ 剑 ] NHÌN MA THẠCH BAY TRÊN TRỜI • GÕ PHÍM ĐỂ TRẢM MA [ 斩 ]</span>
+                <span class="altar-idle-msg">✦ NHÌN MA THẠCH RƠI • GÕ CHỮ TRẢM MA ✦</span>
               </div>
               <div class="altar-meaning-display" id="swordTargetMeaning"></div>
               <div class="altar-gauge-track">
                 <div class="altar-gauge-fill" id="swordTargetGauge" style="width: 0%"></div>
               </div>
             </div>
-            <div class="parchment-roller right"></div>
+            <div class="parchment-roller right">
+              <span class="roller-knob top"></span>
+              <span class="roller-core"></span>
+              <span class="roller-knob bottom"></span>
+            </div>
           </div>
 
-          <!-- Hữu Hộ Pháp: Bộ Đếm Phù Văn + Vòng Bát Quái + Tượng Rồng Hộ Vệ -->
+          <!-- Hữu Hộ Pháp: Bộ Đếm Phù Văn + Lưỡng Nghi Trận + Bảo Phù Bạch Long -->
           <div class="altar-guardian right">
             <span class="altar-counter" id="swordTargetCounter">0/0</span>
-            <div class="altar-yinyang-seal" title="Bát Quái Cương Trận">
-              <span class="yinyang-glyph">[ 乾坤 ]</span>
+            <div class="altar-yinyang-seal" title="Càn Khôn Bát Quái">
+              <img src="./assets/svg/yin-yang.svg" class="guardian-yinyang-svg rotating-slow" alt="Thái Cực" />
             </div>
-            <svg class="dragon-guardian-svg flip-x" width="36" height="36" viewBox="0 0 64 64" fill="none">
-              <path d="M12 48C18 36 28 32 38 28C48 24 54 16 52 8C50 6 44 8 40 14C36 10 30 12 28 16C24 16 20 20 18 26C14 28 10 34 8 42C6 50 10 52 12 48Z" fill="#78716C" stroke="#D4AF37" stroke-width="1.8"/>
-              <circle cx="44" cy="12" r="2.5" fill="#EF4444"/>
-            </svg>
+            <div class="altar-dragon-emblem right" title="Bạch Long Hộ Pháp">
+              <img src="./assets/svg/dragon-head.svg" class="guardian-dragon-svg flip-x" alt="Long Hộ" />
+            </div>
           </div>
         </div>
 
@@ -957,38 +884,11 @@
       <!-- ========================================================= -->
       <div class="meowcha-modal-overlay" id="modalBattleSetup">
         <div class="modal-content-box battle-setup-modal-box">
-          <!-- Bùa Hoàng Chỉ Chu Sa Bay Lơ Lửng Hai Bên (Floating Daoist Paper Talismans) -->
-          <div class="floating-dao-talisman left" aria-hidden="true"><span>敕令</span></div>
-          <div class="floating-dao-talisman right" aria-hidden="true"><span>鎮魔</span></div>
-          <!-- 4 GÓC MÂY ĐỒNG CỔ KHẮC GỖ TỬ ĐÀN (Carved Brass Cloud Corners) -->
-          <div class="modal-brass-corner top-left">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 0 H28 C28 6 22 10 16 10 C16 16 10 22 10 28 V0 Z" fill="#B45309" opacity="0.3"/>
-              <path d="M2 2 H24 C20 6 16 8 12 12 C8 16 6 20 2 24 V2 Z" stroke="#FDE047" stroke-width="1.8" fill="none"/>
-              <circle cx="8" cy="8" r="2" fill="#FDE047"/>
-            </svg>
-          </div>
-          <div class="modal-brass-corner top-right">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M28 0 H0 C0 6 6 10 12 10 C12 16 18 22 18 28 V0 Z" fill="#B45309" opacity="0.3"/>
-              <path d="M26 2 H4 C8 6 12 8 16 12 C20 16 22 20 26 24 V2 Z" stroke="#FDE047" stroke-width="1.8" fill="none"/>
-              <circle cx="20" cy="8" r="2" fill="#FDE047"/>
-            </svg>
-          </div>
-          <div class="modal-brass-corner bottom-left">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 28 H28 C28 22 22 18 16 18 C16 12 10 6 10 0 V28 Z" fill="#B45309" opacity="0.3"/>
-              <path d="M2 26 H24 C20 22 16 20 12 16 C8 12 6 8 2 4 V26 Z" stroke="#FDE047" stroke-width="1.8" fill="none"/>
-              <circle cx="8" cy="20" r="2" fill="#FDE047"/>
-            </svg>
-          </div>
-          <div class="modal-brass-corner bottom-right">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M28 28 H0 C0 22 6 18 12 18 C12 12 18 6 18 0 V28 Z" fill="#B45309" opacity="0.3"/>
-              <path d="M26 26 H4 C8 22 12 20 16 16 C20 12 22 8 26 4 V26 Z" stroke="#FDE047" stroke-width="1.8" fill="none"/>
-              <circle cx="20" cy="20" r="2" fill="#FDE047"/>
-            </svg>
-          </div>
+          <!-- 4 GÓC MÂY NHƯ Ý TƯỜNG VÂN CỔ PHONG CHUẨN XIANXIA -->
+          <div class="modal-brass-corner top-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" /></div>
+          <div class="modal-brass-corner top-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleX(-1);" /></div>
+          <div class="modal-brass-corner bottom-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleY(-1);" /></div>
+          <div class="modal-brass-corner bottom-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scale(-1, -1);" /></div>
 
           <!-- BANNER DẢI LỤA ĐỎ CỔ PHONG (Scarlet Silk Banner with Hanging Paper Lanterns) -->
           <div class="battle-setup-banner">
@@ -1137,7 +1037,7 @@
                   <div class="medallion-body-plate">
                     <div class="setup-card-icon-art">
                       <svg width="34" height="34" viewBox="0 0 512 512" fill="#38BDF8" class="game-icons-art" title="Thính Lôi Tiên Chung">
-                        <circle cx="256" cy="256" r="250" fill="#241408" stroke="#38BDF8" stroke-width="12"/>
+                        <circle cx="256" cy="256" r="250" fill="#241408" stroke="#D4A849" stroke-width="12"/>
                         <path d="M254.125 26.188c-17.377-.003-31.66 14.28-31.656 31.656 0 7.617 2.733 14.64 7.28 20.125-10.79 3.876-19.043 10.963-26.906 22.06-13.057 18.43-23.687 49.03-35.406 92.782-10.257 38.29-24.345 57.012-34.657 70.563-10.31 13.55-16.252 20.325-16.25 42.688.002 3.5 1.975 7.314 8.44 12.03 6.463 4.717 16.877 9.383 29.905 13.188 26.055 7.612 62.442 11.962 100.25 11.97 19.384.004 38.368-1.15 55.78-3.28v.124c12.13-1.043 33.332-3.898 51.345-10.28 5.795-2.055 11.28-4.422 16.125-7.533 2.612-1.376 4.947-2.747 6.875-4.155 6.458-4.714 8.438-8.523 8.438-12.03-.004-22.363-5.935-29.135-16.25-42.69-10.316-13.553-24.42-32.27-34.688-70.56-11.732-43.757-22.343-74.35-35.406-92.782-8.225-11.607-16.895-18.836-28.438-22.594 4.31-5.41 6.908-12.24 6.906-19.626-.002-17.377-14.31-31.654-31.687-31.657zm0 18.687c7.278 0 13 5.694 13 12.97 0 7.272-5.722 12.97-13 12.968-7.278-.002-12.968-5.696-12.97-12.97 0-7.273 5.693-12.97 12.97-12.968zm9.22 43.22c34.616 10.188 49.56 64.686 58.124 101.56 14.99 64.56 45.652 82.98 53.03 111.25-.327.633-1.002 1.286-2.094 2.408-2.665 2.74-8.816 6.216-16.406 8.906-7.366 2.61-16 4.614-24.188 6.124-1.73-38.024-33.765-53.55-33.25-107.47.603-63.043-17.19-103.352-39.5-121.78 1.468-.233 2.886-.57 4.282-1zm-206.876 91.28C23.546 223.947 11.19 289.253 28.874 355.25c18.208 67.957 63.562 118.994 116.313 140.03-38.592-30.418-72.26-83.223-89.75-148.5-16.674-62.228-14.924-122.366 1.03-167.405zm399.436 0c15.955 45.04 17.705 105.177 1.03 167.406-17.49 65.277-51.157 118.082-89.748 148.5 52.75-21.036 98.135-72.073 116.343-140.03 17.686-65.997 5.298-131.303-27.624-175.875zM105.687 210.28c-29.71 34.43-42.433 83.74-29.343 132.595 13.478 50.306 50.845 87.082 95.5 101.156-32.19-21.55-59.46-60.02-72.406-108.342-12.344-46.066-8.896-91.175 6.25-125.407zm301.032 0c15.144 34.233 18.56 79.342 6.217 125.407-12.947 48.322-40.185 86.793-72.375 108.344 44.655-14.073 81.99-50.85 95.47-101.155 13.09-48.856.396-98.166-29.313-132.594zM146.53 348.25c1.218 12.736 11.944 22.686 25 22.688 9.422 0 17.642-5.173 21.94-12.844-15.986-2.11-30.823-5.08-43.814-8.875-1.06-.31-2.09-.65-3.125-.97z" fill="#FDE047"/>
                       </svg>
                     </div>
@@ -1299,209 +1199,39 @@
       <!-- ========================================================= -->
       <!-- 5. HỘP THOẠI TẠM DỪNG (PAUSE MODAL) -->
       <!-- ========================================================= -->
-      <div class="meowcha-modal-overlay" id="modalPause">
-        <div
-          class="modal-content-box"
-          style="width: min(90%, 420px); text-align: center"
-        >
-          <h2
-            class="modal-title"
-            style="margin-bottom: 12px; justify-content: center"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>
-            ĐỊNH THẦN TẠM DỪNG
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="vertical-align: middle; margin-left: 6px;"><rect x="12" y="3" width="12.7" height="12.7" transform="rotate(45 12 3)" fill="#F59E0B" fill-opacity="0.25"/><circle cx="12" cy="12" r="2" fill="#F59E0B"/></svg>
-          </h2>
-          <p style="color: #fde68a; font-size: 13px; margin-bottom: 20px">
-            Kiếm ý tạm lắng, nghỉ chân thưởng một chén tiên trà
-          </p>
-          <div style="display: flex; flex-direction: column; gap: 10px">
-            <button
-              class="btn-xianxia-seal primary"
-              id="btnResumeGame"
-              style="width: 100%; justify-content: center; padding: 12px"
-            >
-              <span class="seal-glyph">[ 剑 ]</span> TIẾP TỤC NGHÊNH CHIẾN
-            </button>
-            <button
-              class="btn-xianxia-seal gold"
-              id="btnSaveGameInPause"
-              style="width: 100%; justify-content: center; padding: 11px"
-            >
-              <span class="seal-glyph">[ 符 ]</span> LƯU TIÊN CƠ (LƯU ĐẠO QUẢ)
-            </button>
-            <button
-              class="btn-xianxia-seal crimson"
-              id="btnRestartInPause"
-              style="width: 100%; justify-content: center; padding: 11px"
-            >
-              <span class="seal-glyph">[ 丹 ]</span> CHƠI LẠI TỪ ĐẦU (TẨY TỦY)
-            </button>
-            <button
-              class="btn-xianxia-seal secondary"
-              id="btnExitToLobby"
-              style="width: 100%; justify-content: center; padding: 11px"
-            >
-              <span class="seal-glyph">[ 归 ]</span> RÚT LUI VỀ TRÀ VIỆN
-            </button>
+      <div class="meowcha-modal-overlay" id="modalPause" style="display: none;">
+          <div class="modal-content-box pause-modal-box" style="width: min(92%, 440px); text-align: center;">
+            <!-- 4 GÓC MÂY NHƯ Ý CÁT TƯỜNG -->
+            <div class="modal-brass-corner top-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" /></div>
+            <div class="modal-brass-corner top-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleX(-1);" /></div>
+            <div class="modal-brass-corner bottom-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleY(-1);" /></div>
+            <div class="modal-brass-corner bottom-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scale(-1);" /></div>
+
+            <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong -->
+            <div class="modal-silk-banner">
+              <span class="silk-ribbon-tail left"></span>
+              <h2 class="silk-banner-title">✦ ĐỊNH TÂM TẠM NGHỈ ✦</h2>
+              <span class="silk-ribbon-tail right"></span>
+            </div>
+
+            <p class="pause-lore-quote" style="font-family: var(--font-xianxia-title); font-size: 13.5px; color: #E6D5B8; margin: 16px 0 20px; font-style: italic; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+              “Vạn pháp quy tâm • Thu kiếm dưỡng khí • Chờ thời xuất trận”
+            </p>
+
+            <div class="pause-btn-stack" style="display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 0 auto 10px;">
+              <button class="btn-xianxia-seal primary" id="btnResumeGame" style="padding: 10px 18px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <img src="./assets/svg/winged-sword.svg" style="width: 18px; height: 18px; filter: drop-shadow(0 0 4px #FDE047);" alt="" />
+                <span>TIẾP TỤC ĐỘ KIẾP [ ESC ]</span>
+              </button>
+              <button class="btn-xianxia-seal secondary" id="btnQuitToLobby" style="padding: 10px 18px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <img src="./assets/svg/pagoda.svg" style="width: 18px; height: 18px; filter: drop-shadow(0 0 3px #FEF08A);" alt="" />
+                <span>THU THUYỀN VỀ SẢNH</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- 6. HỘP THOẠI TỬ TRẬN / TRỌNG SINH (GAME OVER MODAL) -->
-      <!-- ========================================================= -->
-      <div class="meowcha-modal-overlay" id="modalGameOver">
-        <div
-          class="modal-content-box game-over-box"
-          style="
-            width: min(92%, 480px);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-          "
-        >
-          <!-- Animated particle background -->
-          <div class="go-bg-particles" aria-hidden="true"></div>
-
-          <!-- SVG Sword Icon -->
-          <div class="go-icon-wrap" aria-hidden="true">
-            <svg
-              class="go-sword-svg"
-              width="64"
-              height="64"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <line
-                x1="32"
-                y1="4"
-                x2="32"
-                y2="52"
-                stroke="#B91C1C"
-                stroke-width="2.5"
-                stroke-linecap="round"
-              />
-              <line
-                x1="20"
-                y1="22"
-                x2="44"
-                y2="22"
-                stroke="#D4AF37"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <polygon points="32,4 28,16 36,16" fill="#FEF08A" opacity="0.9" />
-              <circle
-                cx="32"
-                cy="54"
-                r="4"
-                fill="#7F1D1D"
-                stroke="#D4AF37"
-                stroke-width="1.5"
-              />
-              <line
-                x1="32"
-                y1="52"
-                x2="32"
-                y2="58"
-                stroke="#7F1D1D"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-              <!-- Blood drip -->
-              <circle cx="32" cy="36" r="2.5" fill="#EF4444" opacity="0.85" />
-              <circle cx="32" cy="44" r="1.5" fill="#EF4444" opacity="0.6" />
-            </svg>
-          </div>
-
-          <h2
-            class="modal-title go-title"
-            style="justify-content: center; margin-bottom: 6px"
-          >
-            <span class="go-seal-glyph">[ 道 ]</span>
-            ĐẠO TIÊU THÂN VONG
-            <span class="go-seal-glyph">[ 殒 ]</span>
-          </h2>
-          <p class="go-subtitle">
-            Ma thạch xâm nhập khí hải — chân nguyên cạn kiệt!
-          </p>
-
-          <!-- Stats Grid -->
-          <div class="go-stats-grid">
-            <div class="go-stat-cell">
-              <span class="go-stat-label">[ 劫 ] Cảnh Giới</span>
-              <strong class="go-stat-val" id="gameOverFinalRealm"
-                >Luyện Khí Kỳ</strong
-              >
-            </div>
-            <div class="go-stat-cell">
-              <span class="go-stat-label">[ 丹 ] Tu Vi</span>
-              <strong class="go-stat-val go-stat-gold" id="gameOverFinalScore"
-                >0</strong
-              >
-            </div>
-            <div class="go-stat-cell">
-              <span class="go-stat-label">[ 斩 ] Cổ Ngữ</span>
-              <strong class="go-stat-val go-stat-cyan" id="gameOverFinalWords"
-                >0</strong
-              >
-            </div>
-            <div class="go-stat-cell">
-              <span class="go-stat-label">[ 速 ] Tốc Độ Kiếm Tự</span>
-              <strong class="go-stat-val go-stat-green" id="gameOverFinalWpm"
-                >0</strong
-              >
-            </div>
-            <div class="go-stat-cell" style="grid-column: 1 / -1">
-              <span class="go-stat-label">[ 榜 ] Kỷ Lục Bảng Phong Thần</span>
-              <strong
-                class="go-stat-val go-stat-gold"
-                id="gameOverHighScore"
-                style="
-                  font-size: 15px;
-                  color: #fde047;
-                  text-shadow: 0 0 10px rgba(253, 224, 71, 0.6);
-                "
-                >0 pts</strong
-              >
-            </div>
-          </div>
-
-          <button class="btn-xianxia-seal primary" id="btnExportCertGameOver" style="width: 100%; justify-content: center; margin-bottom: 10px; padding: 11px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            <span>[ 证 ] XUẤT CHỨNG ĐẠO KIM ĐỒ</span>
-          </button>
-
-          <div class="go-actions-row" style="display: flex; gap: 8px; width: 100%;">
-            <button class="btn-rebirth-seal" id="btnRebirth" style="flex: 1; margin: 0; padding: 12px 6px;">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
-              <span>[ 轮 ] TRỌNG SINH TRẬN MỚI</span>
-            </button>
-            <button class="btn-xianxia-seal secondary" id="btnReturnLobbyGameOver" style="flex: 1; justify-content: center; padding: 12px 6px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-              <span>[ 归 ] QUY VỀ TIÊN SẢNH</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================================= -->
-      <!-- MODAL KHO ĐAN DƯỢC TỪ VỰNG OXFORD 5000 (#modalVocabVault) -->
+        <!-- ========================================================= -->
+        <!-- MODAL KHO ĐAN DƯỢC TỪ VỰNG OXFORD 5000 (#modalVocabVault) -->
       <!-- ========================================================= -->
       <div
         class="meowcha-modal-overlay"
@@ -1509,6 +1239,11 @@
         style="display: none"
       >
         <div class="modal-content-box vocab-vault-modal-box">
+          <!-- 4 GÓC MÂY CÁT TƯỜNG NHƯ Ý -->
+          <div class="modal-brass-corner top-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" /></div>
+          <div class="modal-brass-corner top-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleX(-1);" /></div>
+          <div class="modal-brass-corner bottom-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleY(-1);" /></div>
+          <div class="modal-brass-corner bottom-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scale(-1);" /></div>
           <!-- Modal Header -->
           <div class="modal-header">
             <h2 class="modal-title">
@@ -1576,12 +1311,16 @@
 
           <!-- Modal Footer: Count & Load More -->
           <div class="vault-modal-footer">
-            <span class="vault-stats-counter" id="vaultStatsCounter"
-              >Đang triệu hồi đan dược...</span
-            >
-            <button class="btn-xianxia-seal primary" id="btnVaultLoadMoreModal">
-              <span class="seal-glyph">[ 典 ]</span> TRIỆU HỒI THÊM ĐAN DƯỢC
-            </button>
+            <span class="vault-stats-counter" id="vaultStatsCounter">Đang hiển thị 20 / 2.011 Đan Dược</span>
+            <div class="vault-footer-btns-group">
+              <a href="/#vocab-lab" target="_top" class="btn-xianxia-seal secondary btn-goto-full-vault" title="Mở Toàn Thư Oxford 5000 trên IELTS Oasis">
+                <img src="./assets/svg/scroll-unfurled.svg" class="vault-btn-icon-svg" alt="" />
+                <span>MỞ TOÀN BỘ KHO OXFORD 5000 ↗</span>
+              </a>
+              <button class="btn-xianxia-seal primary" id="btnVaultLoadMoreModal">
+                [ 典 ] TRIỆU HỒI THÊM ĐAN DƯỢC
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1595,10 +1334,15 @@
         style="display: none"
       >
         <div class="modal-content-box pantheon-modal-box">
+          <!-- 4 GÓC MÂY CÁT TƯỜNG NHƯ Ý -->
+          <div class="modal-brass-corner top-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" /></div>
+          <div class="modal-brass-corner top-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleX(-1);" /></div>
+          <div class="modal-brass-corner bottom-left"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scaleY(-1);" /></div>
+          <div class="modal-brass-corner bottom-right"><img src="./assets/svg/cloud-corner.svg" alt="" class="cloud-corner-img" style="transform: scale(-1);" /></div>
           <div class="modal-header">
             <h2 class="modal-title">
               <span class="seal-glyph-red">[ 封 ]</span>
-              <span>BẢNG PHONG THẦN • THIÊN ĐẠO CHÍ TÔN</span>
+              <span>BẢNG PHONG THẦN • CHÍ TÔN TIÊN GIỚI</span>
               <span class="seal-glyph-red">[ 榜 ]</span>
             </h2>
             <button class="btn-modal-close" id="btnClosePantheon" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -1637,18 +1381,7 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder2">
-                  <svg
-                    class="placeholder-slip-svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#94A3B8"
-                    stroke-width="1.8"
-                  >
-                    <path
-                      d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"
-                    ></path>
-                    <path d="M9 7h6M9 11h6M9 15h4"></path>
-                  </svg>
+                  <img src="./assets/svg/winged-sword.svg" style="width: 28px; height: 28px; filter: drop-shadow(0 0 5px #E2E8F0);" alt="Bạch Ngân" />
                 </div>
               </div>
               <div class="podium-name" id="podiumName2">Đang chờ vị thứ</div>
@@ -1687,19 +1420,7 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder1">
-                  <svg
-                    class="placeholder-slip-svg crown-placeholder"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#FDE047"
-                    stroke-width="1.8"
-                  >
-                    <path
-                      d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"
-                      fill="rgba(253, 224, 71, 0.2)"
-                    />
-                    <circle cx="12" cy="3.5" r="2" fill="#FDE047" />
-                  </svg>
+                  <img src="./assets/svg/dragon-shield.svg" style="width: 32px; height: 32px; filter: drop-shadow(0 0 8px #FFE49A);" alt="Chí Tôn" />
                 </div>
               </div>
               <div class="podium-name" id="podiumName1">Chưa có Chí Tôn</div>
@@ -1738,18 +1459,7 @@
                   style="display: none"
                 />
                 <div class="podium-empty-placeholder" id="podiumPlaceholder3">
-                  <svg
-                    class="placeholder-slip-svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#F97316"
-                    stroke-width="1.8"
-                  >
-                    <path
-                      d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"
-                    ></path>
-                    <path d="M9 7h6M9 11h6M9 15h4"></path>
-                  </svg>
+                  <img src="./assets/svg/cauldron.svg" style="width: 28px; height: 28px; filter: drop-shadow(0 0 5px #F59E0B);" alt="Thanh Đồng" />
                 </div>
               </div>
               <div class="podium-name" id="podiumName3">Đang chờ vị thứ</div>
@@ -2003,36 +1713,36 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=11.7"></script>
-    <script src="./js/data/WordDecks.js?v=11.7"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=11.7"></script>
-    <script src="./js/data/TalentsData.js?v=11.7"></script>
-    <script src="./js/data/SpeechesData.js?v=11.7"></script>
+    <script src="./js/data/RealmsData.js?v=12.0"></script>
+    <script src="./js/data/WordDecks.js?v=12.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=12.0"></script>
+    <script src="./js/data/TalentsData.js?v=12.0"></script>
+    <script src="./js/data/SpeechesData.js?v=12.0"></script>
 
-    <script src="./js/core/AudioManager.js?v=11.7"></script>
-    <script src="./js/core/SaveSystem.js?v=11.7"></script>
-    <script src="./js/core/GameState.js?v=11.7"></script>
-    <script src="./js/core/SpriteAnimator.js?v=11.7"></script>
+    <script src="./js/core/AudioManager.js?v=12.0"></script>
+    <script src="./js/core/SaveSystem.js?v=12.0"></script>
+    <script src="./js/core/GameState.js?v=12.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=12.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=11.7"></script>
-    <script src="./js/effects/RealmVFX.js?v=11.7"></script>
-    <script src="./js/effects/FloatingText.js?v=11.7"></script>
+    <script src="./js/effects/ParticleEngine.js?v=12.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=12.0"></script>
+    <script src="./js/effects/FloatingText.js?v=12.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=11.7"></script>
-    <script src="./js/entities/AsteroidManager.js?v=11.7"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=11.7"></script>
+    <script src="./js/entities/CatCultivator.js?v=12.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=12.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=12.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=11.7"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=11.7"></script>
+    <script src="./js/combat/TypingEngine.js?v=12.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=12.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=11.7"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=11.7"></script>
-    <script src="./js/ui/UnityBridge.js?v=11.7"></script>
-    <script src="./js/core/VocabLoader.js?v=11.7"></script>
-    <script src="./js/ui/UIManager.js?v=11.7"></script>
+    <script src="./js/ui/IPAToast.js?v=12.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=12.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=12.0"></script>
+    <script src="./js/core/VocabLoader.js?v=12.0"></script>
+    <script src="./js/ui/UIManager.js?v=12.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=11.8"></script>
-    <script src="./js/main.js?v=11.8"></script>
+    <script src="./js/core/DeviceDetector.js?v=12.0"></script>
+    <script src="./js/main.js?v=12.0"></script>
   </body>
 </html>

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search } from 'lucide-react';
 
 const API_URL = '/api';
 
@@ -248,7 +249,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
     // Check client side duplicate
     const isDuplicate = vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase());
     if (isDuplicate) {
-      (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho! 🍵`, "info");
+      (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho!`, "info");
       return;
     }
 
@@ -257,9 +258,9 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
       // success
     } else {
       if (result && result.status === "duplicate") {
-        (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho! 🍵`, "info");
+        (window as any).showToast(`Từ vựng "${item.word}" đã có sẵn trong kho!`, "info");
       } else {
-        (window as any).showToast("Có lỗi xảy ra khi lưu từ vựng. 🍵", "error");
+        (window as any).showToast("Có lỗi xảy ra khi lưu từ vựng.", "error");
         // Re-enable on failure
         setSavedWords(prev => {
           const next = new Set(prev);
@@ -332,7 +333,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
 
               {/* Frame Guidance Badge */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#5D4037]/80 backdrop-blur-md text-[#FFFDF5] text-[9px] font-black px-3 py-1 rounded-full border border-[#A7D08C]/40 uppercase tracking-widest shadow-md">
-                🍵 MATCHA VIEWFINDER (1:1 CROP)
+                MATCHA VIEWFINDER (1:1 CROP)
               </div>
             </div>
           </div>
@@ -423,7 +424,7 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
                 <div className="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span className="material-symbols-rounded absolute inset-0 flex items-center justify-center text-white text-2xl">search_insights</span>
               </div>
-              <span className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-4">AI ANALYZING... 🍵</span>
+              <span className="text-white text-[10px] font-black uppercase tracking-[0.3em] mt-4">AI ANALYZING...</span>
            </div>
         )}
       </div>
@@ -431,14 +432,14 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
       <div className="grid grid-cols-2 gap-4 w-full mt-auto">
         <button type="button" 
           onClick={() => isCameraOpen ? takeSnapshot() : startCamera()}
-          className="bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm hover:scale-[1.02] shadow-lg shadow-primary/20 transition-all active:scale-95"
+          className="bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm hover:scale-[1.02] shadow-lg shadow-primary/20 transition-all active:scale-95 min-h-[44px] touch-manipulation cursor-pointer"
         >
           <span className="material-symbols-rounded text-lg">{isCameraOpen ? 'photo_camera' : 'videocam'}</span> 
           {isCameraOpen ? 'Take Photo' : 'Open Camera'}
         </button>
         <button type="button" 
           onClick={() => fileInputRef.current?.click()}
-          className="bg-white text-accent py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-2 border-primary/20 hover:bg-primary/5 transition-all"
+          className="bg-white text-accent py-4 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-2 border-primary/20 hover:bg-primary/5 transition-all min-h-[44px] touch-manipulation cursor-pointer active:scale-95"
         >
           <span className="material-symbols-rounded text-lg">image</span> Gallery
         </button>
@@ -450,8 +451,9 @@ const MatchaLens = ({ onAdd, vocabList = [] }: { onAdd: (word: any) => Promise<a
       {/* Results panel - always visible after detect */}
       {results.length > 0 && (
         <div className="w-full mt-3">
-          <p className="text-[10px] font-black text-accent/40 uppercase tracking-widest mb-2">
-            🔍 Detected {results.length} objects:
+          <p className="text-[10px] font-black text-accent/50 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <Search className="w-3 h-3 text-primary shrink-0" />
+            <span>Detected {results.length} objects:</span>
           </p>
           <div className="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {results.map((item, idx) => {

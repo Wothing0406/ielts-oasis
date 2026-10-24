@@ -20,6 +20,7 @@ import {
   Loader2 
 } from 'lucide-react';
 import Flashcard from './Flashcard';
+import { playWordAudio } from '../utils/audio';
 
 const API_URL = '/api';
 
@@ -32,25 +33,15 @@ interface VocabItem {
   example?: string;
   synonyms?: string[];
   memory_hook?: string;
+  audio_url?: string;
   audio_path?: string;
   image_url?: string;
   topic?: string;
   source?: string;
 }
 
-const playAudio = async (word: string) => {
-  try {
-    const res = await fetch(`${API_URL}/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word }),
-    });
-    const data = await res.json();
-    if (data.audio_url) {
-      const audio = new Audio(data.audio_url);
-      audio.play();
-    }
-  } catch (err) { console.error("TTS error:", err); }
+const playAudio = (word: string, audioUrl?: string) => {
+  playWordAudio(word, audioUrl);
 };
 
 
@@ -59,7 +50,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
   onAdd: (word: any) => Promise<void>, 
   onDelete: (id: number) => Promise<void>, 
   onGenerateTopic?: (topic: string) => Promise<void>,
-  onStartQuiz: () => void 
+  onStartQuiz: (selectedTopic?: string | null, customVocabList?: VocabItem[]) => void 
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -602,8 +593,8 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                                 )}
                                 <button 
                                   type="button" 
-                                  onClick={() => playAudio(item.word)}
-                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all p-1 rounded-full hover:bg-primary/10 min-w-[28px] min-h-[28px] inline-flex items-center justify-center"
+                                  onClick={() => playAudio(item.word, item.audio_url || item.audio_path)}
+                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all p-1 rounded-full hover:bg-primary/10 min-w-[28px] min-h-[28px] inline-flex items-center justify-center cursor-pointer"
                                   title="Nghe phát âm"
                                 >
                                   <Volume2 className="w-4 h-4 shrink-0" />
@@ -649,7 +640,29 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           )}
         </AnimatePresence>
         
-        <div className="flex flex-wrap gap-2 mt-4 mb-6">
+        {/* Vault & Topic Info Banner */}
+        <div className="flex items-center justify-between text-xs font-bold text-accent/70 mt-4 mb-2 px-1">
+          <div className="flex items-center gap-2">
+            <FolderOpen className="w-4 h-4 text-primary shrink-0" />
+            <span>Kho từ vựng: <strong className="text-primary">{vocabList.length}</strong> từ</span>
+            {selectedTopic && (
+              <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-black">
+                {filteredVocabList.length} từ chủ đề {selectedTopic}
+              </span>
+            )}
+          </div>
+          {selectedTopic && (
+            <button
+              type="button"
+              onClick={() => setSelectedTopic(null)}
+              className="text-[11px] text-accent/60 hover:text-primary transition-colors underline decoration-dotted cursor-pointer"
+            >
+              Xem tất cả kho
+            </button>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-2 mb-6">
           {['All', 'AWL', 'Environment', 'Tech', 'Health', 'Education', 'Economy', 'Society'].map((topic) => {
             const topicLabels: Record<string, string> = {
               'All': 'Tất cả',
@@ -665,7 +678,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
               <button type="button"
                 key={topic}
                 onClick={() => setSelectedTopic(topic === 'All' ? null : topic)}
-                className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-bold transition-all border touch-manipulation active:scale-95 ${
+                className={`min-h-[36px] px-3.5 py-1 rounded-full text-xs font-bold transition-all border touch-manipulation active:scale-95 cursor-pointer ${
                   (topic === 'All' && !selectedTopic) || (selectedTopic?.toLowerCase() === topic.toLowerCase())
                     ? 'bg-primary text-white border-primary shadow-sm'
                     : 'bg-secondary text-accent border-transparent hover:bg-primary hover:text-white'
@@ -699,12 +712,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                     phonetic={current.phonetic}
                     meaning={current.meaning}
                     audioPath={current.audio_path}
+                    audioUrl={current.audio_url || current.audio_path}
                     synonyms={current.synonyms}
                     memoryHook={current.memory_hook}
                     imageUrl={current.image_url}
                     topic={current.topic}
                     example={current.example}
-                    onAudioClick={() => playAudio(current.word)}
+                    onAudioClick={() => playAudio(current.word, current.audio_url || current.audio_path)}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -716,7 +730,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             <button 
               type="button" 
               onClick={prev} 
-              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation cursor-pointer"
               aria-label="Previous card"
             >
               <ChevronLeft className="w-5 h-5 shrink-0" />
@@ -727,7 +741,7 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
             <button 
               type="button" 
               onClick={next} 
-              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white hover:bg-primary/20 rounded-full text-accent shadow-md border border-primary/10 active:scale-95 transition-all touch-manipulation cursor-pointer"
               aria-label="Next card"
             >
               <ChevronRight className="w-5 h-5 shrink-0" />
@@ -736,17 +750,33 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
           
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
              <button type="button" 
-               onClick={onStartQuiz}
-               className="w-full sm:w-auto min-h-[44px] bg-accent text-white px-8 py-3 rounded-full font-bold shadow-lg text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all touch-manipulation"
+               onClick={() => onStartQuiz(selectedTopic, filteredVocabList)}
+               className="w-full sm:w-auto min-h-[44px] bg-primary text-white px-7 py-3 rounded-full font-bold shadow-lg text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all touch-manipulation cursor-pointer"
              >
                <GraduationCap className="w-5 h-5 shrink-0" />
-               <span>Ôn tập ngay</span>
+               <span>
+                 {selectedTopic 
+                   ? `Ôn tập chủ đề (${filteredVocabList.length} từ)` 
+                   : `Ôn tập toàn kho (${vocabList.length} từ)`}
+               </span>
              </button>
+             
+             {selectedTopic && (
+               <button 
+                 type="button" 
+                 onClick={() => onStartQuiz(null, vocabList)}
+                 className="w-full sm:w-auto min-h-[44px] bg-accent text-white px-6 py-3 rounded-full font-bold shadow-md text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all touch-manipulation cursor-pointer"
+                 title="Học hết toàn bộ từ vựng đã có trong kho"
+               >
+                 <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                 <span>Học hết cả kho ({vocabList.length} từ)</span>
+               </button>
+             )}
              
              {current.id && current.user_id !== null && current.user_id !== undefined && (
                <button type="button" 
                  onClick={() => onDelete(current.id!)}
-                 className="w-full sm:w-auto min-h-[44px] bg-red-50 text-red-500 px-8 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all active:scale-95 touch-manipulation"
+                 className="w-full sm:w-auto min-h-[44px] bg-red-50 text-red-500 px-6 py-3 rounded-full font-bold border border-red-100 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all active:scale-95 touch-manipulation cursor-pointer"
                >
                  <Trash2 className="w-5 h-5 shrink-0" />
                  <span>Xóa từ này</span>

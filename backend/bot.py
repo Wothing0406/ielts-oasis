@@ -674,7 +674,273 @@ async def nghihoc_cmd(interaction: discord.Interaction):
             await interaction.followup.send("Có lỗi xảy ra khi thực hiện xoá dữ liệu. Vui lòng thử lại sau.", ephemeral=True)
         finally:
             db.close()
- 
+
+
+class GrammarQuizView(discord.ui.View):
+    def __init__(self, correct_option: str, explanation: str, author_id: str):
+        super().__init__(timeout=120)
+        self.correct_option = correct_option
+        self.explanation = explanation
+        self.author_id = author_id
+
+    async def handle_choice(self, interaction: discord.Interaction, choice: str):
+        if str(interaction.user.id) != self.author_id:
+            await interaction.response.send_message("Đây là câu đố dành riêng cho người gọi lệnh nhé! 🍵", ephemeral=True)
+            return
+        is_correct = (choice.strip().upper() == self.correct_option.strip().upper())
+        if is_correct:
+            await interaction.response.send_message(
+                f"🎉 **CHÍNH XÁC!** Bạn trả lời rất chuẩn xác!\n💡 **Giải thích:** {self.explanation}",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                f"❌ **Chưa đúng rồi!** Đáp án đúng là **{self.correct_option}**.\n💡 **Giải thích:** {self.explanation}",
+                ephemeral=True
+            )
+        for child in self.children:
+            child.disabled = True
+        try:
+            await interaction.message.edit(view=self)
+        except Exception:
+            pass
+        self.stop()
+
+    @discord.ui.button(label="A", style=discord.ButtonStyle.primary)
+    async def btn_a(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.handle_choice(interaction, "A")
+
+    @discord.ui.button(label="B", style=discord.ButtonStyle.primary)
+    async def btn_b(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.handle_choice(interaction, "B")
+
+    @discord.ui.button(label="C", style=discord.ButtonStyle.primary)
+    async def btn_c(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.handle_choice(interaction, "C")
+
+    @discord.ui.button(label="D", style=discord.ButtonStyle.primary)
+    async def btn_d(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.handle_choice(interaction, "D")
+
+
+@bot.tree.command(name='nguphap', description="Tra cứu lý thuyết 12 thì, mạo từ IELTS kèm video bài giảng và mini-quiz")
+@app_commands.describe(chude="Chọn chuyên đề ngữ pháp muốn tra cứu")
+@app_commands.choices(chude=[
+    app_commands.Choice(name="1. Quá khứ đơn (Past Simple) - Vũ khí Task 1", value="past_simple"),
+    app_commands.Choice(name="2. Quá khứ hoàn thành (Past Perfect) - Band 7.5+", value="past_perfect"),
+    app_commands.Choice(name="3. Hiện tại hoàn thành (Present Perfect) - Mở bài Task 2", value="present_perfect"),
+    app_commands.Choice(name="4. Dự báo tương lai (Future Projections) - Tránh lỗi 'will'", value="future_projections"),
+    app_commands.Choice(name="5. Mạo từ THE & Zero Article (Ø) - Tránh trừ điểm GRA", value="articles"),
+    app_commands.Choice(name="6. Đảo ngữ phủ định (Inversion) - Band 8.0+", value="inversion"),
+    app_commands.Choice(name="7. Thể bị động khách quan (Impersonal Passive)", value="passive")
+])
+async def nguphap_cmd(interaction: discord.Interaction, chude: app_commands.Choice[str]):
+    author_id = str(interaction.user.id)
+    
+    grammar_data = {
+        "past_simple": {
+            "title": "🕰️ THÌ QUÁ KHỨ ĐƠN (PAST SIMPLE TENSE)",
+            "formula": "**(+) Khẳng định:** S + V-ed / V2\n**(-) Phủ định:** S + did not (didn't) + V-inf\n**(?) Nghi vấn:** Did + S + V-inf?",
+            "signals": "yesterday, ago, last week/year, in 2010, between 2000 and 2015",
+            "pitfalls": "• Lỗi quên lùi thì khi miêu tả biểu đồ năm cũ.\n• Động từ trạng thái (know, believe, understand) dùng quá khứ đơn, KHÔNG chia tiếp diễn.",
+            "example": "*Between 2005 and 2015, the proportion of car ownership escalated from 25% to 65%.* (Task 1 Band 8.0)",
+            "video_url": "https://www.youtube.com/watch?v=xL6_B_Y2_qY",
+            "quiz_question": "Between 1995 and 2010, the volume of exports [ _____ ] dramatically.\nA. surged\nB. has surged\nC. was surging\nD. surges",
+            "correct_key": "A",
+            "explanation": "Khoảng thời gian 1995-2010 đã chấm dứt hoàn toàn trong quá khứ nên bắt buộc chia Quá khứ đơn 'surged'."
+        },
+        "past_perfect": {
+            "title": "⏳ QUÁ KHỨ HOÀN THÀNH (PAST PERFECT TENSE)",
+            "formula": "**(+) Khẳng định:** S + had + V3/V-ed\n**(-) Phủ định:** S + had not (hadn't) + V3/V-ed\n**(?) Nghi vấn:** Had + S + V3/V-ed?",
+            "signals": "by the time, prior to, before, by 2015",
+            "pitfalls": "• Chỉ dùng khi có mốc quá khứ thứ 2 để đối chiếu.\n• Quên chia phân từ 2 của động từ bất quy tắc (surpassed, fallen, overtaken).",
+            "example": "*By the time the initiative was launched in 2012, carbon emissions had already peaked.* (Task 1 Band 8.5)",
+            "video_url": "https://www.youtube.com/watch?v=xZz7nZ5i5-o",
+            "quiz_question": "By the time the summit commenced, delegates [ _____ ] the agreement.\nA. finalize\nB. had finalized\nC. have finalized\nD. are finalizing",
+            "correct_key": "B",
+            "explanation": "'By the time + Past Simple' đi với mệnh đề chính chia Past Perfect: 'had finalized'."
+        },
+        "present_perfect": {
+            "title": "✨ HIỆN TẠI HOÀN THÀNH (PRESENT PERFECT TENSE)",
+            "formula": "**(+) Khẳng định:** S + have/has + V3/V-ed\n**(-) Phủ định:** S + have/has not + V3/V-ed\n**(?) Nghi vấn:** Have/Has + S + V3/V-ed?",
+            "signals": "over the past decade, recently, in recent years, since, for",
+            "pitfalls": "• Tuyệt đối KHÔNG dùng với mốc năm đóng trong quá khứ như 'in 2010' (SAI).\n• Phân biệt 'have been to' (đã từng đến) và 'have gone to' (đang đi chưa về).",
+            "example": "*Over the past two decades, technological breakthroughs have revolutionized daily communication.* (Task 2 Band 8.5)",
+            "video_url": "https://www.youtube.com/watch?v=o1_0G_K4gwg",
+            "quiz_question": "Over the past three decades, urbanization [ _____ ] agricultural landscapes.\nA. transformed\nB. has transformed\nC. transforms\nD. is transforming",
+            "correct_key": "B",
+            "explanation": "Cụm 'Over the past three decades' là dấu hiệu nhận biết bắt buộc của Present Perfect: 'has transformed'."
+        },
+        "future_projections": {
+            "title": "🔮 DỰ BÁO TƯƠNG LAI (FUTURE PROJECTIONS IN TASK 1)",
+            "formula": "**(+) Khẳng định:** S + is/are projected / predicted / forecasted to + V-inf\n**(-) Phủ định:** S + is/are not anticipated to + V-inf\n**(?) Nghi vấn:** Is/Are + S + expected to + V-inf?",
+            "signals": "by 2030, by the year 2050, in the subsequent decade",
+            "pitfalls": "• Lạm dụng từ 'will' làm mất tính khách quan khoa học của bài Task 1.\n• Quên chia thể bị động: phải là 'is projected to', không phải 'projects to'.",
+            "example": "*By 2040, renewable energy generation is projected to outstrip fossil fuels.* (Task 1 Band 8.5)",
+            "video_url": "https://www.youtube.com/watch?v=H3r9bT1K8b8",
+            "quiz_question": "By 2035, the proportion of electric car sales [ _____ ] to reach 70%.\nA. will reach\nB. is projected\nC. projects\nD. has projected",
+            "correct_key": "B",
+            "explanation": "Trong IELTS Task 1, số liệu tương lai là dự báo khoa học, nên dùng cấu trúc bị động 'is projected to reach'."
+        },
+        "articles": {
+            "title": "🎯 MẠO TỪ THE, A/AN VÀ ZERO ARTICLE (Ø)",
+            "formula": "• **A/An:** Danh từ đếm được số ít chưa xác định (phụ thuộc âm đầu: *an hour, a university*)\n• **THE:** Danh từ xác định, duy nhất (*the environment, the internet, the proportion of*)\n• **Ø:** Danh từ số nhiều / trừu tượng khi nói khái quát trong Task 2",
+            "signals": "the percentage of, the number of, higher education, economic stability",
+            "pitfalls": "• Bỏ quên 'the' trước cụm số liệu: viết 'percentage increased' (SAI).\n• Thêm 'the' tùy tiện trước danh từ trừu tượng: 'The education is vital' (SAI -> phải là 'Ø Education').",
+            "example": "*The proportion of graduates seeking overseas employment increased.* | *Ø Higher education plays a pivotal role.*",
+            "video_url": "https://www.youtube.com/watch?v=t4L6gU4iP8M",
+            "quiz_question": "[ _____ ] plays a crucial role in curbing greenhouse gas emissions.\nA. The environmental regulation\nB. Environmental regulation\nC. An environmental regulation\nD. A environmental regulation",
+            "correct_key": "B",
+            "explanation": "Khi phát biểu quy luật/khái niệm trừu tượng chung trong Task 2, dùng Zero Article (không có 'the')."
+        },
+        "inversion": {
+            "title": "⚡ ĐẢO NGỮ TRẠNG TỪ PHỦ ĐỊNH (INVERSION - BAND 8.0+)",
+            "formula": "Seldom / Rarely / Under no circumstances + Trợ động từ (do/does/did/can) + S + V-inf",
+            "signals": "Seldom, Rarely, Hardly, Scarcely, Under no circumstances, Not only... but also",
+            "pitfalls": "• Quên đảo trợ động từ lên trước chủ ngữ.\n• Chia sai thì của trợ động từ.",
+            "example": "*Seldom do municipal governments allocate sufficient budgets to rural healthcare.* (Task 2 Band 8.5)",
+            "video_url": "https://www.youtube.com/watch?v=j8L0mK6v3bM",
+            "quiz_question": "Seldom [ _____ ] such comprehensive welfare policies during recessions.\nA. governments implement\nB. do governments implement\nC. governments do implement\nD. have implement governments",
+            "correct_key": "B",
+            "explanation": "Đảo ngữ với Seldom đứng đầu câu: Seldom + Trợ động từ (do) + Chủ ngữ (governments) + Động từ nguyên thể (implement)."
+        },
+        "passive": {
+            "title": "🏛️ THỂ BỊ ĐỘNG KHÁCH QUAN (IMPERSONAL PASSIVE)",
+            "formula": "It is widely believed / argued / asserted / acknowledged that + S + V",
+            "signals": "It is believed that, It is widely argued that, It is commonly acknowledged that",
+            "pitfalls": "• Viết 'It believes that' (thiếu to be).\n• Thiếu 'that' trước mệnh đề phụ.",
+            "example": "*It is widely acknowledged that subsidizing green public transit curtails traffic gridlock.* (Task 2 Band 8.0)",
+            "video_url": "https://www.youtube.com/watch?v=w9k8v7L2j1a",
+            "quiz_question": "It [ _____ ] that artificial intelligence will reshape tertiary education.\nA. is widely believed\nB. widely believes\nC. has widely believe\nD. was widely believe",
+            "correct_key": "A",
+            "explanation": "Cấu trúc bị động khách quan chuẩn xác: 'It is widely believed that...'."
+        }
+    }
+
+    item = grammar_data.get(chude.value, grammar_data["past_simple"])
+    
+    embed = discord.Embed(
+        title=item["title"],
+        description="Bí kíp ngữ pháp học thuật chuẩn Cambridge IELTS & CEFR EGP:",
+        color=discord.Color.from_rgb(167, 208, 140)
+    )
+    embed.add_field(name="📐 Công thức 3 dạng (+, -, ?):", value=item["formula"], inline=False)
+    embed.add_field(name="📍 Dấu hiệu nhận biết:", value=item["signals"], inline=False)
+    embed.add_field(name="⚠️ Bẫy đề thi & Lưu ý quan trọng:", value=item["pitfalls"], inline=False)
+    embed.add_field(name="✍️ Ví dụ IELTS Academic Band 8.0+:", value=item["example"], inline=False)
+    embed.add_field(name="📺 Video bài giảng tuyển chọn (YouTube):", value=f"👉 [Xem bài giảng chi tiết trên YouTube]({item['video_url']})", inline=False)
+    embed.add_field(name="📝 Thử thách tương tác (Mini Quiz):", value=item["quiz_question"], inline=False)
+    embed.set_footer(text="Chọn nút đáp án A, B, C hoặc D bên dưới để kiểm tra câu trả lời! 🍵")
+
+    view = GrammarQuizView(correct_option=item["correct_key"], explanation=item["explanation"], author_id=author_id)
+    await interaction.response.send_message(embed=embed, view=view)
+
+
+@bot.tree.command(name='lichhoc', description="Tư vấn lịch học 7 ngày cá nhân hóa cân đối Từ vựng SRS, Ngữ pháp, Nói & Viết")
+@app_commands.describe(
+    band_muc_tieu="Nhập band điểm IELTS mục tiêu (ví dụ: 6.5, 7.0, 7.5, 8.0)",
+    gio_hoc="Giờ nhắc học hàng ngày dạng HH:MM (ví dụ: 20:30)"
+)
+async def lichhoc_cmd(interaction: discord.Interaction, band_muc_tieu: str = "7.0", gio_hoc: str = "20:00"):
+    import re
+    if not re.match(r'^\d{1,2}:\d{2}$', gio_hoc):
+        await interaction.response.send_message("Vui lòng nhập đúng định dạng giờ HH:MM (ví dụ: 20:00). 🍵", ephemeral=True)
+        return
+
+    discord_id = str(interaction.user.id)
+    db = SessionLocal()
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+
+    if not user:
+        await interaction.response.send_message("Vui lòng đăng nhập trên website Mát Cha AI Eo trước khi kích hoạt lịch học nhé! 🍵", ephemeral=True)
+        db.close()
+        return
+
+    await interaction.response.defer()
+
+    sched = db.query(DiscordSchedule).filter(DiscordSchedule.user_id == user.id).first()
+    if not sched:
+        sched = DiscordSchedule(user_id=user.id, study_time=gio_hoc, level=f"Band {band_muc_tieu}", topic="Comprehensive", study_focus="Toàn diện")
+        db.add(sched)
+    else:
+        sched.study_time = gio_hoc
+        sched.level = f"Band {band_muc_tieu}"
+        sched.study_focus = "Toàn diện"
+
+    # Gọi AI Service tư vấn lộ trình 7 ngày
+    user_profile = {
+        "username": user.username,
+        "cefr_level": "B2" if band_muc_tieu in ["6.0", "6.5"] else "C1",
+        "user_goal": f"IELTS {band_muc_tieu}",
+        "weak_areas": ["12 thì cơ bản", "mạo từ học thuật", "ngữ pháp Task 1 và Task 2"]
+    }
+
+    try:
+        coach_advice = await ai_service.consult_study_and_grammar_coach(
+            message=f"Lập cho tôi lộ trình học 7 ngày hướng tới IELTS {band_muc_tieu}",
+            user_profile=user_profile
+        )
+        plan_data = coach_advice.get("study_plan", {}).get("daily_focus", [])
+        
+        # Save weekly plan into schedule
+        weekly_plan_dict = {}
+        day_mapping = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        for idx, item in enumerate(plan_data[:7]):
+            day_name = day_mapping[idx]
+            weekly_plan_dict[day_name] = {
+                "topic": item.get("skill", "Luyện tập ngữ pháp & từ vựng"),
+                "tasks": [
+                    f"Trọng tâm: {item.get('grammar_target', '')}",
+                    f"Thực hành: {item.get('output_task', '')}"
+                ],
+                "tip": f"Mục tiêu Band {band_muc_tieu}: Tập trung vào sự chính xác của tiêu chuẩn GRA."
+            }
+        
+        sched.weekly_plan = weekly_plan_dict
+        db.commit()
+
+        embed = discord.Embed(
+            title=f"📅 LỘ TRÌNH HỌC 7 NGÀY CÁ NHÂN HÓA - BAND {band_muc_tieu} 🍵",
+            description=f"Chào **{user.username}**! Mát Cha AI Eo đã thiết lập thời khóa biểu nhắc học lúc **{gio_hoc}** hàng ngày.\nLộ trình cân bằng 3 mũi nhọn: **Từ vựng SRS ➔ Ngữ pháp 12 thì/Mạo từ ➔ Luyện Viết & Nói**:",
+            color=discord.Color.from_rgb(167, 208, 140)
+        )
+
+        for day_item in plan_data[:7]:
+            day_title = day_item.get("day", "Ngày học")
+            skill_text = day_item.get("skill", "")
+            target_text = day_item.get("grammar_target", "")
+            output_text = day_item.get("output_task", "")
+            embed.add_field(
+                name=f"🗓️ {day_title}: {skill_text}",
+                value=f"• **Ngữ pháp trọng điểm:** {target_text}\n• **Nhiệm vụ đầu ra:** {output_text}",
+                inline=False
+            )
+
+        # Google Calendar sync link
+        import jwt
+        from auth_routes import JWT_SECRET, JWT_ALGORITHM
+        cal_token = jwt.encode({
+            "user_id": user.id,
+            "exp": datetime.utcnow() + timedelta(days=365)
+        }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        cal_url = f"https://ieltsoasis.site/api/study-plan/calendar.ics?token={cal_token}"
+
+        embed.add_field(
+            name="🔗 Liên kết đồng bộ & Luyện tập:",
+            value=f"👉 [Đồng bộ Google Calendar một chạm]({cal_url})\n👉 [Vào Grammar Mastery Lab trên Web](https://ieltsoasis.site/community)",
+            inline=False
+        )
+        embed.set_footer(text="Mát Cha AI Eo sẽ gửi bài tập và từ vựng nhắc nhở qua DM đúng giờ học mỗi ngày! 🎉")
+
+        await interaction.followup.send(embed=embed)
+    except Exception as e:
+        logger.error(f"Error in /lichhoc: {e}")
+        db.rollback()
+        await interaction.followup.send("Gặp sự cố khi sinh lộ trình AI. Vui lòng thử lại sau!")
+    finally:
+        db.close()
+
+
 async def schedule_checker_job():
     """Chạy mỗi phút để kiểm tra lịch học của user"""
     now = datetime.utcnow()

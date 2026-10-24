@@ -353,11 +353,18 @@
       const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
       this.saveSystem.resetActiveSave(activeSlot, curMode);
 
+      // Dập tắt triệt để toàn bộ âm rung thiền định/drone gây ù tai khi tử trận
+      if (this.audio) {
+        this.audio.silenceAll();
+      }
+
       this.purgeAllBattleState();
       if (this.unityBridge) {
         this.unityBridge.triggerDefeated();
       }
-      this.audio.play("hurt");
+      if (this.audio) {
+        this.audio.play("hurt");
+      }
       this.ui.updateHUD();
       this.ui.showGameOverModal();
     }
@@ -411,8 +418,8 @@
 
       // Lắng nghe lệnh từ trang Next.js cha
       window.addEventListener("message", (event) => {
+        if (!event.origin || event.origin !== window.location.origin) return;
         if (!event.data) return;
-        if (event.origin && event.origin !== window.location.origin) return;
         if (event.data.type === "MEOWCHA_LOAD_SLOT") {
           const slot = event.data.data;
           if (slot) {

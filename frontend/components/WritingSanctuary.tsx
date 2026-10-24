@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PenTool, 
@@ -37,6 +37,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   // AI Rephrase States
   const [selectedPhrase, setSelectedPhrase] = useState('');
@@ -48,6 +49,15 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [timerActive, setTimerActive] = useState(false);
   const [isTimeUp, setIsTimeUp] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let interval: any;
@@ -134,23 +144,27 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
       const { task_id } = await startRes.json();
       
       // Poll every 3 seconds
-      const poll = setInterval(async () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/writing/analyze/status/${task_id}`);
           if (statusRes.ok) {
             const data = await statusRes.json();
             if (data.status === "completed") {
-              clearInterval(poll);
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
               console.log("Analysis result:", data.result);
               setAnalysis(data.result);
               setIsAnalyzing(false);
             } else if (data.status === "failed") {
-              clearInterval(poll);
+              if (pollRef.current) clearInterval(pollRef.current);
+              pollRef.current = null;
               throw new Error(data.error || "Analysis failed");
             }
           }
         } catch (err: any) {
-          clearInterval(poll);
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
           console.error("Polling error:", err);
           alert(`Grading failed: ${err.message}`);
           setIsAnalyzing(false);
@@ -166,24 +180,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
 
   const handleShareToCommunity = async () => {
     if (!analysis || !text) return;
-    let token = localStorage.getItem('oasis_token');
-    if (!token) {
-      try {
-        const storedGuestId = localStorage.getItem("oasis_guest_id");
-        const res = await fetch(`/api/auth/guest`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ guest_id: storedGuestId || null })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          token = data.token;
-          localStorage.setItem("oasis_token", data.token);
-          localStorage.setItem("oasis_user", JSON.stringify(data.user));
-          localStorage.setItem("oasis_guest_id", data.guest_id);
-        }
-      } catch (e) {}
-    }
+    const token = localStorage.getItem('oasis_token');
     if (!token) return (window as any).showToast('Bạn cần đăng nhập để chia sẻ bài viết!', 'info');
     
     try {
@@ -353,7 +350,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                               setSelectedPhrase('');
                               setRephraseSuggestions([]);
                               if ((window as any).showToast) {
-                                (window as any).showToast("Đã thay thế cụm từ thành công! 📝", "success");
+                                (window as any).showToast("Đã thay thế cụm từ thành công!", "success");
                               }
                             }}
                             className="p-2.5 bg-white dark:bg-neutral-800 hover:bg-primary/5 rounded-xl border border-primary/10 text-xs text-accent dark:text-secondary font-medium cursor-pointer transition-colors shadow-sm"
@@ -402,7 +399,7 @@ const WritingSanctuary = ({ initialPrompt, onListenWriting, onReadWriting }: Wri
                         onClick={() => {
                           navigator.clipboard.writeText(analysis.band_8_rephrase);
                           if ((window as any).showToast) {
-                            (window as any).showToast("Đã sao chép bài mẫu Band 8.5+! 📋", "success");
+                            (window as any).showToast("Đã sao chép bài mẫu Band 8.5+!", "success");
                           }
                         }}
                         className="text-[10px] font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-full border border-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer"

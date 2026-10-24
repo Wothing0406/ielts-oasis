@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShieldCheck, RefreshCw, AlertCircle, ArrowRight } from "lucide-react";
+import { ShieldCheck, RefreshCw, AlertCircle } from "lucide-react";
 
 export function SecurityShield({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
   const [deviceError, setDeviceError] = useState<boolean>(false);
   const [isSlow, setIsSlow] = useState<boolean>(false);
   const [rayId, setRayId] = useState<string>("");
+  const [retryNonce, setRetryNonce] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
@@ -20,9 +21,8 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     // Generate rayId once on client mount to completely prevent SSR hydration mismatch
     setRayId(Math.random().toString(16).substring(2, 10).toUpperCase());
 
-    // Auto-bypass in development or for public game routes
-    const isGameRoute = pathname?.startsWith("/games") || pathname?.startsWith("/meowcha");
-    if (process.env.NODE_ENV !== "production" || isGameRoute) {
+    // Auto-bypass only in local development environment
+    if (process.env.NODE_ENV !== "production") {
       setIsVerified(true);
       return;
     }
@@ -33,21 +33,10 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  const handleBypass = () => {
-    sessionStorage.setItem("turnstile_verified", "true");
-    setIsVerified(true);
-  };
-
   const handleRetry = () => {
     setDeviceError(false);
     setIsSlow(false);
-    if (widgetIdRef.current !== null && (window as any).turnstile) {
-      try {
-        (window as any).turnstile.reset(widgetIdRef.current);
-      } catch (e) {
-        console.warn("Turnstile reset error:", e);
-      }
-    }
+    setRetryNonce((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -127,7 +116,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
     };
-  }, [isVerified, isMounted]);
+  }, [isVerified, isMounted, retryNonce]);
 
   // Prevent rendering anything on server side to ensure zero hydration mismatch
   if (!isMounted) {
@@ -190,19 +179,10 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
                         <button
                           type="button"
                           onClick={handleRetry}
-                          className="min-h-[44px] px-5 py-2.5 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95"
+                          className="min-h-[44px] px-5 py-2.5 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           <RefreshCw className="w-4 h-4" />
                           <span>Thử lại xác minh Cloudflare</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleBypass}
-                          className="min-h-[44px] px-4 py-2.5 text-xs md:text-sm font-semibold rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 flex items-center gap-1.5 transition-all active:scale-95"
-                        >
-                          <span>Tiếp tục vào trang</span>
-                          <ArrowRight className="w-4 h-4 text-neutral-400" />
                         </button>
                       </div>
                     </div>

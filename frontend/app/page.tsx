@@ -16,13 +16,19 @@ import {
   X, 
   LogOut,
   Check,
-  Info
+  Info,
+  Users,
+  BookCheck,
+  GraduationCap,
+  ArrowRight,
+  ShieldCheck,
+  RefreshCw
 } from "lucide-react";
 import DailyPlanner from "@/components/DailyPlanner";
 import VocabularyLab from "@/components/VocabularyLab";
 import MatchaLens from "@/components/MatchaLens";
 import WritingSanctuary from "@/components/WritingSanctuary";
-import CommunityFeed from "@/components/CommunityFeed";
+import GrammarMasteryLab from "@/components/grammar/GrammarMasteryLab";
 import MatchaBook from "@/components/MatchaBook";
 import MatchaRadio from "@/components/MatchaRadio";
 import MatchaSpeak from "@/components/MatchaSpeak";
@@ -35,6 +41,9 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [vocabList, setVocabList] = useState<any[]>([]);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showGrammarModal, setShowGrammarModal] = useState(false);
+  const [quizTopic, setQuizTopic] = useState<string | null>(null);
+  const [quizCustomVocab, setQuizCustomVocab] = useState<any[] | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [guestName, setGuestName] = useState("");
@@ -42,6 +51,7 @@ export default function Home() {
   const [isGuestLoggingIn, setIsGuestLoggingIn] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaDeviceError, setCaptchaDeviceError] = useState(false);
 
   // Custom Toast/Modal state
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -75,6 +85,38 @@ export default function Home() {
         onCancel: () => setModal(null)
       });
     };
+    // Restore any study context selected from Oasis Community page
+    const timers: any[] = [];
+    try {
+      const activeListen = sessionStorage.getItem("oasis_active_listening");
+      if (activeListen) {
+        sessionStorage.removeItem("oasis_active_listening");
+        setActiveListeningContext(activeListen);
+        timers.push(setTimeout(() => {
+          document.getElementById('matcha-radio')?.scrollIntoView({ behavior: 'smooth' });
+        }, 600));
+      }
+      const activeRead = sessionStorage.getItem("oasis_active_reading");
+      if (activeRead) {
+        sessionStorage.removeItem("oasis_active_reading");
+        setActiveReadingContext(activeRead);
+        timers.push(setTimeout(() => {
+          document.getElementById('matcha-book')?.scrollIntoView({ behavior: 'smooth' });
+        }, 600));
+      }
+      const activeSpeak = sessionStorage.getItem("oasis_active_speaking");
+      if (activeSpeak) {
+        sessionStorage.removeItem("oasis_active_speaking");
+        setActiveSpeakingContext(activeSpeak);
+        timers.push(setTimeout(() => {
+          document.getElementById('matcha-speak')?.scrollIntoView({ behavior: 'smooth' });
+        }, 600));
+      }
+    } catch (e) {}
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -86,6 +128,7 @@ export default function Home() {
 
   const resetCaptcha = () => {
     setCaptchaToken("");
+    setCaptchaDeviceError(false);
     if ((window as any).turnstile) {
       try {
         (window as any).turnstile.reset();
@@ -98,6 +141,8 @@ export default function Home() {
   useEffect(() => {
     let active = true;
     let widgetId: string | null = null;
+
+    // Turnstile active lifecycle
 
     const renderCaptcha = () => {
       if (!active) return;
@@ -121,16 +166,19 @@ export default function Home() {
             theme: "light",
             callback: (token: string) => {
               setCaptchaToken(token);
+              setCaptchaDeviceError(false);
             },
             "expired-callback": () => {
               setCaptchaToken("");
             },
             "error-callback": () => {
               setCaptchaToken("");
+              setCaptchaDeviceError(true);
             }
           });
         } catch (e) {
           console.error("Turnstile render error", e);
+          setCaptchaDeviceError(true);
         }
       } else {
         setTimeout(renderCaptcha, 250);
@@ -143,7 +191,7 @@ export default function Home() {
     
     return () => {
       active = false;
-      if (widgetId !== null && (window as any).turnstile) {
+            if (widgetId !== null && (window as any).turnstile) {
         try {
           (window as any).turnstile.remove(widgetId);
         } catch (e) {}
@@ -233,34 +281,6 @@ export default function Home() {
     window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: messageData }));
   };
 
-  const ensureUserSession = async (): Promise<string | null> => {
-    let token = localStorage.getItem("oasis_token");
-    if (token) return token;
-
-    // Auto-create/resume isolated guest session for guest user
-    try {
-      const storedGuestId = localStorage.getItem("oasis_guest_id");
-      const res = await fetch(`${API_URL}/auth/guest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guest_id: storedGuestId || null })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("oasis_token", data.token);
-        localStorage.setItem("oasis_user", JSON.stringify(data.user));
-        localStorage.setItem("oasis_guest_id", data.guest_id);
-        setUser(data.user);
-        fetchVocabs(data.token);
-        syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
-        return data.token;
-      }
-    } catch (err) {
-      console.error("Failed to auto-init guest session:", err);
-    }
-    return null;
-  };
-
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
     const savedToken = localStorage.getItem("oasis_token");
@@ -274,9 +294,6 @@ export default function Home() {
       let parsedUser = null;
       try { parsedUser = savedUser ? JSON.parse(savedUser) : null; } catch(e) {}
       syncToExtension("OASIS_AUTH_SYNC", { token: savedToken, user: parsedUser });
-    } else {
-      // Initialize an isolated guest session so guest immediately has independent storage & community access
-      ensureUserSession();
     }
   }, []);
 
@@ -287,12 +304,9 @@ export default function Home() {
       return { success: false, status: "duplicate", word: formData.word };
     }
 
-    let token = localStorage.getItem("oasis_token");
+    const token = localStorage.getItem("oasis_token");
     if (!token) {
-      token = await ensureUserSession();
-    }
-    if (!token) {
-      (window as any).showToast("Please log in or try again to save vocabulary!", "info");
+      (window as any).showToast("Vui lòng đăng nhập để lưu từ vựng!", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
     const headers: any = {
@@ -375,11 +389,18 @@ export default function Home() {
     }
   };
 
-  const handleStartQuiz = () => {
-    if (vocabList.length < 4) {
-      (window as any).showAlert("Oops! Your vocabulary lab needs at least 4 words to generate a quiz. Add more words to get started!", "More words needed!", "warning");
+  const handleStartQuiz = (topic?: string | null, customList?: any[]) => {
+    const listToQuiz = (customList && customList.length > 0) ? customList : vocabList;
+    if (listToQuiz.length < 3) {
+      (window as any).showAlert(
+        `Phần ôn tập cần ít nhất 3 từ vựng để tạo câu hỏi bài tập. ${topic ? `Chủ đề "${topic}" hiện chỉ có ${listToQuiz.length} từ.` : 'Kho hiện có ít từ.'} Bạn hãy thêm từ hoặc chọn "Học hết cả kho" nhé!`,
+        "Cần thêm từ vựng!",
+        "warning"
+      );
       return;
     }
+    setQuizTopic(topic || null);
+    setQuizCustomVocab(customList && customList.length > 0 ? customList : null);
     setShowQuiz(true);
   };
 
@@ -497,13 +518,23 @@ export default function Home() {
     }
   };
 
-  function handleLogout() {
-    localStorage.removeItem("oasis_token");
-    localStorage.removeItem("oasis_user");
-    localStorage.removeItem("oasis_guest_id");
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, { method: "POST" });
+    } catch (e) {}
+    localStorage.clear();
+    sessionStorage.clear();
+    // Xóa sạch cookie ở client
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+    }
     setUser(null);
-    window.location.reload();
-  }
+    window.location.replace("/");
+  };
 
   const [activeSpeakingContext, setActiveSpeakingContext] = useState("");
 
@@ -636,8 +667,18 @@ export default function Home() {
             </div>
 
             {/* Cloudflare Turnstile Captcha Widget Container */}
-            <div className="w-full flex justify-center my-1 select-none">
+            <div className="w-full flex flex-col items-center justify-center my-1 select-none">
               <div id="turnstile-container" className="min-h-[65px] flex items-center justify-center"></div>
+              {captchaDeviceError && (
+                <button
+                  type="button"
+                  onClick={resetCaptcha}
+                  className="text-[11px] text-[#5D6B57] hover:text-[#2E3E2B] underline font-medium py-1.5 px-3 rounded-lg transition-colors inline-flex items-center gap-1.5 mt-1 min-h-[36px]"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tải lại xác minh bảo mật Cloudflare</span>
+                </button>
+              )}
             </div>
 
             {authMode === "login" ? (
@@ -740,6 +781,13 @@ export default function Home() {
               <Gamepad2 className="w-4 h-4 shrink-0" />
               <span>Matcha Game</span>
             </Link>
+            <Link
+              href="/community"
+              className="min-h-[44px] bg-[#7A9A6A] hover:bg-[#688659] active:scale-95 text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-full shadow-lg shadow-primary/20 transition-all inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm cursor-pointer shrink-0"
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span>Cộng đồng</span>
+            </Link>
             <div className="relative">
               <button
                 type="button"
@@ -823,7 +871,7 @@ export default function Home() {
             />
           </section>
 
-          {/* Hàng 2: Vocab Lab và Matcha Lens */}
+          {/* Hàng 2: Vocab Lab và Matcha Lens (Từ Vựng) */}
           <section className="xl:col-span-8 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card">
             <VocabularyLab
               vocabList={vocabList}
@@ -837,7 +885,52 @@ export default function Home() {
             <MatchaLens onAdd={handleAddVocab} vocabList={vocabList} />
           </section>
 
-          {/* Hàng 3: Reading và Listening Lab */}
+          {/* Hàng 3: Grammar Sanctuary (Ngữ Pháp IELTS - Ngay sau Từ Vựng) */}
+          <section id="grammar-sanctuary" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card p-5 sm:p-6 transition-all hover:border-primary/25">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-2 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-primary/10 text-primary dark:text-[#88B878] inline-flex items-center justify-center">
+                    <GraduationCap className="w-5 h-5 shrink-0" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary/80 dark:text-[#88B878]">
+                    IELTS Grammar Engine
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold font-display text-accent dark:text-neutral-100">
+                  Grammar Sanctuary • Hệ Thống Ngữ Pháp 12 Thì & Mạo Từ
+                </h3>
+                <p className="text-xs sm:text-sm text-accent/70 dark:text-neutral-400 leading-relaxed">
+                  Làm chủ 12 thì qua trục thời gian trực quan, tra cứu cây quyết định mạo từ và tôi luyện phản xạ với 4 cơ chế luyện đề thông minh chuẩn đề thi IELTS.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    12 Thì Tiếng Anh & Trục Thời Gian
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    Cây Quyết Định Mạo Từ (a / an / the / Ø)
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    4 Cơ Chế: Trắc Nghiệm • Điền Từ • Sắp Xếp • Sửa Lỗi
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowGrammarModal(true)}
+                  className="w-full sm:w-auto min-h-[44px] px-6 py-3.5 rounded-2xl bg-[#7A9A6A] hover:bg-[#688659] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 inline-flex items-center justify-center gap-2.5"
+                >
+                  <BookCheck className="w-4 h-4 shrink-0" />
+                  <span>Vào Phòng Luyện Ngữ Pháp</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Hàng 4: Reading và Listening Lab */}
           <section id="matcha-book" className="xl:col-span-12">
             <MatchaBook initialReading={activeReadingContext} />
           </section>
@@ -846,7 +939,7 @@ export default function Home() {
             <MatchaRadio initialContext={activeListeningContext} />
           </section>
 
-          {/* Hàng 4: Writing Sanctuary */}
+          {/* Hàng 5: Writing Sanctuary */}
           <section id="writing-sanctuary" className="xl:col-span-12">
             <WritingSanctuary
               initialPrompt={activeWritingPrompt}
@@ -855,21 +948,53 @@ export default function Home() {
             />
           </section>
 
-          {/* Hàng 5: Matcha Speak */}
+          {/* Hàng 6: Matcha Speak */}
           <section id="matcha-speak" className="xl:col-span-12">
             <MatchaSpeak initialContext={activeSpeakingContext} />
           </section>
 
-          {/* Hàng 6: Community Feed */}
-          <section className="xl:col-span-12">
-            <CommunityFeed 
-              onAddVocab={handleAddVocab} 
-              vocabList={vocabList} 
-              onListenPost={handleSelectListening} 
-              onReadPost={handleSelectReading} 
-              onSpeakPost={handleSelectSpeaking}
-              onDeleteVocab={handleDeleteVocab}
-            />
+          {/* Hàng 7: Oasis Community Gateway */}
+          <section id="oasis-community" className="xl:col-span-12 bg-white dark:bg-neutral-900 rounded-large shadow-sm border border-primary/10 bento-card p-5 sm:p-6 transition-all hover:border-primary/25">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-2 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-[#6B8E5F]/15 text-[#5A7A4A] dark:text-[#88B878] inline-flex items-center justify-center">
+                    <Users className="w-5 h-5 shrink-0" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#5A7A4A] dark:text-[#88B878]">
+                    Cộng Đồng IELTS Oasis
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold font-display text-accent dark:text-neutral-100">
+                  Oasis Community • Không Gian Giao Lưu Tri Thức Mở
+                </h3>
+                <p className="text-xs sm:text-sm text-accent/70 dark:text-neutral-400 leading-relaxed">
+                  Khám phá hàng ngàn bài viết Writing chất lượng, thảo luận cùng bạn học và lưu các bộ từ vựng tuyển chọn theo chuẩn khung tham chiếu Oxford 5000 CEFR.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    Oxford 5000 CEFR Curated
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    Bài Viết & Bài Mẫu Writing
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/50 dark:bg-neutral-800 text-accent dark:text-neutral-300 border border-primary/10">
+                    Bình Luận & Chuyển Học Tương Tác
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center">
+                <Link
+                  href="/community"
+                  className="w-full sm:w-auto min-h-[44px] px-6 py-3.5 rounded-2xl bg-[#5D4037] hover:bg-[#4E342E] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 inline-flex items-center justify-center gap-2.5"
+                >
+                  <Users className="w-4 h-4 shrink-0" />
+                  <span>Khám Phá Oasis Community</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </Link>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -878,8 +1003,21 @@ export default function Home() {
       {showQuiz && (
         <VocabularyQuiz
           vocabList={vocabList}
-          onClose={() => setShowQuiz(false)}
+          initialTopic={quizTopic}
+          initialWordList={quizCustomVocab}
+          onClose={() => {
+            setShowQuiz(false);
+            setQuizTopic(null);
+            setQuizCustomVocab(null);
+          }}
           onReview={handleReview}
+        />
+      )}
+
+      {showGrammarModal && (
+        <GrammarMasteryLab
+          vocabList={vocabList}
+          onClose={() => setShowGrammarModal(false)}
         />
       )}
 

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Response
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 import asyncio
 from database import SessionLocal, get_db
@@ -70,8 +71,8 @@ class ExtensionLoginPayload(BaseModel):
     password: str
 
 class GuestSessionPayload(BaseModel):
-    guest_id: str = None
-    username: str = None
+    guest_id: Optional[str] = None
+    username: Optional[str] = None
 
 import hashlib
 import collections
@@ -123,13 +124,9 @@ def get_client_ip(request: Request) -> str:
 async def verify_turnstile_captcha(token: str, remote_ip: str = None) -> bool:
     if not token:
         return False
-        
-    # Support resilient client device verification fallback (Safari/private mode/device security)
-    if token.startswith("DEVICE_FALLBACK_") or token == "device_fallback_verified":
-        return True
 
-    secret_key = os.getenv("TURNSTILE_SECRET_KEY", "1x000000000000000000000000000000000")
-    if secret_key.startswith("1x000000"):
+    secret_key = os.getenv("TURNSTILE_SECRET_KEY", "")
+    if not secret_key:
         return True
 
     url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
@@ -146,9 +143,8 @@ async def verify_turnstile_captcha(token: str, remote_ip: str = None) -> bool:
                 result = res.json()
                 return result.get("success", False)
     except Exception as e:
-        print(f"Turnstile verification failed or network timeout: {e}")
-        # Fail-open for backend timeout to prevent total lockout of authentic users
-        return True
+        print(f"Turnstile verification failed or network error: {e}")
+        return False
     return False
 
 def check_rate_limit(db: Session, ip: str, action: str, limit: int, window_seconds: int) -> bool:
@@ -227,7 +223,12 @@ async def register_user(payload: RegisterPayload, request: Request, db: Session 
     # Check if user already exists
     existing = db.query(User).filter(User.username == username).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.")
+        if existing.discord_id and not existing.discord_id.startswith("guest-"):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Tên người dùng '{username}' đã được liên kết với một tài khoản Discord. Vui lòng bấm 'LOG IN WITH DISCORD' để đăng nhập!"
+            )
+        raise HTTPException(status_code=400, detail=f"Tên đăng nhập '{username}' đã tồn tại. Vui lòng chọn tên khác.")
         
     guest_id = f"guest-{uuid.uuid4()}"
     hashed_pwd = hash_password(raw_password)
@@ -300,7 +301,19 @@ async def login_user(payload: LoginPayload, request: Request, response: Response
     username = raw_username.lower()
     user = db.query(User).filter(User.username == username).first()
     
-    if not user or not user.password_hash or not verify_password(raw_password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    # Xử lý trường hợp tài khoản tạo bằng Discord và chưa có mật khẩu web
+    if not user.password_hash:
+        if user.discord_id and not user.discord_id.startswith("guest-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tài khoản '{user.username}' được đăng nhập qua Discord. Vui lòng bấm 'LOG IN WITH DISCORD' ở phía trên để đăng nhập!"
+            )
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    if not verify_password(raw_password, user.password_hash):
         raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
         
     user.last_login = datetime.utcnow()
@@ -353,7 +366,19 @@ async def login_user_extension(payload: ExtensionLoginPayload, request: Request,
     username = raw_username.lower()
     user = db.query(User).filter(User.username == username).first()
     
-    if not user or not user.password_hash or not verify_password(raw_password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    # Xử lý trường hợp tài khoản tạo bằng Discord và chưa có mật khẩu web
+    if not user.password_hash:
+        if user.discord_id and not user.discord_id.startswith("guest-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tài khoản '{user.username}' được đăng nhập qua Discord. Vui lòng bấm 'LOG IN WITH DISCORD' ở phía trên để đăng nhập!"
+            )
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
+        
+    if not verify_password(raw_password, user.password_hash):
         raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác.")
         
     user.last_login = datetime.utcnow()
@@ -377,92 +402,12 @@ async def login_user_extension(payload: ExtensionLoginPayload, request: Request,
     }
 
 @router.post("/guest")
-async def create_or_resume_guest_session(payload: GuestSessionPayload = None, request: Request = None, response: Response = None, db: Session = Depends(get_db)):
-    """Cấp phát phiên làm việc độc lập cho Guest chưa login để lưu từ vựng, chấm điểm và đưa lên Community"""
-    ip = get_client_ip(request) if request else None
-    guest_id = payload.guest_id.strip() if (payload and payload.guest_id) else None
-    
-    user = None
-    if guest_id:
-        user = db.query(User).filter(User.discord_id == guest_id).first()
-        
-    if not user:
-        # Tạo mới một guest hoàn toàn độc lập
-        new_guest_id = f"guest-{uuid.uuid4()}"
-        random_suffix = uuid.uuid4().hex[:4]
-        username = payload.username.strip() if (payload and payload.username) else f"Guest_{random_suffix}"
-        
-        # Đảm bảo username không trùng lặp
-        if db.query(User).filter(User.username == username).first():
-            username = f"Guest_{uuid.uuid4().hex[:6]}"
-            
-        user = User(
-            discord_id=new_guest_id,
-            username=username,
-            last_ip=ip,
-            created_at=datetime.utcnow(),
-            last_login=datetime.utcnow()
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        # Copy từ vựng starter (is_global == True) cho guest này
-        try:
-            starter_vocabs = db.query(Vocabulary).filter(Vocabulary.is_global == True).limit(20).all()
-            for sv in starter_vocabs:
-                user_v = Vocabulary(
-                    user_id=user.id,
-                    word=sv.word,
-                    meaning=sv.meaning,
-                    phonetic=sv.phonetic,
-                    example=sv.example,
-                    topic=sv.topic,
-                    audio_url=sv.audio_url,
-                    image_url=sv.image_url,
-                    synonyms=sv.synonyms,
-                    memory_hook=sv.memory_hook,
-                    is_global=False,
-                    source=sv.source or "Starter",
-                    creator_username=sv.creator_username
-                )
-                db.add(user_v)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            print(f"Failed to copy starter vocabs for guest: {e}")
-    else:
-        user.last_login = datetime.utcnow()
-        if ip:
-            user.last_ip = ip
-        db.commit()
-        
-    jwt_payload = {
-        "user_id": user.id,
-        "discord_id": user.discord_id,
-        "username": user.username,
-        "avatar_url": user.avatar_url,
-        "is_guest": True,
-        "exp": datetime.utcnow() + timedelta(days=30)
-    }
-    token = jwt.encode(jwt_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    
-    if response:
-        response.set_cookie(
-            key="oasis_token",
-            value=token,
-            httponly=True,
-            secure=False,
-            samesite="lax",
-            max_age=30 * 86400,
-            path="/"
-        )
-
-    return {
-        "token": token,
-        "user": jwt_payload,
-        "guest_id": user.discord_id
-    }
+async def create_or_resume_guest_session():
+    """Vô hiệu hóa hoàn toàn cơ chế tạo guest tự động để chống spam acc rác và bảo vệ an toàn hệ thống"""
+    raise HTTPException(
+        status_code=403, 
+        detail="Tính năng tự động tạo guest session đã được vô hiệu hóa. Vui lòng đăng nhập qua Discord hoặc đăng ký tài khoản khách với Captcha."
+    )
 
 @router.get("/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -548,24 +493,48 @@ async def discord_callback(payload: AuthCode, response: Response = None, db: Ses
         user_info = r_user.json()
         
     # DB Operations (db is injected)
-    discord_id = user_info.get("id")
+    discord_id = str(user_info.get("id"))
     username = user_info.get("username")
     avatar_hash = user_info.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar_hash}.png" if avatar_hash else None
     
+    # 1. Tìm user theo discord_id trước
     user = db.query(User).filter(User.discord_id == discord_id).first()
     is_new_user = False
     if not user:
-        user = User(discord_id=discord_id, username=username, avatar_url=avatar_url)
-        db.add(user)
-        is_new_user = True
+        # 2. Xử lý trùng lặp / liên kết tài khoản: Kiểm tra xem username đã tồn tại chưa
+        existing_by_username = db.query(User).filter(User.username == username.lower()).first()
+        if existing_by_username:
+            # Nếu user trước đó là tài khoản Web/Guest (bắt đầu bằng guest- hoặc chưa có discord_id)
+            # Thực hiện LINK / MERGE tài khoản này với Discord!
+            if not existing_by_username.discord_id or existing_by_username.discord_id.startswith("guest-"):
+                user = existing_by_username
+                user.discord_id = discord_id
+                if avatar_url:
+                    user.avatar_url = avatar_url
+                user.last_login = datetime.utcnow()
+                db.commit()
+                db.refresh(user)
+            else:
+                # Trùng tên nhưng discord_id khác: Đổi tên tránh đè dữ liệu
+                disambiguated = f"{username.lower()}_{discord_id[-4:]}"
+                user = User(discord_id=discord_id, username=disambiguated, avatar_url=avatar_url)
+                db.add(user)
+                is_new_user = True
+                db.commit()
+                db.refresh(user)
+        else:
+            user = User(discord_id=discord_id, username=username, avatar_url=avatar_url)
+            db.add(user)
+            is_new_user = True
+            db.commit()
+            db.refresh(user)
     else:
         user.username = username
         user.avatar_url = avatar_url
         user.last_login = datetime.utcnow()
-        
-    db.commit()
-    db.refresh(user)
+        db.commit()
+        db.refresh(user)
 
     if is_new_user:
         try:
@@ -646,6 +615,8 @@ async def discord_callback(payload: AuthCode, response: Response = None, db: Ses
         )
 
     return {"token": token, "user": jwt_payload}
+
+
 
 @router.post("/logout")
 def logout_user(response: Response):

@@ -348,34 +348,68 @@
 
       // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Cấp 0)
       const btnRebirth = document.getElementById("btnRebirth");
-      if (btnRebirth) {
-        btnRebirth.onclick = () => {
+      const handleRebirthFromGameOver = (e) => {
+        if (e) {
+          try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+        }
+        try {
           const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
           const curMode = (this.state && this.state.gameMode) || "DIRECT";
-          this.saveSystem.resetActiveSave(curSlotId, curMode);
-          this.state.resetForNewMode(curMode);
+          if (this.saveSystem && typeof this.saveSystem.resetActiveSave === "function") {
+            this.saveSystem.resetActiveSave(curSlotId, curMode);
+          }
+          if (this.state && typeof this.state.resetForNewMode === "function") {
+            this.state.resetForNewMode(curMode);
+          }
+        } catch (err) {
+          console.warn("[GameOver Rebirth]", err);
+        } finally {
           this.hideGameOverModal();
-          this.audio.play("chime");
+          if (this.audio) {
+            try { this.audio.silenceAll(); this.audio.play("chime"); } catch (_) {}
+          }
           if (this.onRestartBattle) {
             this.onRestartBattle();
           } else if (this.onStartBattle) {
             this.onStartBattle();
           }
-        };
+        }
+      };
+
+      if (btnRebirth) {
+        btnRebirth.onclick = handleRebirthFromGameOver;
+        btnRebirth.addEventListener("pointerup", handleRebirthFromGameOver, { passive: false });
       }
 
       // Nút Quy Về Tiên Sảnh (Game Over -> Trở về sảnh với trạng thái sạch đã tẩy tủy)
       const btnReturnLobbyGameOver = document.getElementById("btnReturnLobbyGameOver");
-      if (btnReturnLobbyGameOver) {
-        btnReturnLobbyGameOver.onclick = () => {
+      const handleReturnLobbyFromGameOver = (e) => {
+        if (e) {
+          try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+        }
+        try {
           const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
           const curMode = (this.state && this.state.gameMode) || "DIRECT";
-          this.saveSystem.resetActiveSave(curSlotId, curMode);
-          this.state.reset();
+          if (this.saveSystem && typeof this.saveSystem.resetActiveSave === "function") {
+            this.saveSystem.resetActiveSave(curSlotId, curMode);
+          }
+          if (this.state && typeof this.state.reset === "function") {
+            this.state.reset();
+          }
+        } catch (err) {
+          console.warn("[GameOver ReturnLobby]", err);
+        } finally {
           this.hideGameOverModal();
-          this.audio.play("chime");
+          if (this.audio) {
+            try { this.audio.silenceAll(); this.audio.play("chime"); } catch (_) {}
+          }
           if (this.onReturnLobby) this.onReturnLobby();
-        };
+        }
+      };
+
+      if (btnReturnLobbyGameOver) {
+        btnReturnLobbyGameOver.onclick = handleReturnLobbyFromGameOver;
+        btnReturnLobbyGameOver.addEventListener("pointerup", handleReturnLobbyFromGameOver, { passive: false });
       }
 
       // Nút Bật/Tắt Âm Thanh ở Sảnh & Trong Trận
@@ -1291,14 +1325,12 @@
       const user = this.getLoggedInUser();
       const userName = (user && user.name && user.name.trim()) ? user.name.trim() : "Tiểu Miêu Kiếm Sĩ";
       
-      // Lấy điểm kỷ lục cao nhất (High Score) làm thước đo Chứng Đạo
       const personalBest = Math.max(
         Number(s.highScore || 0),
         Number(s.score || 0),
         Number(this._safeGet("meowcha_high_score", 0))
       );
 
-      // Phân định cảnh giới theo điểm kỷ lục cao nhất
       let certRealmIdx = Math.max(0, s.realmIdx || 0);
       for (let i = realms.length - 1; i >= 0; i--) {
         if (personalBest >= realms[i].minScore) {
@@ -1306,122 +1338,127 @@
           break;
         }
       }
-      const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FDE047" };
+      const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FFE49A" };
       const rIdx = certRealmIdx;
 
       const modeNames = {
-        CLOZE: 'Điền khuyết (Active Recall)',
-        DIRECT: 'Gõ trực tiếp (Direct Typing)',
-        AUDIO: 'Nghe chính tả (Audio Dictation)'
+        CLOZE: 'Ngộ Đạo Thông Linh (Điền Khuyết)',
+        DIRECT: 'Trực Diện Trảm Ma (Gõ Phản Xạ)',
+        AUDIO: 'Thính Lôi Biện Âm (Nghe Chính Tả)'
       };
       const curMode = s.gameMode || "DIRECT";
       const modeLabel = modeNames[curMode] || curMode;
 
-      // 1. Nền lụa tiên đạo thâm thúy
-      const grad = ctx.createRadialGradient(600, 315, 80, 600, 315, 680);
-      grad.addColorStop(0, "#0F172A");
-      grad.addColorStop(0.7, "#090D16");
-      grad.addColorStop(1, "#020408");
+      // 1. NỀN SƠN MÀI GỖ TỬ ĐÀN & CHU SA HOÀNG HÔN (PREMIUM XIANXIA SILK)
+      const grad = ctx.createRadialGradient(600, 315, 60, 600, 315, 680);
+      grad.addColorStop(0, "#281711");
+      grad.addColorStop(0.55, "#1C0E0A");
+      grad.addColorStop(1, "#100D12");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1200, 630);
 
-      // Hạt linh khí vàng kim lấp lánh
-      for (let i = 0; i < 48; i++) {
-        const sx = Math.sin(i * 99) * 580 + 600;
-        const sy = Math.cos(i * 77) * 290 + 315;
+      // Vân linh khí hoàng kim & ngọc bích lấp lánh có kiểm soát
+      for (let i = 0; i < 42; i++) {
+        const sx = Math.sin(i * 88) * 560 + 600;
+        const sy = Math.cos(i * 66) * 270 + 315;
         const sr = (i % 3) + 1.2;
-        ctx.fillStyle = i % 2 === 0 ? "rgba(253, 224, 71, 0.45)" : "rgba(56, 189, 248, 0.35)";
+        ctx.fillStyle = i % 2 === 0 ? "rgba(212, 168, 73, 0.35)" : "rgba(39, 104, 93, 0.3)";
         ctx.beginPath();
         ctx.arc(sx, sy, sr, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 2. Viền đôi Hoàng Kim & Chu Sa cổ phong
-      ctx.strokeStyle = "rgba(212, 175, 55, 0.85)";
+      // 2. VIỀN KÉP HOÀNG KIM & CHU SA CỔ PHONG
+      // Khung ngoài nạm chỉ vàng kim cổ
+      ctx.strokeStyle = "#D4A849";
       ctx.lineWidth = 4;
-      ctx.strokeRect(28, 28, 1144, 574);
-      ctx.strokeStyle = "rgba(239, 68, 68, 0.55)";
-      ctx.lineWidth = 1.8;
-      ctx.strokeRect(38, 38, 1124, 554);
+      ctx.strokeRect(26, 26, 1148, 578);
 
-      // 4 Phù Ấn Tứ Chính tại 4 góc
-      ctx.fillStyle = "#FDE047";
-      ctx.font = "700 16px 'Cinzel', serif";
-      ctx.fillText("[ 乾 ]", 48, 62);
-      ctx.fillText("[ 坤 ]", 1115, 62);
-      ctx.fillText("[ 坎 ]", 48, 578);
-      ctx.fillText("[ 离 ]", 1115, 578);
+      // Khung trong đỏ chu sa sơn mài
+      ctx.strokeStyle = "rgba(118, 29, 32, 0.85)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(36, 36, 1128, 558);
 
-      // 3. Tiêu đề Chứng Đạo Kim Đồ
+      // Khung chỉ vàng phụ mảnh mai
+      ctx.strokeStyle = "rgba(255, 228, 154, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(42, 42, 1116, 546);
+
+      // 4 PHÙ TRIỆN BÁT QUÁI TẠI 4 GÓC (KHẮC HOÀNG KIM)
+      ctx.fillStyle = "#FFE49A";
+      ctx.font = "800 17px 'Cinzel', serif";
+      ctx.fillText("[ 乾 ]", 52, 66);
+      ctx.fillText("[ 坤 ]", 1112, 66);
+      ctx.fillText("[ 坎 ]", 52, 576);
+      ctx.fillText("[ 离 ]", 1112, 576);
+
+      // 3. TIÊU ĐỀ CHỨNG ĐẠO KIM ĐỒ
       ctx.textAlign = "center";
-      ctx.font = "900 15px 'Cinzel', sans-serif";
-      ctx.fillStyle = "#94A3B8";
-      ctx.fillText("MEOW-CHA • LUYỆN TỪ VỰNG IELTS", 600, 76);
+      ctx.font = "800 14px 'Cinzel', sans-serif";
+      ctx.fillStyle = "#D4A849";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("✦ MEOW-CHA TRÀ ĐẠO • TIÊN HIỆP IELTS OASIS ✦", 600, 78);
 
-      ctx.font = "900 36px 'Cinzel', serif";
-      ctx.fillStyle = "#FDE047";
-      ctx.shadowColor = "rgba(245, 158, 11, 0.75)";
-      ctx.shadowBlur = 18;
-      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ", 600, 122);
+      ctx.font = "900 38px 'Cinzel', serif";
+      ctx.fillStyle = "#FFE49A";
+      ctx.shadowColor = "rgba(212, 168, 73, 0.6)";
+      ctx.shadowBlur = 16;
+      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ", 600, 126);
       ctx.shadowBlur = 0;
 
-      // 4. KHỐI BÊN TRÁI: ĐẠO QUẢ MIÊU TIÊN THẦN THÚ PIXEL ART THỰC TẾ (REAL CHARACTER ASSET)
-      const cx = 250, cy = 345;
+      // 4. KHỐI BÊN TRÁI: ĐẠO QUẢ MIÊU TIÊN NGỰ KIẾM (REAL CHARACTER SPRITE)
+      const cx = 250, cy = 350;
       ctx.save();
 
-      // Vòng Bát Quái Tiên Luân phát sáng
-      ctx.strokeStyle = "rgba(253, 224, 71, 0.65)";
+      // Vòng Ngũ Sắc Linh Vòng
+      ctx.strokeStyle = "rgba(212, 168, 73, 0.75)";
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = realmData.color || "#F59E0B";
-      ctx.shadowBlur = 24;
+      ctx.shadowColor = "#D4A849";
+      ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.arc(cx, cy, 130, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 125, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+      ctx.strokeStyle = "rgba(39, 104, 93, 0.5)";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(cx, cy, 142, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 136, 0, Math.PI * 2);
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Đài sen thần tiên
-      ctx.fillStyle = "rgba(16, 185, 129, 0.35)";
+      // Bệ Mây Ngũ Sắc Tọa Thiền
+      ctx.fillStyle = "rgba(39, 104, 93, 0.35)";
       ctx.strokeStyle = "#34D399";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(cx, cy + 95, 95, 22, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy + 96, 92, 20, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // VẼ ASSET NHÂN VẬT THỰC TẾ (REAL CHARACTER SPRITE ASSET)
+      // Vẽ sprite nhân vật thực tế
       const catAsset = (this.assets && (this.assets[`char_r${rIdx}_ultimate`]?.img || this.assets[`char_r${rIdx}_idle`]?.img))
         || document.getElementById("lobbyCatImg");
-      const swordAsset = this.assets && this.assets[`char_r${rIdx}_sword`]?.img;
 
       if (catAsset && (catAsset.complete || catAsset.naturalWidth > 0)) {
         ctx.save();
         ctx.imageSmoothingEnabled = false;
-        ctx.shadowColor = realmData.color || "#FDE047";
-        ctx.shadowBlur = 22;
-        ctx.drawImage(catAsset, cx - 105, cy - 105, 210, 210);
+        ctx.shadowColor = "#D4A849";
+        ctx.shadowBlur = 16;
+        ctx.drawImage(catAsset, cx - 100, cy - 100, 200, 200);
         ctx.restore();
       } else {
-        // Fallback chibi nếu ảnh chưa kịp nạp
-        ctx.fillStyle = "#F8FAFC";
+        // Fallback ngọc bài tu sĩ silhouette
+        ctx.fillStyle = "rgba(212, 168, 73, 0.2)";
+        ctx.strokeStyle = "#D4A849";
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(cx, cy, 70, 0, Math.PI * 2);
         ctx.fill();
-      }
-
-      // Vẽ phi kiếm đồng hành bên cạnh miêu tiên
-      if (swordAsset && (swordAsset.complete || swordAsset.naturalWidth > 0)) {
-        ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        ctx.shadowColor = "#FDE047";
-        ctx.shadowBlur = 16;
-        ctx.drawImage(swordAsset, cx + 80, cy - 85, 45, 75);
-        ctx.restore();
+        ctx.stroke();
+        ctx.font = "800 28px 'Cinzel', serif";
+        ctx.fillStyle = "#FFE49A";
+        ctx.textAlign = "center";
+        ctx.fillText("仙", cx, cy + 10);
       }
 
       ctx.restore();
@@ -1431,46 +1468,47 @@
 
       // TÊN TIÊN HỮU / ĐẠO HIỆU
       ctx.font = "900 28px 'Cinzel', serif";
-      ctx.fillStyle = "#FDE047";
-      ctx.shadowColor = "rgba(245, 158, 11, 0.8)";
-      ctx.shadowBlur = 10;
-      ctx.fillText(`TIÊN HỮU: ${userName.toUpperCase()}`, 470, 195);
+      ctx.fillStyle = "#FFE49A";
+      ctx.shadowColor = "rgba(212, 168, 73, 0.7)";
+      ctx.shadowBlur = 8;
+      ctx.fillText(`TIÊN HỮU: ${userName.toUpperCase()}`, 470, 198);
       ctx.shadowBlur = 0;
 
       // CẢNH GIỚI & PHÁP MÔN
       ctx.font = "700 16px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#38BDF8";
-      ctx.fillText(`CẢNH GIỚI: ${realmData.name.toUpperCase()} (CẤP ${rIdx}) • ${realmData.title}`, 470, 228);
+      ctx.fillStyle = "#FEF3C7";
+      ctx.fillText(`CẢNH GIỚI: ${realmData.name.toUpperCase()} (CẤP ${rIdx}) • ${realmData.title}`, 470, 230);
 
       ctx.font = "600 13px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#A78BFA";
-      ctx.fillText(`CHẾ ĐỘ: ${modeLabel}`, 470, 252);
+      ctx.fillStyle = "#D4A849";
+      ctx.fillText(`PHÁP MÔN TU LUYỆN: ${modeLabel}`, 470, 254);
 
-      // Lưới thông số (Stats grid: 4 ô) - Rõ ràng, khiêm tốn, đúng công năng
+      // Lưới thông số (Stats grid: 4 ô) theo bảng màu Tiên Hiệp chuẩn
       const stats = [
-        { label: "ĐIỂM KỶ LỤC (CAO NHẤT)", val: `${personalBest.toLocaleString()} PTS`, color: "#FDE047" },
+        { label: "ĐIỂM KỶ LỤC (CAO NHẤT)", val: `${personalBest.toLocaleString()} PTS`, color: "#FFE49A" },
         { label: "ĐIỂM VÁN HIỆN TẠI", val: `${(s.score || 0).toLocaleString()} PTS`, color: "#34D399" },
-        { label: "TỔNG TỪ ĐÃ HOÀN THÀNH", val: `${Math.max(s.wordsSlain || 0, Math.round(personalBest / 160))} TỪ`, color: "#38BDF8" },
-        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} Tự/Phút (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F472B6" }
+        { label: "TỔNG TỪ ĐÃ TRẢM", val: `${Math.max(s.wordsSlain || 0, Math.round(personalBest / 160))} TỪ`, color: "#FEF08A" },
+        { label: "TỐC ĐỘ GÕ PHÍM", val: `${Math.round(s.wpm || 0)} Tự/Phút (COMBO x${s.maxCombo || s.combo || 1})`, color: "#F87171" }
       ];
 
       stats.forEach((st, idx) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
         const bx = 470 + col * 320;
-        const by = 278 + row * 85;
+        const by = 280 + row * 85;
 
-        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-        ctx.strokeStyle = "rgba(212, 175, 55, 0.4)";
-        ctx.lineWidth = 1.3;
+        // Thẻ gỗ tử đàn nẹp viền chỉ vàng
+        ctx.fillStyle = "#1E110A";
+        ctx.strokeStyle = "rgba(212, 168, 73, 0.45)";
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(bx, by, 305, 72, 8);
+        if (ctx.roundRect) ctx.roundRect(bx, by, 305, 72, 6);
         else ctx.rect(bx, by, 305, 72);
         ctx.fill();
         ctx.stroke();
 
         ctx.font = "700 11.5px 'Be Vietnam Pro', sans-serif";
-        ctx.fillStyle = "#94A3B8";
+        ctx.fillStyle = "#CBB799";
         ctx.fillText(st.label, bx + 16, by + 27);
 
         ctx.font = "900 22px 'Cinzel', serif";
@@ -1478,32 +1516,31 @@
         ctx.fillText(st.val, bx + 16, by + 56);
       });
 
-      // Lời nhắn nhủ mộc mạc
+      // Khẩu quyết tiên gia
       ctx.font = "italic 13.5px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#E2E8F0";
-      ctx.fillText("“Mỗi ngày tích lũy từ vựng, rèn luyện phản xạ ngôn ngữ vững chắc.”", 470, 482);
+      ctx.fillStyle = "#E6D5B8";
+      ctx.fillText("“Vạn kiếm quy tâm • Bền bỉ dưỡng khí • Mỗi ngày một bước tiến gần Tiên Đạo.”", 470, 484);
 
-      // Dấu Triện Chu Sa [ CHỨNG NHẬN ĐẠO QUẢ ]
-      ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
-      ctx.strokeStyle = "#EF4444";
-      ctx.lineWidth = 2.5;
+      // DẤU TRIỆN CHU SA TIÊN TÔNG (KHÔNG BỊ CHỒNG CHÉO)
+      const sealX = 470, sealY = 512, sealW = 280, sealH = 44;
+      ctx.fillStyle = "rgba(118, 29, 32, 0.6)";
+      ctx.strokeStyle = "#D4A849";
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(470, 510, 240, 44, 5);
-      else ctx.rect(470, 510, 240, 44);
+      if (ctx.roundRect) ctx.roundRect(sealX, sealY, sealW, sealH, 4);
+      else ctx.rect(sealX, sealY, sealW, sealH);
       ctx.fill();
       ctx.stroke();
 
       ctx.textAlign = "center";
-      ctx.font = "900 13.5px 'Cinzel', serif";
-      ctx.fillStyle = "#F87171";
-      ctx.fillText("[ CHỨNG NHẬN ĐẠO QUẢ ]", 590, 537);
-      ctx.fillStyle = "#EF4444";
-      ctx.fillText("[ 极 品 ] TIÊN ĐẠO CHỨNG ĐẠO", 590, 537);
+      ctx.font = "800 13px 'Cinzel', serif";
+      ctx.fillStyle = "#FFE49A";
+      ctx.fillText("✦ THƯỢNG PHẨM ĐẠO QUẢ • CHỨNG ĐẠO ✦", sealX + sealW / 2, sealY + 27);
 
       // Link trang web
       ctx.textAlign = "right";
       ctx.font = "600 12px 'Cinzel', sans-serif";
-      ctx.fillStyle = "#64748B";
+      ctx.fillStyle = "#D4A849";
       ctx.fillText("ieltsoasis.site/games/meowcha", 1115, 540);
 
       try {
@@ -1680,14 +1717,12 @@
       if (!this.vaultWordsGrid) return;
       if (!words || words.length === 0) {
         this.vaultWordsGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #FDE68A; opacity: 0.8;">
-            <div style="margin-bottom: 6px;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8">
-                <path d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
-                <path d="M9 7h6M9 11h6M9 15h4"></path>
-              </svg>
+          <div class="vault-empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 15px; color: #FEF3C7;">
+            <div style="margin-bottom: 10px;">
+              <img src="./assets/svg/scroll-unfurled.svg" style="width: 44px; height: 44px; filter: drop-shadow(0 0 10px #D4A849);" alt="" />
             </div>
-            <div>Không tìm thấy đan dược nào phù hợp với từ khóa!</div>
+            <div style="font-family: var(--font-xianxia-title); font-size: 15px; font-weight: 800; color: #FFE49A; letter-spacing: 1px;">Không tìm thấy đan dược phù hợp!</div>
+            <div style="font-size: 12.5px; color: #E6D5B8; margin-top: 6px; line-height: 1.5;">Đạo hữu hãy thử tra bằng từ khóa khác hoặc bấm nút bên dưới để mở toàn bộ kho Oxford 5000.</div>
           </div>
         `;
         return;
@@ -2112,15 +2147,12 @@
 
       if (data.length === 0) {
         listContainer.innerHTML = `
-          <div style="text-align: center; padding: 30px 15px; color: #FEF08A; opacity: 0.9;">
-            <div class="empty-pantheon-icon" style="margin-bottom: 8px;">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FDE047" stroke-width="1.8">
-                <path d="M19 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
-                <path d="M9 7h6M9 11h6M9 15h4"></path>
-              </svg>
+          <div style="text-align: center; padding: 36px 15px; color: #FEF3C7;">
+            <div class="empty-pantheon-icon" style="margin-bottom: 10px;">
+              <img src="./assets/svg/pagoda.svg" style="width: 48px; height: 48px; filter: drop-shadow(0 0 12px #D4A849);" alt="" />
             </div>
-            <div style="font-family: var(--font-xianxia-title); font-size: 14px; font-weight: 700; color: #FDE047;">Tiên Giới thanh tịnh • Bảng Vàng đang đợi bậc Chí Tôn</div>
-            <div style="font-size: 11.5px; color: #D1D5DB; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm diệt ma thạch — điểm số sẽ tự động vinh danh trên Bảng Phong Thần!</div>
+            <div style="font-family: var(--font-xianxia-title); font-size: 15px; font-weight: 800; color: #FFE49A; letter-spacing: 1px;">Tiên Giới Thanh Tịnh • Bảng Vàng Đang Đợi Bậc Chí Tôn</div>
+            <div style="font-size: 12.5px; color: #E6D5B8; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm diệt ma thạch — điểm số sẽ tự động vinh danh trên Bảng Phong Thần!</div>
           </div>
         `;
         return;
@@ -2133,7 +2165,7 @@
           rowClass = "gold";
           badgeHtml = `
             <span class="seal-rank-badge rank-gold" title="Chí Tôn Kim Giáp">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#FDE047"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              <img src="./assets/svg/dragon-shield.svg" class="badge-mini-svg" alt="" />
               #1
             </span>
           `;
@@ -2141,7 +2173,7 @@
           rowClass = "silver";
           badgeHtml = `
             <span class="seal-rank-badge rank-silver" title="Bạch Ngân Tiên Quân">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#E2E8F0"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              <img src="./assets/svg/winged-sword.svg" class="badge-mini-svg" alt="" />
               #2
             </span>
           `;
@@ -2149,7 +2181,7 @@
           rowClass = "bronze";
           badgeHtml = `
             <span class="seal-rank-badge rank-bronze" title="Thanh Đồng Tiên Khách">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#F97316"><path d="M2 4l3 12h14l3-12-5 6-7-8-7 8-1-6z"/></svg>
+              <img src="./assets/svg/cauldron.svg" class="badge-mini-svg" alt="" />
               #3
             </span>
           `;

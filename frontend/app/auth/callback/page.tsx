@@ -38,7 +38,7 @@ function AuthCallbackContent() {
               token: data.token,
               user: data.user
             };
-            window.postMessage(syncMsg, "*");
+            window.postMessage(syncMsg, window.location.origin);
             window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: syncMsg }));
           }
           setStatus("Đăng nhập thành công! Đang chuyển hướng...");
