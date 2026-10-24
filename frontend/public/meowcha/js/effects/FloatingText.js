@@ -52,8 +52,8 @@
 
     // HIỆN PHÙ CHÚ BÁT QUÁI & PHIÊN ÂM IPA NGAY TẠI TÂM NỔ (IN-SITU BURST)
     addInSituBurst(x, y, wordItem) {
-      // Đảm bảo tọa độ nổ luôn nằm bên dưới thanh HUD (y >= 125) để người chơi nhìn thấy rõ ràng phiên âm IPA kể cả khi gõ từ trên đỉnh
-      const safeY = Math.max(125, y);
+      // Thanh HUD đã tách 2 góc, khoảng trời chính giữa thông thoáng, an toàn từ y >= 85
+      const safeY = Math.max(85, y);
       this.bursts.push({
         x: x,
         y: safeY,
@@ -65,8 +65,8 @@
         maxScale: 1.0,
         rot: 0,
         alpha: 1.0,
-        life: 1.2, // Thời lượng 1.2s rõ ràng
-        maxLife: 1.2
+        life: 1.35, // Thời lượng 1.35s rõ ràng để người chơi cảm nhận vụ nổ tiên đạo
+        maxLife: 1.35
       });
     }
 
@@ -305,86 +305,116 @@
         ctx.restore();
       }
 
-      // 1. Vẽ Vòng Sáng Nổ Tại Chỗ (In-situ Bursts)
+      // 1. Vẽ Vòng Sáng Nổ Tại Chỗ (In-situ Xianxia Bursts - Vạn Kiếm Quy Tông • Khai Quang Tiên Phù)
       if (this.bursts.length > 0) {
         ctx.save();
         const canvasW = ctx.canvas.width;
         const canvasH = ctx.canvas.height;
         const isMobile = canvasW <= 600;
 
-        // Kích thước ngọc giản nhỏ gọn, thanh thoát, cân đối hoàn hảo trên màn hình
-        const pw = isMobile ? 140 : 166;
-        const ph = isMobile ? 48 : 54;
-        const cut = isMobile ? 6 : 8;
+        // Kích thước cuộn thư cổ phong uy nghiêm, tráng lệ, không bị bé vụn
+        const pw = isMobile ? 180 : 225;
+        const ph = isMobile ? 56 : 66;
+        const cut = isMobile ? 7 : 9;
         const halfW = pw / 2;
         const halfH = ph / 2;
 
         for (const b of this.bursts) {
           ctx.save();
 
-          // NỔ NGAY TẠI TÂM MA THẠCH BỊ BẮN (BẢO TOÀN TỌA ĐỘ VAI CHẠM CHÍNH XÁC, LUÔN DƯỚI THANH HUD)
-          const halfW = pw / 2;
-          const halfH = ph / 2;
-          const safeX = Math.max(halfW + 10, Math.min(canvasW - halfW - 10, b.x));
-          const minY = isMobile ? 100 : 125;
-          const safeY = Math.max(minY, Math.min(canvasH - halfH - 20, b.y));
+          // TỌA ĐỘ TÂM VỤ NỔ CHÍNH XÁC (TỰ ĐỘNG CÂN BẰNG KHÔNG ĐÈ LÊN VIỀN MÀN HÌNH)
+          const safeX = Math.max(halfW + 12, Math.min(canvasW - halfW - 12, b.x));
+          const minY = isMobile ? 85 : 95;
+          const safeY = Math.max(minY, Math.min(canvasH - halfH - 24, b.y));
 
           ctx.translate(safeX, safeY);
           ctx.scale(b.scale, b.scale);
           ctx.globalAlpha = Math.max(0, b.alpha);
 
-          // Vòng hào quang Bát Quái xoay tròn mờ ảo
+          // 1.1 VÒNG HÀO QUANG BÁT QUÁI & TIA KIẾM QUANG TỎA RẠNG 8 HƯỚNG
           ctx.save();
           ctx.rotate(b.rot);
-          ctx.strokeStyle = "rgba(253, 224, 71, 0.75)";
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
+          ctx.lineWidth = 1.6;
           ctx.shadowColor = "#F59E0B";
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 14;
 
-          const ringR = isMobile ? 32 : 40;
+          const ringR = isMobile ? 42 : 52;
           ctx.beginPath();
           ctx.arc(0, 0, ringR, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Các vạch quẻ dịch bát quái 8 hướng
+          // Vòng phụ ngoài mờ ảo
+          ctx.strokeStyle = "rgba(254, 240, 138, 0.45)";
+          ctx.lineWidth = 1.0;
+          ctx.beginPath();
+          ctx.arc(0, 0, ringR + 10, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 8 tia kiếm quang bắn tỏa ra từ tâm Bát Quái
           for (let q = 0; q < 8; q++) {
             const qa = q * (Math.PI / 4);
+            ctx.strokeStyle = "rgba(253, 224, 71, 0.65)";
+            ctx.lineWidth = 1.4;
             ctx.beginPath();
-            ctx.moveTo(Math.cos(qa) * (ringR - 5), Math.sin(qa) * (ringR - 5));
-            ctx.lineTo(Math.cos(qa) * (ringR + 5), Math.sin(qa) * (ringR + 5));
+            ctx.moveTo(Math.cos(qa) * (ringR - 8), Math.sin(qa) * (ringR - 8));
+            ctx.lineTo(Math.cos(qa) * (ringR + 16), Math.sin(qa) * (ringR + 16));
+            ctx.stroke();
+
+            // Vạch quẻ dịch Bát Quái
+            const qb = qa + (Math.PI / 8);
+            ctx.strokeStyle = "rgba(254, 240, 138, 0.75)";
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(qb) * (ringR - 4), Math.sin(qb) * (ringR - 4));
+            ctx.lineTo(Math.cos(qb) * (ringR + 4), Math.sin(qb) * (ringR + 4));
             ctx.stroke();
           }
           ctx.restore();
 
           // ============================================================
-          // THIÊN THƯ TRÚC GIẢN • NGỌC GIẢN TRUYỀN CÔNG CỔ PHONG NHỎ GỌN
+          // 1.2 THIÊN ĐÌNH HOÀNG KIM THÁNH CHỈ • CUỘN TRỤC SƠN MÀI
           // ============================================================
-          // 1. Trục Cuộn Tranh / Nẹp Thần Mộc Sơn Mài Hai Đầu
+          // A. Trục Cuộn Tranh Thần Mộc Hai Đầu & Dây Tua Lụa Đỏ
           ctx.save();
-          const rollerW = 4.5;
-          const rollerH = ph + 4;
-          ctx.fillStyle = "rgba(45, 24, 10, 0.88)";
+          const rollerW = 5.5;
+          const rollerH = ph + 8;
+          ctx.fillStyle = "#221107";
           ctx.strokeStyle = "#D4AF37";
-          ctx.lineWidth = 0.8;
+          ctx.lineWidth = 1.0;
+
           // Trục bên trái
-          ctx.fillRect(-halfW - rollerW + 1, -rollerH / 2, rollerW, rollerH);
-          ctx.strokeRect(-halfW - rollerW + 1, -rollerH / 2, rollerW, rollerH);
+          ctx.fillRect(-halfW - rollerW, -rollerH / 2, rollerW, rollerH);
+          ctx.strokeRect(-halfW - rollerW, -rollerH / 2, rollerW, rollerH);
           // Đầu bịt hoàng kim trục trái
           ctx.fillStyle = "#FDE047";
-          ctx.fillRect(-halfW - rollerW - 1, -rollerH / 2 - 1, rollerW + 2, 2.5);
-          ctx.fillRect(-halfW - rollerW - 1, rollerH / 2 - 1.5, rollerW + 2, 2.5);
+          ctx.fillRect(-halfW - rollerW - 1.5, -rollerH / 2 - 2, rollerW + 3, 3);
+          ctx.fillRect(-halfW - rollerW - 1.5, rollerH / 2 - 1, rollerW + 3, 3);
+          // Dây tua lụa đỏ rủ xuống trục trái
+          ctx.strokeStyle = "#DC2626";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(-halfW - rollerW / 2, rollerH / 2 + 2);
+          ctx.lineTo(-halfW - rollerW / 2, rollerH / 2 + 10);
+          ctx.stroke();
 
           // Trục bên phải
-          ctx.fillStyle = "rgba(45, 24, 10, 0.88)";
-          ctx.fillRect(halfW - 1, -rollerH / 2, rollerW, rollerH);
-          ctx.strokeRect(halfW - 1, -rollerH / 2, rollerW, rollerH);
+          ctx.fillStyle = "#221107";
+          ctx.fillRect(halfW, -rollerH / 2, rollerW, rollerH);
+          ctx.strokeRect(halfW, -rollerH / 2, rollerW, rollerH);
           // Đầu bịt hoàng kim trục phải
           ctx.fillStyle = "#FDE047";
-          ctx.fillRect(halfW - 1, -rollerH / 2 - 1, rollerW + 2, 2.5);
-          ctx.fillRect(halfW - 1, rollerH / 2 - 1.5, rollerW + 2, 2.5);
+          ctx.fillRect(halfW - 1.5, -rollerH / 2 - 2, rollerW + 3, 3);
+          ctx.fillRect(halfW - 1.5, rollerH / 2 - 1, rollerW + 3, 3);
+          // Dây tua lụa đỏ rủ xuống trục phải
+          ctx.strokeStyle = "#DC2626";
+          ctx.beginPath();
+          ctx.moveTo(halfW + rollerW / 2, rollerH / 2 + 2);
+          ctx.lineTo(halfW + rollerW / 2, rollerH / 2 + 10);
+          ctx.stroke();
           ctx.restore();
 
-          // 2. Thân Ngọc Giản Lụa Cổ Bán Trong Suốt
+          // B. Thân Thánh Chỉ Cổ Phong Sơn Mài Đậm Đặc
           ctx.beginPath();
           ctx.moveTo(-halfW + cut, -halfH);
           ctx.lineTo(halfW - cut, -halfH);
@@ -397,71 +427,76 @@
           ctx.closePath();
 
           const scrollGrad = ctx.createLinearGradient(0, -halfH, 0, halfH);
-          scrollGrad.addColorStop(0, "rgba(26, 14, 8, 0.82)");
-          scrollGrad.addColorStop(0.5, "rgba(18, 10, 5, 0.80)");
-          scrollGrad.addColorStop(1, "rgba(12, 6, 3, 0.78)");
+          scrollGrad.addColorStop(0, "rgba(35, 18, 8, 0.96)");
+          scrollGrad.addColorStop(0.5, "rgba(22, 11, 5, 0.98)");
+          scrollGrad.addColorStop(1, "rgba(14, 7, 3, 0.96)");
           ctx.fillStyle = scrollGrad;
           ctx.fill();
 
-          // Viền Gấm Hoàng Kim Ngoài
-          ctx.strokeStyle = "rgba(212, 175, 55, 0.85)";
-          ctx.lineWidth = 1.2;
+          // Viền Hoàng Kim Thánh Chỉ phát sáng rực rỡ
+          ctx.strokeStyle = "rgba(253, 224, 71, 0.95)";
+          ctx.lineWidth = 1.6;
           ctx.shadowColor = "#F59E0B";
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 12;
           ctx.stroke();
 
-          // 3. Dấu Triện Chu Sa Tiên Đạo
+          // Khung viền chỉ mảnh bên trong
+          ctx.strokeStyle = "rgba(212, 175, 55, 0.45)";
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(-halfW + 4, -halfH + 4, pw - 8, ph - 8);
+
+          // C. Dấu Triện Chu Sa Tiên Đạo [ 悟 • ĐẮC ĐẠO ] (KHÔNG DÙNG IELTS HAY EMOJI THÔ)
           ctx.save();
-          const sealW = isMobile ? 32 : 36;
-          const sealH = isMobile ? 10 : 12;
-          const sealX = -halfW + (isMobile ? 20 : 23);
-          const sealY = -halfH + (isMobile ? 7 : 8);
-          ctx.fillStyle = "rgba(153, 27, 27, 0.85)";
-          ctx.strokeStyle = "#F87171";
-          ctx.lineWidth = 0.6;
+          const sealW = isMobile ? 36 : 42;
+          const sealH = isMobile ? 12 : 14;
+          const sealX = -halfW + (isMobile ? 24 : 28);
+          const sealY = -halfH + (isMobile ? 8 : 10);
+          ctx.fillStyle = "rgba(185, 28, 28, 0.95)";
+          ctx.strokeStyle = "#FDE047";
+          ctx.lineWidth = 0.8;
           ctx.fillRect(sealX - sealW / 2, sealY - sealH / 2, sealW, sealH);
           ctx.strokeRect(sealX - sealW / 2, sealY - sealH / 2, sealW, sealH);
           ctx.fillStyle = "#FFFBEB";
-          ctx.font = "900 6.5px sans-serif";
+          ctx.font = "900 7.5px sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("仙 篆 • IELTS", sealX, sealY);
+          ctx.fillText("[ 悟 • ĐẮC ĐẠO ]", sealX, sealY);
           ctx.restore();
 
-          // 4. TỪ VỰNG TIẾNG ANH (CHỮ MẠ HOÀNG KIM NỔI BẬT NẰM Ở TRÊN)
-          ctx.font = isMobile ? "900 13px 'Cinzel', serif" : "900 15px 'Cinzel', serif";
+          // D. TỪ VỰNG TIẾNG ANH (CHỮ MẠ HOÀNG KIM NỔI BẬT NẰM Ở TRÊN)
+          ctx.font = isMobile ? "900 15px 'Cinzel', serif" : "900 17.5px 'Cinzel', serif";
           ctx.fillStyle = "#FEF08A";
           ctx.shadowColor = "#F59E0B";
-          ctx.shadowBlur = 6;
+          ctx.shadowBlur = 8;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(b.word, 0, isMobile ? -8 : -10);
+          ctx.fillText(b.word, isMobile ? 6 : 8, isMobile ? -9 : -11);
 
-          // 5. PHIÊN ÂM IPA CỔ TỰ (PHÁT QUANG BÍCH NGỌC PHÍA DƯỚI)
-          ctx.font = isMobile ? "700 9.5px monospace" : "700 10.5px monospace";
+          // E. PHIÊN ÂM IPA CỔ TỰ (BÍCH NGỌC PHÁT QUANG PHÍA DƯỚI)
+          ctx.font = isMobile ? "700 10.5px monospace" : "700 11.5px monospace";
           ctx.fillStyle = "#38BDF8";
           ctx.shadowColor = "#0284C7";
-          ctx.shadowBlur = 5;
-          ctx.fillText(b.ipa || "/.../", 0, isMobile ? 3 : 4);
+          ctx.shadowBlur = 6;
+          ctx.fillText(b.ipa || "/.../", 0, isMobile ? 4 : 5);
 
-          // 6. MINH CHÚ NGHĨA TIẾNG VIỆT (CHUẨN FONT TIẾNG VIỆT, KHÔNG LỖI DẤU)
+          // F. MINH CHÚ NGHĨA TIẾNG VIỆT (CHUẨN CỔ PHONG, RÕ RÀNG KHÔNG LỖI DẤU)
           if (b.meaning) {
-            ctx.font = isMobile ? "600 8.5px 'Be Vietnam Pro', system-ui, sans-serif" : "600 9.5px 'Be Vietnam Pro', system-ui, sans-serif";
+            ctx.font = isMobile ? "600 9.5px 'Be Vietnam Pro', system-ui, sans-serif" : "600 10.5px 'Be Vietnam Pro', system-ui, sans-serif";
             ctx.fillStyle = "#FEF9C3";
-            ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-            ctx.shadowBlur = 4;
-            const maxLen = isMobile ? 22 : 28;
+            ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+            ctx.shadowBlur = 5;
+            const maxLen = isMobile ? 26 : 32;
             const shortMeaning = b.meaning.length > maxLen ? (b.meaning.substring(0, maxLen - 2) + "...") : b.meaning;
-            ctx.fillText(shortMeaning, 0, isMobile ? 14 : 17);
+            ctx.fillText(shortMeaning, 0, isMobile ? 16 : 19);
           }
 
-          // 7. Đom Đóm Linh Khí Bay Lên
-          for (let m = 0; m < 2; m++) {
-            const mx = Math.sin(b.life * 4 + m * 2) * (pw * 0.3);
-            const my = -halfH - ((b.maxLife - b.life) * 20 + m * 6);
-            ctx.fillStyle = "rgba(254, 240, 138, 0.85)";
+          // G. Đom Đóm Linh Khí Bay Lên
+          for (let m = 0; m < 3; m++) {
+            const mx = Math.sin(b.life * 4 + m * 2) * (pw * 0.35);
+            const my = -halfH - ((b.maxLife - b.life) * 24 + m * 7);
+            ctx.fillStyle = "rgba(254, 240, 138, 0.9)";
             ctx.beginPath();
-            ctx.arc(mx, my, 1.5, 0, Math.PI * 2);
+            ctx.arc(mx, my, 1.8, 0, Math.PI * 2);
             ctx.fill();
           }
 

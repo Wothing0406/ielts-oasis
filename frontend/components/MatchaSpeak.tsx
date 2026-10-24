@@ -214,17 +214,21 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
   const startPrepTimer = () => {
     setIsPrepActive(true);
     setPrepSeconds(60);
+    let remaining = 60;
     if (prepTimerRef.current) clearInterval(prepTimerRef.current);
     prepTimerRef.current = setInterval(() => {
-      setPrepSeconds(prev => {
-        if (prev <= 1) {
+      remaining -= 1;
+      if (remaining <= 0) {
+        if (prepTimerRef.current) {
           clearInterval(prepTimerRef.current);
-          setIsPrepActive(false);
-          startRecording(); // Auto start recording after 1 min prep
-          return 0;
+          prepTimerRef.current = null;
         }
-        return prev - 1;
-      });
+        setPrepSeconds(0);
+        setIsPrepActive(false);
+        startRecording();
+      } else {
+        setPrepSeconds(remaining);
+      }
     }, 1000);
   };
 
@@ -424,16 +428,21 @@ export default function MatchaSpeak({ initialContext }: { initialContext?: strin
         console.error("Enumerate devices failed:", e);
       }
 
+      let currentRecSecs = 0;
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = setInterval(() => {
-        setRecordingSeconds(prev => {
-          const maxSecs = activeMode === 'shadowing' ? 30 : 120;
-          if (prev >= maxSecs) {
-            stopRecording();
-            return maxSecs;
+        currentRecSecs += 1;
+        const maxSecs = activeMode === 'shadowing' ? 30 : 120;
+        if (currentRecSecs >= maxSecs) {
+          if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
           }
-          return prev + 1;
-        });
+          setRecordingSeconds(maxSecs);
+          stopRecording();
+        } else {
+          setRecordingSeconds(currentRecSecs);
+        }
       }, 1000);
     } catch (err) {
       console.error("Microphone access failed:", err);

@@ -21,7 +21,8 @@ import {
   BookCheck,
   GraduationCap,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from "lucide-react";
 import DailyPlanner from "@/components/DailyPlanner";
 import VocabularyLab from "@/components/VocabularyLab";
@@ -141,12 +142,7 @@ export default function Home() {
     let active = true;
     let widgetId: string | null = null;
 
-    // Timeout safety fallback: if Turnstile is blocked by browser/device settings
-    const timer = setTimeout(() => {
-      if (active && !captchaToken && !user) {
-        setCaptchaDeviceError(true);
-      }
-    }, 5000);
+    // Turnstile active lifecycle
 
     const renderCaptcha = () => {
       if (!active) return;
@@ -195,8 +191,7 @@ export default function Home() {
     
     return () => {
       active = false;
-      clearTimeout(timer);
-      if (widgetId !== null && (window as any).turnstile) {
+            if (widgetId !== null && (window as any).turnstile) {
         try {
           (window as any).turnstile.remove(widgetId);
         } catch (e) {}
@@ -286,34 +281,6 @@ export default function Home() {
     window.dispatchEvent(new CustomEvent("oasis_extension_sync", { detail: messageData }));
   };
 
-  const ensureUserSession = async (): Promise<string | null> => {
-    let token = localStorage.getItem("oasis_token");
-    if (token) return token;
-
-    // Auto-create/resume isolated guest session for guest user
-    try {
-      const storedGuestId = localStorage.getItem("oasis_guest_id");
-      const res = await fetch(`${API_URL}/auth/guest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guest_id: storedGuestId || null })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("oasis_token", data.token);
-        localStorage.setItem("oasis_user", JSON.stringify(data.user));
-        localStorage.setItem("oasis_guest_id", data.guest_id);
-        setUser(data.user);
-        fetchVocabs(data.token);
-        syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
-        return data.token;
-      }
-    } catch (err) {
-      console.error("Failed to auto-init guest session:", err);
-    }
-    return null;
-  };
-
   useEffect(() => {
     const savedUser = localStorage.getItem("oasis_user");
     const savedToken = localStorage.getItem("oasis_token");
@@ -327,9 +294,6 @@ export default function Home() {
       let parsedUser = null;
       try { parsedUser = savedUser ? JSON.parse(savedUser) : null; } catch(e) {}
       syncToExtension("OASIS_AUTH_SYNC", { token: savedToken, user: parsedUser });
-    } else {
-      // Initialize an isolated guest session so guest immediately has independent storage & community access
-      ensureUserSession();
     }
   }, []);
 
@@ -340,12 +304,9 @@ export default function Home() {
       return { success: false, status: "duplicate", word: formData.word };
     }
 
-    let token = localStorage.getItem("oasis_token");
+    const token = localStorage.getItem("oasis_token");
     if (!token) {
-      token = await ensureUserSession();
-    }
-    if (!token) {
-      (window as any).showToast("Please log in or try again to save vocabulary!", "info");
+      (window as any).showToast("Vui lòng đăng nhập để lưu từ vựng!", "info");
       return { success: false, status: "unauthorized", word: formData.word };
     }
     const headers: any = {
@@ -557,13 +518,23 @@ export default function Home() {
     }
   };
 
-  function handleLogout() {
-    localStorage.removeItem("oasis_token");
-    localStorage.removeItem("oasis_user");
-    localStorage.removeItem("oasis_guest_id");
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, { method: "POST" });
+    } catch (e) {}
+    localStorage.clear();
+    sessionStorage.clear();
+    // Xóa sạch cookie ở client
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+    }
     setUser(null);
-    window.location.reload();
-  }
+    window.location.replace("/");
+  };
 
   const [activeSpeakingContext, setActiveSpeakingContext] = useState("");
 
@@ -698,25 +669,15 @@ export default function Home() {
             {/* Cloudflare Turnstile Captcha Widget Container */}
             <div className="w-full flex flex-col items-center justify-center my-1 select-none">
               <div id="turnstile-container" className="min-h-[65px] flex items-center justify-center"></div>
-              {(captchaDeviceError || !captchaToken) && (
+              {captchaDeviceError && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const fallback = "DEVICE_FALLBACK_" + Math.random().toString(36).substring(2);
-                    setCaptchaToken(fallback);
-                    (window as any).showToast("Đã kích hoạt xác minh thiết bị dự phòng!", "success");
-                  }}
+                  onClick={resetCaptcha}
                   className="text-[11px] text-[#5D6B57] hover:text-[#2E3E2B] underline font-medium py-1.5 px-3 rounded-lg transition-colors inline-flex items-center gap-1.5 mt-1 min-h-[36px]"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Lỗi xác minh thiết bị hoặc mạng? Nhấn để xác minh dự phòng</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tải lại xác minh bảo mật Cloudflare</span>
                 </button>
-              )}
-              {captchaToken.startsWith("DEVICE_FALLBACK_") && (
-                <div className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1 mt-1">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Đã xác minh thiết bị thành công</span>
-                </div>
               )}
             </div>
 

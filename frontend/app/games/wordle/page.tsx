@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -80,11 +80,62 @@ export default function WordleMatchaPage() {
     }
   }, []);
 
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/game/leaderboard`);
+      if (res.ok) {
+        const data = await res.json();
+        setLeaderboard(data.leaderboard || []);
+        setHighestLevelPlayer(data.highest_level_player || null);
+      }
+    } catch (e) {
+      console.error("Fetch leaderboard error:", e);
+    }
+  }, []);
+
+  const fetchGameState = useCallback(async () => {
+    // If offline or no token, try to load from localStorage cache first
+    const localCachedState = localStorage.getItem("matcha_wordle_local_state");
+    if (localCachedState) {
+      try {
+        setGameState(JSON.parse(localCachedState));
+      } catch (e) {}
+    }
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/game/wordle/state`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGameState(data);
+        setHintUsed(data.hint_used || false);
+        setMicroHint("");
+        localStorage.setItem("matcha_wordle_local_state", JSON.stringify(data));
+      } else if (res.status === 401) {
+        localStorage.removeItem("oasis_token");
+        localStorage.removeItem("oasis_user");
+        setToken(null);
+        setUser(null);
+        setGameState(null);
+      }
+    } catch (e) {
+      console.error("Fetch state error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
   // Fetch initial game state and leaderboard
   useEffect(() => {
     fetchGameState();
     fetchLeaderboard();
-  }, [token]);
+  }, [fetchGameState, fetchLeaderboard]);
 
   // Compute keyboard letter statuses whenever guesses and evaluations change
   useEffect(() => {
@@ -131,71 +182,7 @@ export default function WordleMatchaPage() {
     setLetterStatuses(statuses);
   }, [gameState]);
 
-  const fetchGameState = async () => {
-    // If offline or no token, try to load from localStorage cache first
-    const localCachedState = localStorage.getItem("matcha_wordle_local_state");
-    if (localCachedState) {
-      try {
-        setGameState(JSON.parse(localCachedState));
-      } catch (e) {}
-    }
-
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/game/wordle/state`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setGameState(data);
-        setHintUsed(data.hint_used || false);
-        setMicroHint("");
-        localStorage.setItem("matcha_wordle_local_state", JSON.stringify(data));
-      } else if (res.status === 401) {
-        localStorage.removeItem("oasis_token");
-        localStorage.removeItem("oasis_user");
-        setToken(null);
-        setUser(null);
-        setGameState(null);
-      }
-    } catch (e) {
-      console.error("Fetch state error:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchLeaderboard = async () => {
-    try {
-      const res = await fetch(`${API_URL}/game/leaderboard`);
-      if (res.ok) {
-        const data = await res.json();
-        setLeaderboard(data.leaderboard || []);
-        setHighestLevelPlayer(data.highest_level_player || null);
-      }
-    } catch (e) {
-      console.error("Fetch leaderboard error:", e);
-    }
-  };
-
-  const handleKeyPress = (char: string) => {
-    if (gameState?.status !== "playing") return;
-    if (char === "ENTER") {
-      submitGuess();
-    } else if (char === "BACKSPACE" || char === "DEL" || char === "XÓA") {
-      setCurrentGuess((prev) => prev.slice(0, -1));
-    } else if (currentGuess.length < 5 && /^[a-zA-Z]$/.test(char)) {
-      const upperChar = char.toUpperCase();
-      if (letterStatuses[upperChar] === "gray") return;
-      setCurrentGuess((prev) => (prev + upperChar));
-    }
-  };
-
-  const submitGuess = async () => {
+  const submitGuess = useCallback(async () => {
     if (!token || !gameState) return;
     if (currentGuess.length !== 5) {
       setMessage("Từ đoán phải có đúng 5 chữ cái!");
@@ -279,7 +266,20 @@ export default function WordleMatchaPage() {
     } catch (e) {
       console.error("Guess submit error:", e);
     }
-  };
+  }, [token, gameState, currentGuess, fetchLeaderboard]);
+
+  const handleKeyPress = useCallback((char: string) => {
+    if (gameState?.status !== "playing") return;
+    if (char === "ENTER") {
+      submitGuess();
+    } else if (char === "BACKSPACE" || char === "DEL" || char === "XÓA") {
+      setCurrentGuess((prev) => prev.slice(0, -1));
+    } else if (currentGuess.length < 5 && /^[a-zA-Z]$/.test(char)) {
+      const upperChar = char.toUpperCase();
+      if (letterStatuses[upperChar] === "gray") return;
+      setCurrentGuess((prev) => (prev + upperChar));
+    }
+  }, [gameState?.status, submitGuess, currentGuess.length, letterStatuses]);
 
   const resetGame = async () => {
     if (!token) return;
@@ -369,7 +369,7 @@ export default function WordleMatchaPage() {
       window.removeEventListener("compositionstart", handleCompositionStart);
       window.removeEventListener("compositionend", handleCompositionEnd);
     };
-  }, [currentGuess, gameState]);
+  }, [handleKeyPress]);
 
   // Compute tile colors for Wordle grid
   const getTileColor = (guess: string, index: number, rowIndex: number) => {

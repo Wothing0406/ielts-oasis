@@ -1,0 +1,234 @@
+{
+  "version": "3.0.0",
+  "game": "Meow-Cha: Vạn Kiếm Quy Tông",
+  "structure": {
+    "characters": "sprites/characters/realm{0..4}_*/{poses,sheets,weapon,beam,vfx}",
+    "asteroids": "sprites/asteroids/{ice,fire,void,thunder}.png",
+    "maps": "sprites/maps/{bg_study_sanctuary.jpg,mystic_cloud.png,tea_explosion.png,impact_burst_sheet.png}"
+  },
+  "characters": [
+    {
+      "realmIndex": 0,
+      "id": "realm0_qi_refining",
+      "name": "Linh Trà Đạo Miêu",
+      "title": "Luyện Khí Kỳ",
+      "baseDir": "./characters/realm0_qi_refining",
+      "poses": {
+        "idle": "./characters/realm0_qi_refining/poses/idle.png",
+        "attack": "./characters/realm0_qi_refining/poses/attack.png",
+        "ultimate": "./characters/realm0_qi_refining/poses/ultimate.png",
+        "hurt": "./characters/realm0_qi_refining/poses/hurt.png",
+        "defeated": "./characters/realm0_qi_refining/poses/defeated.png"
+      },
+      "sheets": {
+        "idle": "./characters/realm0_qi_refining/sheets/idle_sheet.png",
+        "attack": "./characters/realm0_qi_refining/sheets/attack_sheet.png",
+        "ultimate": "./characters/realm0_qi_refining/sheets/ultimate_sheet.png",
+        "hurt": "./characters/realm0_qi_refining/sheets/hurt_sheet.png",
+        "defeated": "./characters/realm0_qi_refining/sheets/defeated_sheet.png"
+      },
+      "weapon": {
+        "name": "Thanh Trúc Linh Kiếm",
+        "sword": "./characters/realm0_qi_refining/weapon/sword.png",
+        "swordSheet": "./characters/realm0_qi_refining/weapon/sword_sheet.png",
+        "projectile": "./characters/realm0_qi_refining/weapon/projectile.png",
+        "projectileSheet": "./characters/realm0_qi_refining/weapon/projectile_sheet.png"
+      },
+      "beam": {
+        "name": "Thanh Trúc Phong Tuyến",
+        "sprite": "./characters/realm0_qi_refining/beam/beam.png",
+        "sheet": "./characters/realm0_qi_refining/beam/beam_sheet.png"
+      },
+      "vfx": {
+        "name": "Thanh Trúc Trảm",
+        "slash": "./characters/realm0_qi_refining/vfx/slash.png",
+        "slashSheet": "./characters/realm0_qi_refining/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm0_qi_refining/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm0_qi_refining/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm0_qi_refining/vfx/hit.png",
+        "hitSheet": "./characters/realm0_qi_refining/vfx/hit_sheet.png"
+      }
+    },
+    {
+      "realmIndex": 1,
+      "id": "realm1_foundation",
+      "name": "Thanh Vân Ngự Kiếm Miêu",
+      "title": "Trúc Cơ Kỳ",
+      "baseDir": "./characters/realm1_foundation",
+      "poses": {
+        "idle": "./characters/realm1_foundation/poses/idle.png",
+        "attack": "./characters/realm1_foundation/poses/attack.png",
+        "ultimate": "./characters/realm1_foundation/poses/ultimate.png",
+        "hurt": "./characters/realm1_foundation/poses/hurt.png",
+        "defeated": "./characters/realm1_foundation/poses/defeated.png"
+      },
+      "sheets": {
+        "idle": "./characters/realm1_foundation/sheets/idle_sheet.png",
+        "attack": "./characters/realm1_foundation/sheets/attack_sheet.png",
+        "ultimate": "./characters/realm1_foundation/sheets/ultimate_sheet.png",
+        "hurt": "./characters/realm1_foundation/sheets/hurt_sheet.png",
+        "defeated": "./characters/realm1_foundation/sheets/defeated_sheet.png"
+      },
+      "weapon": {
+        "name": "Thanh Ngọc Song Kiếm",
+        "sword": "./characters/realm1_foundation/weapon/sword.png",
+        "swordSheet": "./characters/realm1_foundation/weapon/sword_sheet.png",
+        "projectile": "./characters/realm1_foundation/weapon/projectile.png",
+        "projectileSheet": "./characters/realm1_foundation/weapon/projectile_sheet.png"
+      },
+      "beam": {
+        "name": "Hàn Băng Song Kiếm Tuyến",
+        "sprite": "./characters/realm1_foundation/beam/beam.png",
+        "sheet": "./characters/realm1_foundation/beam/beam_sheet.png"
+      },
+      "vfx": {
+        "name": "Song Kiếm Hàn Băng Trảm",
+        "slash": "./characters/realm1_foundation/vfx/slash.png",
+        "slashSheet": "./characters/realm1_foundation/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm1_foundation/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm1_foundation/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm1_foundation/vfx/hit.png",
+        "hitSheet": "./characters/realm1_foundation/vfx/hit_sheet.png"
+      }
+    },
+    {
+      "realmIndex": 2,
+      "id": "realm2_golden_core",
+      "name": "Bát Quái Kim Đan Miêu",
+      "title": "Kim Đan Kỳ",
+      "baseDir": "./characters/realm2_golden_core",
+      "poses": {
+        "idle": "./characters/realm2_golden_core/poses/idle.png",
+        "attack": "./characters/realm2_golden_core/poses/attack.png",
+        "ultimate": "./characters/realm2_golden_core/poses/ultimate.png",
+        "hurt": "./characters/realm2_golden_core/poses/hurt.png",
+        "defeated": "./characters/realm2_golden_core/poses/defeated.png"
+      },
+      "sheets": {
+        "idle": "./characters/realm2_golden_core/sheets/idle_sheet.png",
+        "attack": "./characters/realm2_golden_core/sheets/attack_sheet.png",
+        "ultimate": "./characters/realm2_golden_core/sheets/ultimate_sheet.png",
+        "hurt": "./characters/realm2_golden_core/sheets/hurt_sheet.png",
+        "defeated": "./characters/realm2_golden_core/sheets/defeated_sheet.png"
+      },
+      "weapon": {
+        "name": "Thái Dương Kim Kiếm",
+        "sword": "./characters/realm2_golden_core/weapon/sword.png",
+        "swordSheet": "./characters/realm2_golden_core/weapon/sword_sheet.png",
+        "projectile": "./characters/realm2_golden_core/weapon/projectile.png",
+        "projectileSheet": "./characters/realm2_golden_core/weapon/projectile_sheet.png"
+      },
+      "beam": {
+        "name": "Kim Đan Nhật Viêm Trụ",
+        "sprite": "./characters/realm2_golden_core/beam/beam.png",
+        "sheet": "./characters/realm2_golden_core/beam/beam_sheet.png"
+      },
+      "vfx": {
+        "name": "Kim Liên Kiếm Khí",
+        "slash": "./characters/realm2_golden_core/vfx/slash.png",
+        "slashSheet": "./characters/realm2_golden_core/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm2_golden_core/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm2_golden_core/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm2_golden_core/vfx/hit.png",
+        "hitSheet": "./characters/realm2_golden_core/vfx/hit_sheet.png"
+      }
+    },
+    {
+      "realmIndex": 3,
+      "id": "realm3_nascent_soul",
+      "name": "Nguyên Anh Đại Năng",
+      "title": "Nguyên Anh Kỳ",
+      "baseDir": "./characters/realm3_nascent_soul",
+      "poses": {
+        "idle": "./characters/realm3_nascent_soul/poses/idle.png",
+        "attack": "./characters/realm3_nascent_soul/poses/attack.png",
+        "ultimate": "./characters/realm3_nascent_soul/poses/ultimate.png",
+        "hurt": "./characters/realm3_nascent_soul/poses/hurt.png",
+        "defeated": "./characters/realm3_nascent_soul/poses/defeated.png",
+        "chibi_companion": "./characters/realm3_nascent_soul/poses/chibi_companion.png"
+      },
+      "sheets": {
+        "idle": "./characters/realm3_nascent_soul/sheets/idle_sheet.png",
+        "attack": "./characters/realm3_nascent_soul/sheets/attack_sheet.png",
+        "ultimate": "./characters/realm3_nascent_soul/sheets/ultimate_sheet.png",
+        "hurt": "./characters/realm3_nascent_soul/sheets/hurt_sheet.png",
+        "defeated": "./characters/realm3_nascent_soul/sheets/defeated_sheet.png"
+      },
+      "weapon": {
+        "name": "Tử Điện Thần Kiếm",
+        "sword": "./characters/realm3_nascent_soul/weapon/sword.png",
+        "swordSheet": "./characters/realm3_nascent_soul/weapon/sword_sheet.png",
+        "projectile": "./characters/realm3_nascent_soul/weapon/projectile.png",
+        "projectileSheet": "./characters/realm3_nascent_soul/weapon/projectile_sheet.png"
+      },
+      "beam": {
+        "name": "Cửu Thiên Tử Điện Mạch",
+        "sprite": "./characters/realm3_nascent_soul/beam/beam.png",
+        "sheet": "./characters/realm3_nascent_soul/beam/beam_sheet.png"
+      },
+      "vfx": {
+        "name": "Tử Điện Lôi Quang Trảm",
+        "slash": "./characters/realm3_nascent_soul/vfx/slash.png",
+        "slashSheet": "./characters/realm3_nascent_soul/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm3_nascent_soul/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm3_nascent_soul/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm3_nascent_soul/vfx/hit.png",
+        "hitSheet": "./characters/realm3_nascent_soul/vfx/hit_sheet.png"
+      }
+    },
+    {
+      "realmIndex": 4,
+      "id": "realm4_tribulation",
+      "name": "Vạn Kiếm Chí Tôn",
+      "title": "Độ Kiếp Kỳ",
+      "baseDir": "./characters/realm4_tribulation",
+      "poses": {
+        "idle": "./characters/realm4_tribulation/poses/idle.png",
+        "attack": "./characters/realm4_tribulation/poses/attack.png",
+        "ultimate": "./characters/realm4_tribulation/poses/ultimate.png",
+        "hurt": "./characters/realm4_tribulation/poses/hurt.png",
+        "defeated": "./characters/realm4_tribulation/poses/defeated.png"
+      },
+      "sheets": {
+        "idle": "./characters/realm4_tribulation/sheets/idle_sheet.png",
+        "attack": "./characters/realm4_tribulation/sheets/attack_sheet.png",
+        "ultimate": "./characters/realm4_tribulation/sheets/ultimate_sheet.png",
+        "hurt": "./characters/realm4_tribulation/sheets/hurt_sheet.png",
+        "defeated": "./characters/realm4_tribulation/sheets/defeated_sheet.png"
+      },
+      "weapon": {
+        "name": "Chân Long Đế Kiếm",
+        "sword": "./characters/realm4_tribulation/weapon/sword.png",
+        "swordSheet": "./characters/realm4_tribulation/weapon/sword_sheet.png",
+        "projectile": "./characters/realm4_tribulation/weapon/projectile.png",
+        "projectileSheet": "./characters/realm4_tribulation/weapon/projectile_sheet.png"
+      },
+      "beam": {
+        "name": "Chân Long Đế Quang Mạch",
+        "sprite": "./characters/realm4_tribulation/beam/beam.png",
+        "sheet": "./characters/realm4_tribulation/beam/beam_sheet.png"
+      },
+      "vfx": {
+        "name": "Chân Long Phệ Thiên Trảm",
+        "slash": "./characters/realm4_tribulation/vfx/slash.png",
+        "slashSheet": "./characters/realm4_tribulation/vfx/slash_sheet.png",
+        "muzzle": "./characters/realm4_tribulation/vfx/muzzle.png",
+        "muzzleSheet": "./characters/realm4_tribulation/vfx/muzzle_sheet.png",
+        "hit": "./characters/realm4_tribulation/vfx/hit.png",
+        "hitSheet": "./characters/realm4_tribulation/vfx/hit_sheet.png"
+      }
+    }
+  ],
+  "asteroids": {
+    "ice": "./asteroids/ice.png",
+    "fire": "./asteroids/fire.png",
+    "void": "./asteroids/void.png",
+    "thunder": "./asteroids/thunder.png"
+  },
+  "maps": {
+    "sanctuary_bg": "./maps/bg_study_sanctuary.jpg",
+    "mystic_cloud": "./maps/mystic_cloud.png",
+    "tea_explosion": "./maps/tea_explosion.png",
+    "impact_burst_sheet": "./maps/impact_burst_sheet.png"
+  }
+}

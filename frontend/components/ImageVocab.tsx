@@ -26,17 +26,28 @@ const MatchaLens = ({ onAdd }: { onAdd: (word: any) => void }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let isMounted = true;
     const checkModel = async () => {
       try {
         const res = await fetch(`${API_URL}/health/yolo`);
-        const data = await res.json();
-        if (data.status === 'ready') setModelStatus('ready');
-        else timeoutId = setTimeout(checkModel, 3000);
-      } catch { timeoutId = setTimeout(checkModel, 3000); }
+        if (!isMounted) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ready') {
+            setModelStatus('ready');
+            clearInterval(intervalId);
+          }
+        }
+      } catch {}
     };
+
     checkModel();
-    return () => clearTimeout(timeoutId);
+    const intervalId = setInterval(checkModel, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   const startCamera = async () => {

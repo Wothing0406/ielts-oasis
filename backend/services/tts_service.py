@@ -1,4 +1,5 @@
 try:
+    # pyrefly: ignore [missing-import]
     import edge_tts
 except ImportError:
     edge_tts = None
@@ -25,6 +26,23 @@ class TTSService:
             "en-CA-ClaraNeural",    # Female CA
             "en-CA-LiamNeural",     # Male CA
         ]
+
+    def _download_google_tts(self, text: str, filepath: str) -> bool:
+        try:
+            import urllib.request
+            import urllib.parse
+            clean_text = text.strip()[:200]
+            url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q={urllib.parse.quote(clean_text)}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                content = response.read()
+                if content and len(content) > 200:
+                    with open(filepath, "wb") as f:
+                        f.write(content)
+                    return True
+        except Exception as err:
+            print(f"Google TTS fallback error: {err}")
+        return False
 
     async def generate_speech(self, text: str, default_voice: str = "en-US-JennyNeural"):
         filename = f"{uuid.uuid4()}.mp3"
@@ -59,8 +77,14 @@ class TTSService:
                     temp_file = os.path.join(self.static_dir, f"temp_{uuid.uuid4()}.mp3")
                     temp_files.append(temp_file)
                     
-                    communicate = edge_tts.Communicate(speech_text, voice)
-                    await communicate.save(temp_file)
+                    if edge_tts:
+                        try:
+                            communicate = edge_tts.Communicate(speech_text, voice)
+                            await communicate.save(temp_file)
+                        except Exception:
+                            self._download_google_tts(speech_text, temp_file)
+                    else:
+                        self._download_google_tts(speech_text, temp_file)
                 
                 # Combine audio files using ffmpeg
                 if temp_files:
@@ -87,12 +111,28 @@ class TTSService:
             except Exception as e:
                 print(f"Multi-voice TTS failed: {e}. Falling back to single voice.")
                 # Fallback if something goes wrong
-                communicate = edge_tts.Communicate(text, default_voice)
-                await communicate.save(filepath)
+                saved = False
+                if edge_tts:
+                    try:
+                        communicate = edge_tts.Communicate(text, default_voice)
+                        await communicate.save(filepath)
+                        saved = True
+                    except Exception as err:
+                        print(f"Edge-tts fallback failed: {err}")
+                if not saved:
+                    self._download_google_tts(text, filepath)
         else:
             # Standard single voice
-            communicate = edge_tts.Communicate(text, default_voice)
-            await communicate.save(filepath)
+            saved = False
+            if edge_tts:
+                try:
+                    communicate = edge_tts.Communicate(text, default_voice)
+                    await communicate.save(filepath)
+                    saved = True
+                except Exception as err:
+                    print(f"Edge-TTS failed ({err}), falling back to Google TTS.")
+            if not saved:
+                self._download_google_tts(text, filepath)
         
         return filename
 

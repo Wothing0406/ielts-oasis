@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import random
@@ -59,7 +59,7 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
 
 
 # =========================================================================
-# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab) TỪ KHO OXFORD 5000
+# 1. TỪ VỰNG IELTS THEO BẬC MA THẠCH (/api/meowcha/vocab) TỪ KHO SQL DATABASE (meowcha_vocab)
 # =========================================================================
 @router.get("/vocab", response_model=Dict[str, Any], status_code=status.HTTP_200_OK)
 def get_vocab_deck(
@@ -67,141 +67,148 @@ def get_vocab_deck(
     search: Optional[str] = Query(None, description="Tìm kiếm từ tiếng Anh hoặc nghĩa tiếng Việt trong kho Oxford 5000"),
     page: int = Query(1, ge=1, description="Trang kết quả"),
     page_size: int = Query(60, ge=1, le=5000, description="Số lượng từ mỗi trang"),
-    limit: Optional[int] = Query(None, ge=1, le=5000, description="Giới hạn số lượng trả về"),
+    limit: Optional[int] = Query(None, ge=1, le=5000, description="Giới hạn số lượng trả về (dùng cho preload toàn bộ deck)"),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách từ vựng IELTS trực tiếp từ kho Oxford 5000 CEFR in-memory (5946 từ chuẩn).
-    Hỗ trợ tìm kiếm thời gian thực < 0.1ms, lọc theo Band/Ma Thạch, và phân trang mượt mà.
+    Lấy danh sách từ vựng IELTS trực tiếp từ cơ sở dữ liệu MySQL (bảng meowcha_vocab).
+    Hỗ trợ tìm kiếm thời gian thực, lọc theo Band/Ma Thạch, phân trang mượt mà,
+    và kèm theo audio_url phát âm bản xứ chuẩn Oxford Learner's Dictionaries.
     """
     try:
-        oxford = OxfordDatasetService.get_instance()
-        
-        # Ánh xạ Cảnh Giới / Band sang cấp độ CEFR
-        level_map = {
-            0: ["A1", "A2"],
-            1: ["B1"],
-            2: ["B2"],
-            3: ["C1"]
-        }
-        
-        target_levels = level_map.get(band, ["A1", "A2", "B1", "B2", "C1"]) if band is not None else ["A1", "A2", "B1", "B2", "C1"]
-        
-        candidates = []
-        for lvl in target_levels:
-            candidates.extend(oxford.by_level.get(lvl, []))
-            
-        # Lọc các từ hợp lệ cho game đánh máy (độ dài 3 - 16 ký tự, chỉ chứa chữ cái a-z)
-        valid_words_raw = [
-            e for e in candidates 
-            if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
-        ]
-        
-        if not valid_words_raw:
-            valid_words_raw = [
-                e for e in oxford.words 
-                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
-            ]
+        query = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True)
 
-        # Khử triệt để trùng lặp từ vựng (Case-insensitive) - giữ lại bản ghi đầy đủ nhất
-        seen_dict = {}
-        for e in valid_words_raw:
-            w_clean = e.get("word", "").strip().upper()
-            if not w_clean:
-                continue
-            if w_clean not in seen_dict:
-                seen_dict[w_clean] = e
-            else:
-                existing = seen_dict[w_clean]
-                if not existing.get("meaning") and e.get("meaning"):
-                    existing["meaning"] = e["meaning"]
-                if not existing.get("phonetic") and e.get("phonetic"):
-                    existing["phonetic"] = e["phonetic"]
-        
-        valid_words = list(seen_dict.values())
+        if band is not None:
+            clamped_band = min(3, max(0, band))
+            query = query.filter(MeowchaVocab.band_level == clamped_band)
 
-        # Tìm kiếm từ khóa nếu có (tra cứu cả Word và Meaning)
         if search and search.strip():
-            query_clean = search.strip().lower()
-            valid_words = [
-                e for e in valid_words
-                if query_clean in e.get("word", "").lower() or query_clean in e.get("meaning", "").lower()
-            ]
+            kw = f"%{search.strip()}%"
+            query = query.filter(or_(MeowchaVocab.word.ilike(kw), MeowchaVocab.meaning.ilike(kw)))
 
-        total_matches = len(valid_words)
-        effective_limit = limit if limit is not None else page_size
+        total_count = query.count()
 
-        # Nếu có search hoặc yêu cầu trang, lấy tuần tự theo phân trang; nếu không lấy random sample cho trận đấu
-        if search or (limit is None and page > 1):
-            start_idx = (page - 1) * effective_limit
-            sampled = valid_words[start_idx : start_idx + effective_limit]
-        elif limit is not None:
-            # Random sample cho trận chiến đấu
-            sampled = random.sample(valid_words, min(len(valid_words), effective_limit))
+        if limit is not None:
+            effective_page_size = limit
+            records = query.order_by(MeowchaVocab.id.asc()).limit(limit).all()
         else:
-            start_idx = (page - 1) * effective_limit
-            sampled = valid_words[start_idx : start_idx + effective_limit]
-        
-        def to_ast_type(lvl: str) -> str:
-            if lvl in ("A1", "A2"): return "FROST"
-            if lvl == "B1": return "INFERNO"
-            if lvl == "B2": return "VOID"
-            return "BLOOD_THUNDER"
-
-        def to_band_level(lvl: str) -> int:
-            if lvl in ("A1", "A2"): return 0
-            if lvl == "B1": return 1
-            if lvl == "B2": return 2
-            return 3
+            effective_page_size = page_size
+            records = query.order_by(MeowchaVocab.id.asc()).offset((page - 1) * page_size).limit(page_size).all()
 
         result_data = [
             {
-                "id": idx + 1,
-                "word": v.get("word", "").upper(),
-                "ipa": v.get("phonetic", ""),
-                "type": v.get("type", "noun"),
-                "meaning": v.get("meaning", ""),
-                "audio_url": v.get("audio_url", ""),
-                "band_level": to_band_level(v.get("level", "B1")),
-                "asteroid_type": to_ast_type(v.get("level", "B1")),
-                "difficulty_score": len(v.get("word", "")) * 5
+                "id": v.id,
+                "word": (v.word or "").upper(),
+                "ipa": v.ipa or "/.../",
+                "type": v.part_of_speech or "vocab",
+                "meaning": v.meaning or "",
+                "audio_url": v.audio_url or "",
+                "band_level": v.band_level if v.band_level is not None else (band if band is not None else 0),
+                "asteroid_type": v.asteroid_type or ("FROST" if v.band_level == 0 else "INFERNO" if v.band_level == 1 else "VOID" if v.band_level == 2 else "BLOOD_THUNDER"),
+                "difficulty_score": v.difficulty_score or (len(v.word or "") * 5)
             }
-            for idx, v in enumerate(sampled)
+            for v in records
         ]
 
         return api_response(
             data=result_data,
             meta={
-                "total": total_matches,
+                "total": total_count,
                 "page": page,
-                "page_size": effective_limit,
-                "oxford_total": len(oxford.words)
+                "page_size": effective_page_size,
+                "band": band,
+                "has_more": (page * effective_page_size) < total_count,
+                "source": "mysql_database"
             },
             success=True
         )
     except Exception as e:
-        logger.error(f"Lỗi khi lấy từ vựng Oxford Meow-Cha: {e}")
-        # Fallback database nếu có lỗi
+        logger.error(f"[MeowchaVocab] MySQL query error: {e}, falling back to Oxford dataset service")
         try:
-            records = db.query(MeowchaVocab).filter(MeowchaVocab.is_active == True).limit(limit).all()
+            oxford = OxfordDatasetService.get_instance()
+            level_map = {0: ["A1", "A2"], 1: ["B1"], 2: ["B2"], 3: ["C1"]}
+            target_levels = level_map.get(band, ["A1", "A2", "B1", "B2", "C1"]) if band is not None else ["A1", "A2", "B1", "B2", "C1"]
+            candidates = []
+            for lvl in target_levels:
+                candidates.extend(oxford.by_level.get(lvl, []))
+
+            valid_words_raw = [
+                e for e in candidates
+                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
+            ] or [
+                e for e in oxford.words
+                if 3 <= len(e.get("word", "")) <= 16 and e.get("word", "").isalpha()
+            ]
+
+            seen_dict = {}
+            for e in valid_words_raw:
+                w_clean = e.get("word", "").strip().upper()
+                if w_clean and w_clean not in seen_dict:
+                    seen_dict[w_clean] = e
+
+            valid_words = list(seen_dict.values())
+
+            if search and search.strip():
+                query_clean = search.strip().lower()
+                valid_words = [
+                    e for e in valid_words
+                    if query_clean in e.get("word", "").lower() or query_clean in e.get("meaning", "").lower()
+                ]
+
+            total_matches = len(valid_words)
+            effective_limit = limit if limit is not None else page_size
+
+            if search or (limit is None and page > 1):
+                start_idx = (page - 1) * effective_limit
+                sampled = valid_words[start_idx : start_idx + effective_limit]
+            elif limit is not None:
+                sampled = valid_words[:effective_limit]
+            else:
+                start_idx = (page - 1) * effective_limit
+                sampled = valid_words[start_idx : start_idx + effective_limit]
+
+            def to_ast_type(lvl: str) -> str:
+                if lvl in ("A1", "A2"): return "FROST"
+                if lvl == "B1": return "INFERNO"
+                if lvl == "B2": return "VOID"
+                return "BLOOD_THUNDER"
+
+            def to_band_level(lvl: str) -> int:
+                if lvl in ("A1", "A2"): return 0
+                if lvl == "B1": return 1
+                if lvl == "B2": return 2
+                return 3
+
             result_data = [
                 {
-                    "id": v.id,
-                    "word": v.word,
-                    "ipa": v.ipa,
-                    "type": v.part_of_speech,
-                    "meaning": v.meaning,
-                    "band_level": v.band_level,
-                    "asteroid_type": v.asteroid_type,
-                    "difficulty_score": v.difficulty_score
+                    "id": idx + 1,
+                    "word": v.get("word", "").upper(),
+                    "ipa": v.get("phonetic", ""),
+                    "type": v.get("type", "noun"),
+                    "meaning": v.get("meaning", ""),
+                    "audio_url": v.get("audio_url", ""),
+                    "band_level": to_band_level(v.get("level", "B1")),
+                    "asteroid_type": to_ast_type(v.get("level", "B1")),
+                    "difficulty_score": len(v.get("word", "")) * 5
                 }
-                for v in records
+                for idx, v in enumerate(sampled)
             ]
-            return api_response(data=result_data, success=True)
-        except Exception as db_e:
+
+            return api_response(
+                data=result_data,
+                meta={
+                    "total": total_matches,
+                    "page": page,
+                    "page_size": effective_limit,
+                    "oxford_total": len(oxford.words),
+                    "source": "oxford_json_fallback"
+                },
+                success=True
+            )
+        except Exception as fallback_e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "INTERNAL_SERVER_ERROR", "message": str(e)}
+                detail={"code": "INTERNAL_SERVER_ERROR", "message": f"Database error: {str(e)}; Fallback error: {str(fallback_e)}"}
             )
 
 
@@ -514,8 +521,34 @@ def get_leaderboard(
                 if len(unique_entries) >= limit:
                     break
 
-        results = [
-            {
+        # Batch load matching users to resolve Discord avatar (Triệt tiêu hoàn toàn lỗi N+1 Query)
+        user_ids = [e.user_id for e in unique_entries if e.user_id]
+        names = [(e.player_name or "").strip().lower() for e in unique_entries if e.player_name]
+
+        users_by_id = {}
+        users_by_name = {}
+        if user_ids or names:
+            filter_clauses = []
+            if user_ids:
+                filter_clauses.append(User.id.in_(user_ids))
+            if names:
+                filter_clauses.append(func.lower(User.username).in_(names))
+            matched_users = db.query(User).filter(or_(*filter_clauses)).all()
+            for u in matched_users:
+                users_by_id[u.id] = u
+                if u.username:
+                    users_by_name[u.username.strip().lower()] = u
+
+        results = []
+        for idx, e in enumerate(unique_entries):
+            u_matched = users_by_id.get(e.user_id) or users_by_name.get((e.player_name or "").strip().lower())
+            resolved_avatar = ""
+            if u_matched and u_matched.avatar_url and u_matched.avatar_url.startswith("http"):
+                resolved_avatar = u_matched.avatar_url
+            elif e.avatar_url and e.avatar_url.startswith("http"):
+                resolved_avatar = e.avatar_url
+
+            results.append({
                 "id": e.id,
                 "rank": idx + 1,
                 "player_name": e.player_name,
@@ -524,11 +557,9 @@ def get_leaderboard(
                 "realm": e.realm,
                 "accuracy": round(e.accuracy, 1),
                 "wpm": e.wpm,
-                "avatar_url": e.avatar_url or "",
+                "avatar_url": resolved_avatar,
                 "created_at": e.created_at.strftime("%d/%m/%Y") if e.created_at else ""
-            }
-            for idx, e in enumerate(unique_entries)
-        ]
+            })
 
         return api_response(data=results, success=True)
     except Exception as e:
@@ -550,13 +581,23 @@ def submit_score_to_leaderboard(
     """
     try:
         player_clean = payload.player_name.strip() or "Tiểu Miêu Kiếm Sĩ"
-        
+        matched_user = db.query(User).filter(func.lower(User.username) == func.lower(player_clean)).first()
+        user_avatar = matched_user.avatar_url if (matched_user and matched_user.avatar_url and matched_user.avatar_url.startswith("http")) else None
+        final_avatar = (payload.avatar_url.strip() if (payload.avatar_url and payload.avatar_url.startswith("http")) else None) or user_avatar
+        user_id_val = matched_user.id if matched_user else None
+
         # Tìm bản ghi hiện có của người chơi (không phân biệt chữ hoa thường)
         existing = db.query(MeowchaLeaderboard).filter(
             func.lower(MeowchaLeaderboard.player_name) == func.lower(player_clean)
         ).first()
 
         if existing:
+            # Cập nhật liên kết user_id và avatar nếu có
+            if user_id_val and not existing.user_id:
+                existing.user_id = user_id_val
+            if final_avatar:
+                existing.avatar_url = final_avatar
+
             # Nếu điểm mới cao hơn, cập nhật thành tích cao nhất
             if payload.score > existing.score:
                 existing.score = payload.score
@@ -564,21 +605,22 @@ def submit_score_to_leaderboard(
                 existing.realm = payload.realm or existing.realm
                 existing.accuracy = min(100.0, max(0.0, payload.accuracy))
                 existing.wpm = max(existing.wpm, payload.wpm)
-                if payload.avatar_url:
-                    existing.avatar_url = payload.avatar_url.strip()
                 existing.created_at = datetime.utcnow()
                 db.commit()
                 db.refresh(existing)
+            else:
+                db.commit()
             active_entry = existing
         else:
             new_entry = MeowchaLeaderboard(
+                user_id=user_id_val,
                 player_name=player_clean,
                 score=max(0, payload.score),
                 words_slain=max(0, payload.words_slain),
                 realm=payload.realm or "Luyện Khí Kỳ",
                 accuracy=min(100.0, max(0.0, payload.accuracy)),
                 wpm=max(0, payload.wpm),
-                avatar_url=(payload.avatar_url.strip() if payload.avatar_url else None),
+                avatar_url=final_avatar,
                 created_at=datetime.utcnow()
             )
             db.add(new_entry)

@@ -1,53 +1,52 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShieldCheck, RefreshCw, AlertCircle, ArrowRight } from "lucide-react";
+import { ShieldCheck, RefreshCw, AlertCircle } from "lucide-react";
 
 export function SecurityShield({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [deviceError, setDeviceError] = useState<boolean>(false);
   const [isSlow, setIsSlow] = useState<boolean>(false);
+  const [rayId, setRayId] = useState<string>("");
+  const [retryNonce, setRetryNonce] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    // Generate rayId once on client mount to completely prevent SSR hydration mismatch
+    setRayId(Math.random().toString(16).substring(2, 10).toUpperCase());
 
-    // Auto-bypass on localhost / local development environments
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
-        setIsVerified(true);
-        return;
-      }
+    // Auto-bypass only in local development environment
+    if (process.env.NODE_ENV !== "production") {
+      setIsVerified(true);
+      return;
     }
 
     const verified = sessionStorage.getItem("turnstile_verified") === "true";
     if (verified) {
       setIsVerified(true);
     }
-  }, []);
+  }, [pathname]);
 
   const handleRetry = () => {
     setDeviceError(false);
     setIsSlow(false);
-    if (widgetIdRef.current !== null && (window as any).turnstile) {
-      try {
-        (window as any).turnstile.reset(widgetIdRef.current);
-      } catch (e) {
-        console.warn("Turnstile reset error:", e);
-      }
-    }
+    setRetryNonce((prev) => prev + 1);
   };
 
   useEffect(() => {
     if (isVerified || !isMounted) return;
 
     let active = true;
+    let retryTimer: NodeJS.Timeout | null = null;
+    let verifyTimer: NodeJS.Timeout | null = null;
 
-    // Timeout safety fallback: alert user if network is slow
+    // Timeout safety fallback: alert user if network or extension is slow/blocking Turnstile
     const timeoutTimer = setTimeout(() => {
       if (active && !isVerified) {
         setIsSlow(true);
@@ -74,13 +73,15 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
             theme: "dark",
             action: "security-shield",
             retry: "auto",
-            "retry-interval": 1500,
+            "retry-interval": 8000, // Standard 8s interval prevents spamming Cloudflare on challenge failures
             "refresh-expired": "auto",
             callback: (token: string) => {
               if (token) {
                 sessionStorage.setItem("turnstile_verified", "true");
-                setTimeout(() => {
-                  setIsVerified(true);
+                verifyTimer = setTimeout(() => {
+                  if (active) {
+                    setIsVerified(true);
+                  }
                 }, 500);
               }
             },
@@ -98,7 +99,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
           setDeviceError(true);
         }
       } else {
-        setTimeout(renderCaptcha, 250);
+        retryTimer = setTimeout(renderCaptcha, 250);
       }
     };
 
@@ -107,15 +108,17 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
       clearTimeout(timeoutTimer);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (verifyTimer) clearTimeout(verifyTimer);
       if (widgetIdRef.current !== null && (window as any).turnstile) {
         try {
           (window as any).turnstile.remove(widgetIdRef.current);
         } catch (e) {}
       }
     };
-  }, [isVerified, isMounted]);
+  }, [isVerified, isMounted, retryNonce]);
 
-  // Prevent rendering anything if we are on server side
+  // Prevent rendering anything on server side to ensure zero hydration mismatch
   if (!isMounted) {
     return null;
   }
@@ -155,7 +158,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
                 <div ref={containerRef} id="global-turnstile-container"></div>
               </div>
 
-              {/* Retry Section when Cloudflare verification needs user interaction or refresh */}
+              {/* Retry Section when Cloudflare verification needs user interaction, encounters error 600010, or is blocked by extension/adblock */}
               {(deviceError || isSlow) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -164,19 +167,19 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
                 >
                   <div className="flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <p className="text-xs md:text-sm text-neutral-200 leading-relaxed font-medium">
                         {deviceError 
-                          ? "Xác minh Cloudflare chưa hoàn tất. Vui lòng kiểm tra kết nối mạng và bấm 'Thử lại xác minh Cloudflare' để tải lại widget."
-                          : "Đang kết nối đến máy chủ bảo mật Cloudflare. Nếu quá trình tải lâu, bạn có thể bấm 'Thử lại' bên dưới."
+                          ? "Trình duyệt hoặc tiện ích mở rộng (AdBlock / Extension) có thể đang chặn dịch vụ xác minh Cloudflare (Mã lỗi 600010). Vui lòng tạm tắt trình chặn quảng cáo và bấm 'Thử lại' để tải lại widget xác minh."
+                          : "Đang kết nối đến máy chủ bảo mật Cloudflare. Nếu quá trình tải lâu, bạn có thể bấm 'Thử lại' bên dưới để tải lại thử thách."
                         }
                       </p>
 
-                      <div className="pt-1">
+                      <div className="pt-1 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={handleRetry}
-                          className="min-h-[44px] px-4 py-2 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95"
+                          className="min-h-[44px] px-5 py-2.5 text-xs md:text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           <RefreshCw className="w-4 h-4" />
                           <span>Thử lại xác minh Cloudflare</span>
@@ -190,7 +193,7 @@ export function SecurityShield({ children }: { children: React.ReactNode }) {
 
             {/* Bottom Footer Details */}
             <div className="text-[11px] text-[#6b7280] flex flex-col items-center gap-1 font-mono text-center mt-6">
-              <span>Ray ID: {Math.random().toString(16).substring(2, 10).toUpperCase()} • Dịch vụ bảo vệ bởi Cloudflare & IELTS Oasis</span>
+              <span>Ray ID: {rayId || "8C90A1DF"} • Dịch vụ bảo vệ bởi Cloudflare & IELTS Oasis</span>
               <span>An toàn • Không lưu cookie theo dõi cá nhân</span>
             </div>
           </motion.div>

@@ -1,22 +1,12 @@
 "use client";
 
 import React from 'react';
+import { playWordAudio } from '../utils/audio';
 
 const API_URL = '/api';
 
-const playAudio = async (word: string) => {
-  try {
-    const res = await fetch(`${API_URL}/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word }),
-    });
-    const data = await res.json();
-    if (data.audio_url) {
-      const audio = new Audio(`${API_URL}${data.audio_url}`);
-      audio.play();
-    }
-  } catch (err) { console.error("TTS error:", err); }
+const playAudio = async (word: string, audioUrl?: string) => {
+  await playWordAudio(word, audioUrl);
 };
 
 const Library = ({ vocabList, onAdd, onDelete }: { vocabList: any[], onAdd: (word: string) => void, onDelete: (id: number) => void }) => {

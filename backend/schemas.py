@@ -77,6 +77,7 @@ class MeowchaVocabResponse(BaseModel):
     ipa: str
     part_of_speech: str
     meaning: str
+    audio_url: Optional[str] = None
     band_level: int
     asteroid_type: str
     difficulty_score: int

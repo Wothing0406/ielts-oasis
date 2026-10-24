@@ -22,14 +22,35 @@ import {
   FolderOpen,
   RotateCcw,
   Volume2,
-  PenTool
+  PenTool,
+  Trophy
 } from 'lucide-react';
 
 import TextbookSentenceMatching from './quiz/TextbookSentenceMatching';
 import SpeechPronunciationDrill from './quiz/SpeechPronunciationDrill';
 import GrammarMasteryLab from './grammar/GrammarMasteryLab';
+import { playWordAudio } from '../utils/audio';
 
 const API_URL = '/api';
+
+interface QuizQuestionReview {
+  id?: number;
+  word: string;
+  meaning: string;
+  phonetic?: string;
+  audio_url?: string;
+  example?: string;
+  topic?: string;
+  mode: QuizType;
+  quizSubType: 'ABCD' | 'FILL_IN' | 'SPEECH' | 'CONTEXT' | 'SRS';
+  isCorrect: boolean;
+  isSkipped?: boolean;
+  score?: number;
+  userAnswer?: string;
+  correctAnswer: string;
+  errorType?: string;
+  errorDetail?: string;
+}
 
 interface VocabItem {
   id?: number;
@@ -37,6 +58,7 @@ interface VocabItem {
   meaning: string;
   phonetic?: string;
   image_url?: string;
+  audio_url?: string;
   example?: string;
   memory_hook?: string;
   topic?: string;
@@ -45,20 +67,10 @@ interface VocabItem {
 
 type QuizType = 'textbook' | 'speech' | 'fill_in' | 'grammar_sanctuary' | 'vocab_meaning' | 'srs' | 'classic_vocab';
 type ClassicMode = 'ABCD' | 'FILL_IN';
+type ClassicFilterMode = 'ALTERNATE' | 'ABCD_ONLY' | 'FILL_IN_ONLY';
 
-const playAudio = async (word: string) => {
-  try {
-    const res = await fetch(`${API_URL}/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word }),
-    });
-    const data = await res.json();
-    if (data.audio_url) {
-      const audio = new Audio(data.audio_url);
-      audio.play();
-    }
-  } catch (err) { console.error("TTS error:", err); }
+const playAudio = (word: string, audioUrl?: string) => {
+  playWordAudio(word, audioUrl);
 };
 
 const STATIC_SENTENCE_TRANSLATIONS: Record<string, string> = {
@@ -256,6 +268,15 @@ export default function VocabularyQuiz({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [quizReviews, setQuizReviews] = useState<QuizQuestionReview[]>([]);
+  const [reviewFilterTab, setReviewFilterTab] = useState<'ALL' | 'WRONG' | 'CORRECT'>('WRONG');
+
+  const recordReview = (review: QuizQuestionReview) => {
+    setQuizReviews(prev => {
+      const filtered = prev.filter(r => r.word.toLowerCase() !== review.word.toLowerCase());
+      return [...filtered, review];
+    });
+  };
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
   // Retry Queue for skipped words in Speech drill
@@ -298,17 +319,26 @@ export default function VocabularyQuiz({
     setUserInput('');
     setRetryQueue([]);
     setIsDoingRetryRound(false);
+    setClassicFilterMode('ALTERNATE');
+    setQuizReviews([]);
+    setReviewFilterTab('WRONG');
     setQuizType(type);
   };
 
   const activeQuestions = quizType === 'srs' ? srsQuestions : shuffledQuestions;
 
-  // Mode determination: vocab_meaning is always ABCD; fill_in is always FILL_IN; classic_vocab alternates
+  const [classicFilterMode, setClassicFilterMode] = useState<ClassicFilterMode>('ALTERNATE');
+
+  // Mode determination: vocab_meaning & classic_vocab alternates ABCD & FILL_IN by default
   const activeClassicMode: ClassicMode = useMemo(() => {
-    if (quizType === 'vocab_meaning') return 'ABCD';
     if (quizType === 'fill_in') return 'FILL_IN';
+    if (quizType === 'vocab_meaning' || quizType === 'classic_vocab') {
+      if (classicFilterMode === 'ABCD_ONLY') return 'ABCD';
+      if (classicFilterMode === 'FILL_IN_ONLY') return 'FILL_IN';
+      return currentIndex % 2 === 0 ? 'ABCD' : 'FILL_IN';
+    }
     return currentIndex % 2 === 0 ? 'ABCD' : 'FILL_IN';
-  }, [quizType, currentIndex]);
+  }, [quizType, classicFilterMode, currentIndex]);
 
   const current = activeQuestions[currentIndex];
 
@@ -558,7 +588,7 @@ export default function VocabularyQuiz({
     setShowMeaningHint(false);
     setUserInput('');
     if (currentIndex < activeQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex(prev => prev + 1);
     } else {
       // Check if there are skipped words in retryQueue
       if (retryQueue.length > 0 && !isDoingRetryRound) {
@@ -572,9 +602,81 @@ export default function VocabularyQuiz({
     }
   };
 
+  const handleRetryWeakWords = () => {
+    const weakItems = quizReviews
+      .filter(r => !r.isCorrect || (r.score !== undefined && r.score < 70))
+      .map(r => {
+        const found = vocabList.find(v => v.word.toLowerCase() === r.word.toLowerCase());
+        return found || {
+          word: r.word,
+          meaning: r.meaning,
+          phonetic: r.phonetic,
+          audio_url: r.audio_url,
+          example: r.example,
+          topic: r.topic
+        };
+      });
+
+    if (weakItems.length === 0) return;
+
+    setShuffledQuestions([...weakItems]);
+    setCurrentIndex(0);
+    setScore(0);
+    setIsFinished(false);
+    setFeedback(null);
+    setUserSelectedOption(null);
+    setShowMeaningHint(false);
+    setUserInput('');
+    setRetryQueue([]);
+    setIsDoingRetryRound(true);
+    setQuizReviews([]);
+  };
+
+  const handleSkipQuestion = () => {
+    const cur = activeQuestions[currentIndex];
+    if (cur) {
+      recordReview({
+        id: cur.id,
+        word: cur.word,
+        meaning: cur.meaning,
+        phonetic: cur.phonetic,
+        audio_url: cur.audio_url,
+        example: cur.example,
+        topic: cur.topic,
+        mode: quizType || 'classic_vocab',
+        quizSubType: activeClassicMode === 'ABCD' ? 'ABCD' : 'FILL_IN',
+        isCorrect: false,
+        isSkipped: true,
+        correctAnswer: activeClassicMode === 'ABCD' ? cur.meaning : cur.word,
+        userAnswer: '(Bỏ qua câu hỏi)',
+        errorType: activeClassicMode === 'ABCD' ? 'Chưa rõ nghĩa từ vựng' : 'Chưa nhớ từ tiếng Anh (Active Recall)',
+        errorDetail: `Từ vựng "${cur.word}" mang nghĩa là "${cur.meaning}".`
+      });
+    }
+    handleNextQuestion();
+  };
+
   // Skip in Speech Mode
   const handleSkipWord = (word: VocabItem) => {
     setRetryQueue(prev => [...prev, word]);
+    recordReview({
+      id: word.id,
+      word: word.word,
+      meaning: word.meaning,
+      phonetic: word.phonetic,
+      audio_url: word.audio_url,
+      example: word.example,
+      topic: word.topic,
+      mode: 'speech',
+      quizSubType: 'SPEECH',
+      isCorrect: false,
+      isSkipped: true,
+      score: 0,
+      correctAnswer: word.word,
+      userAnswer: '(Đã bấm bỏ qua)',
+      errorType: 'Bỏ qua từ phát âm (Chưa tự tin phát âm)',
+      errorDetail: `Cần nghe lại mẫu phát âm chuẩn ${word.phonetic ? `[${word.phonetic}]` : ''} và luyện phát âm khẩu hình rõ ràng.`
+    });
     handleNextQuestion();
   };
 
@@ -587,15 +689,7 @@ export default function VocabularyQuiz({
     setUserSelectedOption(answer);
     let isCorrect = false;
     
-    if (quizType === 'vocab_meaning') {
-      isCorrect = answer.trim().toLowerCase() === current.meaning.trim().toLowerCase();
-    } else if (quizType === 'fill_in') {
-      const cleanUser = normalizeWord(answer);
-      const cleanCorrect = normalizeWord(current.word);
-      isCorrect = cleanUser === cleanCorrect ||
-        answer.toLowerCase().trim() === current.word.toLowerCase().trim() ||
-        (cleanCorrect.length > 2 && cleanUser === cleanCorrect.split(' ')[0]);
-    } else if (quizType === 'classic_vocab') {
+    if (quizType === 'vocab_meaning' || quizType === 'classic_vocab') {
       if (activeClassicMode === 'ABCD') {
         isCorrect = answer.trim().toLowerCase() === current.meaning.trim().toLowerCase();
       } else {
@@ -605,6 +699,12 @@ export default function VocabularyQuiz({
           answer.toLowerCase().trim() === current.word.toLowerCase().trim() ||
           (cleanCorrect.length > 2 && cleanUser === cleanCorrect.split(' ')[0]);
       }
+    } else if (quizType === 'fill_in') {
+      const cleanUser = normalizeWord(answer);
+      const cleanCorrect = normalizeWord(current.word);
+      isCorrect = cleanUser === cleanCorrect ||
+        answer.toLowerCase().trim() === current.word.toLowerCase().trim() ||
+        (cleanCorrect.length > 2 && cleanUser === cleanCorrect.split(' ')[0]);
     } else {
       const cleanAnswer = cleanOptionText(answer).toLowerCase();
       const cleanCorrect = cleanOptionText(current.correct_answer || '').toLowerCase();
@@ -617,6 +717,80 @@ export default function VocabularyQuiz({
       setScore(score + 1);
     } else {
       setFeedback('wrong');
+    }
+
+    if (quizType === 'vocab_meaning' || quizType === 'classic_vocab') {
+      if (activeClassicMode === 'ABCD') {
+        recordReview({
+          id: current.id,
+          word: current.word,
+          meaning: current.meaning,
+          phonetic: current.phonetic,
+          audio_url: current.audio_url,
+          example: current.example,
+          topic: current.topic,
+          mode: quizType,
+          quizSubType: 'ABCD',
+          isCorrect,
+          correctAnswer: current.meaning,
+          userAnswer: answer,
+          errorType: isCorrect ? 'Hiểu đúng nghĩa tiếng Việt' : 'Nhầm định nghĩa tiếng Việt',
+          errorDetail: isCorrect ? undefined : `Bạn chọn "${answer}". Nghĩa chuẩn xác là: "${current.meaning}".`
+        });
+      } else {
+        const cleanUser = normalizeWord(answer);
+        const cleanCorrect = normalizeWord(current.word);
+        recordReview({
+          id: current.id,
+          word: current.word,
+          meaning: current.meaning,
+          phonetic: current.phonetic,
+          audio_url: current.audio_url,
+          example: current.example,
+          topic: current.topic,
+          mode: quizType,
+          quizSubType: 'FILL_IN',
+          isCorrect,
+          correctAnswer: current.word,
+          userAnswer: answer.trim() || '(Bỏ trống)',
+          errorType: isCorrect ? 'Gõ đúng chính tả chuẩn' : 'Chưa nhớ mặt chữ tiếng Anh (Active Recall)',
+          errorDetail: isCorrect ? undefined : `Bạn đã gõ: "${answer.trim() || '(Bỏ trống)'}". Từ vựng chuẩn: "${current.word}" (${current.phonetic || ''}).`
+        });
+      }
+    } else if (quizType === 'fill_in') {
+      recordReview({
+        id: current.id,
+        word: current.word,
+        meaning: current.meaning,
+        phonetic: current.phonetic,
+        audio_url: current.audio_url,
+        example: current.example,
+        topic: current.topic,
+        mode: quizType,
+        quizSubType: 'FILL_IN',
+        isCorrect,
+        correctAnswer: current.word,
+        userAnswer: answer.trim() || '(Bỏ trống)',
+        errorType: isCorrect ? 'Gõ đúng chính tả chuẩn' : 'Chưa nhớ mặt chữ tiếng Anh',
+        errorDetail: isCorrect ? undefined : `Bạn đã gõ: "${answer.trim() || '(Bỏ trống)'}". Từ vựng chuẩn: "${current.word}".`
+      });
+    } else if (quizType === 'srs') {
+      recordReview({
+        id: current.id,
+        word: current.word || 'SRS Drill',
+        meaning: current.meaning || current.question,
+        phonetic: current.phonetic,
+        audio_url: current.audio_url,
+        example: current.example,
+        topic: current.topic,
+        mode: quizType,
+        quizSubType: 'SRS',
+        isCorrect,
+        correctAnswer: cleanOptionText(current.correct_answer || ''),
+        userAnswer: cleanOptionText(answer),
+        errorType: isCorrect ? 'Trả lời đúng câu hỏi SRS' : 'Sai câu hỏi ngữ cảnh / Collocation SRS',
+        errorDetail: isCorrect ? undefined : `Đáp án đúng là: "${cleanOptionText(current.correct_answer || '')}".`
+      });
     }
 
     if (current.id) {
@@ -784,7 +958,7 @@ export default function VocabularyQuiz({
               </p>
             </button>
 
-            {/* Mode 5: Classic Vocab Meaning Translation (TÍNH NĂNG NHƯ CŨ) */}
+            {/* Mode 5: Classic Vocab Meaning & Fill-in (TÍNH NĂNG MỞ RỘNG XEN KẼ) */}
             <button
               type="button"
               onClick={() => startQuizWithQuestions('vocab_meaning')}
@@ -798,19 +972,19 @@ export default function VocabularyQuiz({
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-xs font-black text-[#2E3E2B] uppercase tracking-wider">
-                        5. Trắc Nghiệm Dịch Nghĩa Từ Vựng
+                        5. Trắc Nghiệm & Điền Từ Dịch Nghĩa
                       </h4>
                       <span className="text-[9px] font-black bg-[#4A7C39] text-white px-2 py-0.5 rounded-full uppercase">
-                        Tính Năng Gốc
+                        Xen Kẽ Thông Minh
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-[#4A7C39]">Classic Vocab Quiz • 4 Lựa Chọn A, B, C, D</span>
+                    <span className="text-[10px] font-bold text-[#4A7C39]">Classic Vocab Quiz • Xen Kẽ Trắc Nghiệm ABCD & Điền Từ Tiếng Anh</span>
                   </div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-[#4A7C39] group-hover:translate-x-1 transition-transform" />
               </div>
               <p className="text-[11px] text-stone-600 leading-snug">
-                Dạng làm quiz truyền thống quen thuộc: Đọc từ vựng tiếng Anh và chọn nhanh đáp án dịch nghĩa tiếng Việt chuẩn xác nhất từ 4 lựa chọn A, B, C, D.
+                Dạng làm quiz truyền thống nâng cấp: Đọc từ tiếng Anh chọn nghĩa tiếng Việt (A, B, C, D) xen kẽ nhịp nhàng với thử thách nhìn nghĩa tiếng Việt và gõ chuẩn xác từ vựng tiếng Anh (Active Recall).
               </p>
             </button>
           </div>
@@ -924,14 +1098,36 @@ export default function VocabularyQuiz({
                 {/* 1. TEXTBOOK CONTEXT MATCHING MODE */}
                 {quizType === 'textbook' && current && (
                   <TextbookSentenceMatching
+                    key={current.id || current.word}
                     currentWord={current}
                     vocabPool={activeVocabList}
-                    onAnswer={(isCorrect) => {
-                      if (isCorrect) setScore(score + 1);
+                    onAnswer={(isCorrect, selectedOption) => {
+                      if (isCorrect) setScore(prev => prev + 1);
                       if (current.id) onReview(current.id, isCorrect);
+                      recordReview({
+                        id: current.id,
+                        word: current.word,
+                        meaning: current.meaning,
+                        phonetic: current.phonetic,
+                        audio_url: current.audio_url,
+                        example: current.example,
+                        topic: current.topic,
+                        mode: 'textbook',
+                        quizSubType: 'CONTEXT',
+                        isCorrect,
+                        correctAnswer: current.word,
+                        userAnswer: selectedOption?.sentence_en,
+                        errorType: isCorrect ? 'Phát hiện câu chuẩn xác' : (
+                          selectedOption?.trap_type === 'pos_trap' ? 'Bẫy sai từ loại (Part of Speech Trap)' :
+                          selectedOption?.trap_type === 'collocation_trap' ? 'Bẫy sai Collocation (Cụm kết hợp từ)' :
+                          selectedOption?.trap_type === 'semantic_trap' ? 'Bẫy nhầm lẫn ngữ cảnh (Semantic Context)' :
+                          'Lựa chọn câu chưa chuẩn'
+                        ),
+                        errorDetail: selectedOption?.trap_reason || `Câu dùng từ chuẩn: "${currentCloze.fullSentence}".`
+                      });
                     }}
                     onNext={handleNextQuestion}
-                    onSkip={handleNextQuestion}
+                    onSkip={handleSkipQuestion}
                     onPlayAudio={playAudio}
                   />
                 )}
@@ -939,10 +1135,33 @@ export default function VocabularyQuiz({
                 {/* 2. SPEECH PRONUNCIATION DRILL MODE */}
                 {quizType === 'speech' && current && (
                   <SpeechPronunciationDrill
+                    key={current.id || current.word}
                     currentWord={current}
-                    onAnswer={(isCorrect) => {
-                      if (isCorrect) setScore(score + 1);
+                    onAnswer={(isCorrect, speechScore, transcript) => {
+                      if (isCorrect) setScore(prev => prev + 1);
                       if (current.id) onReview(current.id, isCorrect);
+                      recordReview({
+                        id: current.id,
+                        word: current.word,
+                        meaning: current.meaning,
+                        phonetic: current.phonetic,
+                        audio_url: current.audio_url,
+                        example: current.example,
+                        topic: current.topic,
+                        mode: 'speech',
+                        quizSubType: 'SPEECH',
+                        isCorrect,
+                        score: speechScore,
+                        userAnswer: transcript || '(Không nhận diện được)',
+                        correctAnswer: current.word,
+                        errorType: speechScore >= 85 ? 'Phát âm xuất sắc (≥85%)' :
+                                   speechScore >= 70 ? 'Phát âm tốt (70-84%)' :
+                                   speechScore >= 50 ? 'Lỗi phát âm: Âm chưa rõ / Thiếu ending sound' :
+                                   'Lỗi phát âm: Lệch âm / Sai trọng âm',
+                        errorDetail: speechScore < 70
+                          ? `Hệ thống nhận diện được âm: "${transcript}". Khuyên luyện: Chú ý phiên âm ${current.phonetic || ''}, mở rộng khẩu hình và bật rõ âm cuối.`
+                          : `Phát âm đạt ${speechScore}% độ chuẩn xác âm học IELTS.`
+                      });
                     }}
                     onSkipWord={handleSkipWord}
                     onNext={handleNextQuestion}
@@ -953,23 +1172,67 @@ export default function VocabularyQuiz({
                 {/* 3. VOCAB MODES (ABCD MEANING & FILL-IN) */}
                 {(quizType === 'classic_vocab' || quizType === 'vocab_meaning' || quizType === 'fill_in') && current && (
                   <div className="space-y-4">
-                    {/* Question Type Indicator Badge */}
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-black text-[#4A7C39] bg-[#EAF2E3] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 border border-[#A7D08C]/40">
-                        {activeClassicMode === 'ABCD' ? (
-                          <>
-                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                            <span>Trắc nghiệm 4 lựa chọn: Chọn nghĩa tiếng Việt đúng (Tính năng gốc)</span>
-                          </>
-                        ) : (
-                          <>
-                            <PenTool className="w-3.5 h-3.5 shrink-0" />
-                            <span>Điền từ tiếng Anh: Active Recall từ vựng</span>
-                          </>
+                    {/* Question Type Indicator Badge & Filter Switcher */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-black text-[#4A7C39] bg-[#EAF2E3] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 border border-[#A7D08C]/40">
+                          {activeClassicMode === 'ABCD' ? (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                              <span>Trắc nghiệm 4 lựa chọn: Chọn nghĩa tiếng Việt đúng</span>
+                            </>
+                          ) : (
+                            <>
+                              <PenTool className="w-3.5 h-3.5 shrink-0" />
+                              <span>Điền từ tiếng Anh: Gõ từ theo nghĩa tiếng Việt (Active Recall)</span>
+                            </>
+                          )}
+                        </span>
+
+                        {(quizType === 'vocab_meaning' || quizType === 'classic_vocab') && !feedback && (
+                          <div className="inline-flex items-center bg-stone-200/60 p-0.5 rounded-full text-[10px] font-bold border border-stone-300/60">
+                            <button
+                              type="button"
+                              onClick={() => setClassicFilterMode('ALTERNATE')}
+                              className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                                classicFilterMode === 'ALTERNATE'
+                                  ? 'bg-[#4A7C39] text-white shadow-xs'
+                                  : 'text-stone-600 hover:text-stone-900'
+                              }`}
+                              title="Xen kẽ Trắc nghiệm ABCD và Điền từ"
+                            >
+                              Xen kẽ (Khuyên dùng)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setClassicFilterMode('ABCD_ONLY')}
+                              className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                                classicFilterMode === 'ABCD_ONLY'
+                                  ? 'bg-[#4A7C39] text-white shadow-xs'
+                                  : 'text-stone-600 hover:text-stone-900'
+                              }`}
+                              title="Chỉ làm dạng trắc nghiệm 4 lựa chọn"
+                            >
+                              Chỉ ABCD
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setClassicFilterMode('FILL_IN_ONLY')}
+                              className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                                classicFilterMode === 'FILL_IN_ONLY'
+                                  ? 'bg-[#4A7C39] text-white shadow-xs'
+                                  : 'text-stone-600 hover:text-stone-900'
+                              }`}
+                              title="Chỉ làm dạng điền từ tiếng Anh"
+                            >
+                              Chỉ Điền từ
+                            </button>
+                          </div>
                         )}
-                      </span>
+                      </div>
+
                       {current.topic && (
-                        <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
+                        <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full self-start sm:self-auto">
                           {current.topic}
                         </span>
                       )}
@@ -990,8 +1253,8 @@ export default function VocabularyQuiz({
                             </h3>
                             <button
                               type="button"
-                              onClick={() => playAudio(current.word)}
-                              className="p-1.5 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                              onClick={() => playAudio(current.word, current.audio_url)}
+                              className="p-1.5 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
                               title="Nghe phát âm"
                             >
                               <Volume2 className="w-5 h-5 shrink-0" />
@@ -1031,7 +1294,7 @@ export default function VocabularyQuiz({
 
                             return (
                               <button
-                                key={i}
+                                key={`${current.word}-${optMeaning}-${i}`}
                                 type="button"
                                 disabled={feedback !== null}
                                 onClick={() => handleAnswerClassic(optMeaning)}
@@ -1071,7 +1334,7 @@ export default function VocabularyQuiz({
                           <div className="flex justify-end pt-1">
                             <button
                               type="button"
-                              onClick={handleNextQuestion}
+                              onClick={handleSkipQuestion}
                               className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold text-stone-500 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center gap-1.5 cursor-pointer touch-manipulation active:scale-95"
                             >
                               <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
@@ -1143,7 +1406,7 @@ export default function VocabularyQuiz({
                               </button>
                               <button
                                 type="button"
-                                onClick={handleNextQuestion}
+                                onClick={handleSkipQuestion}
                                 className="w-full sm:w-auto min-h-[44px] px-4 rounded-full text-xs font-bold text-stone-500 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                               >
                                 <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
@@ -1233,8 +1496,8 @@ export default function VocabularyQuiz({
 
                             <button
                               type="button"
-                              onClick={() => playAudio(current.word)}
-                              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#EAF2E3] hover:bg-[#A7D08C] text-[#2E3E2B] font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                              onClick={() => playAudio(current.word, current.audio_url)}
+                              className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#EAF2E3] hover:bg-[#A7D08C] text-[#2E3E2B] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
                             >
                               <Volume2 className="w-4 h-4 text-[#4A7C39]" />
                               <span>Phát âm</span>
@@ -1339,7 +1602,7 @@ export default function VocabularyQuiz({
                         }
                         return (
                           <button
-                            key={i}
+                            key={`${current.word}-srs-${opt}-${i}`}
                             type="button"
                             disabled={feedback !== null}
                             onClick={() => handleAnswerClassic(opt)}
@@ -1377,34 +1640,339 @@ export default function VocabularyQuiz({
                   </div>
                 )}
               </motion.div>
-            ) : (
-              /* Finish Screen */
-              <div className="text-center py-6 space-y-4">
-                <div className="w-16 h-16 bg-[#EAF2E3] border border-[#A7D08C]/40 rounded-full flex items-center justify-center mx-auto text-[#4A7C39]">
-                  <Sparkles className="w-8 h-8" />
-                </div>
-                <h3 className="text-2xl font-display font-black text-[#2E3E2B]">
-                  Hoàn thành phiên ôn tập!
-                </h3>
-                <p className="text-sm font-bold text-stone-600">
-                  Điểm số đạt được: <strong className="text-[#4A7C39] text-lg font-black">{score}</strong> / {activeQuestions.length}
-                </p>
+             ) : (
+              /* Comprehensive IELTS Academic Finish & Diagnostic Scorecard Screen */
+              <div className="py-2 space-y-6">
+                {/* 1. Performance Overview Banner */}
+                <div className="p-6 rounded-3xl bg-white border-2 border-[#A7D08C]/50 shadow-xs text-center relative overflow-hidden space-y-4">
+                  <div className="w-16 h-16 bg-[#EAF2E3] border-2 border-[#A7D08C]/60 rounded-2xl flex items-center justify-center mx-auto text-[#4A7C39] shadow-xs">
+                    <Trophy className="w-8 h-8" />
+                  </div>
 
-                <div className="flex justify-center gap-3 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuizType(null)}
-                    className="min-h-[44px] bg-[#4A7C39] text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:bg-[#3B642D] transition-all cursor-pointer text-xs"
-                  >
-                    Chọn phần thi khác
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="min-h-[44px] bg-stone-700 text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:bg-stone-800 transition-all cursor-pointer text-xs"
-                  >
-                    Đóng
-                  </button>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#4A7C39] bg-[#EAF2E3] px-3 py-1 rounded-full border border-[#A7D08C]/40">
+                      Báo Cáo Đánh Giá Chi Tiết • IELTS Evaluation
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-display font-black text-[#2E3E2B] mt-2">
+                      Hoàn Thành Phiên Ôn Tập!
+                    </h3>
+                    <p className="text-xs text-stone-600 mt-1">
+                      {quizType === 'textbook' ? '1. Ngữ Cảnh Chuẩn Cambridge' :
+                       quizType === 'speech' ? '2. Luyện Phát Âm & Phản Xạ Mic' :
+                       quizType === 'fill_in' ? '3. Thử Thách Điền Từ & Chính Tả' :
+                       quizType === 'vocab_meaning' || quizType === 'classic_vocab' ? '5. Trắc Nghiệm & Điền Từ Dịch Nghĩa' :
+                       'Ôn Tập Tổng Hợp'}
+                    </p>
+                  </div>
+
+                  {/* Score & Band Assessment Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                    <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-center">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase block">Điểm số</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#4A7C39]">
+                        {score} <span className="text-xs text-stone-400 font-normal">/ {activeQuestions.length}</span>
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-center">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase block">Độ chính xác</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#2E3E2B]">
+                        {activeQuestions.length > 0 ? Math.round((score / activeQuestions.length) * 100) : 0}%
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-center">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase block">Từ chuẩn xác</span>
+                      <span className="text-xl sm:text-2xl font-black text-emerald-600">
+                        {quizReviews.filter(r => r.isCorrect).length}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#A7D08C]/30 text-center">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase block">Cần rèn luyện</span>
+                      <span className="text-xl sm:text-2xl font-black text-rose-600">
+                        {quizReviews.filter(r => !r.isCorrect || (r.score !== undefined && r.score < 70)).length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* IELTS Band Equivalent Evaluation Badge */}
+                  {(() => {
+                    const accuracy = activeQuestions.length > 0 ? Math.round((score / activeQuestions.length) * 100) : 0;
+                    let bandLabel = "Band 8.0+ • Xuất sắc";
+                    let bandDesc = "Phản xạ từ vựng và ngữ cảnh học thuật đạt mức độ thành thạo cao.";
+                    let badgeColor = "bg-emerald-50 text-emerald-800 border-emerald-300";
+
+                    if (accuracy < 50) {
+                      bandLabel = "Cần tăng tốc • Dưới 5.5";
+                      bandDesc = "Cần củng cố thêm phát âm và nhận diện mặt chữ thường xuyên hơn.";
+                      badgeColor = "bg-rose-50 text-rose-800 border-rose-300";
+                    } else if (accuracy < 70) {
+                      bandLabel = "Band 5.5 - 6.5 • Khá tốt";
+                      bandDesc = "Nắm được nghĩa cơ bản, cần rèn luyện thêm về bẫy collocation và âm cuối.";
+                      badgeColor = "bg-amber-50 text-amber-800 border-amber-300";
+                    } else if (accuracy < 85) {
+                      bandLabel = "Band 7.0 - 7.5 • Tốt";
+                      bandDesc = "Vốn từ vững vàng, kiểm soát tốt cấu trúc câu và phát âm tương đối chuẩn xác.";
+                      badgeColor = "bg-blue-50 text-blue-800 border-blue-300";
+                    }
+
+                    return (
+                      <div className={`p-3 rounded-2xl border flex items-center justify-between text-left ${badgeColor}`}>
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles className="w-5 h-5 shrink-0" />
+                          <div>
+                            <span className="text-xs font-black block">{bandLabel}</span>
+                            <span className="text-[11px] opacity-90 block">{bandDesc}</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-white shadow-2xs shrink-0">
+                          {accuracy}%
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 2. Detailed Words Diagnostic & Practice Table */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-[#4A7C39]" />
+                      <h4 className="text-sm font-black text-[#2E3E2B] uppercase tracking-wider">
+                        Bảng Đánh Giá & Chẩn Đoán Lỗi Từng Từ
+                      </h4>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="inline-flex items-center bg-stone-200/70 p-0.5 rounded-full text-xs font-bold border border-stone-300/60 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => setReviewFilterTab('WRONG')}
+                        className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                          reviewFilterTab === 'WRONG'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900'
+                        }`}
+                      >
+                        Cần rèn luyện ({quizReviews.filter(r => !r.isCorrect || (r.score !== undefined && r.score < 70)).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReviewFilterTab('CORRECT')}
+                        className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                          reviewFilterTab === 'CORRECT'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900'
+                        }`}
+                      >
+                        Đã đạt ({quizReviews.filter(r => r.isCorrect).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReviewFilterTab('ALL')}
+                        className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                          reviewFilterTab === 'ALL'
+                            ? 'bg-[#4A7C39] text-white shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900'
+                        }`}
+                      >
+                        Tất cả ({quizReviews.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Word Review Cards List */}
+                  <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+                    {(() => {
+                      const displayedReviews = quizReviews.filter(r => {
+                        if (reviewFilterTab === 'WRONG') return !r.isCorrect || (r.score !== undefined && r.score < 70);
+                        if (reviewFilterTab === 'CORRECT') return r.isCorrect && (r.score === undefined || r.score >= 70);
+                        return true;
+                      });
+
+                      if (displayedReviews.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-xs text-stone-500 bg-white rounded-2xl border border-stone-200">
+                            {reviewFilterTab === 'WRONG'
+                              ? '🎉 Chúc mừng! Bạn không có từ nào bị sai hoặc phát âm yếu trong lượt thi này.'
+                              : 'Chưa có dữ liệu đánh giá.'}
+                          </div>
+                        );
+                      }
+
+                      return displayedReviews.map((r, idx) => (
+                        <div
+                          key={`${r.word}-${idx}`}
+                          className={`p-4 rounded-2xl border-2 transition-all shadow-2xs space-y-2 text-left ${
+                            r.isCorrect && (r.score === undefined || r.score >= 70)
+                              ? 'bg-white border-emerald-200/70'
+                              : 'bg-white border-rose-200 hover:border-rose-300'
+                          }`}
+                        >
+                          {/* Word Header */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-base sm:text-lg font-black text-[#2E3E2B]">
+                                  {r.word}
+                                </span>
+                                {r.phonetic && (
+                                  <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md font-medium">
+                                    {r.phonetic}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => playAudio(r.word, r.audio_url)}
+                                  className="p-1 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] transition-transform active:scale-95 cursor-pointer"
+                                  title="Nghe phát âm chuẩn"
+                                >
+                                  <Volume2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <p className="text-xs text-stone-600 font-medium mt-0.5">
+                                {r.meaning}
+                              </p>
+                            </div>
+
+                            {/* SubType & Status Badges */}
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                r.isCorrect && (r.score === undefined || r.score >= 70)
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                  : 'bg-rose-50 text-rose-800 border-rose-300'
+                              }`}>
+                                {r.isCorrect && (r.score === undefined || r.score >= 70) ? '✓ Đạt yêu cầu' : '⚠️ Cần rèn luyện'}
+                              </span>
+                              <span className="text-[9px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md uppercase">
+                                {r.quizSubType === 'SPEECH' ? '🎤 Luyện phát âm' :
+                                 r.quizSubType === 'CONTEXT' ? '🎯 Ngữ cảnh Cambridge' :
+                                 r.quizSubType === 'FILL_IN' ? '✍️ Điền từ chính tả' :
+                                 r.quizSubType === 'ABCD' ? '🔤 Trắc nghiệm nghĩa' : '🧠 Ôn tập SRS'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Diagnostic Details Box */}
+                          <div className={`p-3 rounded-xl text-xs space-y-1.5 ${
+                            r.isCorrect && (r.score === undefined || r.score >= 70) ? 'bg-[#F4F9F2] text-[#14532D]' : 'bg-[#FEF2F2] text-[#991B1B]'
+                          }`}>
+                            {/* Specific Mode Diagnostics */}
+                            {r.quizSubType === 'SPEECH' && (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                  <span>Độ chuẩn xác âm học: <strong>{r.score !== undefined ? `${r.score}%` : 'N/A'}</strong></span>
+                                  <span className="font-semibold">{r.errorType}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <span className="opacity-80">Máy nhận diện được:</span>
+                                  <strong className="font-mono bg-white/80 px-2 py-0.5 rounded border border-rose-200">
+                                    "{r.userAnswer || '(Không nhận được âm)'}"
+                                  </strong>
+                                </div>
+                                {r.errorDetail && (
+                                  <p className="text-[11px] leading-relaxed opacity-95 pt-0.5">
+                                    💡 <strong>Chẩn đoán & Khuyên luyện:</strong> {r.errorDetail}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {r.quizSubType === 'CONTEXT' && (
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-bold">
+                                  <span>Phân loại: <strong>{r.errorType}</strong></span>
+                                </div>
+                                {r.errorDetail && (
+                                  <p className="text-[11px] leading-relaxed opacity-95">
+                                    {r.errorDetail}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {r.quizSubType === 'FILL_IN' && (
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-bold">
+                                  <span>Chẩn đoán: <strong>{r.errorType}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <span className="opacity-80">Bạn đã gõ:</span>
+                                  <strong className="font-mono bg-white/80 px-2 py-0.5 rounded border border-rose-200">
+                                    "{r.userAnswer}"
+                                  </strong>
+                                  <span className="opacity-80">vs Chuẩn:</span>
+                                  <strong className="font-mono bg-white/80 px-2 py-0.5 rounded border border-emerald-300 text-emerald-800">
+                                    "{r.correctAnswer}"
+                                  </strong>
+                                </div>
+                              </div>
+                            )}
+
+                            {r.quizSubType === 'ABCD' && (
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-bold">
+                                  <span>Chẩn đoán: <strong>{r.errorType}</strong></span>
+                                </div>
+                                {r.errorDetail && (
+                                  <p className="text-[11px] leading-relaxed opacity-95">
+                                    {r.errorDetail}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {r.quizSubType === 'SRS' && (
+                              <div className="space-y-1">
+                                <div className="text-[11px] font-bold">
+                                  <span>Chẩn đoán: <strong>{r.errorType}</strong></span>
+                                </div>
+                                {r.errorDetail && (
+                                  <p className="text-[11px] leading-relaxed opacity-95">
+                                    {r.errorDetail}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* 3. Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-[#A7D08C]/30">
+                  {quizReviews.some(r => !r.isCorrect || (r.score !== undefined && r.score < 70)) ? (
+                    <button
+                      type="button"
+                      onClick={handleRetryWeakWords}
+                      className="w-full sm:w-auto min-h-[46px] px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Rèn Luyện Lại Các Từ Này Ngay ({quizReviews.filter(r => !r.isCorrect || (r.score !== undefined && r.score < 70)).length} từ)</span>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => setQuizType(null)}
+                      className="flex-1 sm:flex-none min-h-[44px] bg-[#4A7C39] text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:bg-[#3B642D] transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Chọn phần thi khác</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="min-h-[44px] bg-stone-700 text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:bg-stone-800 transition-all cursor-pointer text-xs"
+                    >
+                      Đóng
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

@@ -12,21 +12,23 @@ import {
   Lightbulb, 
   RotateCcw 
 } from 'lucide-react';
+import { playWordAudio } from '../utils/audio';
 
 interface FlashcardProps {
   word: string;
   phonetic: string;
   meaning: string;
   audioPath?: string;
+  audioUrl?: string;
   synonyms?: string[];
   memoryHook?: string;
   imageUrl?: string;
   topic?: string;
   example?: string;
-  onAudioClick: () => void;
+  onAudioClick?: () => void;
 }
 
-const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, imageUrl, topic, example, onAudioClick }: FlashcardProps) => {
+const Flashcard = ({ word, phonetic, meaning, audioPath, audioUrl, synonyms, memoryHook, imageUrl, topic, example, onAudioClick }: FlashcardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
@@ -84,9 +86,13 @@ const Flashcard = ({ word, phonetic, meaning, audioPath, synonyms, memoryHook, i
               type="button" 
               onClick={(e) => {
                 e.stopPropagation();
-                onAudioClick();
+                if (onAudioClick) {
+                  onAudioClick();
+                } else {
+                  playWordAudio(word, audioUrl || audioPath);
+                }
               }}
-              className="w-11 h-11 min-w-[44px] min-h-[44px] bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-all shadow-sm active:scale-90 touch-manipulation"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-all shadow-sm active:scale-90 touch-manipulation cursor-pointer"
               title="Phát âm từ này"
               aria-label="Phát âm từ này"
             >

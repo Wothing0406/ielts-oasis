@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, 
@@ -21,6 +21,7 @@ interface VocabItem {
   word: string;
   meaning: string;
   phonetic?: string;
+  audio_url?: string;
   example?: string;
   memory_hook?: string;
   topic?: string;
@@ -38,18 +39,55 @@ interface SentenceOption {
 interface Props {
   currentWord: VocabItem;
   vocabPool: VocabItem[];
-  onAnswer: (isCorrect: boolean) => void;
+  onAnswer: (isCorrect: boolean, selectedOption?: SentenceOption) => void;
   onNext: () => void;
   onSkip?: () => void;
-  onPlayAudio?: (word: string) => void;
+  onPlayAudio?: (word: string, audioUrl?: string) => void;
 }
 
-// Helper xác định từ loại dựa trên nghĩa tiếng Việt và hậu tố
-function detectWordType(word: string, meaning: string): 'noun' | 'verb' | 'adj' | 'adv' {
+// Helper xáo trộn xác định (Deterministic Seeded Shuffle) dựa trên từ vựng để giữ nguyên vị trí A,B,C,D qua các lần re-render
+function seededShuffle<T>(array: T[], seedStr: string): T[] {
+  const result = [...array];
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    seed = (seed * 31 + seedStr.charCodeAt(i)) & 0xffffffff;
+  }
+  
+  const random = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+// Helper xác định từ loại dựa trên nghĩa tiếng Việt, cấu trúc câu ví dụ và từ vựng
+function detectWordType(word: string, meaning: string, example?: string): 'noun' | 'verb' | 'adj' | 'adv' {
   const w = word.toLowerCase().trim();
   const m = meaning.toLowerCase().trim();
+  const ex = (example || '').toLowerCase();
 
-  // Trạng từ (Adverb)
+  // 1. Phân tích ngữ cảnh câu ví dụ thực tế nếu có
+  if (ex) {
+    if (new RegExp(`\\b(to|will|can|could|should|must|may|might|would|did|does|do)\\s+${w}\\b`).test(ex) ||
+        new RegExp(`\\b${w}(ed|ing|s)\\b`).test(ex)) {
+      return 'verb';
+    }
+    if (new RegExp(`\\b(a|an|the)\\s+${w}\\s+[a-z]+`).test(ex)) {
+      return 'adj';
+    }
+    if (new RegExp(`\\b(a|an|the|this|that|these|those|my|your|his|her|its|our|their)\\s+${w}\\b`).test(ex)) {
+      return 'noun';
+    }
+  }
+
+  // 2. Trạng từ (Adverb)
   if (
     w.endsWith('ly') || w.endsWith('wise') || w.endsWith('ward') || w.endsWith('wards') ||
     m.startsWith('một cách ') || m.startsWith('rất ') || m.startsWith('khá ') ||
@@ -58,38 +96,77 @@ function detectWordType(word: string, meaning: string): 'noun' | 'verb' | 'adj' 
     return 'adv';
   }
 
-  // Danh từ
-  if (
-    w.endsWith('tion') || w.endsWith('sion') || w.endsWith('ment') || w.endsWith('ness') || 
-    w.endsWith('ity') || w.endsWith('ence') || w.endsWith('ance') || 
-    w.endsWith('er') || w.endsWith('or') || w.endsWith('ist') ||
-    m.startsWith('sự ') || m.startsWith('việc ') || m.startsWith('người ') || 
-    m.startsWith('vật ') || m.startsWith('chất ') || m.includes('nguyên liệu') || 
-    m.includes('thành phần') || m.includes('hệ thống') || m.includes('phương pháp')
-  ) {
-    return 'noun';
-  }
+  // 3. Động từ (Verb)
+  const commonVerbs = new Set([
+    'acquire', 'adapt', 'adjust', 'affect', 'alter', 'assess', 'assume', 'attain', 'attribute', 
+    'clarify', 'collapse', 'conclude', 'conduct', 'conform', 'consent', 'conserve', 'consist', 
+    'constitute', 'constrain', 'construct', 'consume', 'derive', 'detect', 'deviate', 'diminish', 
+    'eliminate', 'emerge', 'emphasize', 'enable', 'enforce', 'enhance', 'ensure', 'establish', 
+    'estimate', 'evaluate', 'exceed', 'exclude', 'exhibit', 'expand', 'exploit', 'expose', 
+    'facilitate', 'fluctuate', 'focus', 'generate', 'identify', 'illustrate', 'impact', 'implement', 
+    'imply', 'indicate', 'induce', 'inhibit', 'initiate', 'innovate', 'integrate', 'interact', 
+    'interpret', 'intervene', 'investigate', 'isolate', 'justify', 'maintain', 'manipulate', 
+    'minimize', 'modify', 'monitor', 'obtain', 'occupy', 'occur', 'participate', 'perceive', 
+    'persist', 'predict', 'proceed', 'prohibit', 'promote', 'pursue', 'recover', 'refine', 
+    'regulate', 'reinforce', 'reject', 'release', 'rely', 'require', 'resolve', 'restore', 
+    'restrain', 'restrict', 'retain', 'reveal', 'shift', 'stimulate', 'substitute', 'sustain', 
+    'terminate', 'transform', 'undergo', 'undertake', 'utilize', 'vary'
+  ]);
 
-  // Động từ
   if (
+    commonVerbs.has(w) ||
     w.endsWith('ate') || w.endsWith('ize') || w.endsWith('ise') || w.endsWith('ify') ||
     m.startsWith('làm ') || m.startsWith('giảm ') || m.startsWith('tăng ') || 
     m.startsWith('tạo ') || m.startsWith('thúc ') || m.startsWith('ủng hộ') || 
-    m.startsWith('chứng minh') || m.startsWith('ngăn ') || m.startsWith('duy trì')
+    m.startsWith('chứng minh') || m.startsWith('ngăn ') || m.startsWith('duy trì') ||
+    m.startsWith('thu được') || m.startsWith('đạt được') || m.startsWith('đánh giá') ||
+    m.startsWith('kết luận') || m.startsWith('cung cấp') || m.startsWith('yêu cầu') ||
+    m.startsWith('áp dụng') || m.startsWith('thực hiện') || m.startsWith('phát triển') ||
+    m.startsWith('thực thi') || m.startsWith('xác định') || m.startsWith('phân tích') ||
+    m.startsWith('thích nghi') || m.startsWith('điều chỉnh') || m.startsWith('cho phép') ||
+    m.startsWith('tham gia') || m.startsWith('đóng góp') || m.startsWith('ảnh hưởng') ||
+    m.startsWith('thay đổi') || m.startsWith('bảo vệ') || m.startsWith('giải quyết') ||
+    m.startsWith('hỗ trợ') || m.startsWith('nghiên cứu') || m.startsWith('tìm kiếm') ||
+    m.startsWith('nhận thức') || m.startsWith('dự đoán') || m.startsWith('bắt đầu') ||
+    m.startsWith('thiết lập') || m.startsWith('mở rộng') || m.startsWith('tích hợp') ||
+    m.startsWith('chuyển đổi') || m.startsWith('tận dụng') || m.startsWith('phản ánh')
   ) {
     return 'verb';
   }
 
-  // Tính từ
+  // 4. Tính từ (Adjective)
+  const commonAdjs = new Set([
+    'academic', 'accurate', 'adequate', 'adjacent', 'alternative', 'ambiguous', 'annual', 
+    'apparent', 'appropriate', 'approximate', 'arbitrary', 'automatic', 'brief', 'capable', 
+    'classic', 'coherent', 'compatible', 'comprehensive', 'concurrent', 'considerable', 
+    'consistent', 'constant', 'contemporary', 'crucial', 'definite', 'discrete', 'distinct', 
+    'diverse', 'domestic', 'dominant', 'dynamic', 'economic', 'efficient', 'empirical', 
+    'equivalent', 'ethical', 'ethnic', 'evident', 'explicit', 'external', 'feasible', 'finite', 
+    'flexible', 'fundamental', 'global', 'hierarchical', 'identical', 'implicit', 'incompatible', 
+    'inherent', 'initial', 'integral', 'intermediate', 'internal', 'intrinsic', 'intuitive', 
+    'invariable', 'major', 'marginal', 'mature', 'maximum', 'minimal', 'mutual', 'neutral', 
+    'ongoing', 'overall', 'passive', 'persistent', 'potential', 'preliminary', 'previous', 
+    'primary', 'prime', 'principal', 'prior', 'random', 'rational', 'relevant', 'reluctant', 
+    'rigid', 'significant', 'simultaneous', 'sole', 'specific', 'subsequent', 'sufficient', 
+    'sustainable', 'ultimate', 'underlying', 'unique', 'valid', 'variable', 'visible', 'vital'
+  ]);
+
   if (
+    commonAdjs.has(w) ||
     w.endsWith('able') || w.endsWith('ible') || w.endsWith('al') || 
     w.endsWith('ic') || w.endsWith('ous') || w.endsWith('ful') || w.endsWith('ive') ||
+    w.endsWith('less') || w.endsWith('ary') || w.endsWith('ory') ||
     m.startsWith('có ') || m.startsWith('mang ') || m.startsWith('đáng ') || 
-    m.includes('bền vững') || m.includes('chủ yếu') || m.includes('thiết yếu')
+    m.startsWith('thuộc ') || m.startsWith('khác ') || m.startsWith('rõ ') ||
+    m.startsWith('chính ') || m.startsWith('chủ yếu') || m.startsWith('thiết yếu') ||
+    m.startsWith('cụ thể') || m.startsWith('quan trọng') || m.startsWith('hiệu quả') ||
+    m.startsWith('toàn diện') || m.startsWith('bền vững') || m.startsWith('tiềm năng') ||
+    m.startsWith('tương đương') || m.startsWith('phù hợp') || m.startsWith('linh hoạt')
   ) {
     return 'adj';
   }
 
+  // 5. Mặc định là danh từ (Noun)
   return 'noun';
 }
 
@@ -112,11 +189,11 @@ export default function TextbookSentenceMatching({
     const wordCap = word.charAt(0).toUpperCase() + word.slice(1);
     const meaningLower = meaning.toLowerCase();
     const meaningCap = meaning.charAt(0).toUpperCase() + meaning.slice(1);
-    const wordType = detectWordType(word, meaning);
+    const wordType = detectWordType(word, meaning, currentWord.example);
 
-    const otherWords = vocabPool.filter(v => v.word.toLowerCase() !== wordLower);
-    const other1 = otherWords[0] || { word: 'candidate', meaning: 'ứng viên xin việc' };
-    const other2 = otherWords[1] || { word: 'regulation', meaning: 'quy định pháp lý' };
+    const authenticExample = currentWord.example && currentWord.example.trim().length > 15 && currentWord.example.toLowerCase().includes(wordLower)
+      ? currentWord.example.trim()
+      : null;
 
     let correctOpt: SentenceOption;
     let trap1Pos: SentenceOption;
@@ -127,11 +204,15 @@ export default function TextbookSentenceMatching({
       // 1. Câu chuẩn danh từ
       correctOpt = {
         id: 'opt_correct',
-        sentence_en: `${wordCap} is widely recognized by researchers as a fundamental element in modern development.`,
-        sentence_vi: `${meaningCap} được các nhà nghiên cứu công nhận rộng rãi là một yếu tố nền tảng trong sự phát triển hiện đại.`,
+        sentence_en: authenticExample || `${wordCap} is widely recognized by researchers as a fundamental element in modern development.`,
+        sentence_vi: authenticExample 
+          ? `Câu chuẩn học thuật Cambridge/Oxford minh họa ý nghĩa "${meaning}".`
+          : `${meaningCap} được các nhà nghiên cứu công nhận rộng rãi là một yếu tố nền tảng trong sự phát triển hiện đại.`,
         is_correct: true,
         trap_type: 'correct',
-        trap_reason: `✓ Đáp án chuẩn: Từ "${word}" được sử dụng chính xác ở vai trò danh từ chủ ngữ mang nghĩa "${meaning}".`
+        trap_reason: authenticExample
+          ? `✓ Đáp án chuẩn: Trích dẫn chuẩn từ ngữ liệu học thuật Cambridge/Oxford, sử dụng từ "${word}" chính xác với nghĩa "${meaning}".`
+          : `✓ Đáp án chuẩn: Từ "${word}" được sử dụng chính xác ở vai trò danh từ chủ ngữ mang nghĩa "${meaning}".`
       };
 
       // 2. Bẫy sai từ loại (danh từ dùng làm động từ sau "to")
@@ -167,11 +248,15 @@ export default function TextbookSentenceMatching({
       // 1. Câu chuẩn động từ
       correctOpt = {
         id: 'opt_correct',
-        sentence_en: `The international community should ${wordLower} practical solutions to address climate change effectively.`,
-        sentence_vi: `Cộng đồng quốc tế nên ${meaningLower} các giải pháp thiết thực nhằm giải quyết biến đổi khí hậu một cách hiệu quả.`,
+        sentence_en: authenticExample || `The international community should ${wordLower} practical solutions to address climate change effectively.`,
+        sentence_vi: authenticExample
+          ? `Câu chuẩn học thuật Cambridge/Oxford minh họa ý nghĩa "${meaning}".`
+          : `Cộng đồng quốc tế nên ${meaningLower} các giải pháp thiết thực nhằm giải quyết biến đổi khí hậu một cách hiệu quả.`,
         is_correct: true,
         trap_type: 'correct',
-        trap_reason: `✓ Đáp án chuẩn: Từ "${word}" được sử dụng đúng vị trí động từ sau trợ động từ "should", thể hiện chính xác hành động "${meaning}".`
+        trap_reason: authenticExample
+          ? `✓ Đáp án chuẩn: Trích dẫn chuẩn từ ngữ liệu học thuật Cambridge/Oxford, sử dụng từ "${word}" chính xác với nghĩa "${meaning}".`
+          : `✓ Đáp án chuẩn: Từ "${word}" được sử dụng đúng vị trí động từ sau trợ động từ "should", thể hiện chính xác hành động "${meaning}".`
       };
 
       // 2. Bẫy sai từ loại (động từ dùng làm danh từ sau "a/an")
@@ -207,11 +292,15 @@ export default function TextbookSentenceMatching({
       // 1. Câu chuẩn trạng từ
       correctOpt = {
         id: 'opt_correct',
-        sentence_en: `The management board agreed to address the workplace challenges ${wordLower} and objectively.`,
-        sentence_vi: `Hội đồng quản trị đã đồng ý giải quyết các thách thức nơi làm việc một cách ${meaningLower} và khách quan.`,
+        sentence_en: authenticExample || `The management board agreed to address the workplace challenges ${wordLower} and objectively.`,
+        sentence_vi: authenticExample
+          ? `Câu chuẩn học thuật Cambridge/Oxford minh họa ý nghĩa "${meaning}".`
+          : `Hội đồng quản trị đã đồng ý giải quyết các thách thức nơi làm việc một cách ${meaningLower} và khách quan.`,
         is_correct: true,
         trap_type: 'correct',
-        trap_reason: `✓ Đáp án chuẩn: "${word}" là trạng từ (adverb) bổ nghĩa chính xác cho động từ "address" theo cấu trúc song hành với "objectively", thể hiện đúng ý nghĩa "${meaning}".`
+        trap_reason: authenticExample
+          ? `✓ Đáp án chuẩn: Trích dẫn chuẩn từ ngữ liệu học thuật Cambridge/Oxford, sử dụng từ "${word}" chính xác với nghĩa "${meaning}".`
+          : `✓ Đáp án chuẩn: "${word}" là trạng từ (adverb) bổ nghĩa chính xác cho động từ "address" theo cấu trúc song hành với "objectively", thể hiện đúng ý nghĩa "${meaning}".`
       };
 
       // 2. Bẫy sai từ loại (trạng từ dùng làm tính từ bổ nghĩa cho danh từ)
@@ -247,11 +336,15 @@ export default function TextbookSentenceMatching({
       // 1. Câu chuẩn tính từ
       correctOpt = {
         id: 'opt_correct',
-        sentence_en: `Adopting this strategy represents a ${wordLower} approach to resolving sustainable development goals.`,
-        sentence_vi: `Việc áp dụng chiến lược này thể hiện một cách tiếp cận mang tính ${meaningLower} để giải quyết các mục tiêu phát triển bền vững.`,
+        sentence_en: authenticExample || `Adopting this strategy represents a ${wordLower} approach to resolving sustainable development goals.`,
+        sentence_vi: authenticExample
+          ? `Câu chuẩn học thuật Cambridge/Oxford minh họa ý nghĩa "${meaning}".`
+          : `Việc áp dụng chiến lược này thể hiện một cách tiếp cận mang tính ${meaningLower} để giải quyết các mục tiêu phát triển bền vững.`,
         is_correct: true,
         trap_type: 'correct',
-        trap_reason: `✓ Đáp án chuẩn: "${word}" đứng trước danh từ "approach" bổ nghĩa chuẩn xác với ý nghĩa "${meaning}".`
+        trap_reason: authenticExample
+          ? `✓ Đáp án chuẩn: Trích dẫn chuẩn từ ngữ liệu học thuật Cambridge/Oxford, sử dụng từ "${word}" chính xác với nghĩa "${meaning}".`
+          : `✓ Đáp án chuẩn: "${word}" đứng trước danh từ "approach" bổ nghĩa chuẩn xác với ý nghĩa "${meaning}".`
       };
 
       // 2. Bẫy sai từ loại (tính từ dùng làm động từ)
@@ -285,14 +378,12 @@ export default function TextbookSentenceMatching({
       };
     }
 
-    // Xáo trộn ngẫu nhiên 4 lựa chọn (A, B, C, D)
-    return [correctOpt, trap1Pos, trap2Colloc, trap3Semantic].sort(() => 0.5 - Math.random());
-  }, [currentWord, vocabPool]);
-
-  // Reset khi đổi câu hỏi
-  useEffect(() => {
-    setSelectedOptionId(null);
-    setFeedback(null);
+    // Xáo trộn xác định (deterministic) 4 lựa chọn theo hạt giống (seed) từ vựng
+    // Giúp vị trí A, B, C, D cố định tuyệt đối, không bị nhảy lung tung khi user click chọn
+    return seededShuffle(
+      [correctOpt, trap1Pos, trap2Colloc, trap3Semantic],
+      `${currentWord.word}_${currentWord.id || ''}`
+    );
   }, [currentWord]);
 
   const handleSelect = (option: SentenceOption) => {
@@ -300,7 +391,7 @@ export default function TextbookSentenceMatching({
     setSelectedOptionId(option.id);
     const isCorrect = option.is_correct;
     setFeedback(isCorrect ? 'correct' : 'wrong');
-    onAnswer(isCorrect);
+    onAnswer(isCorrect, option);
   };
 
   const selectedOpt = sentenceOptions.find(o => o.id === selectedOptionId);
@@ -323,8 +414,8 @@ export default function TextbookSentenceMatching({
           {onPlayAudio && (
             <button
               type="button"
-              onClick={() => onPlayAudio(currentWord.word)}
-              className="p-2 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-xs"
+              onClick={() => onPlayAudio(currentWord.word, currentWord.audio_url)}
+              className="p-2 rounded-full hover:bg-[#EAF2E3] text-[#4A7C39] hover:scale-110 active:scale-95 transition-transform cursor-pointer shadow-xs"
               title="Nghe phát âm"
             >
               <Volume2 className="w-5 h-5 shrink-0" />
@@ -494,7 +585,7 @@ export default function TextbookSentenceMatching({
           <button
             type="button"
             onClick={onSkip || onNext}
-            className="min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-all flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+            className="min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:text-[#2E3E2B] hover:bg-stone-200/50 transition-colors flex items-center gap-2 cursor-pointer touch-manipulation active:scale-95"
             title="Bỏ qua câu này để chuyển sang từ tiếp theo"
           >
             <SkipForward className="w-4 h-4 text-amber-700 shrink-0" />
@@ -535,7 +626,7 @@ export default function TextbookSentenceMatching({
             <button
               type="button"
               onClick={onNext}
-              className="w-full sm:w-auto min-h-[48px] bg-[#4A7C39] text-white px-9 py-2.5 rounded-full font-black text-sm shadow-md hover:bg-[#3B642D] transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
+              className="w-full sm:w-auto min-h-[48px] bg-[#4A7C39] text-white px-9 py-2.5 rounded-full font-black text-sm shadow-md hover:bg-[#3B642D] transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-95"
             >
               <span>Câu tiếp theo</span>
               <ArrowRight className="w-4 h-4 shrink-0" />

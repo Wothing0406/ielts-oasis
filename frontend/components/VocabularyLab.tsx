@@ -20,6 +20,7 @@ import {
   Loader2 
 } from 'lucide-react';
 import Flashcard from './Flashcard';
+import { playWordAudio } from '../utils/audio';
 
 const API_URL = '/api';
 
@@ -32,25 +33,15 @@ interface VocabItem {
   example?: string;
   synonyms?: string[];
   memory_hook?: string;
+  audio_url?: string;
   audio_path?: string;
   image_url?: string;
   topic?: string;
   source?: string;
 }
 
-const playAudio = async (word: string) => {
-  try {
-    const res = await fetch(`${API_URL}/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word }),
-    });
-    const data = await res.json();
-    if (data.audio_url) {
-      const audio = new Audio(data.audio_url);
-      audio.play();
-    }
-  } catch (err) { console.error("TTS error:", err); }
+const playAudio = (word: string, audioUrl?: string) => {
+  playWordAudio(word, audioUrl);
 };
 
 
@@ -602,8 +593,8 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                                 )}
                                 <button 
                                   type="button" 
-                                  onClick={() => playAudio(item.word)}
-                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all p-1 rounded-full hover:bg-primary/10 min-w-[28px] min-h-[28px] inline-flex items-center justify-center"
+                                  onClick={() => playAudio(item.word, item.audio_url || item.audio_path)}
+                                  className="text-primary/70 hover:text-primary hover:scale-110 active:scale-95 transition-all p-1 rounded-full hover:bg-primary/10 min-w-[28px] min-h-[28px] inline-flex items-center justify-center cursor-pointer"
                                   title="Nghe phát âm"
                                 >
                                   <Volume2 className="w-4 h-4 shrink-0" />
@@ -721,12 +712,13 @@ const VocabularyLab = ({ vocabList, onAdd, onDelete, onGenerateTopic, onStartQui
                     phonetic={current.phonetic}
                     meaning={current.meaning}
                     audioPath={current.audio_path}
+                    audioUrl={current.audio_url || current.audio_path}
                     synonyms={current.synonyms}
                     memoryHook={current.memory_hook}
                     imageUrl={current.image_url}
                     topic={current.topic}
                     example={current.example}
-                    onAudioClick={() => playAudio(current.word)}
+                    onAudioClick={() => playAudio(current.word, current.audio_url || current.audio_path)}
                   />
                 </motion.div>
               </AnimatePresence>
