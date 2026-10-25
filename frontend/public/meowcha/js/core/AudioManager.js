@@ -6,6 +6,7 @@
       try { this.soundEnabled = localStorage.getItem('meowcha_sound') !== 'off'; } catch (_) { this.soundEnabled = true; }
       this.zenMusicPlaying = false; this.musicRequested = false; this.musicNodes = [];
       this.voiceQueue = []; this.voiceJob = null; this.voiceGeneration = 0; this.motifStep = 0;
+      this.completionTimers = new Set(); this.noiseBuffers = {}; this.eventCounts = {}; this.pronunciationCache = new Map();
       this.stats = { voiceCompleted: 0, voiceFallbacks: 0, voiceFailed: 0, sfxPlayed: 0 };
       this.lastError = ''; this.onStatusChange = null;
       if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', () => {
@@ -15,7 +16,7 @@
     init() {
       if (this.ctx && this.ctx.state === 'closed') {
         const requested = this.musicRequested;
-        this.stopZenGuqin(); this.musicRequested = requested; this.ctx = null;
+        this.stopZenGuqin(); this.musicRequested = requested; this.ctx = null; this.noiseBuffers = {};
       }
       if (this.ctx) return;
       const Ctx = root.AudioContext || root.webkitAudioContext;
@@ -102,16 +103,85 @@
       for (const {osc, gain} of this.musicNodes.splice(0)) { try { osc.stop(); osc.disconnect(); gain.disconnect(); } catch (_) {} }
     }
     silenceAll() { this.stopZenGuqin(); this.stopVoice(); }
-    play(type) {
+    play(type, delay = 0) {
       if (!this.soundEnabled) return;
       this.init(); if (!this.ctx) return; if (this.ctx.state !== 'running') this.recover();
+      const aliases = {type:'type_correct',slash:'word_slash',explosion:'meteor_crack',hurt:'player_hurt',shatter:'shield_break'};
+      type = aliases[type] || type;
       this.stats.sfxPlayed++;
+      this.eventCounts[type] = (this.eventCounts[type] || 0) + 1;
+      const textures = {
+        wrong_key:[.08,.11,450], sword_launch:[.1,.06,2300], sword_hit:[.075,.055,1800],
+        word_slash:[.15,.14,2100], meteor_crack:[.22,.22,1200], meteor_impact:[.36,.25,350],
+        shield_hit:[.12,.12,2800], shield_break:[.23,.16,3600]
+      };
+      if(textures[type]) this._noise(type, ...textures[type], delay);
+      const semantic = {
+        type_correct:[1100,.035,.055,'sine',1400],wrong_key:[180,.075,.09,'triangle',95],
+        sword_launch:[650,.08,.04,'triangle',220],sword_hit:[900,.055,.045,'sine',650],
+        word_slash:[720,.12,.09,'triangle',180],meteor_crack:[160,.18,.09,'triangle',60],
+        meteor_impact:[85,.28,.18,'sine',35],shield_hit:[1200,.15,.1,'sine',650],
+        shield_break:[1750,.2,.1,'sine',480],player_hurt:[180,.18,.09,'triangle',95],
+        word_complete:[1320,.25,.08,'sine',1760],pause:[440,.12,.06,'sine',330],
+        resume:[330,.12,.06,'sine',660]
+      };
+      if (semantic[type]) {
+        const [f,d,v,w,e] = semantic[type];this._tone(f,d,v,w,this.sfx,delay,e);return;
+      }
       const sounds = { type:[880,.07,.12,'sine',1046], slash:[960,.14,.16,'triangle',320],
         explosion:[440,.22,.20,'triangle',110], lightning:[170,.3,.17,'triangle',55],
         hurt:[260,.12,.15,'triangle',100], shatter:[1150,.18,.14,'sine',350] };
       if (type === 'chime' || type === 'breakthrough') this.playChord(type === 'chime' ? [523,659,784] : [262,330,392,523], type === 'chime' ? .35 : .8);
       else if (type === 'defeat') this.playChord([349,311,262,196], .6);
-      else if (sounds[type]) { const [f,d,v,s,e] = sounds[type]; this._tone(f,d,v,s,this.sfx,0,e); }
+      else if (sounds[type]) { const [f,d,v,s,e] = sounds[type]; this._tone(f,d,v,s,this.sfx,delay,e); }
+    }
+    _noise(name, duration, volume, frequency, delay) {
+      if (!this.ctx.createBuffer || !this.ctx.createBufferSource || !this.ctx.createBiquadFilter) return;
+      let buffer = this.noiseBuffers[name];
+      if (!buffer) {
+        buffer = this.ctx.createBuffer(1, Math.ceil(this.ctx.sampleRate*duration), this.ctx.sampleRate);
+        const samples = buffer.getChannelData(0); let previous = 0;
+        for (let i=0;i<samples.length;i++) {
+          const noise = Math.random()*2-1;
+          previous = (previous + noise*.35)/1.35;
+          samples[i] = name === 'wrong_key' ? previous : noise;
+        }
+        this.noiseBuffers[name] = buffer;
+      }
+      const source=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),gain=this.ctx.createGain();
+      const at=this.ctx.currentTime+delay;
+      source.buffer=buffer;filter.type='lowpass';filter.frequency.value=frequency;
+      gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(volume,at+.004);
+      gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+      source.connect(filter);filter.connect(gain);gain.connect(this.sfx);
+      source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
+      source.start(at);source.stop(at+duration+.01);
+    }
+    playWordCompletion(target) {
+      if (!this.soundEnabled) return;
+      this.play('word_slash',.035);this.play('meteor_crack',.11);this.play('word_complete',.24);
+      const timer=setTimeout(()=>{
+        this.completionTimers.delete(timer);
+        if(this.soundEnabled) this.playWord(target);
+      },340);
+      this.completionTimers.add(timer);
+    }
+    pauseVoice(paused) {
+      this.combatPaused = paused;
+      const job = this.voiceJob;
+      if (job && job.audio) {
+        if (paused) job.audio.pause();
+        else { const playing = job.audio.play(); if (playing && playing.catch) playing.catch(()=>{}); }
+      }
+      if (root.speechSynthesis) {
+        if (paused && root.speechSynthesis.pause) root.speechSynthesis.pause();
+        else if (!paused) root.speechSynthesis.resume();
+      }
+      if (job) {
+        if (paused) { job.pauseTime = Date.now(); clearTimeout(job.timer); }
+        else job.timer = setTimeout(()=>{ if(this.voiceJob===job && job.onDeadline) job.onDeadline(); },8000);
+      }
+      if (!paused) this._drainVoice();
     }
     playWord(target) {
       if (!this.soundEnabled || !target || !target.word) return false;
@@ -126,48 +196,91 @@
       this.bgm.gain.setTargetAtTime(active ? .25 : .8, this.ctx.currentTime, .08);
       this.sfx.gain.setTargetAtTime(active ? .20 : .5, this.ctx.currentTime, .04);
     }
+    async resolvePronunciation(word) {
+      if (!root.fetch || !/^[A-Za-z][A-Za-z '-]{0,63}$/.test(word)) return '';
+      const key = word.toLowerCase();
+      if (this.pronunciationCache.has(key)) return this.pronunciationCache.get(key);
+      const controller = new AbortController(), timer = setTimeout(()=>controller.abort(),5000);
+      try {
+        const response = await root.fetch('/api/tts', {method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({word}),signal:controller.signal});
+        if (!response.ok) return '';
+        const data = await response.json(), url = data.audio_url;
+        if (typeof url !== 'string' || !url) return '';
+        this.pronunciationCache.set(key,url);
+        if (this.pronunciationCache.size > 256) this.pronunciationCache.delete(this.pronunciationCache.keys().next().value);
+        return url;
+      } catch (_) { return ''; } finally { clearTimeout(timer); }
+    }
     _drainVoice() {
-      if (!this.soundEnabled || this.voiceJob || !this.voiceQueue.length) return;
+      if (!this.soundEnabled || this.combatPaused || this.voiceJob || !this.voiceQueue.length) return;
       const job = this.voiceQueue.shift(), generation = this.voiceGeneration;
       this.voiceJob = job; this._duckVoice(true);
       const done = ok => {
         if (generation !== this.voiceGeneration || this.voiceJob !== job) return;
         clearTimeout(job.timer);
         if (job.audio) { job.audio.onended = null; job.audio.onerror = null; job.audio.pause(); }
+        if (!ok) {
+          this.lastVoiceFailure = {word:job.word, reason:job.failureReason || 'voice_timeout', speechStarted:!!job.speechStarted, context:this.ctx ? this.ctx.state : 'uninitialized'};
+          this.lastError = 'Chưa phát được từ ' + job.word + '. Bấm nghe lại hoặc kiểm tra âm thanh thiết bị.';
+          this.notifyStatus();
+        }
         this.voiceJob = null; this.stats[ok ? 'voiceCompleted' : 'voiceFailed']++; this._duckVoice(false); this._drainVoice();
       };
       let fellBack = false;
       const fallback = () => {
         if (fellBack || generation !== this.voiceGeneration || this.voiceJob !== job) return;
         fellBack = true;
+        // A late MP3 error must not consume the speech fallback's own deadline.
+        clearTimeout(job.timer);
+        job.onDeadline = () => {
+          if (generation !== this.voiceGeneration || this.voiceJob !== job) return;
+          job.failureReason = 'speech_timeout';
+          if (root.speechSynthesis) root.speechSynthesis.cancel();
+          done(false);
+        };
+        job.timer = setTimeout(job.onDeadline,8000);
         if (job.audio) { job.audio.onerror = null; job.audio.onended = null; job.audio.pause(); }
         this.stats.voiceFallbacks++;
         const synth = root.speechSynthesis;
         if (!synth || !root.SpeechSynthesisUtterance) { done(false); return; }
         try {
-          const u = new root.SpeechSynthesisUtterance(job.word); u.lang = 'en-US'; u.rate = .9; u.volume = .95;
+          const u = new root.SpeechSynthesisUtterance(job.word); u.onstart = () => { job.speechStarted = true; }; u.lang = 'en-US'; u.rate = .9; u.volume = .95;
           const voices = synth.getVoices();
           u.voice = voices.find(v => /^en[-_]US$/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang)) || null;
-          u.onend = () => done(true); u.onerror = () => done(false); job.utterance = u;
+          u.onend = () => done(true); u.onerror = event => { job.failureReason = event.error || 'speech_error'; done(false); }; job.utterance = u;
           if (synth.paused) synth.resume(); synth.speak(u);
         } catch (_) { done(false); }
       };
-      job.timer = setTimeout(() => {
-        if (this.voiceJob !== job || generation !== this.voiceGeneration) return;
-        if (!fellBack) { clearTimeout(job.timer); job.timer = setTimeout(() => done(false), 8000); fallback(); }
-        else { if (root.speechSynthesis) root.speechSynthesis.cancel(); done(false); }
-      }, 8000);
-      try {
-        const url = job.url && new URL(job.url, root.location && root.location.href || 'https://localhost/');
-        if (url && /^https?:$/.test(url.protocol) && root.Audio) {
+      job.onDeadline = fallback;
+      job.timer = setTimeout(fallback,8000);
+      const playMedia = value => {
+        if (generation !== this.voiceGeneration || this.voiceJob !== job || fellBack) return;
+        try {
+          const url = value && new URL(value, root.location && root.location.href || 'https://localhost/');
+          if (!url || !/^https?:$/.test(url.protocol) || !root.Audio) { fallback();return; }
+          clearTimeout(job.timer);
+          job.onDeadline = fallback;
+          if (!this.combatPaused) job.timer = setTimeout(fallback,8000);
           const audio = this.voiceMedia || (this.voiceMedia = new root.Audio());
           audio.src = url.href; job.audio = audio; audio.volume = .95;
           audio.onended = () => done(true); audio.onerror = fallback;
-          const promise = audio.play(); if (promise && promise.catch) promise.catch(fallback);
-        } else fallback();
-      } catch (_) { fallback(); }
+          if (!this.combatPaused) {
+            const playing = audio.play();
+            if (playing && playing.catch) playing.catch(fallback);
+          }
+        } catch (_) { fallback(); }
+      };
+      if (!job.url && root.fetch) {
+        // Reuse the website's existing pronunciation service for words outside Oxford.
+        this.stats.voiceFallbacks++;
+        this.resolvePronunciation(job.word).then(url => playMedia(url));
+      } else playMedia(job.url);
     }
+
     stopVoice() {
+      for (const timer of this.completionTimers) clearTimeout(timer);
+      this.completionTimers.clear();
       this.voiceGeneration++; this.voiceQueue = [];
       if (this.voiceJob) {
         clearTimeout(this.voiceJob.timer);
@@ -183,7 +296,7 @@
         outputRms = Math.sqrt(samples.reduce((sum, n) => sum + n*n, 0) / samples.length);
       }
       return { enabled:this.soundEnabled, context:this.ctx ? this.ctx.state : 'uninitialized', bgm:this.zenMusicPlaying,
-        outputRms, voicePending:this.voiceQueue.length, voiceActive:!!this.voiceJob, lastError:this.lastError, ...this.stats };
+        outputRms, lastVoiceFailure:this.lastVoiceFailure || null, events:{...this.eventCounts}, voicePending:this.voiceQueue.length, voiceActive:!!this.voiceJob, lastError:this.lastError, ...this.stats };
     }
   }
   root.Meowcha = root.Meowcha || {}; root.Meowcha.AudioManager = AudioManager;

@@ -89,7 +89,7 @@
         target.hitReaction = 1.0;
         this.state.correctKeystrokes++;
         this.state.catRecoveryPulse = 1.0;
-        this.state.setCatState("WEAK_ATTACK", 160);
+        this.state.setCatState("WEAK_ATTACK", 260);
         if (this.unityBridge) {
           this.unityBridge.triggerWeakAttack(target.x, target.y);
         }
@@ -102,11 +102,11 @@
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
         const realmData = realms[this.state.realmIdx] || realms[0] || { swordColor: "#67E8F9" };
-        this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, realmData.swordColor);
+        this.projectiles.spawn(catX + (isMobile ? 20 : 28), catY - (isMobile ? 70 : 98), target.x, target.y, this.state.realmIdx, realmData.swordColor);
+        this.audio.play('sword_launch');
 
         // Hiệu ứng tia lửa & nội tại hàn băng Trúc Cơ
-        this.particles.createHitSparks(target.x, target.y, realmData.swordColor, 8);
-        this.audio.play("type");
+        this.audio.play("type_correct");
         if (this.state.realmIdx === 1) {
           target.slowTimer = Math.max(target.slowTimer || 0, 1.2);
           target.slowMult = 0.85;
@@ -134,6 +134,8 @@
         const missedTarget = this.currentTarget || activeList[0];
         if (missedTarget) missedTarget.hadTypo = true;
         this.state.typoCount++;
+        this.audio.play("wrong_key");
+        if (missedTarget) missedTarget.typoFlash = 0.18;
         this.state.humanWordCombo = 0;
         // Immunity prevents punishment, but never hides a learning mistake.
         if (this.state.talents.typoImmune) {
@@ -152,7 +154,6 @@
           }
         }
         this.state.combo = 0;
-        this.audio.play("hurt");
 
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
@@ -420,8 +421,9 @@
           return;
         }
       }
-      // 1. PHÁT ÂM TỨC THÌ (ZERO DELAY): Kích hoạt ngay tại khoảnh khắc vừa gõ xong ký tự cuối cùng
-      this.playWordAudio(target);
+      // Start pronunciation after the physical slash/crack; freeze a copy of the completed word.
+      if (this.audio.playWordCompletion) this.audio.playWordCompletion({...target});
+      else this.playWordAudio(target);
 
       this.state.wordsSlain++;
       this.state.combo++;
@@ -435,7 +437,6 @@
       const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
-      this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
       if (this.animator) {
         const rIdx = Math.min(4, Math.max(0, this.state.realmIdx || 0));
         this.animator.spawnVFXClip(`vfx_slash_r${rIdx}_sheet`, target.x, target.y, {
@@ -475,11 +476,9 @@
       }
 
       // Ordinary kills burst at the meteor; reserve the large character ultimate for active skills.
-      this.state.setCatState("WEAK_ATTACK", 220);
+      this.state.setCatState("WEAK_ATTACK", 280);
 
-      this.audio.play("explosion");
-      this.audio.play("chime");
-      this.state.screenShake = 4;
+      this.state.screenShake = 1.5;
 
       // 2.1 XỬ LÝ HÓA GIẢI MÂY MÙ (Giai đoạn 1)
       if (this.isCloudHazard && !this.isLightningHazard) {

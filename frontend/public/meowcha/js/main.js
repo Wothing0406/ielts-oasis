@@ -529,8 +529,7 @@
       });
       document.addEventListener('visibilitychange', () => {
         if (document.hidden && this.gameState.currentScene === 'BATTLE') {
-          this.gameState.isPaused = true;
-          if (this.ui.modalPause) this.ui.modalPause.style.display = 'flex';
+          this.ui.setPause(true);
           this.saveSystem.saveGame(this.gameState.activeSlotId, this.gameState);
           this.saveSystem.flushCloudSaves();
         }
@@ -938,11 +937,15 @@
 
         const res = this.gameState.takeDamage(damage);
         if (res.absorbed) {
-          this.audio.play("shatter");
+          this.audio.play("shield_hit");
+          if (!res.remainingShields) this.audio.play("shield_break", 0.09);
           this.particles.createShieldShards(missedAst.x, bottomThreshold, "#EAB308", 18);
           this.floatingText.add(missedAst.x, bottomThreshold - 30, "[ 盾 ] LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
         } else {
-          this.audio.play("hurt");
+          this.audio.play("meteor_impact");
+          this.audio.play("meteor_crack", 0.05);
+          this.audio.play("player_hurt", 0.12);
+          if (this.animator) this.animator.spawnVFXClip(`char_r${this.gameState.realmIdx}_hit_sheet`, missedAst.x, bottomThreshold, {frames:4,frameW:256,fps:20,size:110,color:missedAst.coreColor});
           if (this.unityBridge) {
             this.unityBridge.triggerHurt();
           }
@@ -976,6 +979,7 @@
       // Cập nhật phi kiếm
       this.projectiles.update(dt, (hitProj) => {
         this.particles.createHitSparks(hitProj.targetX, hitProj.targetY, hitProj.color, 6);
+        this.audio.play("sword_hit");
       });
 
       // Rung màn hình suy giảm cực nhanh (Screen Shake decay nhanh 45x dt)

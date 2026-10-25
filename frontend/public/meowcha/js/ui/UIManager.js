@@ -5,7 +5,11 @@
 (function(root) {
   const escapeHTML = value => String(value == null ? '' : value).replace(/[&<>"']/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const safeAvatar = value => /^https:\/\//i.test(String(value || '')) ? String(value) : '';
+  const DEFAULT_AVATAR = './assets/ui/mascot_daoist_master.png';
+  const safeAvatar = value => {
+    const url = String(value || '').trim();
+    return /^https:\/\/[^\s<>"']+$/i.test(url) || /^\/(?!\/)[^\s<>"']+$/.test(url) ? url : '';
+  };
   class UIManager {
     constructor(gameState, saveSystem, audioManager, onStartBattle, onReturnLobby, onRestartBattle, assets = null) {
       this.state = gameState;
@@ -18,6 +22,7 @@
 
       this.initDOMElements();
       this.bindEvents();
+      this.refreshAccountAvatar();
     }
 
     _safeGet(key, defVal = "") {
@@ -361,7 +366,7 @@
           if (e) {
             try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
           }
-          console.log("[Meowcha UI] Thu Thuyền Về Sảnh triggered");
+          this.saveSystem.saveGame(this.state.activeSlotId || 1, this.state);
           try { this.hidePauseModal(); } catch (_) {}
           if (this.onReturnLobby) {
             try {
@@ -375,7 +380,7 @@
           }
         };
         btnExitLobby.onclick = handleQuitAction;
-        btnExitLobby.ontouchend = handleQuitAction;
+
       }
 
       // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Luyện Khí sơ kỳ)
@@ -663,7 +668,7 @@
             actionsRow.innerHTML = `
               ${leftMascotSvg}
               <div class="setup-dual-btns-wrap">
-                <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
+                <button class="sword-token-btn launch-flame" id="btnSetupStartFresh" data-sword-primary="${hasProgress ? 'false' : 'true'}">
                   <div class="sword-token-glow"></div>
                   <div class="sword-token-hilt"><svg width="26" height="26" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div><div class="sword-token-content"><span class="sword-token-main" style="color: #FEF08A">KHỞI MỞ TRẬN MỚI</span>
                     <span class="sword-token-sub">[ Bắt Đầu Từ Luyện Khí sơ kỳ • Khí Huyết 50/50 ]</span>
@@ -672,7 +677,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FEF08A" stroke-width="2.5"><polygon points="4 4 20 12 4 20 7 12" fill="rgba(239,68,68,0.4)"></polygon></svg>
                   </div>
                 </button>
-                <button class="sword-token-btn continue-green" id="btnSetupContinue">
+                <button class="sword-token-btn continue-green" id="btnSetupContinue" data-sword-primary="true">
                   <div class="sword-token-hilt"><svg width="26" height="26" viewBox="0 0 512 512" fill="#34D399"><path d="M256.438 19.375c-47.71 0-95.422 14.41-136.094 43.22 13.022 15.09 26.314 30.127 39.156 44.468 16.038-11.682 32.482-18.857 48.688-22.282l9.875-9.874 6.625-6.625 6.593 6.626 7.72 7.72c78.735 5.644 140.54 95.133 101.406 175.53l118.5 118.5c54.447-90.673 42.59-209.88-35.625-288.094C377.17 42.45 316.806 19.376 256.44 19.376zM66.5 27.063L29.53 64.03c37.95 29.834 80.152 65.906 115 96.845l7.407 6.594-7 7-47.375 47.374L117.25 241.5l34.5-34.5 268.125 268.156 77.344 19.28-21.845-74.78-26.977-26.978.04-.053-117.75-117.75-.032.045L207.25 151.5l37.094-37.094-19.656-19.656-46.47 46.438-6.968 6.937-6.563-7.28C133.5 106.334 96.644 64.837 66.5 27.062zm-1.28 90.062C-1.735 209.41 6.38 339.035 89.593 422.25c52.93 52.93 124.633 75.448 193.562 67.625-131.5.997-246.804-128.563-207.125-263.156l-4.874-4.876 6.594-6.625 3.25-3.25c7.028-18.512 17.076-37.017 30.5-55.22-14.87-12.992-30.55-26.433-46.28-39.625zm120.374 46.03c12.283 0 22.22 9.968 22.22 22.25 0 2.224-.332 4.35-.94 6.376l236.94 236.97-13.19 13.188L194.47 205.813c-2.72 1.185-5.72 1.843-8.876 1.843-12.284 0-22.25-9.964-22.25-22.25 0-12.285 9.966-22.25 22.25-22.25z"/></svg></div><div class="sword-token-content"><span class="sword-token-main" style="color: #6EE7B7">TIẾP TỤC ĐẠO QUẢ</span>
                     <span class="sword-token-sub">${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'}</span>
                   </div>
@@ -715,7 +720,7 @@
           if (actionsRow) {
             actionsRow.innerHTML = `
               ${leftMascotSvg}
-              <button class="sword-token-btn launch-flame" id="btnSetupStartFresh">
+              <button class="sword-token-btn launch-flame" id="btnSetupStartFresh" data-sword-primary="${hasProgress ? 'false' : 'true'}">
                 <div class="sword-token-glow"></div>
                 <div class="sword-token-hilt"><svg width="28" height="28" viewBox="0 0 512 512" fill="#FEF08A"><path d="M491.313 21.406C331.102 120.193 194.688 226.866 70 350.906c29.11-21.616 63.387-37.86 103.875-49.28 40.95-60.157 100.923-106.7 170.844-130.157-23.522 69.8-70.747 130.135-131.314 171.25-9.76 38.353-26.835 69.38-48 96.374C289.153 314.63 403.748 181.7 491.312 21.406zM132.656 345.5v.344c-30.526 52.844-71.12 87.318-115.437 115.47-4.89 28.29 9.777 39.067 34.75 34.56 30.594-51.69 68.69-88.052 115.436-115.468 0-19.56-12.363-34.906-34.75-34.906z"/></svg></div>
                 <div class="sword-token-content">
@@ -874,7 +879,7 @@
         const hpPct = Math.max(0, Math.min(100, (s.hp / (s.maxHp || 50)) * 100));
         this.lobbyHpBar.style.width = `${hpPct}%`;
       }
-      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} TỪ/PHÚT (WPM)`;
+      if (this.lobbyWpmText) this.lobbyWpmText.innerText = `${Math.round(s.wpm || 0)} WPM`;
       if (this.lobbyCatTitle) this.lobbyCatTitle.innerText = realmData.title;
       if (this.lobbyLevelTag) this.lobbyLevelTag.innerText = realmData.name;
 
@@ -899,20 +904,10 @@
         }
       }
 
-      // Cập nhật huy hiệu Tu Chân Giả trên dải Tiên Đạo sảnh chính
       const user = this.getLoggedInUser();
       const topAvatarEl = document.getElementById("lobbyUserAvatar");
       const topNameLabel = document.getElementById("lobbyUserNameLabel");
-      if (topAvatarEl) {
-        topAvatarEl.referrerPolicy = "no-referrer";
-        topAvatarEl.onerror = () => {
-          topAvatarEl.onerror = null;
-          topAvatarEl.src = "./assets/ui/mascot_spirit_cat.png";
-        };
-        // Prefer authentic Xianxia mascot cat over non-game webcam/desktop screenshots
-        const isGameOrMascot = user.avatar && !user.avatar.includes("discordapp");
-        topAvatarEl.src = isGameOrMascot ? user.avatar : "./assets/ui/mascot_spirit_cat.png";
-      }
+      this.setUserAvatar(topAvatarEl, user.avatar);
       if (topNameLabel && user.isLoggedIn && user.name) {
         topNameLabel.innerText = user.name.length > 9 ? user.name.slice(0, 8) + "…" : user.name;
       }
@@ -933,6 +928,7 @@
       const modeData = this.saveSystem && this.saveSystem.getSlotModeData && this.saveSystem.getSlotModeData(curSlotId, curMode);
 
       const hasModeProgress = Boolean(modeData && modeData.isOccupied && modeData.hp > 0 && (modeData.score > 0 || modeData.realmIdx > 0 || modeData.words > 0));
+      if (btnStart) btnStart.classList.toggle("change-mode", hasModeProgress);
 
       const modeLabels = {
         DIRECT: "Trực Diện Trảm Ma",
@@ -949,7 +945,7 @@
           btnContinue.disabled = false;
           btnContinue.style.display = "flex";
           if (continueSub) {
-            continueSub.innerText = `[ ${modeName}: ${(modeData.score || 0).toLocaleString()} Tu Vi • ${modeData.realm || 'Luyện Khí Kỳ'} ]`;
+            continueSub.innerText = `${(modeData.score || 0).toLocaleString()} Tu Vi · ${modeName}`;
           }
         }
         if (btnRestart) {
@@ -961,7 +957,7 @@
             startBtnText.innerText = "ĐỔI PHÁP MÔN";
           }
           if (startBtnSub) {
-            startBtnSub.innerText = `[ Đổi Pháp Môn / Tàng Kinh Các (${modeName}) ]`;
+            startBtnSub.innerText = modeName;
           }
         }
       } else {
@@ -1355,21 +1351,30 @@
       }
     }
 
-    togglePause() {
-      this.state.isPaused = !this.state.isPaused;
-      if (this.modalPause) {
-        this.modalPause.style.display = this.state.isPaused ? "flex" : "none";
-        try {
-          let summary = document.getElementById('typingPracticeStats');
-          if (!summary) {
-            summary = document.createElement('p'); summary.id = 'typingPracticeStats'; summary.className = 'practice-summary';
-            this.modalPause.querySelector('.modal-content-box').appendChild(summary);
-          }
-          summary.textContent = this.getPracticeSummary();
-        } catch (e) {
-          console.warn('[Meowcha UI practice summary error]', e);
-        }
-      }
+    togglePause() { this.setPause(!this.state.isPaused); }
+
+    setPause(paused) {
+      if (this.state.setPaused) this.state.setPaused(paused);
+      else this.state.isPaused = paused;
+      if (this.audio.pauseVoice) this.audio.pauseVoice(paused);
+      this.audio.play(paused ? 'pause' : 'resume');
+      if (!this.modalPause) return;
+      this.modalPause.style.display = paused ? 'flex' : 'none';
+      if (!paused) return;
+      const s = this.state;
+      s.calculateWPM();
+      const summary = document.getElementById('typingPracticeStats');
+      if (!summary) return;
+      const seconds = Math.floor(s.activeElapsedMs / 1000);
+      const stats = [
+        ['Kiếm Chuẩn', s.accuracy + '%'], ['Kiếm Tốc', s.wpm + ' WPM'],
+        ['Liên Trảm', s.maxCombo || 0], ['Từ Đã Luyện', s.humanWords || 0],
+        ['Thời Gian', Math.floor(seconds/60) + 'p ' + seconds%60 + 's'],
+        ['Hỗ Trợ', (s.assistedWords || 0) + ' từ · ' + (s.assistedKeystrokes || 0) + ' phím']
+      ];
+      summary.innerHTML = '<h3 class="pause-summary-title">TRẬN NÀY</h3><dl class="pause-stats-grid">' +
+        stats.map(([label,value])=>'<div class="pause-stat"><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('') +
+        '</dl><p class="pause-assistance-note">Tiến trình được giữ khi tạm nghỉ. Trở về tiên môn sẽ lưu đạo quả vào ngọc giản hiện tại.</p>';
     }
 
     getPracticeSummary() {
@@ -1381,7 +1386,9 @@
     }
 
     hidePauseModal() {
-      this.state.isPaused = false;
+      if (this.state.setPaused) this.state.setPaused(false);
+      else this.state.isPaused = false;
+      if (this.audio.pauseVoice) this.audio.pauseVoice(false);
       if (this.modalPause) this.modalPause.style.display = "none";
     }
 
@@ -1962,27 +1969,6 @@
       let token = "";
       let localName = this._safeGet("meowcha_player_name", "Tiểu Miêu Kiếm Sĩ");
 
-      // 1. Đọc từ URL Search Params (truyền qua iframe an toàn nhất)
-      if (typeof window !== "undefined" && window.location && window.location.search) {
-        try {
-          const sp = new URLSearchParams(window.location.search);
-          const urlToken = sp.get("token");
-          const urlUser = sp.get("user");
-          if (urlToken) token = urlToken;
-          if (urlUser) {
-            try {
-              let decoded = urlUser;
-              if (decoded.startsWith("%7B") || decoded.includes("%22")) {
-                decoded = decodeURIComponent(decoded);
-              }
-              rawUser = decoded;
-            } catch (_) {
-              rawUser = urlUser;
-            }
-          }
-        } catch (_) {}
-      }
-
       // 2. Đọc từ LocalStorage nếu chưa có
       if (!rawUser || !token) {
         try {
@@ -2003,7 +1989,7 @@
         try {
           const u = (typeof rawUser === "string") ? JSON.parse(rawUser) : rawUser;
           const name = u.full_name || u.name || u.username || (u.email ? u.email.split("@")[0] : "");
-          let avatar = u.discord_avatar || u.avatar_url || u.avatar || u.image || "";
+          let avatar = u.avatar_url || u.avatarUrl || u.image || u.avatar || u.discord_avatar || "";
           if (avatar && !avatar.startsWith("http") && !avatar.startsWith("./") && !avatar.startsWith("/")) {
             if (u.discord_id) {
               avatar = `https://cdn.discordapp.com/avatars/${u.discord_id}/${avatar}.png`;
@@ -2012,7 +1998,7 @@
           return {
             id: u.id || u.user_id || null,
             name: name || localName,
-            avatar: avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png",
+            avatar: safeAvatar(avatar) || DEFAULT_AVATAR,
             token: token || "",
             isLoggedIn: true
           };
@@ -2021,10 +2007,32 @@
 
       return {
         name: localName,
-        avatar: "./sprites/characters/realm0_qi_refining/poses/idle.png",
+        avatar: DEFAULT_AVATAR,
         token: token,
         isLoggedIn: false
       };
+    }
+
+    async refreshAccountAvatar() {
+      const user = this.getLoggedInUser();
+      if (!user.id || !user.token || typeof fetch === 'undefined') return;
+      try {
+        const response = await fetch('/api/auth/me', {headers:{Authorization:'Bearer '+user.token}});
+        if (!response.ok) return;
+        const fresh = await response.json();
+        const current = this.getLoggedInUser();
+        if (String(fresh.id) !== String(user.id) || String(current.id) !== String(user.id)) return;
+        this._safeSet('oasis_user', JSON.stringify(fresh));
+        this.updateHUD();
+      } catch (_) { /* Retain the current account image during a connection interruption. */ }
+    }
+
+    setUserAvatar(element, value) {
+      if (!element) return;
+      const source = safeAvatar(value) || DEFAULT_AVATAR;
+      element.referrerPolicy = 'no-referrer';
+      element.onerror = () => { element.onerror = null; element.src = DEFAULT_AVATAR; };
+      if (element.getAttribute('src') !== source) element.src = source;
     }
 
     /**
@@ -2086,7 +2094,7 @@
       if (!this.modalPantheon) return;
       if (!this.modalPantheon.querySelector('.board-filters')) {
         const filters = document.createElement('div'); filters.className = 'board-filters';
-        filters.innerHTML = `<label>Pháp môn <select id="boardMode"><option value="DIRECT">Tự gõ</option><option value="CLOZE">Nhớ chính tả</option><option value="AUDIO">Nghe chính tả</option><option value="LEGACY">Lưu trữ bảng cũ</option></select></label><label><input type="checkbox" id="boardAssisted" /> Có hỗ trợ</label><span class="board-note">Bảng luyện tập • Kiểm tra giới hạn dữ liệu, chưa xác minh toàn bộ trận.</span>`;
+        filters.innerHTML = `<label>Pháp môn <select id="boardMode"><option value="DIRECT">Trực Diện Trảm Ma</option><option value="CLOZE">Ngộ Đạo Thông Linh</option><option value="AUDIO">Thính Lôi Biện Âm</option><option value="LEGACY">Lưu trữ bảng cũ</option></select></label><label><input type="checkbox" id="boardAssisted" /> Có hỗ trợ</label><span class="board-note">Ba pháp môn được lưu riêng. Thành tích cũ giữ trong Bảng lưu trữ.</span>`;
         const list = document.getElementById('pantheonRankList'); list.parentNode.insertBefore(filters, list);
         filters.querySelector('#boardMode').onchange = () => this.loadLeaderboardFromAPI();
         filters.querySelector('#boardAssisted').onchange = () => this.loadLeaderboardFromAPI();
@@ -2106,14 +2114,7 @@
       const user = this.getLoggedInUser();
       const selfAvatarEl = document.getElementById("pantheonSelfAvatar");
       const selfNameEl = document.getElementById("pantheonSelfName");
-      if (selfAvatarEl) {
-        selfAvatarEl.referrerPolicy = "no-referrer";
-        selfAvatarEl.onerror = () => {
-          selfAvatarEl.onerror = null;
-          selfAvatarEl.src = "./sprites/characters/realm0_qi_refining/poses/idle.png";
-        };
-        selfAvatarEl.src = user.avatar || "./sprites/characters/realm0_qi_refining/poses/idle.png";
-      }
+      this.setUserAvatar(selfAvatarEl, user.avatar);
       if (selfNameEl) selfNameEl.innerText = user.name;
 
       if (this.pantheonPlayerSelfStats) {
@@ -2124,29 +2125,42 @@
       }
     }
 
-    loadLeaderboardFromAPI() {
-      const listContainer = document.getElementById("pantheonRankList");
-      if (!listContainer) return;
-
-      listContainer.innerHTML = `
-        <div style="text-align: center; padding: 25px; color: #FDE68A;">
-          <div>Đang thỉnh bảng từ Tiên Giới...</div>
-        </div>
-      `;
-
-      if (typeof fetch !== "undefined") {
-        fetch(`/api/meowcha/leaderboard?limit=25&game_mode=${this.modalPantheon.querySelector('#boardMode')?.value || this.state.gameMode}&assisted=${this.modalPantheon.querySelector('#boardAssisted')?.checked || false}&deck_id=${encodeURIComponent(this.state.activeDeckId)}`)
-          .then(r => r.json())
-          .then(res => {
-            if (res.success && Array.isArray(res.data)) {
-              this.renderPantheonLeaderboard(res.data);
-            } else {
-              this.renderPantheonLeaderboard([]);
-            }
-          })
-          .catch(() => {
-            this.renderPantheonLeaderboard([]);
-          });
+    async loadLeaderboardFromAPI() {
+      const list = document.getElementById("pantheonRankList");
+      if (!list) return;
+      const request = (this.boardRequest || 0) + 1;
+      this.boardRequest = request;
+      const mode = this.modalPantheon.querySelector('#boardMode')?.value || this.state.gameMode;
+      list.setAttribute('aria-busy', 'true');
+      list.innerHTML = '<div class="board-message" role="status">Đang thỉnh Bảng Phong Thần…</div>';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch('/api/meowcha/leaderboard?' + new URLSearchParams({
+          limit:'25', game_mode:mode,
+          assisted:String(!!this.modalPantheon.querySelector('#boardAssisted')?.checked),
+          deck_id:this.state.activeDeckId
+        }), {signal:controller.signal});
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.data)) throw new Error('Invalid leaderboard');
+        if (this.boardRequest !== request) return;
+        this.renderPantheonLeaderboard(result.data);
+        if (!result.data.length && mode !== 'LEGACY') {
+          list.innerHTML = '<div class="board-message" role="status">Chưa có trận hoàn tất ở pháp môn này. Thành tích trước đây vẫn ở Bảng lưu trữ.</div><button class="btn-xianxia-seal" id="boardOpenArchive">XEM BẢNG LƯU TRỮ</button>';
+          list.querySelector('#boardOpenArchive').onclick = () => {
+            this.modalPantheon.querySelector('#boardMode').value = 'LEGACY';
+            this.loadLeaderboardFromAPI();
+          };
+        }
+      } catch (error) {
+        if (this.boardRequest !== request) return;
+        this.renderPantheonLeaderboard([]);
+        list.innerHTML = '<div class="board-message" role="alert">Chưa tải được Bảng Phong Thần. Kiểm tra kết nối rồi thử lại.</div><button class="btn-xianxia-seal" id="boardRetry">THỈNH BẢNG LẠI</button>';
+        list.querySelector('#boardRetry').onclick = () => this.loadLeaderboardFromAPI();
+      } finally {
+        clearTimeout(timer);
+        if (this.boardRequest === request) list.setAttribute('aria-busy','false');
       }
     }
 
@@ -2224,26 +2238,7 @@
           if (scoreEl) scoreEl.innerText = `${(itemData.score || 0).toLocaleString()} Tu Vi`;
           if (realmEl) realmEl.innerText = itemData.realm || "Luyện Khí Kỳ";
           if (avatarEl) {
-            const fallbackRealmAvatar = getAvatarByRealm(itemData.realm, itemData.score || 0);
-            avatarEl.referrerPolicy = "no-referrer";
-            avatarEl.onerror = () => {
-              avatarEl.onerror = null;
-              avatarEl.src = fallbackRealmAvatar;
-            };
-            // Hiển thị Avatar Tiên Hiệp theo Cảnh Giới & Tôn Hiệu (Không dùng webcam / chụp màn hình)
-            const isDiscordOrDoc = itemData.avatar_url && itemData.avatar_url.includes("discordapp");
-            if (safeAvatar(itemData.avatar_url) && !isDiscordOrDoc) {
-              avatarEl.src = safeAvatar(itemData.avatar_url);
-            } else {
-              // Top 1: Đạo Tôn Hoàng Kim | Top 2: Bạch Ngân Linh Miêu | Top 3: Kim Đan Hộ Pháp
-              if (rankIdx === 1) {
-                avatarEl.src = "./assets/ui/mascot_daoist_master.png";
-              } else if (rankIdx === 2) {
-                avatarEl.src = "./assets/ui/mascot_spirit_cat.png";
-              } else {
-                avatarEl.src = fallbackRealmAvatar;
-              }
-            }
+            this.setUserAvatar(avatarEl, itemData.avatar_url);
             avatarEl.style.display = "block";
           }
           if (placeholderEl) placeholderEl.style.display = "none";
@@ -2305,13 +2300,13 @@
 
         const avatarSrc = safeAvatar(item.avatar_url)
           ? safeAvatar(item.avatar_url)
-          : getAvatarByRealm(item.realm, item.score || 0);
+          : DEFAULT_AVATAR;
 
         return `
           <div class="pantheon-row ${rowClass}">
             <span class="rank-col">${badgeHtml}</span>
             <span class="name-col" title="${escapeHTML(item.player_name)}">
-              <img src="${escapeHTML(avatarSrc)}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${getAvatarByRealm(item.realm, item.score || 0)}';" />
+              <img src="${escapeHTML(avatarSrc)}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';" />
               <span class="name-text">${escapeHTML(item.player_name || 'Vô Danh Tiên Khách')}</span>
             </span>
             <span class="realm-col">${escapeHTML(item.realm || 'Luyện Khí Kỳ')}</span>
@@ -2346,26 +2341,7 @@
       if (subEl) subEl.innerText = `${realmData.name} • Band ${realmData.band}`;
 
       const avatarEl = document.getElementById("profileModalAvatar");
-      if (avatarEl) {
-        const avatars = [
-          "./sprites/characters/realm0_qi_refining/poses/idle.png",
-          "./sprites/characters/realm1_foundation/poses/idle.png",
-          "./sprites/characters/realm2_golden_core/poses/idle.png",
-          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
-          "./sprites/characters/realm4_tribulation/poses/idle.png"
-        ];
-        const realmFallback = avatars[Math.min(4, this.state.realmIdx)] || avatars[0];
-        avatarEl.referrerPolicy = "no-referrer";
-        avatarEl.onerror = () => {
-          avatarEl.onerror = null;
-          avatarEl.src = realmFallback;
-        };
-        if (user.avatar && !user.avatar.includes("idle.png")) {
-          avatarEl.src = user.avatar;
-        } else {
-          avatarEl.src = realmFallback;
-        }
-      }
+      this.setUserAvatar(avatarEl, user.avatar);
 
       const scoreEl = document.getElementById("profileModalScore");
       if (scoreEl) scoreEl.innerText = `${this.state.score.toLocaleString()} Tu Vi`;

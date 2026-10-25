@@ -23,6 +23,7 @@
       }
       this.currentScene = "LOBBY"; // LOBBY | BATTLE
       this.isPaused = false;
+      this.pauseStartedAt = null;
       this.isGameOver = false;
       this.showBreakthrough = false;
 
@@ -128,6 +129,20 @@
       this.baselineWords = 0;
       this.wpm = 0;
       this.accuracy = 100;
+    }
+
+    setPaused(paused) {
+      if (paused === this.isPaused) return;
+      const now = performance.now();
+      if (paused) this.pauseStartedAt = now;
+      else if (this.pauseStartedAt !== null) {
+        const elapsed = now - this.pauseStartedAt;
+        for (const key of ['catStateTimer','stunTimer','speechTimer']) {
+          if (this[key] > 0) this[key] += elapsed;
+        }
+        this.pauseStartedAt = null;
+      }
+      this.isPaused = paused;
     }
 
     advanceClock(dt) {

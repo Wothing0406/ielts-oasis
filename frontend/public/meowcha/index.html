@@ -56,12 +56,13 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.4" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.4" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.4" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.4" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=12.4" />
-    <link rel="stylesheet" href="./css/meowcha-cozy.css?v=12.4-nav1" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-cozy.css?v=13.0" />
+    <link rel="stylesheet" href="./css/meowcha-sword.css?v=13.0" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -1297,74 +1298,20 @@
       <!-- ========================================================= -->
       <!-- 5. HỘP THOẠI TẠM DỪNG (PAUSE MODAL) -->
       <!-- ========================================================= -->
-      <div class="meowcha-modal-overlay" id="modalPause" style="display: none;">
-          <div class="modal-content-box pause-modal-box" style="width: min(92%, 440px); text-align: center;">
-            <!-- 4 GÓC MÂY NHƯ Ý CÁT TƯỜNG -->
-            <div class="modal-brass-corner top-left"><svg width="48" height="48" viewBox="0 0 100 100" fill="none" class="cloud-corner-svg">
-  <path d="M0 0 L100 0 C88 0 78 4 70 12 C64 18 60 26 56 34 C50 30 42 28 34 30 C24 32 16 40 14 50 C10 46 6 42 0 40 Z" fill="#761D20" opacity="0.35"/>
-  <path d="M4 4 L96 4 C85 4 76 8 68 15 C62 20 58 28 54 36 C48 32 40 30 32 32 C22 34 14 42 12 52 C8 48 4 45 4 40 Z" stroke="#F3C644" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M8 8 L80 8 C72 8 65 12 58 18 C54 22 50 28 46 34 C42 32 36 30 30 32 C24 34 18 40 16 48 C14 44 10 40 8 36 Z" stroke="#FFE49A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M24 24 C28 20 34 20 38 24 C42 28 42 34 38 38 C34 42 28 42 24 38 C20 34 20 28 24 24 Z" stroke="#F3C644" stroke-width="1.8" fill="rgba(118, 29, 32, 0.4)"/>
-  <circle cx="31" cy="31" r="3" fill="#FFE49A"/>
-  <circle cx="31" cy="31" r="1.5" fill="#761D20"/>
-  <path d="M2 2 L20 2 C16 6 12 10 8 16 C6 14 4 10 2 6 Z" fill="#F3C644"/>
-  <circle cx="7" cy="7" r="1.8" fill="#FFE49A"/>
-</svg></div>
-            <div class="modal-brass-corner top-right"><svg width="48" height="48" viewBox="0 0 100 100" fill="none" class="cloud-corner-svg">
-  <path d="M0 0 L100 0 C88 0 78 4 70 12 C64 18 60 26 56 34 C50 30 42 28 34 30 C24 32 16 40 14 50 C10 46 6 42 0 40 Z" fill="#761D20" opacity="0.35"/>
-  <path d="M4 4 L96 4 C85 4 76 8 68 15 C62 20 58 28 54 36 C48 32 40 30 32 32 C22 34 14 42 12 52 C8 48 4 45 4 40 Z" stroke="#F3C644" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M8 8 L80 8 C72 8 65 12 58 18 C54 22 50 28 46 34 C42 32 36 30 30 32 C24 34 18 40 16 48 C14 44 10 40 8 36 Z" stroke="#FFE49A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M24 24 C28 20 34 20 38 24 C42 28 42 34 38 38 C34 42 28 42 24 38 C20 34 20 28 24 24 Z" stroke="#F3C644" stroke-width="1.8" fill="rgba(118, 29, 32, 0.4)"/>
-  <circle cx="31" cy="31" r="3" fill="#FFE49A"/>
-  <circle cx="31" cy="31" r="1.5" fill="#761D20"/>
-  <path d="M2 2 L20 2 C16 6 12 10 8 16 C6 14 4 10 2 6 Z" fill="#F3C644"/>
-  <circle cx="7" cy="7" r="1.8" fill="#FFE49A"/>
-</svg></div>
-            <div class="modal-brass-corner bottom-left"><svg width="48" height="48" viewBox="0 0 100 100" fill="none" class="cloud-corner-svg">
-  <path d="M0 0 L100 0 C88 0 78 4 70 12 C64 18 60 26 56 34 C50 30 42 28 34 30 C24 32 16 40 14 50 C10 46 6 42 0 40 Z" fill="#761D20" opacity="0.35"/>
-  <path d="M4 4 L96 4 C85 4 76 8 68 15 C62 20 58 28 54 36 C48 32 40 30 32 32 C22 34 14 42 12 52 C8 48 4 45 4 40 Z" stroke="#F3C644" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M8 8 L80 8 C72 8 65 12 58 18 C54 22 50 28 46 34 C42 32 36 30 30 32 C24 34 18 40 16 48 C14 44 10 40 8 36 Z" stroke="#FFE49A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M24 24 C28 20 34 20 38 24 C42 28 42 34 38 38 C34 42 28 42 24 38 C20 34 20 28 24 24 Z" stroke="#F3C644" stroke-width="1.8" fill="rgba(118, 29, 32, 0.4)"/>
-  <circle cx="31" cy="31" r="3" fill="#FFE49A"/>
-  <circle cx="31" cy="31" r="1.5" fill="#761D20"/>
-  <path d="M2 2 L20 2 C16 6 12 10 8 16 C6 14 4 10 2 6 Z" fill="#F3C644"/>
-  <circle cx="7" cy="7" r="1.8" fill="#FFE49A"/>
-</svg></div>
-            <div class="modal-brass-corner bottom-right"><svg width="48" height="48" viewBox="0 0 100 100" fill="none" class="cloud-corner-svg">
-  <path d="M0 0 L100 0 C88 0 78 4 70 12 C64 18 60 26 56 34 C50 30 42 28 34 30 C24 32 16 40 14 50 C10 46 6 42 0 40 Z" fill="#761D20" opacity="0.35"/>
-  <path d="M4 4 L96 4 C85 4 76 8 68 15 C62 20 58 28 54 36 C48 32 40 30 32 32 C22 34 14 42 12 52 C8 48 4 45 4 40 Z" stroke="#F3C644" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M8 8 L80 8 C72 8 65 12 58 18 C54 22 50 28 46 34 C42 32 36 30 30 32 C24 34 18 40 16 48 C14 44 10 40 8 36 Z" stroke="#FFE49A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M24 24 C28 20 34 20 38 24 C42 28 42 34 38 38 C34 42 28 42 24 38 C20 34 20 28 24 24 Z" stroke="#F3C644" stroke-width="1.8" fill="rgba(118, 29, 32, 0.4)"/>
-  <circle cx="31" cy="31" r="3" fill="#FFE49A"/>
-  <circle cx="31" cy="31" r="1.5" fill="#761D20"/>
-  <path d="M2 2 L20 2 C16 6 12 10 8 16 C6 14 4 10 2 6 Z" fill="#F3C644"/>
-  <circle cx="7" cy="7" r="1.8" fill="#FFE49A"/>
-</svg></div>
-
-            <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong -->
-            <div class="modal-silk-banner">
-              <span class="silk-ribbon-tail left"></span>
-              <h2 class="silk-banner-title">✦ ĐỊNH TÂM TẠM NGHỈ ✦</h2>
-              <span class="silk-ribbon-tail right"></span>
-            </div>
-
-            <p class="pause-lore-quote" style="font-family: var(--font-xianxia-title); font-size: 13.5px; color: #E6D5B8; margin: 16px 0 20px; font-style: italic; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-              “Vạn pháp quy tâm • Thu kiếm dưỡng khí • Chờ thời xuất trận”
-            </p>
-
-            <div class="pause-btn-stack" style="display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 0 auto 10px;">
-              <button class="btn-xianxia-seal primary" id="btnResumeGame" style="padding: 10px 18px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <img src="./assets/svg/winged-sword.svg" style="width: 18px; height: 18px; filter: drop-shadow(0 0 4px #FDE047);" alt="" />
-                <span>TIẾP TỤC ĐỘ KIẾP [ ESC ]</span>
-              </button>
-              <button class="btn-xianxia-seal secondary" id="btnQuitToLobby" onclick="if(window.MeowchaGameInstance){window.MeowchaGameInstance.returnToLobby();}" ontouchend="if(window.MeowchaGameInstance){window.MeowchaGameInstance.returnToLobby();}" style="padding: 12px 20px; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#FDE047" style="filter: drop-shadow(0 0 4px #F59E0B);"><path d="M12 2L2 9h3v13h14V9h3L12 2zm0 3.5L17 7H7l5-1.5zM7 11h10v9H7v-9z"/></svg>
-                <span>THU THUYỀN VỀ SẢNH</span>
-              </button>
-            </div>
+      <div class="meowcha-modal-overlay" id="modalPause" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+        <div class="modal-content-box pause-modal-box">
+          <div class="modal-silk-banner"><h2 class="silk-banner-title" id="pauseTitle">ĐỊNH TÂM</h2></div>
+          <p class="pause-lore-quote">“Thu kiếm dưỡng khí • Tĩnh tâm nhất niệm”</p>
+          <div class="pause-btn-stack">
+            <button class="btn-xianxia-seal primary" id="btnResumeGame">
+              <span>TIẾP TỤC ĐỘ KIẾP</span><kbd class="hotkey-badge">ESC</kbd>
+            </button>
+            <button class="btn-xianxia-seal secondary" id="btnQuitToLobby">TRỞ VỀ TIÊN MÔN</button>
           </div>
+          <div id="typingPracticeStats"></div>
         </div>
-        <!-- ========================================================= -->
+      </div>
+      <!-- ========================================================= -->
         <!-- MODAL KHO ĐAN DƯỢC TỪ VỰNG OXFORD 5000 (#modalVocabVault) -->
       <!-- ========================================================= -->
       <div
@@ -1932,38 +1879,38 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=12.4"></script>
-    <script src="./js/data/WordDecks.js?v=12.4"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=12.4"></script>
-    <script src="./js/data/TalentsData.js?v=12.4"></script>
-    <script src="./js/data/SpeechesData.js?v=12.4"></script>
+    <script src="./js/data/RealmsData.js?v=13.0"></script>
+    <script src="./js/data/WordDecks.js?v=13.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=13.0"></script>
+    <script src="./js/data/TalentsData.js?v=13.0"></script>
+    <script src="./js/data/SpeechesData.js?v=13.0"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=12.4"></script>
-    <script src="./js/core/AudioManager.js?v=12.4"></script>
-    <script src="./js/core/SaveSystem.js?v=12.4"></script>
-    <script src="./js/core/GameState.js?v=12.4"></script>
-    <script src="./js/core/BattleLayout.js?v=12.4"></script>
-    <script src="./js/core/SpriteAnimator.js?v=12.4"></script>
+    <script src="./js/ui/ArtIcons.js?v=13.0"></script>
+    <script src="./js/core/AudioManager.js?v=13.0"></script>
+    <script src="./js/core/SaveSystem.js?v=13.0"></script>
+    <script src="./js/core/GameState.js?v=13.0"></script>
+    <script src="./js/core/BattleLayout.js?v=13.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=13.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=12.4"></script>
-    <script src="./js/effects/RealmVFX.js?v=12.4"></script>
-    <script src="./js/effects/FloatingText.js?v=12.4"></script>
+    <script src="./js/effects/ParticleEngine.js?v=13.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=13.0"></script>
+    <script src="./js/effects/FloatingText.js?v=13.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=12.4"></script>
-    <script src="./js/entities/AsteroidManager.js?v=12.4"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=12.4"></script>
+    <script src="./js/entities/CatCultivator.js?v=13.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=13.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=13.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=12.4"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=12.4"></script>
+    <script src="./js/combat/TypingEngine.js?v=13.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=13.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=12.4"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=12.4"></script>
-    <script src="./js/ui/UnityBridge.js?v=12.4"></script>
-    <script src="./js/core/VocabLoader.js?v=12.4"></script>
-    <script src="./js/ui/UIManager.js?v=12.4"></script>
+    <script src="./js/ui/IPAToast.js?v=13.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=13.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=13.0"></script>
+    <script src="./js/core/VocabLoader.js?v=13.0"></script>
+    <script src="./js/ui/UIManager.js?v=13.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=12.4"></script>
-    <script src="./js/main.js?v=12.4"></script>
+    <script src="./js/core/DeviceDetector.js?v=13.0"></script>
+    <script src="./js/main.js?v=13.0"></script>
   </body>
 </html>

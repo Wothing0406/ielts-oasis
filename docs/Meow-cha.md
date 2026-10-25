@@ -1,6 +1,9 @@
 # MEOW-CHA TRÀ ĐẠO — gameplay và kiến trúc hiện tại
 
-Phiên bản tài nguyên: `12.4`. Nhánh làm việc: `game/meowcha-cultivation`.
+Phiên bản tài nguyên: `13.0`. Nhánh làm việc: `game/meowcha-cultivation`.
+
+Bộ nhớ dài hạn: [quyết định dự án](meowcha-project-memory.md),
+[task kiếm bài/chiến đấu](meowcha-sword-combat-tasks.md).
 
 Sửa lỗi production: [điều hướng, chứng đạo, âm thanh và nổ IPA](meowcha-production-fixes-12.4.md).
 

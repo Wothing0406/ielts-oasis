@@ -13,7 +13,7 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
+  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
@@ -528,4 +528,63 @@ test('Ngộ Đạo hint works after two errors without revealing an AUDIO answer
  const target=word('CAT');target.isAudio=true;r.asteroids.asteroids.push(target);r.engine.currentTarget=target;
  r.engine.processKey('X',r.canvas);r.engine.processKey('X',r.canvas);
  assert.equal(r.state.totalKeystrokes,2);assert.equal(r.state.correctKeystrokes,0);assert.equal(target.typedLen,0);
+});
+
+test('account avatar accepts Discord and valid relative uploads without pet substitution',()=>{
+ const r=runtime();
+ r.localStorage.setItem('oasis_user',JSON.stringify({id:7,username:'seven',avatar_url:'https://cdn.discordapp.com/avatars/7/photo.png',discord_avatar:'old-hash'}));
+ const ui=Object.create(r.M.UIManager.prototype);
+ assert.equal(ui.getLoggedInUser().avatar,'https://cdn.discordapp.com/avatars/7/photo.png');
+ const image={src:'',getAttribute(){return this.src;}};
+ ui.setUserAvatar(image,ui.getLoggedInUser().avatar);
+ assert.equal(image.src,'https://cdn.discordapp.com/avatars/7/photo.png');
+ image.onerror();assert.match(image.src,/mascot_daoist_master/);assert.doesNotMatch(image.src,/spirit_cat/);
+ ui.setUserAvatar(image,'/static/account.png');assert.equal(image.src,'/static/account.png');
+ ui.setUserAvatar(image,'javascript:alert(1)');assert.match(image.src,/mascot_daoist_master/);
+});
+
+test('leaderboard failure is distinct from empty results and retry can recover',async()=>{
+ const r=runtime();r.sandbox.AbortController=AbortController;
+ const retry={},archive={},attributes={};let rendered=0,mode={value:'DIRECT'};
+ const list={innerHTML:'',setAttribute:(k,v)=>attributes[k]=v,querySelector:id=>id==='#boardRetry'?retry:archive};
+ r.sandbox.document.getElementById=()=>list;
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,modalPantheon:{querySelector:id=>id==='#boardMode'?mode:{checked:false}},
+ renderPantheonLeaderboard(){rendered++;}});
+ r.sandbox.fetch=async()=>({ok:false,status:503});
+ await ui.loadLeaderboardFromAPI();assert.match(list.innerHTML,/Chưa tải được/);assert.equal(typeof retry.onclick,'function');
+ r.sandbox.fetch=async()=>({ok:true,json:async()=>({success:true,data:[]})});
+ await retry.onclick();assert.match(list.innerHTML,/Chưa có trận/);assert.equal(attributes['aria-busy'],'false');
+ assert.equal(typeof archive.onclick,'function');assert.equal(rendered,2);
+});
+
+test('pause preserves wall-clock animation deadlines and freezes practice and cooldown time',()=>{
+ const r=runtime();let now=1000;r.sandbox.performance={now:()=>now};
+ r.state.setCatState('WEAK_ATTACK',260);r.state.stunTimer=1160;r.state.speechTimer=3000;
+ r.state.advanceClock(2);r.state.setPaused(true);const clock=r.state.activeElapsedMs;
+ now=11000;r.state.advanceClock(10);assert.equal(r.state.activeElapsedMs,clock);
+ r.state.setPaused(false);assert.equal(r.state.catStateTimer,11260);assert.equal(r.state.stunTimer,11160);
+ assert.equal(r.state.speechTimer,13000);assert.equal(r.state.combo,0);
+});
+
+test('five realm projectiles render authored frames once, face the target and have bounded flight',()=>{
+ const r=runtime(),assets={};const draws=[],rotations=[];
+ for(let realm=0;realm<5;realm++)assets['char_r'+realm+'_projectile_sheet']={loaded:true,img:{naturalWidth:1024,naturalHeight:128}};
+ const p=new r.M.ProjectileSystem(assets);let hits=0;
+ const ctx={save(){},restore(){},translate(){},rotate:v=>rotations.push(v),drawImage:(...args)=>draws.push(args),fillRect(){}};
+ for(let realm=0;realm<5;realm++)p.spawn(600,550,300,200,realm);
+ p.update(.1,()=>hits++);p.draw(ctx);
+ assert.equal(p.projectiles.length,5);assert.equal(draws.length,6); // realm 1 has two sprites
+ assert.ok(draws.every(a=>a[3]===256&&a[4]===128));
+ const angle=Math.atan2(-350,-300);
+ assert.deepEqual(rotations.map(value=>Math.round(value*1000)),[angle+Math.PI,angle+Math.PI,angle+Math.PI,angle,angle,angle].map(value=>Math.round(value*1000)));
+ assert.ok(p.projectiles.every(item=>item.trail.length<=4));
+ p.update(.3,()=>hits++);assert.equal(hits,5);assert.equal(p.projectiles.length,0);
+ p.update(.3,()=>hits++);assert.equal(hits,5);p.clear();assert.equal(p.shockwaves.length,0);
+});
+
+test('typing errors use the error cue even under immunity and never become a meteor cue',()=>{
+ const r=runtime(),events=[];r.engine.audio={play:type=>events.push(type)};
+ const target=word();r.asteroids.asteroids.push(target);r.state.talents.typoImmune=true;
+ r.engine.processKey('Z',r.canvas);
+ assert.deepEqual(events,['wrong_key']);assert.equal(target.typoFlash,.18);assert.equal(r.state.typoCount,1);
 });

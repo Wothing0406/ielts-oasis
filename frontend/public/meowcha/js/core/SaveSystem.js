@@ -31,8 +31,7 @@
       this.storage = getSafeStorage();
       let owner = 'guest';
       try {
-        const params = new URLSearchParams(root.location ? root.location.search : '');
-        const user = JSON.parse(params.get('user') || this.storage.getItem('oasis_user') || 'null');
+        const user = JSON.parse(this.storage.getItem('oasis_user') || 'null');
         owner = String(user && (user.id || user.user_id || user.username) || 'guest');
       } catch (_) {}
       this.storageKey = `${STORAGE_KEY}:${owner}`;
@@ -428,10 +427,6 @@
     getAuthHeaders() {
       let token = "";
       try {
-        if (typeof window !== "undefined" && window.location && window.location.search) {
-          const sp = new URLSearchParams(window.location.search);
-          token = sp.get("token") || "";
-        }
         if (!token) {
           token = localStorage.getItem("oasis_token") || "";
         }

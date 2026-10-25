@@ -21,7 +21,6 @@ from models import User, MeowchaUserProfile, MeowchaBattleLog, MeowchaLeaderboar
 from meowcha_integrity import MeowchaRun, MeowchaSaveSnapshot, RunComplete
 from meowcha_routes import router, get_meowcha_user_from_token
 
-
 class IntegrityTests(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
@@ -163,6 +162,28 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(result['humanWords'], 3)
         self.app.dependency_overrides[get_meowcha_user_from_token] = lambda: None
         self.assertEqual(self.client.get('/api/meowcha/personal-best').status_code, 401)
+
+
+    def test_unknown_legacy_mode_is_never_relabelled_into_measured_boards(self):
+        self.db.add(MeowchaLeaderboard(user_id=self.user.id, player_name='alice', score=9999))
+        self.db.commit()
+        for mode in ['DIRECT', 'CLOZE', 'AUDIO']:
+            result = self.client.get('/api/meowcha/leaderboard?game_mode=' + mode).json()['data']
+            self.assertEqual(result, [])
+        self.assertEqual(len(self.client.get('/api/meowcha/leaderboard?game_mode=LEGACY').json()['data']), 1)
+
+    def test_board_reads_current_account_avatar_and_keeps_same_name_users_separate(self):
+        run_id = self.start()
+        self.client.post('/api/meowcha/runs/complete', json=self.payload(run_id))
+        self.user.avatar_url = 'https://cdn.discordapp.com/avatars/7/new.png'
+        self.db.add(MeowchaLeaderboard(user_id=self.user.id, player_name='same', score=80))
+        self.db.add(MeowchaLeaderboard(user_id=self.other.id, player_name='same', score=90))
+        self.db.commit()
+        result = self.client.get('/api/meowcha/leaderboard').json()['data']
+        self.assertEqual(result[0]['avatar_url'], self.user.avatar_url)
+        legacy = self.client.get('/api/meowcha/leaderboard?game_mode=LEGACY').json()['data']
+        self.assertEqual(len(legacy), 2)
+        self.assertEqual({row['user_id'] for row in legacy}, {self.user.id, self.other.id})
 
 
 if __name__ == '__main__':

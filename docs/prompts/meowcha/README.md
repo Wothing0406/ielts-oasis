@@ -1,4 +1,4 @@
-# Hai phạm trù nâng cấp MEOW-CHA
+# Kho prompt và phạm trù nâng cấp MEOW-CHA
 
 Ngày đối chiếu: 25/10/2026. Nhánh: `game/meowcha-cultivation`.
 
@@ -73,3 +73,29 @@ deploy và Docker image trước deploy để khôi phục nếu cần.
 - Bằng chứng cục bộ nằm trong `artifacts/meowcha-qa/`, không đưa vào Git.
 - Không có máy iOS/Android thật trong phiên này; mô phỏng kích thước/cảm ứng
   không được báo cáo là kiểm thử thiết bị thật.
+
+
+## 03–12 — Yêu cầu bổ sung và bộ nhớ dự án
+
+| Brief gốc | Phạm vi |
+|---|---|
+| [03 — Định Tâm](03-pause-out-menu.md) | Pause/resume, menu và thống kê trận |
+| [04 — Kiếm bài, bảng, avatar](04-sword-panel-ui-avatar.md) | Hướng ảnh 2, UI và chức năng |
+| [05 — Tam Pháp Đồng Tu](05-tam-phap-multimode.md) | Chỉ số học tập và Tổng Đạo (backlog mở rộng) |
+| [06 — Audio rebuild](06-audio-rebuild.md) | Sample, ambience, settings và QA âm thanh |
+| [07 — Production/auth](07-production-auth.md) | Auth website và vòng đời phiên |
+| [08 — Combat/SFX](08-combat-animation-sfx.md) | Sprite, muzzle, projectile, hit và semantic SFX |
+| [09 — Gameplay/art/lore](09-gameplay-art-lore.md) | Brief đầu tiên của đợt sửa |
+| [10 — Mobile/keyboard](10-mobile-keyboard.md) | Input và bàn phím cảm ứng |
+| [11 — SVG/art](11-svg-art-quality.md) | Phân loại chất lượng asset |
+| [12 — UI/art tổng](12-master-ui-art.md) | Mỹ thuật và giao diện tổng thể |
+
+Hai attachment production/auth 39b11257 và 9370431a giống hệt nhau
+(SHA256 `5e97f346d30420df38748ee9c28dadDBE3b3a103e6052a8b3ec3f034f341d521`,
+không phân biệt hoa/thường), nên lưu một bản 07.
+
+Theo dõi triển khai thực tế tại [task đợt kiếm bài](../../meowcha-sword-combat-tasks.md).
+Bản ghi quyết định: [bộ nhớ dự án](../../meowcha-project-memory.md).
+Skill: `.agents/skills/meowcha-maintenance/SKILL.md`.
+Prompt tạo hình kiếm: [sword-command-art.txt](sword-command-art.txt).
+Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.

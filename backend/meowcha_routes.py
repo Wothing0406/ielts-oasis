@@ -589,7 +589,7 @@ def get_leaderboard(
             result.append({"id": entry.id, "user_id": entry.user_id, "rank": len(result) + 1,
                 "player_name": entry.player_name, "score": entry.score, "realm": entry.realm,
                 "words_slain": entry.words_slain, "accuracy": entry.accuracy, "wpm": entry.wpm,
-                "avatar_url": "", "game_mode": "LEGACY", "verification": "legacy_unverified"})
+                "avatar_url": (db.get(User, entry.user_id).avatar_url or "") if entry.user_id and db.get(User, entry.user_id) else "", "game_mode": "LEGACY", "verification": "legacy_unverified"})
             if len(result) >= limit:
                 break
         return api_response(result, meta={"verification": "legacy_unverified"})
@@ -606,36 +606,15 @@ def get_leaderboard(
     
     results = [{**run.result, "rank": i + 1} for i, run in enumerate(runs)]
     
-    # SEAMLESS BACKFILL FROM meowcha_leaderboard:
-    if len(results) < limit:
-        legacy_entries = db.query(MeowchaLeaderboard).order_by(MeowchaLeaderboard.score.desc()).all()
-        existing_names = {r.get("player_name") for r in results}
-        for entry in legacy_entries:
-            if entry.player_name in existing_names:
-                continue
-            avatar_url = ""
-            if entry.user_id:
-                u = db.query(User).filter(User.id == entry.user_id).first()
-                if u and u.avatar_url:
-                    avatar_url = u.avatar_url
-            results.append({
-                "id": entry.id,
-                "user_id": entry.user_id,
-                "rank": len(results) + 1,
-                "player_name": entry.player_name,
-                "score": entry.score,
-                "realm": entry.realm or "Luyện Khí Kỳ",
-                "words_slain": entry.words_slain,
-                "accuracy": entry.accuracy or 100,
-                "wpm": entry.wpm or 0,
-                "avatar_url": avatar_url,
-                "game_mode": game_mode,
-                "verification": "plausibility_checked"
-            })
-            existing_names.add(entry.player_name)
-            if len(results) >= limit:
-                break
-                
+    # Legacy rows have no trustworthy mode/deck/assistance provenance.
+    # Keep them in LEGACY; never relabel them as newly measured mode results.
+    owner_ids = {run.user_id for run in runs}
+    owners = {u.id: u for u in db.query(User).filter(User.id.in_(owner_ids)).all()} if owner_ids else {}
+    for item in results:
+        owner = owners.get(item.get("user_id"))
+        if owner:
+            item["avatar_url"] = owner.avatar_url or ""
+            item["player_name"] = getattr(owner, "full_name", None) or owner.username
     return api_response(results,
         meta={"game_mode": game_mode, "assisted": assisted, "deck_id": deck_id,
               "verification": "plausibility_checked", "competitive": False})

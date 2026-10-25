@@ -15,6 +15,49 @@ function audioRuntime(){
  const manager=new box.Meowcha.AudioManager();
  return {manager,clips,spoken,timers,box,cancelled:()=>cancelled};
 }
+test('missing Oxford audio uses the existing website TTS service before OS speech',async()=>{
+ const r=audioRuntime(),a=r.manager;r.box.AbortController=AbortController;
+ let requests=0;r.box.fetch=async()=>{requests++;return {ok:true,json:async()=>({audio_url:'/static/jade.mp3'})};};
+ a.playWord({word:'JADE'});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(r.clips[0].src,'https://localhost/static/jade.mp3');assert.equal(r.spoken.length,0);
+ r.clips[0].onended();a.playWord({word:'JADE'});await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(requests,1);r.clips[0].onended();assert.equal(a.stats.voiceCompleted,2);
+});
+
+test('late media fallback gets a full fresh speech deadline',()=>{
+ const r=audioRuntime(),a=r.manager;a.playWord({word:'GARDEN',audio_url:'/late.mp3'});
+ const before=a.voiceJob.timer;r.clips[0].onerror();
+ assert.notEqual(a.voiceJob.timer,before);assert.equal(r.timers.has(before),false);
+ r.spoken[0].onend();assert.equal(a.stats.voiceCompleted,1);assert.equal(a.stats.voiceFailed,0);
+});
+
+test('semantic input, collision and shield cues are distinct',()=>{
+ const r=audioRuntime(),a=r.manager;
+ for(const event of ['type_correct','wrong_key','meteor_impact','shield_hit','shield_break','player_hurt'])a.play(event);
+ assert.equal(a.eventCounts.wrong_key,1);assert.equal(a.eventCounts.meteor_impact,1);
+ assert.equal(a.eventCounts.shield_hit,1);assert.equal(a.eventCounts.player_hurt,1);
+ a.play('hurt');assert.equal(a.eventCounts.player_hurt,2);
+});
+
+test('completion voice waits for the slash and mute cancels pending pronunciation',()=>{
+ const r=audioRuntime(),a=r.manager;a.playWordCompletion({word:'JADE',audio_url:'/jade.mp3'});
+ assert.equal(a.getStatus().voiceActive,false);
+ assert.equal(a.eventCounts.word_slash,1);assert.equal(a.eventCounts.meteor_crack,1);
+ const timer=[...a.completionTimers][0];r.timers.get(timer)();assert.equal(a.getStatus().voiceActive,true);
+ a.playWordCompletion({word:'TEA',audio_url:'/tea.mp3'});assert.equal(a.completionTimers.size,1);
+ a.toggleSound();assert.equal(a.completionTimers.size,0);assert.equal(a.voiceJob,null);
+});
+
+test('pause holds pronunciation and resumes the same voice without restarting BGM',async()=>{
+ const r=audioRuntime(),a=r.manager;a.startZenGuqin();await Promise.resolve();
+ a.pauseVoice(true);a.playWord({word:'MOON',audio_url:'/moon.mp3'});
+ assert.equal(a.voiceQueue.length,1);assert.equal(r.clips.length,0);
+ a.pauseVoice(false);assert.equal(r.clips.length,1);const job=a.voiceJob;
+ a.pauseVoice(true);a.pauseVoice(false);assert.equal(a.voiceJob,job);assert.equal(r.clips.length,1);
+ assert.equal(a.musicNodes.length,2);r.clips[0].onended();assert.equal(a.stats.voiceCompleted,1);
+});
+
 test('explicit enable on a fresh or muted browser starts all channels without toggling off',async()=>{
  const r=audioRuntime(),a=r.manager;
  a.enableSound();await Promise.resolve();assert.equal(a.soundEnabled,true);assert.equal(a.zenMusicPlaying,true);

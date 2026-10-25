@@ -14,17 +14,26 @@ root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root / 'backend'))
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from database import Base, get_db
 from meowcha_routes import router
+from models import User, MeowchaLeaderboard
 
 engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
+with Session() as qa_db:
+    qa_user = User(id=7001, username='Tiên Hữu QA', discord_id='local-qa-only',
+        avatar_url='https://cdn.discordapp.com/embed/avatars/0.png')
+    qa_db.add(qa_user)
+    qa_db.flush()
+    qa_db.add(MeowchaLeaderboard(user_id=qa_user.id, player_name=qa_user.username,
+        score=12345, words_slain=80, wpm=30, realm='Kim Đan Kỳ'))
+    qa_db.commit()
 
 
 def isolated_db():
@@ -41,7 +50,7 @@ app.include_router(router)
 def preview():
     return '''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;background:#100d12"><main style="position:fixed;inset:0;height:100dvh;overflow:hidden">
-    <iframe src="/meowcha/index.html?v=12.4" title="Meowcha IELTS Game"
+    <iframe src="/meowcha/index.html?v=13.0" title="Meowcha IELTS Game"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
     allow="autoplay; fullscreen; clipboard-write" style="border:0;width:100%;height:100%;display:block"></iframe>
     <script>addEventListener('message', event => {
@@ -55,6 +64,19 @@ def preview():
 @app.get('/preview/meowcha-qa', response_class=HTMLResponse)
 def qa_preview():
     return (Path(__file__).with_name('meowcha_qa.html')).read_text(encoding='utf-8')
+
+
+@app.post('/api/tts')
+async def fixture_pronunciation(data: dict):
+    # Fixture adapter only; production already owns /tts. No production DB call.
+    # Optional QA artifact obtained from the real website TTS (never committed).
+    # Without it this route intentionally returns 404 and exercises failure UI.
+    return {'audio_url': '/preview/qa-jade.mp3'}
+
+
+@app.get('/preview/qa-jade.mp3')
+def fixture_generated_voice():
+    return FileResponse(root / 'artifacts/meowcha-qa/jade-tts.mp3', media_type='audio/mpeg')
 
 
 @app.get('/games', response_class=HTMLResponse)

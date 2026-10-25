@@ -1,13 +1,37 @@
 <!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{margin:0;background:#20332d;color:#f5e7c7;font:12px sans-serif}#tools{position:fixed;top:0;left:0;z-index:999;background:#20332dee;padding:4px;max-width:100%;box-sizing:border-box}button{padding:8px;margin:2px;min-height:36px}iframe{width:100vw;height:100dvh;border:0;display:block}#status{max-height:65px;overflow:auto;max-width:90vw;white-space:pre-wrap}</style>
-<div id="tools"><button id="qaVoices">Trảm thử 20 từ</button><button id="qaChoice">Thử đột phá</button><button id="qaCertificate">Kỷ lục 12.345</button><button id="qaBurst">IPA dài tại chỗ</button><button id="qaDamage">Tạo thiếu HP</button><button id="qaMobile">Mô phỏng cảm ứng</button><button id="qaHide">Ẩn công cụ</button><pre id="status">Đang nạp...</pre></div>
-<iframe id="game" src="/meowcha/index.html?v=12.4" allow="autoplay; clipboard-write" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"></iframe>
+<style>body{margin:0;background:#20332d;color:#f5e7c7;font:12px sans-serif}#tools{position:fixed;bottom:0;left:0;z-index:999;background:#20332dee;padding:4px;max-width:100%;box-sizing:border-box}button{padding:8px;margin:2px;min-height:36px}iframe{width:100vw;height:100dvh;border:0;display:block}#status{max-height:65px;overflow:auto;max-width:90vw;white-space:pre-wrap}</style>
+<div id="tools"><select id="qaSize" aria-label="Khung màn hình"><option value="1280,720">PC 1280</option><option value="390,844">Dọc 390</option><option value="320,568">Dọc 320</option><option value="844,390">Ngang 844</option></select><select id="qaRealm" aria-label="Cảnh giới kiểm thử"><option value="0">Luyện Khí</option><option value="1">Trúc Cơ</option><option value="2">Kim Đan</option><option value="3">Nguyên Anh</option><option value="4">Độ Kiếp</option></select><button id="qaAttack">Khung xuất kiếm</button><button id="qaWrong">Gõ sai</button><button id="qaImpact">Đá rơi</button><button id="qaShield">Bật khiên</button><button id="qaPause">Định Tâm</button><button id="qaAccount">Ảnh tài khoản QA</button><button id="qaVoices">Trảm thử 20 từ</button><button id="qaChoice">Thử đột phá</button><button id="qaCertificate">Kỷ lục 12.345</button><button id="qaBurst">IPA dài tại chỗ</button><button id="qaDamage">Tạo thiếu HP</button><button id="qaMobile">Mô phỏng cảm ứng</button><button id="qaHide">Ẩn công cụ</button><pre id="status">Đang nạp...</pre></div>
+<iframe id="game" src="/meowcha/index.html?v=13.0" allow="autoplay; clipboard-write" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"></iframe>
 <script>
 const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
 function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
 setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,audio:g.audio.getStatus(),mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
+document.getElementById('qaSize').onchange=event=>{
+ const [width,height]=event.target.value.split(',').map(Number);
+ frame.style.width=width+'px';frame.style.height=height+'px';
+};
+document.getElementById('qaAccount').onclick=()=>{
+ frame.contentWindow.localStorage.setItem('oasis_user',JSON.stringify({id:7001,username:'Tiên Hữu QA',avatar_url:'https://cdn.discordapp.com/embed/avatars/0.png'}));
+ frame.contentWindow.location.reload();
+};
+document.getElementById('qaAttack').onclick=()=>{
+ const g=app();g.startBattle();g.gameState.hp=g.gameState.maxHp=500;g.gameState.isPaused=false;
+ g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.asteroids.clear();g.projectiles.clear();
+ const target=g.asteroids.spawn({word:'JADE',ipa:'/dʒeɪd/',meaning:'ngọc bích'},g.canvas.width,g.gameState.realmIdx,.01,0,'ice');
+ target.x=g.canvas.width*.38;target.y=g.canvas.height*.3;g.typing.currentTarget=target;
+ g.typing.processKey('J',g.canvas);g.update(.07);g.gameState.isPaused=true;
+ result='Khung xuất kiếm cảnh '+g.gameState.realmIdx+' — sprite projectile/muzzle/attack';
+};
+document.getElementById('qaWrong').onclick=()=>{const g=app();g.gameState.isPaused=false;
+ if(!g.asteroids.asteroids.length)g.asteroids.spawn({word:'JADE',meaning:'ngọc'},g.canvas.width,0,.01,0,'ice');
+ g.typing.processKey('Z',g.canvas);result='Gõ sai qua TypingEngine';};
+document.getElementById('qaShield').onclick=()=>{const g=app();g.gameState.shieldCharges=1;g.gameState.talents.shieldCharges=1;result='Một khiên cho va chạm thử';};
+document.getElementById('qaImpact').onclick=()=>{const g=app();g.gameState.isPaused=false;
+ if(!g.asteroids.asteroids.length)g.asteroids.spawn({word:'JADE',meaning:'ngọc'},g.canvas.width,0,.01,0,'ice');
+ g.asteroids.asteroids[0].y=frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold+1;g.update(.016);result='Va chạm đáy qua main.update';};
+document.getElementById('qaPause').onclick=()=>{app().ui.setPause(true);result='Định Tâm thật qua UI';};
 document.getElementById('qaVoices').onclick=async()=>{
- if(running)return;running=true;step=0;const g=app();if(!g)return;
+ const g=app();if(!g||!g.typing||running)return;running=true;step=0;
  g.audio.enableSound();await g.startBattle();g.gameState.hp=g.gameState.maxHp=500;g.gameState.isGameOver=false;g.gameState.isPaused=false;g.gameState.realmIdx=0;
  g.gameState.talents.autoKill=false;g.gameState.talents.critChance=0;
  const check=g.breakthrough.checkProgress;g.breakthrough.checkProgress=()=>false;

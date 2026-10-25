@@ -20,6 +20,9 @@
       const el=card.querySelector('.setup-card-icon-art');
       if(el) el.innerHTML=M.pixelIcon({DIRECT:'winged-sword',CLOZE:'scroll-unfurled',AUDIO:'ringing-bell'}[card.dataset.mode]);
     });
+    document.querySelectorAll('.pill-icon').forEach((element,index)=>{
+      element.innerHTML=M.pixelIcon(index===0?'cauldron':'scroll-unfurled');
+    });
     M.replacePixelImages(document);
     if (!M.pixelObserver && typeof MutationObserver !== 'undefined') {
       const mount = document.getElementById('gameAppWrapper');

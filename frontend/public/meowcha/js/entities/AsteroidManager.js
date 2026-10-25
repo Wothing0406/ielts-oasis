@@ -339,6 +339,7 @@
           ast.vx = -Math.abs(ast.vx);
         }
 
+        if (ast.typoFlash > 0) ast.typoFlash = Math.max(0, ast.typoFlash - dt);
         if (ast.hitReaction > 0) {
           ast.hitReaction = Math.max(0, ast.hitReaction - dt * 4.5);
         }
@@ -414,6 +415,9 @@
         ctx.fillText(detail,safeX,y+(rows>1?26:17));
         if(ast.freezeTimer>0) {
           ctx.fillStyle='#9CB7D4';for(let i=0;i<4;i++)ctx.fillRect(x-size/2+i*size/3,y-size/2,4,6);
+        }
+        if(ast.typoFlash>0) {
+          ctx.fillStyle='#C95E52';ctx.fillRect(safeX-paperW*.36,y-20,paperW*.72,3);
         }
         if(ast.hitReaction>0) {
           // Tiny chipped jade pixels instead of a white screen/glow.
