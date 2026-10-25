@@ -117,7 +117,9 @@
       if(!text) return;
       ctx.save(); ctx.font="italic 12px 'Be Vietnam Pro',sans-serif";
       const width=Math.min(ctx.canvas.width-24,340,ctx.measureText(text).width+48);
-      const lines=this.wrap(ctx,text,width*.76),height=Math.max(66,(lines.length*16+12)/.58);
+      const wrap=root.Meowcha.wrapLearningText;
+      const lines=wrap?wrap(ctx,text,width*.76):this.wrap(ctx,text,width*.76);
+      const height=Math.max(66,(lines.length*16+12)/.58);
       x=Math.max(width/2+8,Math.min(ctx.canvas.width-width/2-8,x));
       this.paper(ctx,x,y-18,width,height);
       ctx.fillStyle='#20332D'; ctx.textAlign='center';ctx.textBaseline='middle';
