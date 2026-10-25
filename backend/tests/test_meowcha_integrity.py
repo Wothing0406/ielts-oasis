@@ -39,6 +39,43 @@ class IntegrityTests(unittest.TestCase):
     def tearDown(self):
         self.client.close(); self.db.close(); self.engine.dispose()
 
+    def test_session_uses_real_jwt_expiry_and_database_identity(self):
+        import jwt
+        from auth_routes import JWT_SECRET,JWT_ALGORITHM
+        del self.app.dependency_overrides[get_meowcha_user_from_token]
+        for expires,expected in [(-60,401),(60,200)]:
+            token=jwt.encode({'user_id':self.user.id,'username':'stale-claim',
+                'exp':datetime.utcnow()+timedelta(seconds=expires)},JWT_SECRET,algorithm=JWT_ALGORITHM)
+            response=self.client.get('/api/meowcha/session',headers={'Authorization':'Bearer '+token})
+            self.assertEqual(response.status_code,expected)
+            if expected==200:
+                self.assertEqual(response.json()['data']['id'],self.user.id)
+                self.assertEqual(response.json()['data']['username'],'alice')
+
+    def test_perfect_streak_is_bounded_optional_and_idempotent(self):
+        run=self.start()
+        self.assertEqual(self.client.post('/api/meowcha/runs/complete',json=self.payload(run,max_perfect_streak=4)).status_code,422)
+        for _ in range(2):
+            result=self.client.post('/api/meowcha/runs/complete',json=self.payload(run,max_perfect_streak=3))
+            self.assertEqual(result.status_code,200)
+            self.assertEqual(result.json()['data']['max_perfect_streak'],3)
+        self.assertEqual(self.db.query(MeowchaBattleLog).count(),1)
+
+    def test_mastery_and_overall_wait_for_three_measured_modes_and_reward_balance(self):
+        for index,mode in enumerate(['DIRECT','CLOZE','AUDIO']):
+            self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start(mode),
+                metrics_version=2,learning_attempts=3,first_successes=3,max_combo=3))
+            profile=self.client.get('/api/meowcha/profile').json()['data']['tam_phap']
+            self.assertEqual(profile['complete'],index==2)
+            self.assertEqual(profile['modes'][mode]['words'],3)
+            overall=self.client.get('/api/meowcha/halls?hall=OVERALL').json()
+            self.assertEqual(len(overall['data']),1 if index==2 else 0)
+            self.assertEqual(overall['meta']['self']['eligible'],index==2)
+        from meowcha_halls import balanced_rating
+        self.assertGreater(balanced_rating(dict(DIRECT=60,CLOZE=60,AUDIO=60)),
+                           balanced_rating(dict(DIRECT=100,CLOZE=60,AUDIO=20)))
+        self.assertEqual(profile['scale'],300)
+
     def start(self, mode='DIRECT', deck='oxford_5000', resumed=False):
         run_id = str(uuid4())
         response = self.client.post('/api/meowcha/runs', json={'run_id': run_id,
@@ -99,7 +136,9 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(direct['meta']['self']['rank'],29)
         overall=self.client.get('/api/meowcha/halls?hall=OVERALL').json()
         self.assertTrue(all(0<=r['dao_hanh']<=300 for r in overall['data']))
-        self.assertIn('strongest_mode',overall['data'][0]);self.assertIsNotNone(overall['meta']['self'])
+        self.assertIn('strongest_mode',overall['data'][0]);self.assertIsNone(overall['meta']['self']['rank'])
+        self.assertFalse(overall['meta']['self']['eligible'])
+        self.assertEqual(overall['meta']['self']['complete_modes'],['DIRECT'])
         self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&assisted=true').json()['data'],[])
         self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&deck_id=reading_academic').json()['data'],[])
         self.assertEqual(self.client.get('/api/meowcha/halls?hall=INVALID').status_code,422)
@@ -126,6 +165,8 @@ class IntegrityTests(unittest.TestCase):
 
     def test_guest_cannot_write_rank_profile_or_shared_cloud_slots(self):
         self.app.dependency_overrides[get_meowcha_user_from_token] = lambda: None
+        self.assertEqual(self.client.get('/api/meowcha/session').status_code,401)
+        self.assertEqual(self.client.get('/api/meowcha/profile').status_code,401)
         self.assertEqual(self.client.post('/api/meowcha/runs', json={'run_id': str(uuid4()), 'game_mode': 'DIRECT'}).status_code, 401)
         for endpoint in ['runs/complete', 'profile/sync', 'leaderboard']:
             self.assertEqual(self.client.post('/api/meowcha/' + endpoint, json=self.payload(str(uuid4()))).status_code, 401)
@@ -162,12 +203,41 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/meowcha/save-snapshots').json()['data'], {})
         self.assertEqual(self.client.post('/api/meowcha/save-snapshots/4', json={'snapshot': snapshot}).status_code, 400)
 
+    def test_two_device_revision_conflict_cannot_be_bypassed_by_newer_client_clock(self):
+        snapshot = {'updatedAt': 1000, 'modes': {'DIRECT': {'score': 10}}}
+        first = self.client.post('/api/meowcha/save-snapshots/1', json={'snapshot': snapshot}).json()['data']['revision']
+        second = self.client.post('/api/meowcha/save-snapshots/1', json={
+            'expected_revision': first, 'snapshot': {**snapshot, 'updatedAt': 2000}})
+        self.assertEqual(second.status_code, 200)
+        stale = {'expected_revision': first, 'snapshot': {**snapshot, 'updatedAt': 99999999}}
+        self.assertEqual(self.client.post('/api/meowcha/save-snapshots/1', json=stale).status_code, 409)
+        self.db.rollback()
+        # Older clients without a revision must not silently overwrite existing saves.
+        self.assertEqual(self.client.post('/api/meowcha/save-snapshots/1', json={'snapshot': snapshot}).status_code, 409)
+        self.db.rollback()
+        current = self.client.get('/api/meowcha/save-snapshots').json()['data']['1']
+        self.assertEqual(current['snapshot']['updatedAt'], 2000)
+        # Explicit reconciliation uses the revision, even if the local clock is behind.
+        restored = self.client.post('/api/meowcha/save-snapshots/1', json={
+            'expected_revision': current['revision'], 'snapshot': snapshot})
+        self.assertEqual(restored.status_code, 200)
+
     def test_profile_uses_actual_user_columns_and_invalid_snapshots_are_rejected(self):
         self.assertEqual(self.client.get('/api/meowcha/profile').status_code, 200)
         for modes in [{'DIRECT': 'invalid'}, {'AUDIO': {'hp': 60, 'maxHp': 50}},
                       {'DIRECT': {'realmIdx': 10}}, {'CLOZE': {'correctKeystrokes': 10, 'totalKeystrokes': 1}}]:
             self.assertEqual(self.client.post('/api/meowcha/save-snapshots/1', json={
                 'snapshot': {'updatedAt': int(time.time() * 1000), 'modes': modes}}).status_code, 422)
+
+    def test_snapshot_revision_distinguishes_changes_with_same_database_second(self):
+        from types import SimpleNamespace
+        from datetime import datetime
+        from meowcha_routes import snapshot_revision
+        same_second=datetime(2026,10,26,0,0,0)
+        before=SimpleNamespace(updated_at=same_second,snapshot={'modes':{'DIRECT':{'score':1}}})
+        after=SimpleNamespace(updated_at=same_second,snapshot={'modes':{'DIRECT':{'score':2}}})
+        self.assertNotEqual(snapshot_revision(before),snapshot_revision(after))
+        self.assertEqual(len(snapshot_revision(before)),64)
 
     def test_legitimate_critical_and_combo_build_fits_score_ceiling(self):
         result = RunComplete(run_id=uuid4(), score=2_000_000, words_slain=100,

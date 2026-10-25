@@ -70,9 +70,12 @@ class RunComplete(BaseModel):
     hints_used: int=Field(0,ge=0,le=1_000_000)
     replay_count: int=Field(0,ge=0,le=1_000_000)
     max_combo: int=Field(0,ge=0,le=100_000)
+    max_perfect_streak: int | None=Field(None,ge=0,le=100_000)
 
     @model_validator(mode='after')
     def check_counts(self):
+        if self.max_perfect_streak is not None and self.max_perfect_streak>self.words_slain-self.assisted_words:
+            raise ValueError('Perfect streak exceeds human completions')
         if self.metrics_version==2 and (self.first_successes>self.learning_attempts or self.first_successes>self.words_slain or self.max_combo>self.words_slain or self.learning_attempts<self.words_slain):
             raise ValueError('Inconsistent learning counters')
         if self.correct_keystrokes > self.total_keystrokes or self.assisted_words > self.words_slain:
@@ -91,6 +94,7 @@ class RunComplete(BaseModel):
 
 class SaveSnapshotPayload(BaseModel):
     snapshot: dict
+    expected_revision: str=Field('',max_length=64)
 
     @model_validator(mode='after')
     def check_snapshot(self):
@@ -121,7 +125,7 @@ class SaveSnapshotPayload(BaseModel):
 
 def require_user(user):
     if user is None:
-        raise HTTPException(401, 'Đăng nhập để đồng bộ thành tích; khách vẫn có thể luyện tập cục bộ.')
+        raise HTTPException(401, 'Đăng nhập tài khoản IELTS Oasis để tiếp tục hành trình.')
     return user
 
 
@@ -181,6 +185,7 @@ def complete_run(db, user, payload):
         'human_words':payload.words_slain-payload.assisted_words,'assisted_words':payload.assisted_words,
         'metrics_version':payload.metrics_version,
         'max_combo':payload.max_combo if payload.metrics_version==2 else None,
+        'max_perfect_streak':payload.max_perfect_streak,
         'learning_attempts':payload.learning_attempts if payload.metrics_version==2 else None,
         'first_successes':payload.first_successes if payload.metrics_version==2 else None,
         'first_success_rate':round(payload.first_successes*100/payload.learning_attempts,1) if payload.metrics_version==2 and payload.learning_attempts else None,

@@ -56,14 +56,14 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=15.1" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=15.1" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=15.1" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=15.1" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=15.1" />
-    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=15.1" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=16.0" />
   </head>
-  <body>
+  <body data-session="checking">
     <div id="gameAppWrapper">
       <!-- NỀN CANVAS GAME TRÀN VIỀN TOÀN CẢNH CHO CẢ SẢNH CHỜ & CHIẾN TRƯỜNG -->
       <canvas id="gameCanvas"></canvas>
@@ -1705,6 +1705,7 @@
           style="width: min(94%, 540px); text-align: center"
         >
           <div class="profile-header-banner">
+            <button class="btn-modal-close" id="btnProfileDismiss" aria-label="Đóng hồ sơ" type="button">×</button>
             <div class="profile-talisman-tag" id="profileModalBannerTag">
               TIÊN ĐẠO NGỌC GIẢN
             </div>
@@ -1899,9 +1900,11 @@
           <div class="modal-header"><h2 id="audioSettingsTitle">Tiên nhạc</h2><button class="btn-modal-close" id="btnCloseAudioSettings" aria-label="Đóng cài đặt âm thanh">×</button></div>
           <label class="mc-audio-switch"><input type="checkbox" id="audioMasterEnabled"> Bật nhạc, hiệu ứng và phát âm</label>
           <div class="mc-audio-channels">
-            <p><strong>Nhạc nền</strong> • Giai điệu tu luyện xuyên suốt trận.</p>
-            <p><strong>Hiệu ứng</strong> • Kiếm, gõ sai, khiên và ma thạch có âm riêng.</p>
-            <p><strong>Phát âm</strong> • Đọc từ sau khi trảm; Tab hoặc Thính Âm để nghe lại.</p>
+            <label>Âm thanh tổng <input aria-label="Âm thanh tổng" data-audio-volume="master" type="range" min="0" max="100"><output data-audio-output="master"></output></label>
+            <label>Nhạc nền <input aria-label="Nhạc nền" data-audio-volume="bgm" type="range" min="0" max="100"><output data-audio-output="bgm"></output></label>
+            <label>Hiệu ứng <input aria-label="Hiệu ứng" data-audio-volume="sfx" type="range" min="0" max="100"><output data-audio-output="sfx"></output></label>
+            <label>Phát âm <input aria-label="Phát âm" data-audio-volume="voice" type="range" min="0" max="100"><output data-audio-output="voice"></output></label>
+            <label>Âm môi trường <input aria-label="Âm môi trường" data-audio-volume="ambience" type="range" min="0" max="100"><output data-audio-output="ambience"></output></label>
           </div>
           <p id="audioSettingsStatus" role="status"></p>
           <button id="btnAudioRecover" class="btn-xianxia-seal" type="button">Khôi phục âm thanh</button>
@@ -1909,42 +1912,46 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=15.1"></script>
-    <script src="./js/data/MeaningCorrections.js?v=15.1"></script>
-    <script src="./js/core/LearningText.js?v=15.1"></script>
-    <script src="./js/data/WordDecks.js?v=15.1"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=15.1"></script>
-    <script src="./js/data/TalentsData.js?v=15.1"></script>
-    <script src="./js/data/SpeechesData.js?v=15.1"></script>
+    <script src="./js/core/Release.js?v=16.0"></script>
+    <script src="./js/core/Session.js?v=16.0"></script>
+    <script src="./js/data/RealmsData.js?v=16.0"></script>
+    <script src="./js/data/AudioAssets.js?v=16.0"></script>
+    <script src="./js/data/MeaningCorrections.js?v=16.0"></script>
+    <script src="./js/core/LearningText.js?v=16.0"></script>
+    <script src="./js/data/WordDecks.js?v=16.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=16.0"></script>
+    <script src="./js/data/TalentsData.js?v=16.0"></script>
+    <script src="./js/data/SpeechesData.js?v=16.0"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=15.1"></script>
-    <script src="./js/ui/DesignSystem.js?v=15.1"></script>
-    <script src="./js/core/AudioManager.js?v=15.1"></script>
-    <script src="./js/core/SaveSystem.js?v=15.1"></script>
-    <script src="./js/core/GameState.js?v=15.1"></script>
-    <script src="./js/core/BattleLayout.js?v=15.1"></script>
-    <script src="./js/core/SpriteAnimator.js?v=15.1"></script>
+    <script src="./js/ui/ArtIcons.js?v=16.0"></script>
+    <script src="./js/ui/DesignSystem.js?v=16.0"></script>
+    <script src="./js/core/AudioManager.js?v=16.0"></script>
+    <script src="./js/core/SaveSystem.js?v=16.0"></script>
+    <script src="./js/core/GameState.js?v=16.0"></script>
+    <script src="./js/core/BattleLayout.js?v=16.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=16.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=15.1"></script>
-    <script src="./js/effects/RealmVFX.js?v=15.1"></script>
-    <script src="./js/effects/FloatingText.js?v=15.1"></script>
+    <script src="./js/effects/ParticleEngine.js?v=16.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=16.0"></script>
+    <script src="./js/effects/FloatingText.js?v=16.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=15.1"></script>
-    <script src="./js/entities/AsteroidManager.js?v=15.1"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=15.1"></script>
+    <script src="./js/entities/CatCultivator.js?v=16.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=16.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=16.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=15.1"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=15.1"></script>
+    <script src="./js/combat/TypingEngine.js?v=16.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=16.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=15.1"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=15.1"></script>
-    <script src="./js/ui/UnityBridge.js?v=15.1"></script>
-    <script src="./js/core/VocabLoader.js?v=15.1"></script>
-    <script src="./js/ui/UIManager.js?v=15.1"></script>
-    <script src="./js/ui/LeaderboardHalls.js?v=15.1"></script>
+    <script src="./js/ui/IPAToast.js?v=16.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=16.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=16.0"></script>
+    <script src="./js/core/VocabLoader.js?v=16.0"></script>
+    <script src="./js/ui/UIManager.js?v=16.0"></script>
+    <script src="./js/ui/LeaderboardHalls.js?v=16.0"></script>
+    <script src="./js/ui/MasteryProfile.js?v=16.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=15.1"></script>
-    <script src="./js/main.js?v=15.1"></script>
+    <script src="./js/core/DeviceDetector.js?v=16.0"></script>
+    <script src="./js/main.js?v=16.0"></script>
   </body>
 </html>

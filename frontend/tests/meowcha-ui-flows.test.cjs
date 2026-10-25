@@ -5,7 +5,7 @@ const base=path.join(__dirname,'../public/meowcha');
 function setup(){
  const storage=new Map(),timers=[],box={console,performance,Date,Math,crypto:require('node:crypto').webcrypto,
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)},
- document:{getElementById:()=>null},addEventListener(){},setTimeout:(fn,ms)=>{if(ms===3500)timers.push(fn);return 1;},clearTimeout(){}};
+ document:{getElementById:()=>null,addEventListener(){}},addEventListener(){},setTimeout:(fn,ms)=>{if(ms===3500)timers.push(fn);return 1;},clearTimeout(){}};
  box.window=box;vm.createContext(box);
  for(const f of ['data/RealmsData.js','data/TalentsData.js','core/GameState.js','core/SaveSystem.js','core/BattleLayout.js','entities/AsteroidManager.js','combat/TypingEngine.js','combat/BreakthroughFlow.js','ui/ArtIcons.js','ui/DesignSystem.js','ui/UIManager.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
  const M=box.Meowcha,state=new M.GameState();state.currentScene='BATTLE';
@@ -56,6 +56,15 @@ test('shared stat text keeps zero, Vietnamese and IPA literal without turning it
  const r=setup();const html=r.M.ui.stat('listening','Thính âm /dʒeɪd/',0);
  assert.match(html,/>0<\/dd>/);assert.match(html,/Thính âm/);
  assert.doesNotMatch(r.M.ui.stat('accuracy','<img src=x>','<script>'),/<img|<script/);
+});
+
+test('ordinary rocks and reward occupy a compact field while preserving complete IPA text',()=>{
+ const r=setup(),ctx={canvas:{width:390,height:844},measureText:text=>({width:Array.from(text).length*7})};
+ const ast=r.manager.spawn({word:'JADE',ipa:'/dʒeɪd/',meaning:'ngọc bích'},390);
+ assert.equal(ast.radius,32);const card=r.manager.cardLayout(ctx,ast);assert.ok(card.paperW<=220);assert.ok(card.paperH<100);
+ const ipa='/ˌɪnkɒmprɪˈhensəbl/',f=new r.M.FloatingText();
+ const layout=f.getBurstLayout(ctx,{word:'INCOMPREHENSIBLE',ipa,meaning:'không thể hiểu được',type:'adjective',x:195,y:200});
+ assert.ok(layout.width<=246);assert.ok(layout.height<180);assert.equal(layout.ipaLines.join(''),ipa);
 });
 
 test('four meteor types at every realm move, freeze and collide once with their scaled damage',()=>{

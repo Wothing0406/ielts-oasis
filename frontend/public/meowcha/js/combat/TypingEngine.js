@@ -28,6 +28,7 @@
     }
 
     processKey(char, canvas) {
+      if(root.Meowcha.Session?.blocked)return;
       if (this.state.currentScene !== 'BATTLE' || this.state.isGameOver || this.state.isPaused || this.state.catState === "BREAKTHROUGH") return;
       if (char === 'Tab') { this.replayCurrentAudio(); return; }
       if (char === 'Backspace') {
@@ -365,6 +366,7 @@
       if(this.state.recordLearningOutcome)this.state.recordLearningOutcome(target,true);
       if (target.assistedKeystrokes) this.state.assistedWords++;
       else { this.state.humanWords++; this.state.humanWordCombo = target.hadTypo ? 0 : this.state.humanWordCombo + 1; }
+      if(this.state.perfectMetricsKnown)this.state.maxPerfectStreak=Math.max(this.state.maxPerfectStreak||0,this.state.humanWordCombo);
       if (!target.assistedKeystrokes && this.saveSystem && this.saveSystem.recordReviewResult) {
         this.saveSystem.recordReviewResult(target, !target.hadTypo && !target.assistedKeystrokes);
       }

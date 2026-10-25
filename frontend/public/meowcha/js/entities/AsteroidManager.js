@@ -18,7 +18,7 @@
       const isMobile = cW <= 600;
       const firstShield = bossConfig.shields[0];
       const word = firstShield.word.toUpperCase();
-      const radius = isMobile ? 56 : 74;
+      const radius = isMobile ? 40 : 52;
 
       const craggyPoints = [];
       const numVertices = 16;
@@ -162,7 +162,8 @@
       const charW = isMobile ? 18 : 22;
       const totalWordW = word.length * charW;
       const halfWordW = totalWordW / 2;
-      const baseRadius = isMobile ? Math.max(50, word.length * 8.2) : Math.max(52, word.length * 8.8);
+      // Collision and debris scale with the rock, not with the word length.
+      const baseRadius = isMobile ? 32 : 42;
       const safeMargin = Math.max(baseRadius + 20, halfWordW + 28);
       // THANH NGỌC GIẢN HUD ĐÃ ĐƯỢC CHIA THÀNH 2 GÓC:
       // Góc trái: Cấp bậc & Mệnh Đan (~260px)
@@ -364,19 +365,20 @@
 
     cardLayout(ctx, ast) {
       const M=root.Meowcha, width=ctx.canvas.width, small=width<600;
-      const cols=Math.min(16,ast.word.length), rows=Math.ceil(ast.word.length/16), fontSize=small?18:21;
-      const paperW=Math.min(width-16,Math.max(small?280:320,cols*(small?15:18)+60));
+      const cols=Math.min(small?14:18,ast.word.length), rows=Math.ceil(ast.word.length/cols), fontSize=small?16:18;
+      const paperW=Math.min(width-24,Math.max(small?210:240,cols*(small?12:14)+48));
       const safeX=Math.max(paperW/2+8,Math.min(width-paperW/2-8,ast.x));
       ctx.font="12px 'Be Vietnam Pro',sans-serif";
       const detail=ast.isBoss?'Tâm Ma • '+(ast.currentShieldIdx+1)+'/'+ast.totalShields :
         ast.isAudio?'Nghe và gõ • Tab nghe lại':ast.isCloze?
-        ((ast.type?ast.type+' • ':'')+(ast.meaning||'Nhớ từ qua nghĩa')):(ast.typedLen||0)+' / '+ast.word.length+' ký tự';
+        ((ast.type?ast.type+' • ':'')+(ast.meaning||'Nhớ từ qua nghĩa')):
+        ((ast.ipa&&ast.ipa!=='/.../'?ast.ipa+' • ':'')+(ast.typedLen||0)+' / '+ast.word.length);
       const detailLines=M.wrapLearningText?M.wrapLearningText(ctx,detail,paperW*.77):[detail];
-      const paperH=58+rows*(fontSize+2)+detailLines.length*16;
+      const paperH=36+rows*(fontSize+2)+detailLines.length*15;
       const battle=M.getBattleLayout?M.getBattleLayout(ctx.canvas):{};
       const top=(battle.hudBottom||76)+6, bottom=Math.max(top+paperH,battle.bottomThreshold||ctx.canvas.height-160);
       const cardY=ast.y;
-      return {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap:Math.min(small?15:18,paperW*.76/cols),detailLines};
+      return {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap:Math.min(small?12:14,paperW*.76/cols),detailLines};
     }
     draw(ctx) {
       for (const ast of this.asteroids) {
@@ -387,7 +389,7 @@
         const field=root.Meowcha.getBattleLayout?root.Meowcha.getBattleLayout(ctx.canvas):{};
         ctx.beginPath();ctx.rect(0,(field.hudBottom||76)+6,width,ctx.canvas.height);ctx.clip();
         const rock=this.assets['prop_asteroid_'+(ast.asteroidType||'void')];
-        const size=ast.isBoss?168:(small?122:148);
+        const size=ast.isBoss?(small?104:128):(small?78:104);
         for(const p of ast.trail||[]) {
           ctx.globalAlpha=Math.max(0,p.alpha*.55);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);
         }
@@ -403,7 +405,7 @@
         if(paper&&paper.loaded) ctx.drawImage(paper.img,safeX-paperW/2,cardY-paperH/2,paperW,paperH);
         else { ctx.fillStyle='#F5E7C7';ctx.fillRect(safeX-paperW/2,cardY-paperH/2,paperW,paperH); }
         ctx.font="800 "+fontSize+"px 'Be Vietnam Pro',sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';
-        const glyphY=cardY-paperH/2+28;
+        const glyphY=cardY-paperH/2+22;
         for(let i=0;i<ast.word.length;i++) {
           const row=Math.floor(i/cols), count=Math.min(cols,ast.word.length-row*cols), col=i%cols;
           const visible=i<ast.typedLen || (!ast.isAudio && (!ast.isCloze || i===0 || i===ast.word.length-1));

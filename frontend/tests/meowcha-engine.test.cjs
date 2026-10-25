@@ -9,7 +9,7 @@ function runtime() {
   const storage = new Map();
   const localStorage = { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) };
   const sandbox = { console, performance, crypto: require('node:crypto').webcrypto, Date, Math: Object.create(Math),
-    localStorage, URLSearchParams, navigator: {}, document: { getElementById: () => null, documentElement: { style: { setProperty() {} }, classList: { toggle() {} } }, querySelector: () => null },
+    localStorage, URLSearchParams, AbortController, navigator: {}, document: { getElementById: () => null, documentElement: { style: { setProperty() {} }, classList: { toggle() {} } }, querySelector: () => null },
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
@@ -35,6 +35,18 @@ test('a second account cannot put the first account legacy high score on its cer
  const otherSave=new r.M.SaveSystem(),otherState=new r.M.GameState();
  assert.equal(otherSave.canImportLegacy,false);
  assert.equal(otherSave.getCertificateRecord(otherState).score,0);
+});
+
+test('perfect typing streak records the peak, excludes a typo under immunity and survives save without inventing old history',()=>{
+ const r=runtime();r.state.talents.typoImmune=true;
+ const complete=(typo=false)=>{const target=word();r.asteroids.asteroids.push(target);r.engine.currentTarget=target;
+  if(typo)r.engine.processKey('Z',r.canvas);for(const char of target.word)r.engine.processKey(char,r.canvas);};
+ complete();complete();complete(true);assert.equal(r.state.maxPerfectStreak,2);
+ complete();complete();complete();assert.equal(r.state.maxPerfectStreak,3);
+ r.save.saveGame(1,r.state);const saved=r.save.getSlotModeData(1,'DIRECT'),loaded=new r.M.GameState();
+ loaded.restoreRunMetrics(saved);assert.equal(loaded.maxPerfectStreak,3);assert.equal(loaded.perfectMetricsKnown,true);
+ const older={...saved};delete older.perfectMetricsKnown;delete older.maxPerfectStreak;
+ loaded.restoreRunMetrics(older);assert.equal(loaded.perfectMetricsKnown,false);
 });
 
 test('certificate retains the measured best run after a fresh run resets to zero',()=>{
@@ -265,7 +277,8 @@ test('HTML and iframe use one asset release', () => {
   const page = fs.readFileSync(path.join(__dirname, '../app/games/meowcha/page.tsx'), 'utf8');
   const versions = [...html.matchAll(/(?:\.js|\.css)\?v=([^"']+)/g)].map(x => x[1]);
   assert.ok(versions.length > 20); assert.equal(new Set(versions).size, 1);
-  assert.ok(page.includes(versions[0]));
+  const release=JSON.parse(fs.readFileSync(path.join(__dirname,'../meowcha-release.json'),'utf8'));
+  assert.equal(versions[0],release.version);assert.match(page,/release\.version/);
 });
 
 test('local HTML and engine asset references resolve to shipped files', () => {
@@ -288,6 +301,30 @@ test('cloud saves coalesce and keep dirty local progress on a failed upload', as
   r.save.saveGame(1, r.state); await r.save.flushCloudSaves();
   assert.equal(r.save.getSlot(1).cloudDirty, true);
   assert.equal(new r.M.SaveSystem().getSlot(1).score, 2);
+});
+
+test('cloud revision conflicts survive reload, stop retries and reconcile with reversible local copies',async()=>{
+  const r=runtime();r.localStorage.setItem('oasis_token','test-token');
+  r.state.score=100;r.save.saveGame(1,r.state);r.save.cloudRevisions[1]='device-a';
+  let posts=0;r.sandbox.fetch=async()=>{posts++;return {ok:false,status:409};};
+  await r.save.flushCloudSaves();assert.equal(r.save.getSlot(1).cloudConflict,true);
+  const reload=new r.M.SaveSystem();await reload.flushCloudSaves();assert.equal(posts,1);
+  assert.equal(reload.getSlot(1).score,100);
+  r.sandbox.fetch=async()=>({ok:true,json:async()=>({success:true,data:{1:{revision:'device-b',snapshot:{...reload.getSlot(1),score:200,modes:{DIRECT:{...reload.getSlotModeData(1),score:200}}}}}})});
+  await reload.useCloudSnapshot(1);assert.equal(reload.getSlot(1).score,200);
+  assert.equal(reload.getRecovery(1).score,100);assert.equal(reload.getSlot(1).cloudDirty,false);
+  assert.equal(reload.restoreRecovery(1),true);assert.equal(reload.getSlot(1).score,100);
+  assert.equal(reload.getRecovery(1).score,200);
+  r.sandbox.fetch=async(url,options)=>{const sent=JSON.parse(options.body);assert.equal(sent.expected_revision,'device-b');assert.equal(sent.snapshot.score,100);
+    return {ok:true,json:async()=>({data:{revision:'restored'}})};};
+  await reload.flushCloudSaves();assert.equal(reload.cloudRevisions[1],'restored');assert.equal(reload.getSlot(1).cloudDirty,false);
+});
+
+test('full local storage aborts cloud reconciliation before replacing the original',async()=>{
+  const r=runtime();r.localStorage.setItem('oasis_token','test-token');r.state.score=123;r.save.saveGame(1,r.state);
+  r.sandbox.fetch=async()=>({ok:true,json:async()=>({data:{1:{revision:'b',snapshot:{score:999}}}})});
+  const put=r.localStorage.setItem;r.localStorage.setItem=(key,value)=>{if(key===r.save.recoveryKey)throw new Error('full');put(key,value);};
+  await assert.rejects(r.save.useCloudSnapshot(1),/full/);assert.equal(r.save.getSlot(1).score,123);
 });
 
 test('failed run completion stays in a durable outbox and retries the same id', async () => {

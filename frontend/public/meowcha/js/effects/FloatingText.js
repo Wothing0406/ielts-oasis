@@ -35,12 +35,13 @@
       }
       this.expOrbs=this.expOrbs.filter(o=>o.t<1);
     }
-    paper(ctx,x,y,w,h) {
+    paper(ctx,x,y,w,h,compact=false) {
       const paper=this.assets.ivory_scroll;
       if(paper && paper.loaded) {
         ctx.fillStyle='#F5E7C7';ctx.fillRect(x-w*.4,y-h*.29,w*.8,h*.58);
         ctx.imageSmoothingEnabled=false;
-        ctx.drawImage(paper.img,x-w/2,y-h/2,w,h);
+        if(compact)ctx.drawImage(paper.img,0,paper.img.height*.10,paper.img.width,paper.img.height*.72,x-w/2,y-h/2,w,h);
+        else ctx.drawImage(paper.img,x-w/2,y-h/2,w,h);
       } else { ctx.fillStyle='#F5E7C7'; ctx.fillRect(x-w*.45,y-h*.35,w*.9,h*.65); }
     }
     fit(ctx,text,width) {
@@ -58,20 +59,20 @@
       return lines.length ? lines : [''];
     }
     getBurstLayout(ctx, burst) {
-      const width = Math.min(ctx.canvas.width - 20, ctx.canvas.width < 600 ? 310 : 350);
-      ctx.font = "14px 'Be Vietnam Pro',sans-serif";
+      const width = Math.min(ctx.canvas.width - 24, ctx.canvas.width < 600 ? 246 : 292);
+      ctx.font = "13px 'Be Vietnam Pro',sans-serif";
       const ipaLines = this.wrap(ctx, burst.ipa && burst.ipa !== '/.../' ? burst.ipa : 'Chưa có phiên âm trong bộ từ này', width * .76);
-      ctx.font = "800 19px 'Be Vietnam Pro',sans-serif";
+      ctx.font = "800 18px 'Be Vietnam Pro',sans-serif";
       const wordLines = this.wrap(ctx, burst.word, width * .72);
       ctx.font = "12px 'Be Vietnam Pro',sans-serif";
       const M = root.Meowcha;
       const meaningLines = M.wrapLearningText ? M.wrapLearningText(ctx, burst.meaning, width * .75) : this.wrap(ctx, burst.meaning, width * .75);
-      const textHeight = 15 + (burst.type?16:0) + meaningLines.length * 16 + ipaLines.length * 17 + wordLines.length * 20;
-      const height = Math.max(145, (textHeight + 16) / .58);
-      const half = height / 2;
+      const textHeight = 13 + (burst.type?14:0) + meaningLines.length * 15 + ipaLines.length * 16 + wordLines.length * 20;
+      const height = Math.max(112, (textHeight + 18) / .80);
+      const half = height / 2,top=(M.battleLayout?.hudBottom||76)+8;
       return { width, height, ipaLines, wordLines, meaningLines, textHeight,
         x:Math.max(width/2 + 8, Math.min(ctx.canvas.width - width/2 - 8, burst.x)),
-        y:Math.max(half + 82, Math.min(ctx.canvas.height - half - 104, burst.y)) };
+        y:Math.max(half + top, Math.min(ctx.canvas.height - half - 104, burst.y)) };
     }
     draw(ctx) {
       ctx.save(); ctx.shadowBlur=0; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -92,15 +93,15 @@
         ctx.globalAlpha=Math.min(1,age*7,b.life/.35);
         const layout = this.getBurstLayout(ctx, b);
         const {x,y,width,height,ipaLines,wordLines,meaningLines} = layout;
-        this.paper(ctx,x,y,width,height);
-        let textY = y - height*.05 - layout.textHeight/2 + 12;
-        ctx.fillStyle='#20332D'; ctx.font="800 19px 'Be Vietnam Pro',sans-serif";
+        this.paper(ctx,x,y,width,height,true);
+        let textY = y - layout.textHeight/2 + 9;
+        ctx.fillStyle='#20332D'; ctx.font="800 18px 'Be Vietnam Pro',sans-serif";
         for (const line of wordLines) { ctx.fillText(line,x,textY); textY += 20; }
-        ctx.fillStyle='#37665C'; ctx.font="14px 'Be Vietnam Pro',sans-serif";
-        for (const line of ipaLines) { ctx.fillText(line,x,textY); textY += 17; }
+        ctx.fillStyle='#37665C'; ctx.font="13px 'Be Vietnam Pro',sans-serif";
+        for (const line of ipaLines) { ctx.fillText(line,x,textY); textY += 16; }
         ctx.fillStyle='#614734'; ctx.font="12px 'Be Vietnam Pro',sans-serif";
-        if(b.type){ctx.fillText(b.type,x,textY);textY+=16;}
-        for(const line of meaningLines) { ctx.fillText(line,x,textY+2); textY+=16; }
+        if(b.type){ctx.fillText(b.type,x,textY);textY+=14;}
+        for(const line of meaningLines) { ctx.fillText(line,x,textY+2); textY+=15; }
         ctx.fillStyle='#597C62'; ctx.font="bold 11px 'Be Vietnam Pro',sans-serif";
         ctx.fillText('+'+b.points+' Tu Vi',x,textY+3);
         ctx.restore();

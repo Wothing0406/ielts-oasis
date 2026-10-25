@@ -312,6 +312,8 @@
 
       // Nút đóng Modal Hồ Sơ Tu Chân Giả
       const btnProfileClose = document.getElementById("btnProfileCloseModal");
+      const profileDismiss=document.getElementById('btnProfileDismiss');
+      if(profileDismiss)profileDismiss.onclick=()=>this.hideProfileModal();
       if (btnProfileClose) {
         btnProfileClose.onclick = () => {
           this.hideProfileModal();
@@ -390,6 +392,9 @@
       if(btnReturnLobbyGameOver)btnReturnLobbyGameOver.onclick=event=>{event.preventDefault();this.finishGameOver(false);};
       const audioOpen=document.getElementById('btnAudioSettings'),audioClose=document.getElementById('btnCloseAudioSettings');
       if(audioOpen)audioOpen.onclick=()=>this.showAudioSettings();
+      document.querySelectorAll('[data-audio-volume]').forEach(input=>{
+        input.oninput=()=>{this.audio.setVolume(input.dataset.audioVolume,Number(input.value)/100);this.updateAudioSettings();};
+      });
       if(audioClose)audioClose.onclick=()=>{document.getElementById('modalAudioSettings').style.display='none';};
       const soundSwitch=document.getElementById('audioMasterEnabled'),recover=document.getElementById('btnAudioRecover');
       if(soundSwitch)soundSwitch.onchange=()=>{if(soundSwitch.checked)this.audio.enableSound();else if(this.audio.soundEnabled)this.audio.toggleSound();this.updateAudioSettings();};
@@ -899,7 +904,7 @@
           btnContinue.disabled = false;
           btnContinue.style.display = "flex";
           if (continueSub) {
-            continueSub.innerText = `${(modeData.score || 0).toLocaleString()} Tu Vi · ${modeName}`;
+            continueSub.innerText = `${(modeData.score || 0).toLocaleString()} Tu Vi`;
           }
         }
         if (btnRestart) {
@@ -923,7 +928,7 @@
             startBtnText.innerText = "VÀO TRẬN ĐỘ KIẾP";
           }
           if (startBtnSub) {
-            startBtnSub.innerText = `[ ${modeName} • Phím SPACE ]`;
+            startBtnSub.innerText = modeName;
           }
         }
       }
@@ -1050,6 +1055,28 @@
           `;
         }
 
+        if(slot.cloudConflict){
+          const notice=document.createElement('p');notice.className='slot-conflict-note';
+          notice.textContent='Có bản máy chủ khác • Bản trên máy này vẫn được giữ.';card.appendChild(notice);
+        }
+        if(!inBattle&&(slot.cloudConflict||this.saveSystem.getRecovery?.(i))){
+          const cloud=document.createElement('button');cloud.type='button';cloud.className='mc-utility';cloud.textContent='Đối chiếu • Dùng bản máy chủ';
+          cloud.onclick=()=>this.showConfirm('Dùng đạo quả máy chủ?',
+            'Bản trên máy này sẽ được giữ trong Bản sao máy trước khi chuyển sang bản máy chủ.',async()=>{
+              try{await this.saveSystem.useCloudSnapshot(i);this.applyReconciledSlot(i);this.showStatus('Đã dùng bản máy chủ. Bản máy cũ còn trong Bản sao máy.');}
+              catch(error){this.showStatus(error.message||'Chưa đối chiếu được. Hai bản vẫn được giữ.');}
+            },'GIỮ BẢN MÁY','DÙNG MÁY CHỦ');
+          card.appendChild(cloud);
+          if(this.saveSystem.getRecovery(i)){
+            const restore=document.createElement('button');restore.type='button';restore.className='mc-utility';restore.textContent='Bản sao máy • Khôi phục';
+            restore.onclick=()=>this.showConfirm('Khôi phục bản sao máy?',
+              'Bản đang dùng sẽ được sao lại. Bản sao được chọn sẽ thành tiến trình đang chơi và đồng bộ khi phiên bản máy chủ còn khớp.',()=>{
+                try{this.saveSystem.restoreRecovery(i);this.applyReconciledSlot(i);this.showStatus('Đã khôi phục bản sao trên máy.');}
+                catch(_){this.showStatus('Chưa khôi phục được; các bản sao vẫn được giữ.');}
+              },'GIỮ HIỆN TẠI','KHÔI PHỤC');
+            card.appendChild(restore);
+          }
+        }
         container.appendChild(card);
       }
 
@@ -1137,6 +1164,11 @@
           );
         };
       });
+    }
+
+    applyReconciledSlot(slotId){
+      this.state.loadFromSlot(this.saveSystem.getSlot(slotId));this.state.activeSlotId=slotId;
+      this.saveSystem.setActiveSlotId(slotId);this.renderSaveSlotsUI();this.updateHUD();this.updateLobbyButtons();
     }
 
     showTalentModal(talents, targetRealm, onSelect) {
@@ -1543,6 +1575,12 @@
       if(!modal||modal.style.display==='none')return;
       const enabled=document.getElementById('audioMasterEnabled');
       if(enabled)enabled.checked=this.audio.soundEnabled;
+      modal.querySelectorAll('[data-audio-volume]').forEach(input=>{
+        const value=Math.round((this.audio.volumes?.[input.dataset.audioVolume]??1)*100);
+        input.value=String(value);
+        const output=modal.querySelector('[data-audio-output="'+input.dataset.audioVolume+'"]');
+        if(output)output.textContent=value+'%';
+      });
       const status=this.audio.getStatus();
       const message=document.getElementById('audioSettingsStatus');
       if(message)message.textContent=!status.enabled?'Đang tắt nhạc, hiệu ứng và phát âm.':

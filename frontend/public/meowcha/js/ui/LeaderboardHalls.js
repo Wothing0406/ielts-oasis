@@ -5,7 +5,7 @@
  const pct=v=>v==null?'Chưa lưu':num(v)+'%';
  const names={OVERALL:'Tổng Đạo',DIRECT:'Trực Diện',CLOZE:'Ngộ Đạo',AUDIO:'Thính Âm',LEGACY:'Lưu Trữ'};
  const configs={
-  OVERALL:{title:'Tổng Đạo • Tam pháp đồng tu',description:'Đạo Hạnh tối đa 300: mỗi pháp môn đóng góp tối đa 100. Thành tích thiếu số đo được giữ riêng trong từng điện.',
+  OVERALL:{title:'Tổng Đạo • Tam pháp đồng tu',description:'Đủ ba pháp môn mới xếp hạng. Đạo Hạnh tối đa 300, ưu tiên đồng đều: 40% pháp môn thấp nhất + 60% trung bình, quy về thang 300.',
    columns:['Hạng','Tiên Hữu','Cảnh Giới','Đạo Hạnh','Tổng Tu Vi','Pháp Môn Sở Trường'],values:r=>[num(r.dao_hanh),num(r.total_score),names[r.strongest_mode]||'Chưa lưu'],hero:r=>num(r.dao_hanh)+' Đạo Hạnh'},
   DIRECT:{title:'Kiếm Đạo Điện • Trực Diện',description:'Xếp theo Kiếm Tốc (WPM), rồi Kiếm Chuẩn, Liên Trảm và Đạo Quả. Chỉ lấy ván Trực Diện đã hoàn tất.',
    columns:['Hạng','Tiên Hữu','Cảnh Giới','Kiếm Tốc','Kiếm Chuẩn','Liên Trảm','Đạo Quả'],values:r=>[num(r.wpm)+' WPM',pct(r.accuracy),num(r.max_combo),num(r.score)],hero:r=>num(r.wpm)+' WPM'},
@@ -49,6 +49,8 @@
    const active=button.dataset.hall===this.boardHall;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;
   });
   const title=this.modalPantheon.querySelector('.modal-title');if(title)title.textContent=config.title;
+  const champion=this.modalPantheon.querySelector('#podiumCard1 .podium-crown span');
+  if(champion)champion.textContent=({OVERALL:'Vạn Pháp Đạo Tôn',DIRECT:'Kiếm Tốc Chân Nhân',CLOZE:'Ngộ Đạo Chân Nhân',AUDIO:'Thiên Nhĩ Chân Nhân',LEGACY:'Chí Tôn Kim Miện'})[this.boardHall];
   const desc=this.modalPantheon.querySelector('.hall-description');if(desc)desc.textContent=config.description;
   const header=this.modalPantheon.querySelector('.pantheon-table-header');if(header)header.innerHTML=config.columns.map(c=>'<span role="columnheader">'+esc(c)+'</span>').join('');
   this.modalPantheon.style.setProperty('--hall-cols',config.columns.length);
@@ -61,7 +63,7 @@
   const panel=this.pantheonPlayerSelfStats;if(!panel)return;
   const row=this.boardSelf,mode=this.boardHall||'OVERALL',config=configs[mode];
   if(!row){panel.textContent=user.isLoggedIn?'Chưa có thành tích đã hoàn tất trong điện này.':'Đăng nhập để xem hạng và thành tích riêng của tài khoản.';return;}
-  panel.textContent='Hạng #'+row.rank+' • '+config.columns.slice(3).map((label,i)=>label+': '+config.values(row)[i]).join(' • ')+
+  panel.textContent=(mode==='OVERALL'&&!row.eligible?'Chưa hoàn tất Tam Pháp Đồng Tu • '+(row.complete_modes||[]).length+'/3 pháp môn':'Hạng #'+row.rank)+' • '+config.columns.slice(3).map((label,i)=>label+': '+config.values(row)[i]).join(' • ')+
     (mode==='OVERALL'?' • '+row.completed_runs+' trận • '+num(row.words_slain)+' từ':'');
  };
  UI.loadLeaderboardFromAPI=async function(){
@@ -85,6 +87,7 @@
     list.innerHTML='<div class="board-message" role="status">Chưa có trận hoàn tất ở điện này. Chiến tích cũ nằm trong Lưu Trữ.</div>';
    }
   }catch(error){
+   M.report?.('leaderboard_failed');
    if(this.boardRequest!==request)return;
    this.boardSelf=null;this.renderPantheonLeaderboard([]);
    list.innerHTML='<div class="board-message" role="alert">Chưa tải được Bảng Phong Thần. Kiểm tra kết nối rồi thử lại.</div><button class="btn-xianxia-seal" id="boardRetry">Thỉnh bảng lại</button>';

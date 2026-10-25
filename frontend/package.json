@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/meowcha-release.cjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:meowcha": "node --test tests/meowcha-engine.test.cjs tests/meowcha-audio.test.cjs tests/meowcha-ui-flows.test.cjs",
+    "test:meowcha": "node --test tests/meowcha-engine.test.cjs tests/meowcha-audio.test.cjs tests/meowcha-ui-flows.test.cjs tests/meowcha-session.test.cjs",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

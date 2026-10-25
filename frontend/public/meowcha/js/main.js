@@ -157,7 +157,7 @@
       this.gameOverModalShown = false;
     }
 
-    init() {
+    async init() {
       if (M.installPixelArt) M.installPixelArt();
       if (M.installDesignSystem) M.installDesignSystem();
       this.loadAllAssets();
@@ -222,6 +222,7 @@
         () => this.restartBattle(),
         this.assets
       );
+      this.saveSystem.onSyncIssue=message=>this.ui.showStatus(message,8000);
 
       // Kết nối callback khi trảm từ hoàn tất
       this.typing.onWordCompleted = (slainWord) => {
@@ -282,6 +283,9 @@
         }
       });
 
+      // Cloud precedes selecting the journey, including a first boot on another device.
+      await this.saveSystem.syncWithBackend();
+      await this.saveSystem.syncPersonalBest().catch(()=>{});
       // Nạp tự động tiến trình đã lưu nếu có (theo slot đang hoạt động)
       const activeSave = this.saveSystem.hasActiveSave();
       if (activeSave) {
@@ -412,7 +416,7 @@
       Object.keys(this.assets).forEach(key => {
         const item = this.assets[key];
         item.img.onload = () => { item.loaded = true; };
-        item.img.onerror = () => { console.warn(`[AssetLoader] Không thể tải: ${item.src}`); };
+        item.img.onerror = () => { M.report?.('asset_load_failed'); };
         item.img.src = item.src;
       });
     }
@@ -494,6 +498,7 @@
 
       // Tự động mở khóa âm thanh và phát khúc Cổ Cầm thiền định ngay khi tương tác ở sảnh
       const unlockAudioAndStartBGM = (event) => {
+        if(M.Session?.blocked)return;
         if (event && event.target && event.target.closest && event.target.closest('#btnToggleSound, #btnToggleSoundLobby, #modalAudioSettings')) return;
         if (this.audio) {
           this.audio.init();
@@ -534,6 +539,8 @@
     }
 
     startBattle() {
+      if(M.Session?.blocked)return;
+      this.audio.setMode?.(this.gameState.gameMode);
       if (this.gameState.runFinished) this.gameState.resetRunMetrics();
       this.gameState.currentScene = "BATTLE";
       this.gameState.isPaused = false;
@@ -664,6 +671,7 @@
     }
 
     spawnWord() {
+      if(M.Session?.blocked)return;
       if(this.floatingText&&this.floatingText.hasBlockingReward&&this.floatingText.hasBlockingReward())return;
       if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver || this.gameState.isPaused || this.gameState.catState === "BREAKTHROUGH") return;
       if (this.breakthrough && this.breakthrough.isBossEncounterActive) return;
@@ -1084,11 +1092,19 @@
   }
 
   // Khởi động khi DOM sẵn sàng
-  window.addEventListener("DOMContentLoaded", () => {
+  const boot=async()=>{
+    try{
+    if(M.app)return;
+    if(M.Session&&!(await M.Session.authorize()))return;
+    document.body.dataset.session='loading';
     window.MeowchaGameInstance = new MeowchaApp();
     root.Meowcha.app = window.MeowchaGameInstance;
-    window.MeowchaGameInstance.init();
-  });
+    await window.MeowchaGameInstance.init();
+    if(!M.Session?.blocked)document.body.dataset.session='ready';
+    }catch(_){M.bootFailed=true;M.report?.('game_boot_failed');M.Session?.expire('error');}
+  };
+  window.addEventListener("DOMContentLoaded", boot);
+  document.addEventListener('meowcha-session-ready',boot);
 
   root.Meowcha = root.Meowcha || {};
   root.Meowcha.App = MeowchaApp;

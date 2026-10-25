@@ -124,6 +124,7 @@
       this.assistedWords = 0;
       this.humanWords = 0;
       this.humanWordCombo = 0;
+      this.maxPerfectStreak=0;this.perfectMetricsKnown=true;
       this.assisted = false;
       this.runFinished = false;
       this.baselineScore = 0;
@@ -158,18 +159,21 @@
         'assistedKeystrokes', 'assistedWords', 'humanWords', 'humanWordCombo', 'assisted',
         'runFinished', 'baselineScore', 'baselineWords', 'maxCombo', 'typoCount', 'activeDeckId',
         'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers',
-        'learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount'];
+        'learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount',
+        'maxPerfectStreak','perfectMetricsKnown'];
       return Object.fromEntries(fields.map(k => [k, this[k]]));
     }
 
     restoreRunMetrics(data) {
       this.resetRunMetrics();
       if (data && data.runId && !data.runFinished) {
+        this.perfectMetricsKnown=!!data.perfectMetricsKnown;
         this.learningMetricsVersion=data.learningMetricsVersion===2?2:1;
         for (const key of Object.keys(this.getRunMetrics())) {
           if (data[key] !== undefined) this[key] = data[key];
         }
       } else if (data && (data.score || data.words)) {
+        this.perfectMetricsKnown=false;
         // Old saves have no verifiable typing clock; retain progress as assisted practice.
         this.assisted = true;
         this.baselineScore = data.score || 0;

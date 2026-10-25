@@ -5,6 +5,8 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import random
 import logging
+import hashlib
+import json
 
 from database import get_db
 from models import MeowchaVocab, MeowchaSave, MeowchaLeaderboard, MeowchaUserProfile, MeowchaBattleLog, User
@@ -61,6 +63,13 @@ def api_response(data: Any = None, success: bool = True, error: Optional[Dict[st
     return res
 
 
+@router.get('/session')
+def game_session(user=Depends(get_meowcha_user_from_token)):
+    require_user(user)
+    return api_response({'id':user.id,'username':user.username,
+        'full_name':getattr(user,'full_name',None), 'avatar_url':user.avatar_url or ''})
+
+
 @router.post('/runs')
 def create_run(payload: RunStart, user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
     run = start_run(db, user, payload)
@@ -72,11 +81,18 @@ def finish_run(payload: RunComplete, user=Depends(get_meowcha_user_from_token), 
     return api_response(complete_run(db, user, payload))
 
 
+def snapshot_revision(row):
+    # MySQL DATETIME may truncate fractions. Include content so two writes in
+    # the same second still have different revisions; no schema change needed.
+    canonical=json.dumps(row.snapshot,sort_keys=True,separators=(',',':'),ensure_ascii=True)
+    return hashlib.sha256((row.updated_at.isoformat()+'|'+canonical).encode()).hexdigest()
+
+
 @router.get('/save-snapshots')
 def get_save_snapshots(user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
     require_user(user)
     rows = db.query(MeowchaSaveSnapshot).filter(MeowchaSaveSnapshot.user_id == user.id).all()
-    result = {str(row.slot_id): {'snapshot': row.snapshot} for row in rows}
+    result = {str(row.slot_id): {'snapshot': row.snapshot,'revision':snapshot_revision(row)} for row in rows}
     # Non-destructive migration: old cloud slots remain readable until first v2 save.
     legacy = db.query(MeowchaSave).filter(MeowchaSave.user_id == user.id, MeowchaSave.is_occupied == True).all()
     for row in legacy:
@@ -115,14 +131,14 @@ def put_save_snapshot(slot_id: int, payload: SaveSnapshotPayload,
     db.query(User).filter(User.id == user.id).with_for_update().one()
     row = db.query(MeowchaSaveSnapshot).filter(MeowchaSaveSnapshot.user_id == user.id,
         MeowchaSaveSnapshot.slot_id == slot_id).with_for_update().first()
-    if row and payload.snapshot.get('updatedAt', 0) < row.snapshot.get('updatedAt', 0):
-        raise HTTPException(409, 'A newer cloud save exists; local progress has been preserved')
+    if payload.expected_revision != (snapshot_revision(row) if row else ''):
+        raise HTTPException(409,'Cloud revision changed; both copies have been preserved')
     if not row:
         row = MeowchaSaveSnapshot(user_id=user.id, slot_id=slot_id)
         db.add(row)
     row.snapshot, row.updated_at = payload.snapshot, datetime.utcnow()
     db.commit()
-    return api_response({'saved': True, 'slot_id': slot_id})
+    return api_response({'saved': True, 'slot_id': slot_id,'revision':snapshot_revision(row)})
 
 
 # =========================================================================
@@ -578,7 +594,7 @@ def get_halls(hall: str=Query('OVERALL',pattern='^(OVERALL|DIRECT|CLOZE|AUDIO)$'
     board=build_hall(db,hall,assisted,deck_id,limit,user.id if user else None)
     return api_response(board['rows'],meta={'hall':hall,'assisted':assisted,'deck_id':deck_id,
         'self':board['self'],'total_players':board['total_players'],'verification':'plausibility_checked',
-        'formula_version':1,'competitive':False})
+        'formula_version':2,'competitive':False})
 
 
 @router.get("/leaderboard", response_model=Dict[str, Any])
@@ -650,29 +666,9 @@ def get_cultivator_profile(
     db: Session = Depends(get_db)
 ):
     """
-    Lấy thông tin Hồ Sơ Tu Chân Giả của người chơi đăng nhập.
-    Nếu là khách vãng lai, trả về dữ liệu tu luyện mặc định.
+    Hồ sơ thuộc danh tính đã xác thực của website chính.
     """
-    if not user:
-        return api_response(
-            data={
-                "is_logged_in": False,
-                "player_name": "Tiểu Miêu Kiếm Sĩ",
-                "avatar_url": "",
-                "total_score": 0,
-                "highest_realm": "Luyện Khí Kỳ",
-                "highest_realm_idx": 0,
-                "total_words_slain": 0,
-                "highest_wpm": 0,
-                "games_played": 0,
-                "spirit_stones": 0,
-                "unlocked_titles": ["Kiếm Đồng"],
-                "unlocked_talents": {},
-                "active_slot_id": 1
-            },
-            success=True
-        )
-
+    require_user(user)
     profile = db.query(MeowchaUserProfile).filter(MeowchaUserProfile.user_id == user.id).first()
     if not profile:
         profile = MeowchaUserProfile(
@@ -695,9 +691,11 @@ def get_cultivator_profile(
     player_name = getattr(user, 'full_name', None) or user.username or 'Tiên Hữu'
     avatar_url = getattr(user, "avatar_url", None) or getattr(user, "discord_avatar", None) or ""
 
+    from meowcha_halls import build_mastery
     return api_response(
         data={
             "is_logged_in": True,
+            "tam_phap": build_mastery(db,user.id),
             "user_id": user.id,
             "player_name": player_name,
             "avatar_url": avatar_url,

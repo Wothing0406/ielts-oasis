@@ -6,7 +6,7 @@
 <script>
 const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
 function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
-setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
+setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),session:{owner:frame.contentWindow.Meowcha.Session?.owner,blocked:frame.contentWindow.Meowcha.Session?.blocked,runId:g.gameState.runId,paused:g.gameState.isPaused},mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
 document.getElementById('qaSize').onchange=event=>{
  const [width,height]=event.target.value.split(',').map(Number);
  frame.style.width=width+'px';frame.style.height=height+'px';
@@ -62,6 +62,20 @@ document.getElementById('qaBurst').onclick=()=>{
 document.getElementById('qaMobile').onclick=()=>{const g=app(),D=frame.contentWindow.Meowcha.Device;if(!g)return;
  D.info.isDesktop=false;D.info.isMobile=true;D.info.isTablet=false;D.info.isTouchDevice=true;D.applyDOMClasses();D.setUserPrefKeyboard(true);g.vKeyboard.show();g.initCanvasSize();result='Mô phỏng layout cảm ứng (không phải thiết bị thật)';};
 function extraButton(id,label,fn){const button=document.createElement('button');button.id=id;button.textContent=label;button.onclick=fn;document.getElementById('tools').insertBefore(button,status);}
+for(const [phase,label] of [['expired','Phiên hết hạn QA'],['A','Đăng nhập lại A QA'],['B','Đổi tài khoản B QA']])extraButton('qaSession-'+phase,label,async()=>{
+ await fetch('/preview/session/'+phase,{method:'POST'});await frame.contentWindow.Meowcha.Session.authorize();result='Phiên QA: '+phase;
+});
+extraButton('qaAudioClose','Ngắt audio context QA',async()=>{const g=app();await g.audio.ctx.close();g.audio.recover();result='Khôi phục context mới';});
+extraButton('qaCloudConflict','Hai thiết bị QA',async()=>{
+ const g=app();g.returnToLobby();
+ // Reconcile only disposable fixture data before simulating a competing writer.
+ const current=await fetch('/api/meowcha/save-snapshots').then(r=>r.json());
+ g.saveSystem.cloudRevisions[1]=current.data?.[1]?.revision||'';
+ g.saveSystem.getSlot(1).cloudConflict=false;g.saveSystem.saveGame(1,g.gameState);await g.saveSystem.flushCloudSaves();
+ await fetch('/preview/cloud-change',{method:'POST'});g.gameState.score+=100;
+ g.saveSystem.saveGame(1,g.gameState);await g.saveSystem.flushCloudSaves();
+ g.ui.showSavesModal();result='CAS: máy chủ +500, máy này +100. Đối chiếu giữ cả hai.';
+});
 const meteorSelect=document.createElement('select');meteorSelect.id='qaMeteorType';meteorSelect.setAttribute('aria-label','Loại thiên thạch');
 meteorSelect.innerHTML='<option value="ice">Băng</option><option value="fire">Hỏa</option><option value="void">Hư không</option><option value="thunder">Huyết lôi</option>';document.getElementById('tools').insertBefore(meteorSelect,status);
 const modeSelect=document.createElement('select');modeSelect.id='qaMode';modeSelect.setAttribute('aria-label','Pháp môn kiểm thử');modeSelect.innerHTML='<option value="DIRECT">Trực Diện</option><option value="CLOZE">Ngộ Đạo</option><option value="AUDIO">Thính Âm</option>';document.getElementById('tools').insertBefore(modeSelect,status);

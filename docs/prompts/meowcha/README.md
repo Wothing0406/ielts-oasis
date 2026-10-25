@@ -115,3 +115,5 @@ Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
 
 - [14 — Mobile talents, AUDIO IPA, spawn flow, meteor thẳng](14-mobile-talents-audio-spawn.md).
 - [15 — Bốn Phong Thần điện, ngọc bài và thành tích riêng](15-three-mode-halls.md).
+- [16 — Đối chiếu toàn bộ plan, UI liền cụm, tỉ lệ ma thạch](16-cohesive-ui-size-audit.md).
+  [Kiểm tra phần còn thiếu và nghiệm thu](../../meowcha-plan-audit-16.md).

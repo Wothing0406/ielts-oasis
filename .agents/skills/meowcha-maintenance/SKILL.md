@@ -83,3 +83,23 @@ inside audio settings so they cannot reset a checkbox before its change event.
 When an active save mode is empty, preserve/resume another valid saved mode with
 its own metrics, HP and skills. The is-reviewing phase hides current-target UI
 and skill controls while the independent reward record is open.
+
+For release 16.0 consult docs/meowcha-plan-audit-16.md and meowcha-release-16.0.md.
+A shared material palette is not enough: group lobby commands/stats into one
+console, attach modal headers/actions, keep the battle HUD/altar joined, and
+review meteor/reward scale on 320px with the keyboard. Preserve complete IPA.
+Website session authority gates both parent and direct engine boot. Session.js
+owns expiry, same-owner recovery and account-switch reload; use UI.setPause,
+not setPaused. Never upload an old owner's save with a new owner's credentials.
+Cloud saves use expected_revision against SHA256(updated_at + canonical snapshot), including same-second MySQL writes. A 409
+keeps both copies and stops retries; Ngoc Gian offers explicit reconciliation
+and bounded per-account recovery copies. Archive before replacing; abort if
+storage is full. Do not use a newer client timestamp to bypass a changed revision.
+Overall requires measured results in all three modes. Formula v2 is
+3*(0.4*minimum + 0.6*mean) of the three best mode ratings. Profile mastery also
+needs practice volume; never invent old perfect-streak/learning counters.
+Audio uses MASTER plus BGM/SFX/VOICE/AMBIENCE, account-scoped levels, authored
+CC0 samples with credits/hashes and explicit procedural fallback. Recheck serial
+voices, mute, ducking and closed-context recovery; never claim physical-device QA
+from a viewport. frontend/meowcha-release.json is the release source; prebuild
+syncs all static asset versions. Keep test preview controls off production.

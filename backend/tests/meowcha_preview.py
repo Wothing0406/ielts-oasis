@@ -24,7 +24,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from database import Base, get_db
 from meowcha_routes import router,get_meowcha_user_from_token
-from meowcha_integrity import MeowchaRun
+from meowcha_integrity import MeowchaRun, MeowchaSaveSnapshot
 from models import User, MeowchaLeaderboard
 
 engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
@@ -58,11 +58,20 @@ def isolated_db():
 
 app = FastAPI()
 app.dependency_overrides[get_db] = isolated_db
+qa_session='A'
 def qa_identity():
+    if qa_session=='expired':return None
     with Session() as db:
-        return db.get(User,7001)
+        return db.get(User,7002 if qa_session=='B' else 7001)
 app.dependency_overrides[get_meowcha_user_from_token]=qa_identity
 app.include_router(router)
+
+
+@app.post('/preview/session/{phase}')
+def fixture_session(phase: str):
+    global qa_session
+    if phase in ['A','B','expired']:qa_session=phase
+    return {'phase':qa_session}
 
 
 @app.get('/preview/meowcha', response_class=HTMLResponse)
@@ -78,6 +87,18 @@ def preview():
           event.data?.type === 'MEOWCHA_NAVIGATE' && event.data.path === '/games') location.assign('/games');
     });</script>
     </main></body></html>'''
+
+
+@app.post('/preview/cloud-change')
+def fixture_cloud_change():
+    with Session() as db:
+        row=db.query(MeowchaSaveSnapshot).filter_by(user_id=qa_identity().id,slot_id=1).first()
+        if not row:return {'changed':False}
+        snapshot={**row.snapshot,'score':(row.snapshot.get('score') or 0)+500}
+        modes={**snapshot.get('modes',{})};mode=snapshot.get('activeMode','DIRECT')
+        modes[mode]={**modes.get(mode,{}),'score':snapshot['score']}
+        row.snapshot={**snapshot,'modes':modes};row.updated_at=datetime.utcnow();db.commit()
+        return {'changed':True}
 
 
 @app.get('/preview/meowcha-qa', response_class=HTMLResponse)

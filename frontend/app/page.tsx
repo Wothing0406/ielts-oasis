@@ -34,6 +34,7 @@ import MatchaRadio from "@/components/MatchaRadio";
 import MatchaSpeak from "@/components/MatchaSpeak";
 import VocabularyQuiz from "@/components/VocabularyQuiz";
 import MatchaNotification, { ToastData, ModalData } from "@/components/MatchaNotification";
+import { rememberMeowchaReturn, consumeMeowchaReturn } from "@/utils/meowchaReturn";
 
 const API_URL = "/api";
 
@@ -65,6 +66,7 @@ export default function Home() {
   const [dueCountFromApi, setDueCountFromApi] = useState(0);
 
   useEffect(() => {
+    rememberMeowchaReturn();
     (window as any).showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
       setToast({ message, type });
     };
@@ -426,6 +428,7 @@ export default function Home() {
   };
 
   const handleLogin = () => {
+    rememberMeowchaReturn();
     const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
     fetch(`${API_URL}/auth/discord/login?redirect_uri=${redirectUri}`)
       .then(res => res.json())
@@ -467,6 +470,8 @@ export default function Home() {
         fetchVocabs(data.token);
         syncToExtension("OASIS_AUTH_SYNC", { token: data.token, user: data.user });
         (window as any).showToast("Login successful! Welcome back", "success");
+        const gameReturn = consumeMeowchaReturn();
+        if (gameReturn) window.location.assign(gameReturn);
       } else {
         (window as any).showToast(data.detail || "Login failed.", "error");
         resetCaptcha();

@@ -58,10 +58,12 @@
 
 - Các result là luyện tập có kiểm tra giới hạn hợp lý; chưa phải server replay
   chống gian lận hoàn chỉnh, không dùng ngôn ngữ “cheat-proof”.
-- Track nhạc và SFX vật lý hiện dùng tổng hợp Web Audio. Không được gọi đó là bộ
-  sample nhạc cụ/foley thu âm đã hoàn thiện. Brief 06 là hướng nâng cấp tiếp.
-- Tổng Đạo và số đo Nhất Ngộ/Nhất Thính được triển khai trong đợt 15.0, theo
-  brief 14/15. Auth gate toàn bộ vòng đời phiên trong brief 07 vẫn là phạm vi riêng.
+- Từ 16.0, nhạc và các SFX vật lý chính dùng file CC0 có nguồn trong audio/CREDITS.md.
+  Track Tozan là koto/shakuhachi/ensemble, không gọi là guqin mới thu âm. Wind và
+  feedback nhỏ còn tổng hợp; decode thất bại có fallback. Chưa đo RAM/audio trên máy thật.
+- Tổng Đạo và số đo Nhất Ngộ/Nhất Thính có từ 15.0. Từ 16.0 chỉ xếp Tổng Đạo khi
+  đủ ba mode đo được. Auth gate/vòng đời phiên đã có; OAuth/Turnstile người thật
+  và iOS/Android vật lý vẫn cần nghiệm thu riêng, không dùng fixture thay chứng cứ.
 - Không vượt Cloudflare để kiểm tra. Ghi rõ kiểm tra engine public hay trang cha
   bằng fixture; không đánh đồng hai phạm vi.
 
@@ -118,8 +120,9 @@
   của mode đó. Đếm nghe lại trước đáp án; nghe lại record đã học là ôn riêng.
   `learningMetricsVersion=2`; ván cũ không được bịa số đếm mới. Hint làm ván có hỗ trợ.
 - Đạo Hạnh: DIRECT = min(WPM/120,1) × accuracy; CLOZE/AUDIO =
-  0.7 × accuracy + 0.3 × first-success-rate. Lấy mức tốt nhất mỗi mode, cộng
-  tối đa 300. Mode thiếu first-rate chưa đóng góp; Tổng Tu Vi cộng run ID duy nhất.
+  0.7 × accuracy + 0.3 × first-success-rate. Công thức từ 16.0: lấy mức tốt nhất
+  mỗi mode rồi 3 × (0.4 × min + 0.6 × trung bình), tối đa 300, cần đủ ba mode
+  mới có hạng. Mode thiếu first-rate chưa đóng góp; Tổng Tu Vi cộng run ID duy nhất.
   Cùng deck/nhóm hỗ trợ. Đây vẫn là bảng luyện tập kiểm tra hợp lý, chưa server replay.
 - Profile/kỷ lục phải lấy record đúng tài khoản; không mượn global guest high score.
   Main sở hữu việc nộp kết quả game-over; UI chỉ hiển thị. HUD cập nhật 10 lần/s
@@ -135,3 +138,20 @@
   toàn bộ asset release `15.1`. Lời thoại canvas dùng wrapLearningText để không
   bẻ chữ Việt giữa âm tiết. Kết quả/backup/giới hạn ở meowcha-release-15.0.md.
   70 kiểm thử game/audio, 17 API đạt; web/backend Linux healthy, dữ liệu giữ nguyên.
+
+## Đợt 16.0 — quyết định đang dùng
+
+- Đối chiếu đầy đủ brief: docs/meowcha-plan-audit-16.md; kết quả ở
+  docs/meowcha-release-16.0.md. Không báo full plan 100% khi còn nghiệm thu thiết bị.
+- Sảnh dùng một console chung cho HP/WPM/kiếm/đổi mode/trùng tu, nav một rail;
+  HUD một khung; giới hạn đá thường 78/104 px, reward 246/292 px mobile/PC.
+- Session.js xác nhận danh tính server/profile trước boot, cùng chủ giữ run,
+  đổi chủ reload. UI pause gọi setPause. Save không được đi với credentials chủ khác.
+- Bản lưu dùng revision SHA256(updated_at + canonical snapshot), so trong khóa
+  hàng; đủ phân biệt hai lần lưu cùng giây MySQL. Xung đột giữ cả hai; Ngọc Giản
+  đối chiếu và khôi phục, ba bản sao/slot/tài khoản, hết chỗ thì dừng trước thay.
+- Audio: MASTER + BGM/SFX/VOICE/AMBIENCE, năm volume lưu theo tài khoản, sample
+  CC0 có nguồn/license/hash, procedural nhỏ và fallback rõ. Đã quan sát 20 từ và
+  closed-context recovery trên trình duyệt PC; chưa chứng nhận iPhone thật.
+- Một nguồn release frontend/meowcha-release.json; script prebuild chạy được
+  trong frontend-only Docker context, đồng bộ HTML/CSS/JS/iframe/static JSON.

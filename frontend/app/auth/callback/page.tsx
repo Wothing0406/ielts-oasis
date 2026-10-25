@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { consumeMeowchaReturn } from '@/utils/meowchaReturn';
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -43,7 +44,7 @@ function AuthCallbackContent() {
           }
           setStatus("Đăng nhập thành công! Đang chuyển hướng...");
           timerId = setTimeout(() => {
-            router.push('/');
+            router.replace(consumeMeowchaReturn() || '/');
           }, 1000);
         } else {
           setStatus("Đăng nhập thất bại: " + (data.detail || 'Unknown error'));

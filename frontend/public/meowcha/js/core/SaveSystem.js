@@ -34,6 +34,10 @@
         const user = JSON.parse(this.storage.getItem('oasis_user') || 'null');
         owner = String(user && (user.id || user.user_id || user.username) || 'guest');
       } catch (_) {}
+      this.owner=owner;
+      this.cloudRevisionKey='meowcha_cloud_revisions:'+owner;
+      this.recoveryKey='meowcha_save_recovery:'+owner;
+      try{this.cloudRevisions=JSON.parse(this.storage.getItem(this.cloudRevisionKey)||'{}');}catch(_){this.cloudRevisions={};}
       this.storageKey = `${STORAGE_KEY}:${owner}`;
       this.reviewKey = `meowcha_srs_weaknesses:${owner}`;
       this.pendingRunsKey = `meowcha_pending_runs:${owner}`;
@@ -166,11 +170,11 @@
     }
 
     async syncPersonalBest() {
-      if (!this.getAuthHeaders().Authorization || typeof fetch === 'undefined') return;
+      if (!this.hasSession() || typeof fetch === 'undefined') return;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
       try {
-        const response = await fetch('/api/meowcha/personal-best', { headers:this.getAuthHeaders(), signal:controller.signal });
+        const response = await this.request('/api/meowcha/personal-best', { headers:this.getAuthHeaders(), signal:controller.signal });
         if (!response.ok) throw new Error('Không lấy được kỷ lục từ máy chủ');
         const body = await response.json(), record = body.data;
         if (record && record.score > (this.getStoredPersonalBest().score || 0)) {
@@ -180,9 +184,9 @@
     }
 
     startRun(state) {
-      if (!this.getAuthHeaders().Authorization || state.runFinished) return Promise.resolve(false);
+      if (!this.hasSession() || state.runFinished) return Promise.resolve(false);
       if (this._runStarts.has(state.runId)) return this._runStarts.get(state.runId);
-      const request = fetch('/api/meowcha/runs', {
+      const request = this.request('/api/meowcha/runs', {
         method: 'POST', headers: this.getAuthHeaders(),
         body: JSON.stringify({ run_id: state.runId, game_mode: state.gameMode, deck_id: state.activeDeckId,
           resumed: (state.activeElapsedMs || 0) > 0 })
@@ -193,7 +197,7 @@
     }
 
     async submitRun(state) {
-      if (!this.getAuthHeaders().Authorization || !state.wordsSlain || !state.runId) return false;
+      if (!this.hasSession() || !state.wordsSlain || !state.runId) return false;
       state.calculateWPM();
       const payload = { run_id: state.runId, score: Math.max(0, state.score - (state.baselineScore || 0)),
         words_slain: Math.max(0, state.wordsSlain - (state.baselineWords || 0)),
@@ -203,14 +207,15 @@
         assisted: state.assisted, is_victory: state.hp > 0,
         metrics_version:state.learningMetricsVersion||1,learning_attempts:state.learningAttempts||0,
         first_successes:state.firstSuccesses||0,hints_used:state.hintsUsed||0,
-        replay_count:state.replayCount||0,max_combo:state.maxCombo||0 };
+        replay_count:state.replayCount||0,max_combo:state.maxCombo||0,
+        max_perfect_streak:state.perfectMetricsKnown?state.maxPerfectStreak:null };
       if (!payload.words_slain) return false;
       const pending = this.getPendingRuns();
       pending[payload.run_id] = { payload, game_mode: state.gameMode, deck_id: state.activeDeckId };
       this.storage.setItem(this.pendingRunsKey, JSON.stringify(pending));
       if (!(await this.startRun(state))) return false;
       try {
-        const response = await fetch('/api/meowcha/runs/complete', {
+        const response = await this.request('/api/meowcha/runs/complete', {
           method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify(payload)
         });
         if (!response.ok) throw new Error(`Complete run: ${response.status}`);
@@ -220,7 +225,7 @@
         // A snapshot captured by submitRun must never finish a later/new run.
         if (state.runId === payload.run_id) state.runFinished = true;
         return true;
-      } catch (err) { console.warn('[Meowcha] Thành tích đang chờ đồng bộ:', err.message); return false; }
+      } catch (err) { root.Meowcha.report?.('run_submit_failed');return false; }
     }
 
     getPendingRuns() {
@@ -228,7 +233,7 @@
     }
 
     async retryPendingRuns() {
-      if (this._retrying || !this.getAuthHeaders().Authorization) return;
+      if (this._retrying || !this.hasSession()) return;
       this._retrying = true;
       try {
         for (const [runId, item] of Object.entries(this.getPendingRuns())) {
@@ -236,7 +241,7 @@
             activeElapsedMs: item.payload.active_ms });
           if (!started) continue;
           try {
-            const res = await fetch('/api/meowcha/runs/complete', { method: 'POST', headers: this.getAuthHeaders(),
+            const res = await this.request('/api/meowcha/runs/complete', { method: 'POST', headers: this.getAuthHeaders(),
               body: JSON.stringify(item.payload) });
             if (res.ok) {
               const pending = this.getPendingRuns(); delete pending[runId];
@@ -430,6 +435,9 @@
     getAuthHeaders() {
       let token = "";
       try {
+        const user=JSON.parse(this.storage.getItem('oasis_user')||'null');
+        const owner=String(user&&(user.id||user.user_id||user.username)||'guest');
+        if(owner!==this.owner||root.Meowcha.Session?.blocked)return {"Content-Type":"application/json"};
         if (!token) {
           token = localStorage.getItem("oasis_token") || "";
         }
@@ -445,6 +453,26 @@
         headers["Authorization"] = `Bearer ${token}`;
       }
       return headers;
+    }
+
+    hasSession(){
+      try{
+        const user=JSON.parse(this.storage.getItem('oasis_user')||'null');
+        if(String(user&&(user.id||user.user_id||user.username)||'guest')!==this.owner)return false;
+      }catch(_){return false;}
+      return !!this.getAuthHeaders().Authorization ||
+        !!(root.Meowcha.Session&&!root.Meowcha.Session.blocked&&root.Meowcha.Session.owner===this.owner);
+    }
+
+    async request(url,options={}){
+      if(!this.hasSession())throw new Error('Session unavailable');
+      const controller=options.signal?null:new AbortController();
+      const timer=controller?setTimeout(()=>controller.abort(),12000):null;
+      let response;
+      try{response=await fetch(url,{...options,signal:options.signal||controller?.signal});}
+      finally{if(timer)clearTimeout(timer);}
+      if(response.status===401||response.status===403)root.Meowcha.Session?.expire();
+      return response;
     }
 
     getActiveSlotId() {
@@ -639,8 +667,8 @@
     syncWithBackend() {
       if (typeof fetch === "undefined") return Promise.resolve(this.slots);
 
-      if (!this.getAuthHeaders().Authorization) return Promise.resolve(this.slots);
-      return fetch('/api/meowcha/save-snapshots', {
+      if (!this.hasSession()) return Promise.resolve(this.slots);
+      return this.request('/api/meowcha/save-snapshots', {
         headers: this.getAuthHeaders()
       })
         .then(r => {
@@ -652,8 +680,13 @@
             for (let s = 1; s <= 3; s++) {
               const remote = res.data[s];
               if (remote && remote.snapshot) {
-                if (!this._pendingSlots.has(s) && remote.snapshot.updatedAt > (this.slots[s].updatedAt || 0)) {
-                  this.slots[s] = this.normalizeSlot(remote.snapshot, s);
+                if (this._pendingSlots.has(s)) {
+                  if((this.cloudRevisions[s]||'')!==(remote.revision||'')){
+                    this.slots[s].cloudConflict=true;this.syncIssue('Máy chủ có bản lưu khác. Bản máy được giữ lại; mở Ngọc Giản để chọn bản muốn tiếp tục.');
+                  }
+                }else{
+                  this.slots[s] = this.normalizeSlot({...remote.snapshot,cloudDirty:false,cloudConflict:false}, s);
+                  this.cloudRevisions[s]=remote.revision||'';
                 }
                 continue;
               }
@@ -676,6 +709,7 @@
               }
             }
             this.saveLocalSlots();
+            this.storage.setItem(this.cloudRevisionKey,JSON.stringify(this.cloudRevisions));
           }
           return this.slots;
         })
@@ -691,22 +725,55 @@
       this._cloudTimer = setTimeout(() => { this._cloudTimer = null; this.flushCloudSaves(); }, 5000);
     }
 
+    syncIssue(message){root.Meowcha.report?.('save_sync_failed');if(this.onSyncIssue)this.onSyncIssue(message);}
+    getRecovery(slotId){try{return JSON.parse(this.storage.getItem(this.recoveryKey)||'{}')[slotId]?.slice(-1)[0]||null;}catch(_){return null;}}
+    archiveRecovery(slotId,snapshot){
+      let history;try{history=JSON.parse(this.storage.getItem(this.recoveryKey)||'{}');}catch(_){history={};}
+      history[slotId]=[...(history[slotId]||[]),JSON.parse(JSON.stringify(snapshot))].slice(-3);
+      // If storage is full, stop here instead of replacing the only recovery copy.
+      this.storage.setItem(this.recoveryKey,JSON.stringify(history));
+    }
+    async useCloudSnapshot(slotId){
+      const response=await this.request('/api/meowcha/save-snapshots',{headers:this.getAuthHeaders()});
+      if(!response.ok)throw new Error('Chưa tải được bản lưu máy chủ.');
+      const remote=(await response.json()).data?.[slotId];if(!remote?.snapshot)throw new Error('Chưa có bản máy chủ tại ngọc giản này.');
+      this.archiveRecovery(slotId,this.slots[slotId]);
+      this.slots[slotId]=this.normalizeSlot({...remote.snapshot,cloudDirty:false,cloudConflict:false},slotId);
+      this.cloudRevisions[slotId]=remote.revision||'';this._pendingSlots.delete(slotId);
+      this.storage.setItem(this.cloudRevisionKey,JSON.stringify(this.cloudRevisions));this.saveLocalSlots();
+    }
+    restoreRecovery(slotId){
+      const snapshot=this.getRecovery(slotId);if(!snapshot)return false;
+      this.archiveRecovery(slotId,this.slots[slotId]);
+      this.slots[slotId]=this.normalizeSlot({...snapshot,updatedAt:Date.now(),cloudDirty:true,cloudConflict:false},slotId);
+      this.saveLocalSlots();this.scheduleCloudSave(slotId);return true;
+    }
+
     async flushCloudSaves() {
-      if (this._cloudSaving || !this.getAuthHeaders().Authorization) return;
+      if (this._cloudSaving || !this.hasSession()) return;
       this._cloudSaving = true;
       try {
         for (const slotId of [...this._pendingSlots]) {
+          if(this.slots[slotId].cloudConflict)continue;
           const snapshot = JSON.parse(JSON.stringify(this.slots[slotId]));
           try {
-            const response = await fetch(`/api/meowcha/save-snapshots/${slotId}`, {
-              method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify({ snapshot })
+            const response = await this.request(`/api/meowcha/save-snapshots/${slotId}`, {
+              method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify({ snapshot,expected_revision:this.cloudRevisions[slotId]||'' })
             });
+            if(response.status===409){
+              this.slots[slotId].cloudConflict=true;this.saveLocalSlots();
+              this.syncIssue('Bản máy chủ đã thay đổi. Đã giữ bản máy, chưa ghi đè; mở Ngọc Giản để đối chiếu.');continue;
+            }
+            if(response.ok&&response.json){
+              const body=await response.json();this.cloudRevisions[slotId]=body.data?.revision||this.cloudRevisions[slotId]||'';
+              this.storage.setItem(this.cloudRevisionKey,JSON.stringify(this.cloudRevisions));
+            }
             if (response.ok && this.slots[slotId].updatedAt === snapshot.updatedAt) {
               this._pendingSlots.delete(slotId);
               this.slots[slotId].cloudDirty = false;
               this.saveLocalSlots();
             }
-          } catch (_) { /* Keep local progress and retry on the next save/online event. */ }
+          } catch (_) { root.Meowcha.report?.('save_sync_failed'); }
         }
       } finally { this._cloudSaving = false; }
     }

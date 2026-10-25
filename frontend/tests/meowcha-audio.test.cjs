@@ -99,3 +99,22 @@ test('suspended and closed contexts recover without duplicate drones or a delaye
  assert.equal(a.getStatus().bgm,true);assert.equal(a.musicNodes.length,2);
  a.silenceAll();assert.equal(a.musicNodes.length,0);assert.equal(a.getStatus().voicePending,0);
 });
+
+test('four buses retain independent volume and duck relative to the saved mix, including mute',()=>{
+ const r=audioRuntime(),a=r.manager;a.init();
+ const saved=new Map();r.box.localStorage.setItem=(k,v)=>saved.set(k,v);
+ a.setVolume('bgm',.4);a.setVolume('sfx',.3);a.setVolume('voice',.9);a.setVolume('ambience',.2);
+ a._duckVoice(true);assert.equal(a.bgm.gain.value,.4*.32);assert.equal(a.ambience.gain.value,.05);
+ assert.equal(a.voice.gain.value,.9);a._duckVoice(false);assert.equal(a.bgm.gain.value,.4);
+ a.toggleSound();assert.equal(a.master.gain.value,0);a.setVolume('master',.7);assert.equal(a.master.gain.value,0);
+ a.enableSound();assert.equal(a.master.gain.value,.7);assert.equal(JSON.parse([...saved.values()][0]).bgm,.4);
+ a.setMode('AUDIO');assert.equal(a.sfx.gain.value,.3*.65);a.setMode('DIRECT');assert.equal(a.sfx.gain.value,.3);
+});
+test('sample voices are bounded during fast input and physical samples replace the fallback texture',()=>{
+ const r=audioRuntime(),a=r.manager;a.init();const created=[];
+ a.ctx.createBufferSource=()=>{const source={connect(){},disconnect(){},start(){},stop(){this.stopped=true;}};created.push(source);return source;};
+ a.buffers.word_slash={};let tones=0;a._tone=()=>tones++;
+ for(let i=0;i<40;i++)a.play('word_slash');
+ assert.equal(tones,0);assert.equal(a.sampleSources.size,12);assert.equal(created.filter(s=>s.stopped).length,28);
+ for(const source of [...a.sampleSources])source.onended();assert.equal(a.sampleSources.size,0);
+});
