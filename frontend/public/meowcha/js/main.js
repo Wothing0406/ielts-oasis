@@ -284,6 +284,7 @@
 
       // Lắng nghe thay đổi HP và Game Over để lập tức xử lý và lưu chuẩn xác
       this.gameState.addListener((changeKey) => {
+        if (changeKey === 'score') this.saveSystem.rememberPersonalBest(this.gameState);
         if (changeKey === "gameOver" || (changeKey === "hp" && this.gameState.hp <= 0)) {
           this.handleGameOver();
         } else if (changeKey === "hp" && this.gameState.hp > 0 && this.gameState.currentScene === "BATTLE") {
@@ -499,7 +500,8 @@
       });
 
       // Tự động mở khóa âm thanh và phát khúc Cổ Cầm thiền định ngay khi tương tác ở sảnh
-      const unlockAudioAndStartBGM = () => {
+      const unlockAudioAndStartBGM = (event) => {
+        if (event && event.target && event.target.closest && event.target.closest('#btnToggleSound, #btnToggleSoundLobby')) return;
         if (this.audio) {
           this.audio.init();
           this.audio.unlockAudioContext();

@@ -13,7 +13,7 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'entities/AsteroidManager.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/UIManager.js']) {
+  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
@@ -27,6 +27,73 @@ function runtime() {
   return { sandbox, M, state, save, engine, asteroids, canvas, localStorage };
 }
 const word = (text = 'CAT') => ({ word: text, typedLen: 0, x: 100, y: 100, radius: 30, meaning: 'test', coreColor: '#fff' });
+
+test('a second account cannot put the first account legacy high score on its certificate',()=>{
+ const r=runtime();r.localStorage.setItem('meowcha_high_score','90000');
+ r.localStorage.setItem('oasis_user',JSON.stringify({id:2}));
+ const otherSave=new r.M.SaveSystem(),otherState=new r.M.GameState();
+ assert.equal(otherSave.canImportLegacy,false);
+ assert.equal(otherSave.getCertificateRecord(otherState).score,0);
+});
+
+test('certificate retains the measured best run after a fresh run resets to zero',()=>{
+ const r=runtime();r.state.score=12345;r.state.highScore=12345;r.state.humanWords=30;
+ r.state.correctKeystrokes=150;r.state.totalKeystrokes=200;r.state.activeElapsedMs=60000;
+ r.state.realmIdx=2;r.save.rememberPersonalBest(r.state);
+ r.state.resetForNewMode('AUDIO');const cert=r.save.getCertificateRecord(r.state);
+ assert.equal(cert.score,12345);assert.equal(cert.accuracy,75);assert.equal(cert.wpm,30);
+ assert.equal(cert.humanWords,30);assert.equal(cert.realmIdx,2);assert.equal(cert.gameMode,'DIRECT');
+ assert.equal(r.state.score,0);assert.equal(r.state.gameMode,'AUDIO');
+});
+
+test('legacy high score is shown honestly without borrowing current-run accuracy or WPM',()=>{
+ const r=runtime();r.state.highScore=90000;r.state.score=100;r.state.correctKeystrokes=10;r.state.totalKeystrokes=10;
+ const cert=r.save.getCertificateRecord(r.state);
+ assert.equal(cert.score,90000);assert.equal(cert.metricsKnown,false);assert.equal(cert.wpm,undefined);
+});
+
+test('copy share link uses personal best and reports success visibly',async()=>{
+ const r=runtime();r.state.highScore=12345;r.sandbox.location={origin:'https://example.test'};
+ let copied='',message='';
+ r.sandbox.navigator.clipboard={writeText:async text=>{copied=text;}};
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,showStatus:text=>{message=text;}});
+ await ui.copyShareLink();
+ assert.equal(copied,'https://example.test/games/meowcha?score=12345');
+ assert.match(message,/Đã sao chép/);
+});
+
+test('status notification escapes the modal stacking container and announces the result',()=>{
+ const r=runtime();let child=null;const attributes={},classes=new Set();
+ const body={appendChild(node){child=node;node.parentElement=this;}};
+ r.sandbox.document.body=body;
+ const status={parentElement:{},setAttribute(k,v){attributes[k]=v;},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)}};
+ r.M.UIManager.prototype.showStatus.call({statusBar:status},'Đã sao chép ảnh');
+ assert.equal(child,status);assert.equal(status.textContent,'Đã sao chép ảnh');assert.equal(attributes.role,'status');
+ assert.equal(attributes['aria-live'],'polite');assert.equal(classes.has('show'),true);
+});
+
+test('word reward remains at the kill location and preserves all IPA characters on narrow screens',()=>{
+ const r=runtime(),floating=new r.M.FloatingText();
+ const ipa='/ˌɪn.kɒm.prɪˈhen.sə.bəl ə.bɪ.lɪ.tiː ə.bɪ.lɪ.tiː/';
+ floating.addInSituBurst(420,310,{word:'INCOMPREHENSIBLE',ipa,meaning:'khó hiểu',points:100});
+ const ctx={canvas:{width:1200,height:800},measureText:t=>({width:Array.from(t).length*8})};
+ let layout=floating.getBurstLayout(ctx,floating.bursts[0]);
+ assert.equal(layout.x,420);assert.equal(layout.y,310);assert.equal(layout.ipaLines.join(''),ipa);
+ ctx.canvas={width:320,height:568};layout=floating.getBurstLayout(ctx,floating.bursts[0]);
+ assert.ok(layout.width<320);assert.equal(layout.ipaLines.join(''),ipa);assert.ok(!layout.ipaLines.join('').includes('…'));
+});
+
+test('full Oxford view includes short words and hyphenated entries and paginates locally',async()=>{
+ const r=runtime();let downloads=0;
+ r.sandbox.fetch=async url=>{assert.equal(url,'./data/oxford_5000.json');downloads++;return {ok:true,json:async()=>[
+ {word:'a',phonetic:'/eɪ/',level:'A1'},{word:'be',phonetic:'/biː/',level:'A1'},
+ {word:'self-esteem',phonetic:'/ˌself ɪˈstiːm/',meaning:'lòng tự trọng',level:'C1'}]};};
+ vm.runInContext(fs.readFileSync(path.join(base,'js/core/VocabLoader.js'),'utf8'),r.sandbox);
+ const loader=r.M.VocabLoader,first=await loader.searchAllOxford({pageSize:2});
+ assert.equal(first.total,3);assert.equal(first.words[0].word,'A');assert.equal(first.hasMore,true);
+ const second=await loader.searchAllOxford({page:2,pageSize:2});assert.equal(second.words[0].word,'SELF-ESTEEM');
+ assert.equal(second.words[0].ipa,'/ˌself ɪˈstiːm/');assert.equal(downloads,1);
+});
 
 test('three equipped skill slots share the HUD and hotkeys 1, 2, 3',()=>{
  const r=runtime();r.state.realmIdx=4;

@@ -13,7 +13,7 @@
     addInSituBurst(x,y,item) {
       // Only one readable reward at a time; previous words remain in the learning altar.
       this.bursts=[{x,y,word:item.word,ipa:item.ipa||'',meaning:item.meaning||'',
-        points:item.points||0,life:2.4,maxLife:2.4}];
+        points:item.points||0,life:2.6,maxLife:2.6}];
     }
     addExpOrb(x,y,targetX,targetY,points=100) {
       this.expOrbs.push({x,y,startX:x,startY:y,targetX,targetY,points,t:0});
@@ -45,6 +45,28 @@
       while(out.length>1 && ctx.measureText(out).width>width) out=out.slice(0,-1);
       return out===text ? out : out.slice(0,-1)+'…';
     }
+    wrap(ctx, value, maxWidth) {
+      const lines = []; let line = '';
+      for (const character of Array.from(String(value || ''))) {
+        if (line && ctx.measureText(line + character).width > maxWidth) { lines.push(line); line = ''; }
+        line += character;
+      }
+      if (line) lines.push(line);
+      return lines.length ? lines : [''];
+    }
+    getBurstLayout(ctx, burst) {
+      const width = Math.min(ctx.canvas.width - 20, ctx.canvas.width < 600 ? 310 : 350);
+      ctx.font = "14px 'Be Vietnam Pro',sans-serif";
+      const ipaLines = this.wrap(ctx, burst.ipa && burst.ipa !== '/.../' ? burst.ipa : 'Chưa có phiên âm trong bộ từ này', width * .76);
+      ctx.font = "800 19px 'Be Vietnam Pro',sans-serif";
+      const wordLines = this.wrap(ctx, burst.word, width * .72);
+      const textHeight = 31 + ipaLines.length * 17 + wordLines.length * 20;
+      const height = Math.max(145, (textHeight + 16) / .58);
+      const half = height / 2;
+      return { width, height, ipaLines, wordLines, textHeight,
+        x:Math.max(width/2 + 8, Math.min(ctx.canvas.width - width/2 - 8, burst.x)),
+        y:Math.max(half + 82, Math.min(ctx.canvas.height - half - 104, burst.y)) };
+    }
     draw(ctx) {
       ctx.save(); ctx.shadowBlur=0; ctx.textAlign='center'; ctx.textBaseline='middle';
       const w=ctx.canvas.width, h=ctx.canvas.height, small=w<600;
@@ -62,20 +84,18 @@
         ctx.save();
         const age=b.maxLife-b.life;
         ctx.globalAlpha=Math.min(1,age*7,b.life/.35);
-        const width=Math.min(small?300:330,w-16), height=small?112:120;
-        const M=root.Meowcha || {}, layout=M.getBattleLayout ? M.getBattleLayout(ctx.canvas) : {catY:h*.8};
-        // Rewards sit below the next falling word and above the character/HUD.
-        const x=small?w/2:Math.max(width/2+8,w-width/2-30);
-        const y=Math.max(150,Math.min(h-height/2-65,layout.catY-108));
+        const layout = this.getBurstLayout(ctx, b);
+        const {x,y,width,height,ipaLines,wordLines} = layout;
         this.paper(ctx,x,y,width,height);
-        ctx.fillStyle='#20332D'; ctx.font="800 "+(small?18:20)+"px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText(this.fit(ctx,b.word,width*.72),x,y-16);
-        ctx.fillStyle='#37665C'; ctx.font="12px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText(this.fit(ctx,b.ipa,width*.75),x,y+3);
+        let textY = y - height*.05 - layout.textHeight/2 + 12;
+        ctx.fillStyle='#20332D'; ctx.font="800 19px 'Be Vietnam Pro',sans-serif";
+        for (const line of wordLines) { ctx.fillText(line,x,textY); textY += 20; }
+        ctx.fillStyle='#37665C'; ctx.font="14px 'Be Vietnam Pro',sans-serif";
+        for (const line of ipaLines) { ctx.fillText(line,x,textY); textY += 17; }
         ctx.fillStyle='#614734'; ctx.font="12px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText(this.fit(ctx,b.meaning,width*.75),x,y+20);
+        ctx.fillText(this.fit(ctx,b.meaning,width*.75),x,textY+2);
         ctx.fillStyle='#597C62'; ctx.font="bold 11px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText('+'+b.points+' Tu Vi',x,y+36);
+        ctx.fillText('+'+b.points+' Tu Vi',x,textY+19);
         ctx.restore();
       }
       ctx.globalAlpha=1;

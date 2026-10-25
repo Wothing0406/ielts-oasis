@@ -7,6 +7,7 @@
       this.zenMusicPlaying = false; this.musicRequested = false; this.musicNodes = [];
       this.voiceQueue = []; this.voiceJob = null; this.voiceGeneration = 0; this.motifStep = 0;
       this.stats = { voiceCompleted: 0, voiceFallbacks: 0, voiceFailed: 0, sfxPlayed: 0 };
+      this.lastError = ''; this.onStatusChange = null;
       if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', () => {
         if (!root.document.hidden && this.soundEnabled) this.recover();
       });
@@ -22,12 +23,20 @@
       try {
         this.ctx = new Ctx();
         this.master = this.ctx.createGain(); this.bgm = this.ctx.createGain(); this.sfx = this.ctx.createGain();
-        this.master.gain.value = this.soundEnabled ? 0.72 : 0; this.bgm.gain.value = 0.7; this.sfx.gain.value = 0.18;
+        this.master.gain.value = this.soundEnabled ? 0.85 : 0; this.bgm.gain.value = 0.8; this.sfx.gain.value = 0.5;
         const limiter = this.ctx.createDynamicsCompressor();
         limiter.threshold.value = -14; limiter.ratio.value = 8;
-        this.bgm.connect(this.master); this.sfx.connect(this.master); this.master.connect(limiter); limiter.connect(this.ctx.destination);
-        this.ctx.onstatechange = () => { this.zenMusicPlaying = this.ctx.state === 'running' && this.musicNodes.length > 0; };
-      } catch (_) { this.ctx = null; }
+        this.bgm.connect(this.master); this.sfx.connect(this.master);
+        if (this.ctx.createAnalyser) {
+          this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 512;
+          this.master.connect(this.analyser); this.analyser.connect(limiter);
+        } else this.master.connect(limiter);
+        limiter.connect(this.ctx.destination);
+        this.ctx.onstatechange = () => {
+          this.zenMusicPlaying = this.ctx.state === 'running' && this.musicNodes.length > 0;
+          this.notifyStatus();
+        };
+      } catch (_) { this.ctx = null; this.lastError = 'Không khởi tạo được âm thanh'; this.notifyStatus(); }
     }
     recover() {
       if (!this.soundEnabled) return;
@@ -38,16 +47,24 @@
         if (this.musicRequested && !this.musicNodes.length) this._startDroneAndMelody();
         this.zenMusicPlaying = !!(this.ctx && this.ctx.state === 'running' && this.musicNodes.length);
         if (root.speechSynthesis && root.speechSynthesis.paused) root.speechSynthesis.resume();
-        this._drainVoice();
-      }).catch(() => {});
+        this.lastError = '';
+        this._drainVoice(); this.notifyStatus();
+      }).catch(() => { this.lastError = 'Trình duyệt đang tạm chặn âm thanh. Chạm Bật âm thanh để khôi phục.'; this.notifyStatus(); });
     }
     unlockAudioContext() { if (this.soundEnabled) { this.musicRequested = true; this.recover(); } }
+    notifyStatus() { if (this.onStatusChange) this.onStatusChange(this.getStatus()); }
+    enableSound() {
+      this.soundEnabled = true;
+      try { localStorage.setItem('meowcha_sound', 'on'); } catch (_) {}
+      this.init(); if (this.master) this.master.gain.value = 0.85;
+      this.startZenGuqin(); this.play('chime'); this.notifyStatus(); return true;
+    }
     toggleSound() {
       this.soundEnabled = !this.soundEnabled;
       try { localStorage.setItem('meowcha_sound', this.soundEnabled ? 'on' : 'off'); } catch (_) {}
-      if (this.master) this.master.gain.value = this.soundEnabled ? 0.72 : 0;
+      if (this.master) this.master.gain.value = this.soundEnabled ? 0.85 : 0;
       if (this.soundEnabled) this.startZenGuqin(); else { this.stopZenGuqin(); this.stopVoice(); }
-      return this.soundEnabled;
+      this.notifyStatus(); return this.soundEnabled;
     }
     _tone(freq, duration, volume, type = 'sine', channel = this.sfx, delay = 0, endFreq = freq) {
       if (!this.ctx || !this.soundEnabled || !channel) return;
@@ -65,7 +82,7 @@
       if (!this.ctx || !this.soundEnabled || this.musicNodes.length || this.ctx.state !== 'running') return;
       for (const freq of [110, 165]) {
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-        osc.frequency.value = freq; gain.gain.value = 0.012;
+        osc.frequency.value = freq; gain.gain.value = 0.02;
         osc.connect(gain); gain.connect(this.bgm); osc.start(); this.musicNodes.push({osc, gain});
       }
       this.zenMusicPlaying = true;
@@ -75,7 +92,7 @@
       };
       this.zenTimer = setTimeout(pluck, 150);
     }
-    playGuqinPluck(freq) { const notes = [220, 261.63, 293.66, 329.63, 392]; this._tone(freq || notes[(this.motifStep++) % 5], 2.2, 0.055, 'triangle', this.bgm); }
+    playGuqinPluck(freq) { const notes = [220, 261.63, 293.66, 329.63, 392]; this._tone(freq || notes[(this.motifStep++) % 5], 2.2, 0.09, 'triangle', this.bgm); }
     playGuqinMotif() { this.playGuqinPluck(); }
     playTempleChime() { this._tone(880, 2, 0.035, 'sine', this.bgm); }
     playChord(freqs, duration = 0.8, type = 'sine') { freqs.forEach((f, i) => this._tone(f, duration, 0.08, type, this.sfx, i * 0.06)); }
@@ -106,8 +123,8 @@
     }
     _duckVoice(active) {
       if (!this.ctx) return;
-      this.bgm.gain.setTargetAtTime(active ? .32 : .7, this.ctx.currentTime, .08);
-      this.sfx.gain.setTargetAtTime(active ? .08 : .18, this.ctx.currentTime, .04);
+      this.bgm.gain.setTargetAtTime(active ? .25 : .8, this.ctx.currentTime, .08);
+      this.sfx.gain.setTargetAtTime(active ? .20 : .5, this.ctx.currentTime, .04);
     }
     _drainVoice() {
       if (!this.soundEnabled || this.voiceJob || !this.voiceQueue.length) return;
@@ -143,7 +160,8 @@
       try {
         const url = job.url && new URL(job.url, root.location && root.location.href || 'https://localhost/');
         if (url && /^https?:$/.test(url.protocol) && root.Audio) {
-          const audio = new root.Audio(url.href); job.audio = audio; audio.volume = .95;
+          const audio = this.voiceMedia || (this.voiceMedia = new root.Audio());
+          audio.src = url.href; job.audio = audio; audio.volume = .95;
           audio.onended = () => done(true); audio.onerror = fallback;
           const promise = audio.play(); if (promise && promise.catch) promise.catch(fallback);
         } else fallback();
@@ -158,8 +176,14 @@
       this.voiceJob = null; if (root.speechSynthesis) root.speechSynthesis.cancel(); this._duckVoice(false);
     }
     getStatus() {
+      let outputRms = null;
+      if (this.analyser) {
+        const samples = new Float32Array(this.analyser.fftSize);
+        this.analyser.getFloatTimeDomainData(samples);
+        outputRms = Math.sqrt(samples.reduce((sum, n) => sum + n*n, 0) / samples.length);
+      }
       return { enabled:this.soundEnabled, context:this.ctx ? this.ctx.state : 'uninitialized', bgm:this.zenMusicPlaying,
-        voicePending:this.voiceQueue.length, voiceActive:!!this.voiceJob, ...this.stats };
+        outputRms, voicePending:this.voiceQueue.length, voiceActive:!!this.voiceJob, lastError:this.lastError, ...this.stats };
     }
   }
   root.Meowcha = root.Meowcha || {}; root.Meowcha.AudioManager = AudioManager;

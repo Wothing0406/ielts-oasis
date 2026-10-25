@@ -144,6 +144,26 @@ class IntegrityTests(unittest.TestCase):
         migrate(self.engine); migrate(self.engine)
         self.assertEqual(self.db.query(MeowchaLeaderboard).one().score, 42)
 
+    def test_personal_best_is_owned_and_preserves_unknown_legacy_metrics(self):
+        self.db.add_all([
+            MeowchaLeaderboard(user_id=self.user.id, player_name='alice', score=12345),
+            MeowchaLeaderboard(user_id=self.other.id, player_name='alice', score=999999)])
+        self.db.commit()
+        result = self.client.get('/api/meowcha/personal-best').json()['data']
+        self.assertEqual(result['score'], 12345)
+        self.assertFalse(result['metricsKnown'])
+        self.assertNotIn('wpm', result)
+
+    def test_personal_best_reads_completed_run_and_requires_login(self):
+        run_id = self.start()
+        self.client.post('/api/meowcha/runs/complete', json=self.payload(run_id))
+        result = self.client.get('/api/meowcha/personal-best').json()['data']
+        self.assertEqual(result['score'], 450)
+        self.assertEqual(result['accuracy'], 75)
+        self.assertEqual(result['humanWords'], 3)
+        self.app.dependency_overrides[get_meowcha_user_from_token] = lambda: None
+        self.assertEqual(self.client.get('/api/meowcha/personal-best').status_code, 401)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -41,15 +41,25 @@ app.include_router(router)
 def preview():
     return '''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;background:#100d12"><main style="position:fixed;inset:0;height:100dvh;overflow:hidden">
-    <iframe src="/meowcha/index.html?v=12.3" title="Meowcha IELTS Game"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-    allow="autoplay; fullscreen" style="border:0;width:100%;height:100%;display:block"></iframe>
+    <iframe src="/meowcha/index.html?v=12.4" title="Meowcha IELTS Game"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+    allow="autoplay; fullscreen; clipboard-write" style="border:0;width:100%;height:100%;display:block"></iframe>
+    <script>addEventListener('message', event => {
+      const frame = document.querySelector('iframe');
+      if (event.origin === location.origin && event.source === frame.contentWindow &&
+          event.data?.type === 'MEOWCHA_NAVIGATE' && event.data.path === '/games') location.assign('/games');
+    });</script>
     </main></body></html>'''
 
 
 @app.get('/preview/meowcha-qa', response_class=HTMLResponse)
 def qa_preview():
     return (Path(__file__).with_name('meowcha_qa.html')).read_text(encoding='utf-8')
+
+
+@app.get('/games', response_class=HTMLResponse)
+def preview_games_hub():
+    return '<h1>Sảnh trò chơi — trang đích kiểm thử điều hướng iframe</h1>'
 
 
 app.mount('/', StaticFiles(directory=root / 'frontend/public', html=True), name='public')

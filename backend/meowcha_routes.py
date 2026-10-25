@@ -86,6 +86,25 @@ def get_save_snapshots(user=Depends(get_meowcha_user_from_token), db: Session = 
     return api_response(result)
 
 
+@router.get('/personal-best')
+def personal_best(user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
+    require_user(user)
+    run = db.query(MeowchaRun).filter(MeowchaRun.user_id == user.id,
+        MeowchaRun.completed_at.isnot(None)).order_by(MeowchaRun.score.desc()).first()
+    legacy = db.query(MeowchaLeaderboard).filter(MeowchaLeaderboard.user_id == user.id
+        ).order_by(MeowchaLeaderboard.score.desc()).first()
+    if legacy and (not run or legacy.score > run.score):
+        return api_response({'score': legacy.score, 'metricsKnown': False, 'source': 'legacy'})
+    if not run:
+        return api_response({'score': 0, 'metricsKnown': False})
+    result = run.result or {}
+    return api_response({'score': run.score, 'runId': run.run_id, 'gameMode': run.game_mode,
+        'activeDeckId': run.deck_id, 'realmIdx': result.get('realm_idx'),
+        'accuracy': result.get('accuracy'), 'wpm': result.get('wpm'),
+        'humanWords': result.get('human_words', result.get('words_slain') if not run.assisted else None),
+        'assistedWords': result.get('assisted_words'), 'metricsKnown': True, 'source': 'run'})
+
+
 @router.post('/save-snapshots/{slot_id}')
 def put_save_snapshot(slot_id: int, payload: SaveSnapshotPayload,
     user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):

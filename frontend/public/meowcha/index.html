@@ -56,12 +56,12 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.3" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.3" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.3" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.3" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=12.3" />
-    <link rel="stylesheet" href="./css/meowcha-cozy.css?v=12.3" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=12.4" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=12.4" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=12.4" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=12.4" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=12.4" />
+    <link rel="stylesheet" href="./css/meowcha-cozy.css?v=12.4" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -1457,17 +1457,18 @@
 
             <!-- Band / Realm Filter Tabs -->
             <div class="vault-tabs-row" id="vaultTabsRow">
+              <button class="vault-tab-btn" data-band="all">Tất cả Oxford</button>
               <button class="vault-tab-btn active" data-band="0">
-                <span class="tab-seal">[ 霜 ]</span> Band 4.0 - 5.0 (Luyện Khí)
+                <span class="tab-seal">[ 霜 ]</span> Oxford A1–A2
               </button>
               <button class="vault-tab-btn" data-band="1">
-                <span class="tab-seal">[ 炎 ]</span> Band 6.0 - 6.5 (Trúc Cơ)
+                <span class="tab-seal">[ 炎 ]</span> Oxford B1
               </button>
               <button class="vault-tab-btn" data-band="2">
-                <span class="tab-seal">[ 虚 ]</span> Band 7.0 - 7.5 (Kim Đan)
+                <span class="tab-seal">[ 虚 ]</span> Oxford B2
               </button>
               <button class="vault-tab-btn" data-band="3">
-                <span class="tab-seal">[ 雷 ]</span> Band 8.0+ (Nguyên Anh)
+                <span class="tab-seal">[ 雷 ]</span> Oxford C1
               </button>
             </div>
           </div>
@@ -1483,10 +1484,10 @@
           <div class="vault-modal-footer">
             <span class="vault-stats-counter" id="vaultStatsCounter">Đang hiển thị 20 / 2.011 Đan Dược</span>
             <div class="vault-footer-btns-group">
-              <a href="/#vocab-lab" target="_top" class="btn-xianxia-seal secondary btn-goto-full-vault" title="Mở Toàn Thư Oxford 5000 trên IELTS Oasis">
+              <button id="btnVaultAllWords" type="button" class="btn-xianxia-seal secondary btn-goto-full-vault" title="Xem và tìm kiếm toàn bộ từ điển Oxford">
                 <img src="./assets/svg/scroll-unfurled.svg" class="vault-btn-icon-svg" alt="" />
-                <span>MỞ TOÀN BỘ KHO OXFORD 5000 ↗</span>
-              </a>
+                <span>XEM TOÀN BỘ KHO OXFORD</span>
+              </button>
               <button class="btn-xianxia-seal primary" id="btnVaultLoadMoreModal">
                 [ 典 ] TRIỆU HỒI THÊM ĐAN DƯỢC
               </button>
@@ -1931,38 +1932,38 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=12.3"></script>
-    <script src="./js/data/WordDecks.js?v=12.3"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=12.3"></script>
-    <script src="./js/data/TalentsData.js?v=12.3"></script>
-    <script src="./js/data/SpeechesData.js?v=12.3"></script>
+    <script src="./js/data/RealmsData.js?v=12.4"></script>
+    <script src="./js/data/WordDecks.js?v=12.4"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=12.4"></script>
+    <script src="./js/data/TalentsData.js?v=12.4"></script>
+    <script src="./js/data/SpeechesData.js?v=12.4"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=12.3"></script>
-    <script src="./js/core/AudioManager.js?v=12.3"></script>
-    <script src="./js/core/SaveSystem.js?v=12.3"></script>
-    <script src="./js/core/GameState.js?v=12.3"></script>
-    <script src="./js/core/BattleLayout.js?v=12.3"></script>
-    <script src="./js/core/SpriteAnimator.js?v=12.3"></script>
+    <script src="./js/ui/ArtIcons.js?v=12.4"></script>
+    <script src="./js/core/AudioManager.js?v=12.4"></script>
+    <script src="./js/core/SaveSystem.js?v=12.4"></script>
+    <script src="./js/core/GameState.js?v=12.4"></script>
+    <script src="./js/core/BattleLayout.js?v=12.4"></script>
+    <script src="./js/core/SpriteAnimator.js?v=12.4"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=12.3"></script>
-    <script src="./js/effects/RealmVFX.js?v=12.3"></script>
-    <script src="./js/effects/FloatingText.js?v=12.3"></script>
+    <script src="./js/effects/ParticleEngine.js?v=12.4"></script>
+    <script src="./js/effects/RealmVFX.js?v=12.4"></script>
+    <script src="./js/effects/FloatingText.js?v=12.4"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=12.3"></script>
-    <script src="./js/entities/AsteroidManager.js?v=12.3"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=12.3"></script>
+    <script src="./js/entities/CatCultivator.js?v=12.4"></script>
+    <script src="./js/entities/AsteroidManager.js?v=12.4"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=12.4"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=12.3"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=12.3"></script>
+    <script src="./js/combat/TypingEngine.js?v=12.4"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=12.4"></script>
 
-    <script src="./js/ui/IPAToast.js?v=12.3"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=12.3"></script>
-    <script src="./js/ui/UnityBridge.js?v=12.3"></script>
-    <script src="./js/core/VocabLoader.js?v=12.3"></script>
-    <script src="./js/ui/UIManager.js?v=12.3"></script>
+    <script src="./js/ui/IPAToast.js?v=12.4"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=12.4"></script>
+    <script src="./js/ui/UnityBridge.js?v=12.4"></script>
+    <script src="./js/core/VocabLoader.js?v=12.4"></script>
+    <script src="./js/ui/UIManager.js?v=12.4"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=12.3"></script>
-    <script src="./js/main.js?v=12.3"></script>
+    <script src="./js/core/DeviceDetector.js?v=12.4"></script>
+    <script src="./js/main.js?v=12.4"></script>
   </body>
 </html>

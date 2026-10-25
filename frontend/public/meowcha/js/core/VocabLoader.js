@@ -68,6 +68,18 @@
         }
       }
       const words = Array.from(seenMap.values());
+      try {
+        const dictionary = await loadLocalOxford();
+        const details = new Map(dictionary.map(w => [String(w.word).trim().toUpperCase(), w]));
+        for (const word of words) {
+          const entry = details.get(word.word);
+          if (!entry) continue;
+          if (!word.ipa || word.ipa === '/.../') word.ipa = entry.phonetic || entry.ipa || '';
+          if (!word.audio_url) word.audio_url = entry.audio_url || '';
+          if (!word.meaning) word.meaning = entry.meaning || '';
+          if (!word.cefr) word.cefr = entry.level || null;
+        }
+      } catch (_) { /* API words remain usable when the optional local dictionary is unavailable. */ }
 
       if (words.length === 0) throw new Error('Empty response');
       CACHE[key] = words;
@@ -210,6 +222,18 @@
     };
   }
 
+  async function searchAllOxford({ search = '', page = 1, pageSize = 20 } = {}) {
+    const source = await loadLocalOxford();
+    const query = search.trim().toLocaleUpperCase('vi');
+    const words = source.map((w, i) => ({ id:'oxford-' + i, word:(w.word || '').trim().toUpperCase(),
+      ipa:w.phonetic || w.ipa || '', meaning:w.meaning || '', type:w.type || '',
+      audio_url:w.audio_url || '', cefr:w.level || null, example:w.example || '' }))
+      .filter(w => w.word && (!query || w.word.includes(query) || w.meaning.toLocaleUpperCase('vi').includes(query)));
+    const offset = Math.max(0, page - 1) * pageSize;
+    return { words:words.slice(offset, offset + pageSize), total:words.length, page,
+      hasMore:offset + pageSize < words.length };
+  }
+
   function getRandomWords(bandIdx, n, deckId) {
     n = n || 12;
     var M = root.Meowcha || {};
@@ -260,6 +284,7 @@
     loadForRealm: loadForRealm,
     preloadAllBands: preloadAllBands,
     searchVocab: searchVocab,
+    searchAllOxford: searchAllOxford,
     getRandomWords: getRandomWords,
     isReady: isReady
   };

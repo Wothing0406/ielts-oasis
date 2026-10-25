@@ -110,6 +110,19 @@
     }
 
     bindEvents() {
+      const homeLink = document.getElementById('btnBackToGames');
+      if (homeLink) homeLink.onclick = (event) => {
+        event.preventDefault();
+        this.showStatus('Đang trở về sảnh trò chơi…');
+        if (this.state.currentScene === 'BATTLE') this.saveSystem.saveGame(this.state.activeSlotId || 1, this.state);
+        if (root.parent && root.parent !== root) root.parent.postMessage({ type:'MEOWCHA_NAVIGATE', path:'/games' }, root.location.origin);
+        else root.location.assign('/games');
+      };
+      const allWords = document.getElementById('btnVaultAllWords');
+      if (allWords) allWords.onclick = () => {
+        this.setVaultBand(null);
+        this.showStatus('Đã mở toàn bộ từ điển Oxford. Bạn có thể tìm kiếm hoặc tải thêm từ.');
+      };
       // Nút mở / đóng Kho Đan Dược
       if (this.btnExportCertGameOver) {
         this.btnExportCertGameOver.onclick = () => this.showCertificateModal();
@@ -141,7 +154,7 @@
       if (this.vaultTabsRow) {
         this.vaultTabsRow.querySelectorAll(".vault-tab-btn").forEach(btn => {
           btn.onclick = () => {
-            const band = parseInt(btn.getAttribute("data-band"), 10);
+            const band = btn.getAttribute("data-band") === 'all' ? null : parseInt(btn.getAttribute("data-band"), 10);
             this.setVaultBand(band);
           };
         });
@@ -431,37 +444,32 @@
         btnReturnLobbyGameOver.addEventListener("pointerup", handleReturnLobbyFromGameOver, { passive: false });
       }
 
-      // Nút Bật/Tắt Âm Thanh ở Sảnh & Trong Trận
-      const btnToggleSound = document.getElementById("btnToggleSound");
-      const btnToggleSoundLobby = document.getElementById("btnToggleSoundLobby");
-      const soundStatusTextLobby = document.getElementById("soundStatusTextLobby");
-
-      const updateSoundUI = (isOn) => {
-        if (btnToggleSound) btnToggleSound.classList.toggle("muted", !isOn);
-        if (btnToggleSoundLobby) btnToggleSoundLobby.classList.toggle("muted", !isOn);
-        if (soundStatusTextLobby) soundStatusTextLobby.innerText = isOn ? "TIÊN NHẠC: BẬT" : "TIÊN NHẠC: TẮT";
+      const btnToggleSound = document.getElementById('btnToggleSound');
+      const btnToggleSoundLobby = document.getElementById('btnToggleSoundLobby');
+      const updateSoundUI = () => {
+        const active = this.audio.soundEnabled && this.audio.ctx && this.audio.ctx.state === 'running' && this.audio.zenMusicPlaying;
+        for (const button of [btnToggleSound, btnToggleSoundLobby].filter(Boolean)) {
+          button.classList.toggle('muted', !active);
+          button.setAttribute('aria-pressed', String(!!active));
+          button.setAttribute('aria-label', active ? 'Tắt âm thanh' : 'Bật âm thanh');
+          button.title = active ? 'Âm thanh đang bật • Bấm để tắt' : 'Âm thanh đang tắt hoặc bị ngắt • Bấm để bật';
+        }
+        const label = btnToggleSoundLobby && btnToggleSoundLobby.querySelector('.medallion-label');
+        if (label) label.textContent = active ? 'ÂM THANH: BẬT' : 'BẬT ÂM THANH';
       };
-
-      if (btnToggleSoundLobby) {
-        btnToggleSoundLobby.onclick = () => {
-          if (this.audio) {
-            this.audio.init();
-            const isSoundOn = this.audio.toggleSound();
-            updateSoundUI(isSoundOn);
-            this.showStatus(isSoundOn ? "[ TIÊN NHẠC ] Đã khai mở khúc Cổ Cầm thiền định" : "[ TIÊN NHẠC ] Đã tĩnh âm");
-          }
-        };
-      }
-      if (btnToggleSound) {
-        btnToggleSound.onclick = () => {
-          if (this.audio) {
-            this.audio.init();
-            const isSoundOn = this.audio.toggleSound();
-            updateSoundUI(isSoundOn);
-            this.showStatus(isSoundOn ? "[ TIÊN NHẠC ] Đã khai mở khúc Cổ Cầm thiền định" : "[ TIÊN NHẠC ] Đã tĩnh âm");
-          }
-        };
-      }
+      const toggle = () => {
+        const active = this.audio.soundEnabled && this.audio.ctx && this.audio.ctx.state === 'running' && this.audio.zenMusicPlaying;
+        if (active) this.audio.toggleSound(); else this.audio.enableSound();
+        updateSoundUI();
+        this.showStatus(active ? 'Đã tắt nhạc, hiệu ứng và phát âm.' : 'Đang bật nhạc, hiệu ứng và phát âm…');
+      };
+      if (btnToggleSoundLobby) btnToggleSoundLobby.onclick = toggle;
+      if (btnToggleSound) btnToggleSound.onclick = toggle;
+      this.audio.onStatusChange = () => {
+        updateSoundUI();
+        if (this.audio.lastError) this.showStatus(this.audio.lastError, 6000);
+      };
+      updateSoundUI();
 
       // Chọn Chế Độ Tu Luyện (CLOZE, DIRECT, AUDIO)
       if (this.modeSelectorRow) {
@@ -802,17 +810,17 @@
       this.showStatus(`[ PHÁP TRẬN ] Đã chọn ${realmData.title}`);
     }
 
-    showStatus(msg, durationMs = 2800) {
+    showStatus(msg, durationMs = 4200) {
       if (!this.statusBar) return;
-      this.statusBar.innerText = msg;
-      this.statusBar.classList.remove("show");
-      void this.statusBar.offsetWidth; // Reflow
-      this.statusBar.classList.add("show");
-
-      if (this.statusTimer) clearTimeout(this.statusTimer);
-      this.statusTimer = setTimeout(() => {
-        if (this.statusBar) this.statusBar.classList.remove("show");
-      }, durationMs);
+      // Escape modal stacking contexts; feedback must remain visible above every dialog.
+      if (this.statusBar.parentElement !== document.body) document.body.appendChild(this.statusBar);
+      this.statusBar.setAttribute('role', 'status');
+      this.statusBar.setAttribute('aria-live', 'polite');
+      this.statusBar.setAttribute('aria-atomic', 'true');
+      this.statusBar.textContent = msg;
+      this.statusBar.classList.add('show');
+      clearTimeout(this.statusTimer);
+      this.statusTimer = setTimeout(() => this.statusBar.classList.remove('show'), durationMs);
     }
 
     updateHUD() {
@@ -1378,19 +1386,22 @@
     }
 
     
-    showCertificateModal() {
+    async showCertificateModal() {
       if (!this.modalCertificate) return;
-      this.modalCertificate.style.display = "flex";
-      if (this.audio) this.audio.play("chime");
-
+      this.modalCertificate.style.display = 'flex';
+      const actions = [this.btnDownloadCertificate, this.btnCopyCertificateImg, this.btnCopyShareLink].filter(Boolean);
+      actions.forEach(button => { button.disabled = true; });
+      this.showStatus('Đang lấy kỷ lục tu vi đã lưu…');
+      try { await this.saveSystem.syncPersonalBest(); }
+      catch (_) { this.showStatus('Đang dùng kỷ lục đã lưu trên thiết bị này.'); }
       try {
+        const record = this.saveSystem.getCertificateRecord(this.state);
+        this.state.highScore = Math.max(this.state.highScore || 0, record.score);
         const dataUrl = this.generateCertificateCanvas();
-        if (this.certificateImgPreview && dataUrl) {
-          this.certificateImgPreview.src = dataUrl;
-        }
-      } catch (err) {
-        console.warn("[UIManager] Lỗi render preview Chứng Đạo Kim Đồ:", err);
-      }
+        if (this.certificateImgPreview && dataUrl) this.certificateImgPreview.src = dataUrl;
+        this.showStatus('Chứng đạo hiển thị kỷ lục ' + record.score.toLocaleString('vi-VN') + ' Tu Vi.');
+      } catch (_) { this.showStatus('Không tạo được chứng đạo. Bạn hãy mở lại để thử lần nữa.'); }
+      finally { actions.forEach(button => { button.disabled = false; }); }
     }
 
     hideCertificateModal() {
@@ -1415,7 +1426,7 @@
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = blobUrl;
-        a.download = `Chung_Dao_Kim_Do_Cap${(this.state && this.state.realmIdx) || 0}.png`;
+        a.download = `Chung_Dao_Ky_Luc_${this.saveSystem.getCertificateRecord(this.state).score}.png`;
         document.body.appendChild(a);
         a.click();
         downloaded = true;
@@ -1467,16 +1478,22 @@
       }
     }
 
-    copyShareLink() {
-      const shareUrl = `${window.location.origin}/games/meowcha?score=${this.state.score}&realm=${this.state.realmIdx}&wpm=${Math.round(this.state.wpm || 0)}`;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(shareUrl).then(() => {
-          this.showStatus("[ 符 ] Đã sao chép liên kết tỷ thí vào khay nhớ tạm!");
-        }).catch(() => {
-          this.showStatus(`Liên kết tỷ thí: ${shareUrl}`);
-        });
-      } else {
-        this.showStatus(`Liên kết tỷ thí: ${shareUrl}`);
+    async copyShareLink() {
+      const record = this.saveSystem.getCertificateRecord(this.state);
+      const shareUrl = `${root.location.origin}/games/meowcha?score=${record.score}`;
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(shareUrl);
+        this.showStatus('Đã sao chép liên kết chứng đạo vào khay nhớ tạm.', 5000);
+      } catch (_) {
+        let field = document.getElementById('certificateShareFallback');
+        if (!field) {
+          field = document.createElement('input'); field.id = 'certificateShareFallback'; field.readOnly = true;
+          field.setAttribute('aria-label', 'Liên kết chứng đạo — chọn và sao chép thủ công');
+          ((this.modalCertificate && this.modalCertificate.querySelector('.modal-content-box')) || this.modalCertificate || document.body).appendChild(field);
+        }
+        field.value = shareUrl; field.focus(); field.select();
+        this.showStatus('Trình duyệt chưa cho sao chép tự động. Liên kết đã được chọn; nhấn Ctrl+C hoặc chạm giữ để sao chép.', 6500);
       }
     }
 
@@ -1487,13 +1504,15 @@
       const ctx = c.getContext("2d");
       if (!ctx) return "";
 
-      const s = this.state || {};
+      const record = this.saveSystem.getCertificateRecord(this.state);
+      const s = record;
+      const known = !!record.metricsKnown;
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
 
       const user = this.getLoggedInUser();
       const userName = (user && user.name && user.name.trim()) ? user.name.trim() : "Tiểu Miêu Kiếm Sĩ";
       
-      const personalBest = Number(s.score || 0);
+      const personalBest = Number(record.score || 0);
       const certRealmIdx = Math.min(4, Math.max(0, s.realmIdx || 0));
       const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FFE49A" };
       const rIdx = certRealmIdx;
@@ -1593,7 +1612,7 @@
       ctx.stroke();
 
       // Vẽ sprite nhân vật thực tế
-      const catAsset = (this.assets && (this.assets[`char_r${rIdx}_ultimate`]?.img || this.assets[`char_r${rIdx}_idle`]?.img))
+      const catAsset = (this.assets && (this.assets[`char_r${rIdx}_idle`]?.img))
         || document.getElementById("lobbyCatImg");
 
       if (catAsset && catAsset.naturalWidth > 0) {
@@ -1634,18 +1653,18 @@
       // CẢNH GIỚI & PHÁP MÔN
       ctx.font = "700 16px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#FEF3C7";
-      ctx.fillText(`CẢNH GIỚI: ${realmData.name.toUpperCase()} • ${realmData.title}`, 470, 230, 620);
+      ctx.fillText(known ? `CẢNH GIỚI VÁN KỶ LỤC: ${realmData.name.toUpperCase()}` : 'KỶ LỤC ĐÃ LƯU • CHƯA CÓ THỐNG KÊ VÁN CŨ', 470, 230, 620);
 
       ctx.font = "600 13px 'Be Vietnam Pro', sans-serif";
       ctx.fillStyle = "#D4A849";
-      ctx.fillText(`PHÁP MÔN TU LUYỆN: ${modeLabel}`, 470, 254);
+      ctx.fillText(known ? `PHÁP MÔN TU LUYỆN: ${modeLabel}` : 'Điểm kỷ lục được giữ riêng với điểm ván hiện tại.', 470, 254);
 
       // Lưới thông số (Stats grid: 4 ô) theo bảng màu Tiên Hiệp chuẩn
       const stats = [
-        { label: "TU VI VÁN NÀY", val: `${personalBest.toLocaleString()} TU VI`, color: "#FFE49A" },
-        { label: "ĐỘ CHÍNH XÁC TỰ GÕ", val: `${s.accuracy}%`, color: "#34D399" },
-        { label: "TỪ TỰ GÕ / TỪ HỖ TRỢ", val: `${s.humanWords || 0} / ${s.assistedWords || 0}`, color: "#FEF08A" },
-        { label: "TỐC ĐỘ TỰ GÕ (WPM)", val: `${Math.round(s.wpm || 0)} TỪ/PHÚT`, color: "#F87171" }
+        { label: "KỶ LỤC TU VI", val: `${personalBest.toLocaleString()} TU VI`, color: "#FFE49A" },
+        { label: "ĐỘ CHÍNH XÁC TỰ GÕ", val: known && s.accuracy != null ? `${s.accuracy}%` : "Chưa lưu", color: "#34D399" },
+        { label: "TỪ TỰ GÕ / TỪ HỖ TRỢ", val: known && s.humanWords != null ? `${s.humanWords} / ${s.assistedWords || 0}` : "Chưa lưu", color: "#FEF08A" },
+        { label: "TỐC ĐỘ TỰ GÕ (WPM)", val: known && s.wpm != null ? `${Math.round(s.wpm)} TỪ/PHÚT` : "Chưa lưu", color: "#F87171" }
       ];
 
       stats.forEach((st, idx) => {
@@ -1813,7 +1832,7 @@
       this.currentVaultPage = 1;
       if (this.vaultTabsRow) {
         this.vaultTabsRow.querySelectorAll(".vault-tab-btn").forEach(btn => {
-          const b = parseInt(btn.getAttribute("data-band"), 10);
+          const b = btn.getAttribute('data-band') === 'all' ? null : parseInt(btn.getAttribute('data-band'), 10);
           btn.classList.toggle("active", b === bandIdx);
         });
       }
@@ -1841,7 +1860,8 @@
         const loader = root.Meowcha && root.Meowcha.VocabLoader;
         if (!loader) throw new Error("VocabLoader chưa sẵn sàng");
 
-        const res = await loader.searchVocab({
+        const searchMethod = this.currentVaultBand === null ? loader.searchAllOxford : loader.searchVocab;
+        const res = await searchMethod({
           band: this.currentVaultBand,
           search: this.currentVaultSearch,
           page: this.currentVaultPage,

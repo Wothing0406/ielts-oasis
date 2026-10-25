@@ -38,6 +38,7 @@
       this.storageKey = `${STORAGE_KEY}:${owner}`;
       this.reviewKey = `meowcha_srs_weaknesses:${owner}`;
       this.pendingRunsKey = `meowcha_pending_runs:${owner}`;
+      this.bestRunKey = `meowcha_personal_best:${owner}`;
       const legacyOwner = this.storage.getItem('meowcha_legacy_save_owner');
       this.canImportLegacy = !legacyOwner || legacyOwner === owner;
       if (!legacyOwner) this.storage.setItem('meowcha_legacy_save_owner', owner);
@@ -133,6 +134,50 @@
     getDueReviewWords(now = Date.now()) {
       return this.getWeaknessWords().filter(w => (w.nextReviewAt || 0) <= now)
         .sort((a, b) => (a.nextReviewAt || 0) - (b.nextReviewAt || 0));
+    }
+
+    rememberPersonalBest(state) {
+      const existing = this.getStoredPersonalBest();
+      if (!state || !(state.score > (existing.score || 0))) return;
+      if (state.calculateWPM) state.calculateWPM();
+      this.storage.setItem(this.bestRunKey, JSON.stringify({
+        score:state.score, runId:state.runId, gameMode:state.gameMode, activeDeckId:state.activeDeckId,
+        realmIdx:state.realmIdx, accuracy:state.accuracy, wpm:state.wpm,
+        humanWords:state.humanWords, assistedWords:state.assistedWords, metricsKnown:true
+      }));
+    }
+
+    getStoredPersonalBest() {
+      try { return JSON.parse(this.storage.getItem(this.bestRunKey) || '{}') || {}; }
+      catch (_) { return {}; }
+    }
+
+    getCertificateRecord(state) {
+      this.rememberPersonalBest(state);
+      const saved = Object.values(this.slots).flatMap(slot => Object.values(slot.modes || {}));
+      const best = Math.max(this.canImportLegacy ? (state.highScore || 0) : 0, state.score || 0, this.getStoredPersonalBest().score || 0,
+        ...saved.map(s => Math.max(s.score || 0, s.highScore || 0)));
+      const candidates = [this.getStoredPersonalBest(), state, ...saved];
+      const record = candidates.find(s => s.score === best && (s.metricsKnown || Number.isFinite(s.correctKeystrokes)));
+      if (!record) return { score:best, metricsKnown:false };
+      const elapsed = Math.max(1000, record.activeElapsedMs || 0);
+      return { ...record, score:best, gameMode:record.gameMode || record.mode,
+        accuracy:record.accuracy ?? (record.totalKeystrokes ? Math.round(record.correctKeystrokes * 100 / record.totalKeystrokes) : 100),
+        wpm:record.wpm ?? Math.round((record.correctKeystrokes || 0) * 12000 / elapsed), metricsKnown:true };
+    }
+
+    async syncPersonalBest() {
+      if (!this.getAuthHeaders().Authorization || typeof fetch === 'undefined') return;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch('/api/meowcha/personal-best', { headers:this.getAuthHeaders(), signal:controller.signal });
+        if (!response.ok) throw new Error('Không lấy được kỷ lục từ máy chủ');
+        const body = await response.json(), record = body.data;
+        if (record && record.score > (this.getStoredPersonalBest().score || 0)) {
+          this.storage.setItem(this.bestRunKey, JSON.stringify(record));
+        }
+      } finally { clearTimeout(timer); }
     }
 
     startRun(state) {
@@ -436,6 +481,7 @@
     }
 
     saveGame(slotId, gameState) {
+      this.rememberPersonalBest(gameState);
       const targetSlot = (slotId === 1 || slotId === 2 || slotId === 3)
         ? slotId
         : ((gameState && gameState.activeSlotId) || this.getActiveSlotId());

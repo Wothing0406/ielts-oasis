@@ -1,6 +1,8 @@
 # MEOW-CHA TRÀ ĐẠO — gameplay và kiến trúc hiện tại
 
-Phiên bản tài nguyên: `12.3`. Nhánh làm việc: `game/meowcha-cultivation`.
+Phiên bản tài nguyên: `12.4`. Nhánh làm việc: `game/meowcha-cultivation`.
+
+Sửa lỗi production: [điều hướng, chứng đạo, âm thanh và nổ IPA](meowcha-production-fixes-12.4.md).
 
 Đợt hoàn thiện đồ họa/âm thanh và cơ duyên ngày 25/10/2026 được chia task,
 lưu nguyên văn hai brief và ghi kết quả tại
@@ -129,8 +131,8 @@ Trận offline nhập lại hoặc không có phiên server gốc được phân
 Xem [kiểm toán asset](meowcha-art-audit.md). Giữ nền/sprite pixel, tái sử dụng
 ngọc bội có sẵn, thêm bệ đá có pháp trận do công cụ tạo ảnh sinh ra. Không blur
 sprite để giả HD. Giảm decor cạnh tranh, thống nhất trạng thái focus/pressed,
-tôn trọng reduced-motion. Bàn phím mặc định bật trên thiết bị cảm ứng và có nút
-bật thủ công trên PC. Màn ngang thấp tách bàn phím sang bên phải; canvas/nhân vật/
+tôn trọng reduced-motion. Bàn phím mặc định bật trên thiết bị cảm ứng, luôn ẩn
+trên PC. Màn ngang thấp tách bàn phím sang bên phải; canvas/nhân vật/
 đường va chạm dùng cùng kích thước đo được.
 
 ## Kiểm tra và triển khai
@@ -145,8 +147,8 @@ Migration cộng thêm hai bảng `meowcha_runs`, `meowcha_save_snapshots`, khô
 sửa/xóa bảng cũ: `python backend/migrations/meowcha_runs_v1.py`. Startup API cũng
 tạo hai bảng nếu thiếu. Triển khai backend/migration trước frontend; client cũ
 thiếu runId sẽ nhận 422 khi gửi điểm, nhưng các save và leaderboard cũ vẫn được giữ.
-Đợt công việc này không chạy migration hay triển khai trên dữ liệu production.
+Các sửa lỗi 12.4 không thay đổi cấu trúc bảng; API kỷ lục chỉ đọc dữ liệu thuộc tài khoản đăng nhập.
 
-Cache: cùng release `12.0` cho iframe và tất cả CSS/JS trong HTML; test
+Cache: cùng release `12.4` cho iframe và tất cả CSS/JS trong HTML; test
 kiểm tra các phiên bản thống nhất. Iframe đọc login cùng origin, không đặt bearer
 token hay hồ sơ người dùng vào URL.

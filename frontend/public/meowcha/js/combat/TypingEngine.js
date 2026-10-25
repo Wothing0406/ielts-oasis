@@ -260,7 +260,6 @@
       if (realm === 0) { target.slowTimer = 2.8; target.slowMult = 0.78; }
       else if (realm === 3) target.freezeTimer = Math.max(target.freezeTimer || 0, 0.9);
       else target.y = Math.max(-target.radius, target.y - 22 - realm * 3);
-      this.projectiles.spawnSkyStrike(target.x, target.y, realm);
       if (this.animator) this.animator.spawnVFXClip(`vfx_slash_r${realm}_sheet`, target.x, target.y, { size: 112, fps: 22 });
     }
 
@@ -437,7 +436,6 @@
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
       this.projectiles.spawn(catX, catY - 20, target.x, target.y, this.state.realmIdx, "#FDE047");
-      this.projectiles.spawnSkyStrike(target.x, target.y, this.state.realmIdx);
       if (this.animator) {
         const rIdx = Math.min(4, Math.max(0, this.state.realmIdx || 0));
         this.animator.spawnVFXClip(`vfx_slash_r${rIdx}_sheet`, target.x, target.y, {
@@ -476,11 +474,8 @@
         this.floatingText.add(catX, catY - 90, `[ 豪 ] ĐẠI TỰ THƯỞNG (+25 Tu Vi)`, "#F59E0B", isMobile ? 12 : 14);
       }
 
-      // 2. Đại chiêu KIẾM KHÍ CHÉM NỔ MA THẠCH (Trảm đúng thì chỉ vung kiếm chém ma thạch, không đánh sét vào người)
-      this.state.setCatState("ULTIMATE_BLAST", 350);
-      if (this.unityBridge) {
-        this.unityBridge.triggerUltimateBlast();
-      }
+      // Ordinary kills burst at the meteor; reserve the large character ultimate for active skills.
+      this.state.setCatState("WEAK_ATTACK", 220);
 
       this.audio.play("explosion");
       this.audio.play("chime");

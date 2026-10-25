@@ -15,21 +15,29 @@ function audioRuntime(){
  const manager=new box.Meowcha.AudioManager();
  return {manager,clips,spoken,timers,box,cancelled:()=>cancelled};
 }
+test('explicit enable on a fresh or muted browser starts all channels without toggling off',async()=>{
+ const r=audioRuntime(),a=r.manager;
+ a.enableSound();await Promise.resolve();assert.equal(a.soundEnabled,true);assert.equal(a.zenMusicPlaying,true);
+ assert.equal(a.master.gain.value,.85);assert.equal(a.sfx.gain.value,.5);assert.ok(a.stats.sfxPlayed>0);
+ a.toggleSound();assert.equal(a.soundEnabled,false);
+ a.enableSound();await Promise.resolve();assert.equal(a.zenMusicPlaying,true);assert.equal(a.soundEnabled,true);
+});
 test('20 consecutive word voices finish serially while BGM and SFX remain independent',async()=>{
  const r=audioRuntime(),a=r.manager;a.startZenGuqin();await Promise.resolve();
  assert.equal(a.zenMusicPlaying,true);
  for(let i=0;i<20;i++){a.playWord({word:'WORD'+i,audio_url:'/audio/word'+i+'.mp3'});a.play('explosion');a.play('chime');}
  assert.equal(r.clips.length,1);assert.equal(a.voiceQueue.length,19);assert.equal(r.cancelled(),0);
- for(let i=0;i<20;i++){assert.ok(r.clips[i].onended);r.clips[i].onended();}
+ for(let i=0;i<20;i++){assert.equal(r.clips[0].src,'https://localhost/audio/word'+i+'.mp3');assert.ok(r.clips[0].onended);r.clips[0].onended();}
+ assert.equal(r.clips.length,1);
  assert.equal(a.getStatus().voiceCompleted,20);assert.equal(a.getStatus().voiceActive,false);
  assert.equal(a.getStatus().bgm,true);assert.equal(a.musicNodes.length,2);assert.equal(a.getStatus().sfxPlayed,40);
- assert.equal(a.sfx.gain.value,.18);assert.equal(a.bgm.gain.value,.7);
+ assert.equal(a.sfx.gain.value,.5);assert.equal(a.bgm.gain.value,.8);
 });
 test('MP3 errors fall back once and stale rejection cannot interrupt the next voice',async()=>{
  const r=audioRuntime(),a=r.manager;a.playWord({word:'CAT',audio_url:'/bad.mp3'});const stale=r.clips[0].onerror;
  stale();stale();assert.equal(r.spoken.length,1);assert.equal(r.spoken[0].text,'CAT');
  a.playWord({word:'DOG',audio_url:'/dog.mp3'});r.spoken[0].onend();stale();
- assert.equal(r.spoken.length,1);assert.equal(r.clips.length,2);r.clips[1].onended();
+ assert.equal(r.spoken.length,1);assert.equal(r.clips.length,1);assert.equal(r.clips[0].src,'https://localhost/dog.mp3');r.clips[0].onended();
  assert.equal(a.getStatus().voiceCompleted,2);assert.equal(a.getStatus().voiceFallbacks,1);
 });
 test('mute blocks every channel, stale callbacks and interruption recovery cannot unmute',async()=>{
