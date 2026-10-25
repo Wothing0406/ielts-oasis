@@ -43,8 +43,8 @@
         isCloze: false,
         isAudio: false,
         x: cW / 2,
-        y: -radius - 20,
-        targetY: isMobile ? 120 : 155,
+        y: Math.max(155, ((root.Meowcha.battleLayout || {}).hudBottom || 76) + 80),
+        targetY: Math.max(155, ((root.Meowcha.battleLayout || {}).hudBottom || 76) + 80),
         vx: 0,
         vy: 0.22,
         fallAngle: Math.PI / 2,
@@ -82,6 +82,7 @@
 
     spawn(wordItem, canvasWidth, realmIdx = 0, slowFactor = 1.0, bandIdx = 0, explicitType = null, explicitDamage = null) {
       if (!wordItem || !wordItem.word) return null;
+      if(root.Meowcha.normalizeLearningWord) wordItem = root.Meowcha.normalizeLearningWord(wordItem);
       const wordUpper = wordItem.word.toUpperCase();
       if (this.asteroids.some(a => a.word === wordUpper)) {
         return null; // Skip duplicate word spawn
@@ -184,7 +185,7 @@
           maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.72);
         }
       }
-      const spawnX = minX + Math.random() * (maxX - minX);
+      const spawnX = isMobile ? canvasWidth / 2 : minX + Math.random() * (maxX - minX);
 
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[realmIdx] || { speedMult: 1.0 };
@@ -193,9 +194,14 @@
       let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.22) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
 
       // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
+      const field = (root.Meowcha && root.Meowcha.battleLayout) || {};
+      // The word card, rock, projectile and reward must share the same visible position.
+      const spawnY = (field.hudBottom || 76) + 80;
+      // Keep the typing window comparable when the keyboard reduces travel distance.
+      const fieldScale = field.bottomThreshold ? Math.max(.08, Math.min(1.5, (field.bottomThreshold - spawnY) / 420)) : 1;
       const lateralDrift = (Math.random() - 0.5) * 0.18;
-      const vy = baseSpeed;
-      const vx = lateralDrift;
+      const vy = baseSpeed * fieldScale;
+      const vx = lateralDrift * fieldScale;
       const fallAngle = Math.atan2(vy, vx);
 
       // Tạo hình dạng đá gồ ghề (12 đỉnh góc đa giác tự nhiên)
@@ -225,14 +231,12 @@
         });
       }
 
-      // RƠI TỪ ĐỈNH TRỜI: Xuất phát từ phía trên mép màn hình và trôi êm ái xuống đan điền
-      const spawnY = -baseRadius - 15;
-
       const M = root.Meowcha || {};
       const appState = this.gameState || (M.app && M.app.gameState) || null;
       const curMode = (appState && appState.gameMode) || "DIRECT";
 
       const asteroid = {
+        type: wordItem.type || '',
         cefr: wordItem.cefr || wordItem.level || null,
         example: wordItem.example || '',
         id: Date.now() + Math.random(),
@@ -379,6 +383,22 @@
       }
     }
 
+    cardLayout(ctx, ast) {
+      const M=root.Meowcha, width=ctx.canvas.width, small=width<600;
+      const cols=Math.min(16,ast.word.length), rows=Math.ceil(ast.word.length/16), fontSize=small?18:21;
+      const paperW=Math.min(width-16,Math.max(small?280:320,cols*(small?15:18)+60));
+      const safeX=Math.max(paperW/2+8,Math.min(width-paperW/2-8,ast.x));
+      ctx.font="12px 'Be Vietnam Pro',sans-serif";
+      const detail=ast.isBoss?'Tâm Ma • '+(ast.currentShieldIdx+1)+'/'+ast.totalShields :
+        ast.isAudio?'Nghe và gõ • Tab nghe lại':ast.isCloze?
+        ((ast.type?ast.type+' • ':'')+(ast.meaning||'Nhớ từ qua nghĩa')):(ast.typedLen||0)+' / '+ast.word.length+' ký tự';
+      const detailLines=M.wrapLearningText?M.wrapLearningText(ctx,detail,paperW*.77):[detail];
+      const paperH=58+rows*(fontSize+2)+detailLines.length*16;
+      const battle=M.getBattleLayout?M.getBattleLayout(ctx.canvas):{};
+      const top=(battle.hudBottom||76)+6, bottom=Math.max(top+paperH,battle.bottomThreshold||ctx.canvas.height-160);
+      const cardY=Math.max(top+paperH/2,Math.min(bottom-paperH/2,ast.y));
+      return {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap:Math.min(small?15:18,paperW*.76/cols),detailLines};
+    }
     draw(ctx) {
       for (const ast of this.asteroids) {
         ctx.save();
@@ -392,27 +412,22 @@
         }
         ctx.globalAlpha=1;
         if(rock&&rock.loaded) ctx.drawImage(rock.img,Math.round(x-size/2),Math.round(y-size/2-12),size,size);
-        // A quiet authored talisman carries the word; no stacked black/gold windows.
-        const cols=Math.min(16,ast.word.length), rows=Math.ceil(ast.word.length/16);
-        const paperW=Math.min(width-16,Math.max(190,cols*(small?15:18)+36)), paperH=rows>1?114:94;
-        const safeX=Math.max(paperW/2+8,Math.min(width-paperW/2-8,x));
+        const M = root.Meowcha, layout = this.cardLayout(ctx, ast);
+        const {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap,detailLines} = layout;
         const paper=this.assets.ivory_scroll;
-        if(paper&&paper.loaded) ctx.drawImage(paper.img,safeX-paperW/2,y-paperH/2,paperW,paperH);
-        else { ctx.fillStyle='#F5E7C7';ctx.fillRect(safeX-paperW*.45,y-25,paperW*.9,50); }
-        const fontSize=small?18:21, gap=Math.min(small?15:18,(paperW*.76)/cols);
+        ctx.fillStyle='#F5E7C7';ctx.fillRect(safeX-paperW*.4,cardY-paperH*.29,paperW*.8,paperH*.58);
+        if(paper&&paper.loaded) ctx.drawImage(paper.img,safeX-paperW/2,cardY-paperH/2,paperW,paperH);
+        else { ctx.fillStyle='#F5E7C7';ctx.fillRect(safeX-paperW/2,cardY-paperH/2,paperW,paperH); }
         ctx.font="800 "+fontSize+"px 'Be Vietnam Pro',sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';
+        const glyphY=cardY-paperH/2+28;
         for(let i=0;i<ast.word.length;i++) {
-          const row=Math.floor(i/16), count=Math.min(16,ast.word.length-row*16), col=i%16;
+          const row=Math.floor(i/cols), count=Math.min(cols,ast.word.length-row*cols), col=i%cols;
           const visible=i<ast.typedLen || (!ast.isAudio && (!ast.isCloze || i===0 || i===ast.word.length-1));
           ctx.fillStyle=i<ast.typedLen?'#397A61':'#20332D';
-          ctx.fillText(visible?ast.word[i]:'·',safeX+(col-(count-1)/2)*gap,y+(row-(rows-1)/2)*(fontSize+2)-3);
+          ctx.fillText(visible?ast.word[i]:'·',safeX+(col-(count-1)/2)*gap,glyphY+row*(fontSize+2));
         }
-        ctx.font=(small?10:11)+"px 'Be Vietnam Pro',sans-serif";ctx.fillStyle='#614734';
-        let detail=ast.isBoss ? 'Tâm Ma • '+(ast.currentShieldIdx+1)+'/'+ast.totalShields+' • '+(ast.baseWord||'') :
-          ast.isAudio?'Nghe và gõ • Tab nghe lại':ast.isCloze?ast.meaning:(ast.typedLen||0)+' / '+ast.word.length+' ký tự';
-        const limit=paperW*.76;
-        while(detail.length>2&&ctx.measureText(detail).width>limit) detail=detail.slice(0,-2)+'…';
-        ctx.fillText(detail,safeX,y+(rows>1?26:17));
+        ctx.font="12px 'Be Vietnam Pro',sans-serif";ctx.fillStyle='#614734';
+        detailLines.forEach((line,i)=>ctx.fillText(line,safeX,glyphY+rows*(fontSize+2)+i*16));
         if(ast.freezeTimer>0) {
           ctx.fillStyle='#9CB7D4';for(let i=0;i<4;i++)ctx.fillRect(x-size/2+i*size/3,y-size/2,4,6);
         }

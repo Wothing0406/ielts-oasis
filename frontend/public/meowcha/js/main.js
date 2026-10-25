@@ -1069,7 +1069,7 @@
         this.particles.draw(ctx);
         if (this.animator) this.animator.drawVFXClips(ctx);
 
-        // 6. Vẽ Nhân vật Mèo Tôn kèm Phi Kiếm & Sợi Tơ Kiếm Ý Khóa Mục Tiêu
+        // 6. Authored character animation; no idle hovering sword or aiming tether.
         this.cat.draw(ctx, this.canvas, this.gameState, this.typing.currentTarget);
 
         // 7. Vẽ Chữ nổi Tu Vi & Sát thương
@@ -1079,7 +1079,7 @@
         this.realmVFX.drawLightning(ctx, w, h, this.gameState.screenFlash);
 
         // 9. Bong bóng thoại Mèo Tôn (Neo sát trên đầu Mèo Tôn, tự động ẩn khi thiên thạch rơi gần để không che khuất)
-        if (this.gameState.speechText && performance.now() < this.gameState.speechTimer) {
+        if (this.gameState.speechText && performance.now() < this.gameState.speechTimer && !(M.battleLayout && M.battleLayout.tight)) {
           const isMob = w <= 768 || (h > w);
           const catY = (this.cat && typeof this.cat.y === "number") ? this.cat.y : (isMob ? (h - 252) : (h - 200));
           const hasAsteroidNearCat = this.asteroids && this.asteroids.asteroids.some(a => a && Math.abs(a.y - catY) < 180);

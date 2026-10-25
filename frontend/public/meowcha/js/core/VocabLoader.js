@@ -8,9 +8,9 @@
   const PENDING = {};
   let localOxfordPromise;
   const loadLocalOxford = () => {
-    if (!localOxfordPromise) localOxfordPromise = fetch('./data/oxford_5000.json').then(r => {
+    if (!localOxfordPromise) localOxfordPromise = fetch('./data/oxford_5000.json?v=14.1').then(r => {
       if (!r.ok) throw new Error('Local Oxford unavailable');
-      return r.json();
+      return r.json().then(data => { if(root.Meowcha.registerLearningLexicon) root.Meowcha.registerLearningLexicon(data); return data; });
     }).catch(err => { localOxfordPromise = null; throw err; });
     return localOxfordPromise;
   };
@@ -82,6 +82,7 @@
       } catch (_) { /* API words remain usable when the optional local dictionary is unavailable. */ }
 
       if (words.length === 0) throw new Error('Empty response');
+      if(root.Meowcha.normalizeLearningWord) words.forEach((w,i) => { words[i] = root.Meowcha.normalizeLearningWord(w); });
       CACHE[key] = words;
       FETCH_STATE[key] = 'done';
       var M = root.Meowcha || {};
@@ -181,7 +182,8 @@
             band_level: w.band_level !== undefined ? w.band_level : band,
             asteroid_type: w.asteroid_type || 'FROST'
           };
-        }).filter(function(w) { return w.word && w.word.length > 0; });
+        }).filter(function(w) { return w.word && w.word.length > 0; })
+          .map(w => root.Meowcha.normalizeLearningWord ? root.Meowcha.normalizeLearningWord(w) : w);
 
         const totalCount = (res.meta && res.meta.total !== undefined)
           ? res.meta.total

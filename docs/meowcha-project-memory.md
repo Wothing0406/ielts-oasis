@@ -31,9 +31,21 @@
   Không ghi đè cloud mới bằng local cũ. Không truyền token trong URL iframe.
 - DIRECT nhìn chữ; CLOZE nhớ từ qua nghĩa; AUDIO không lộ chữ/IPA trước đáp án.
   Sau trảm, thẻ học xuất hiện tại vị trí ma thạch: chữ, IPA đầy đủ, nghĩa, Tu Vi.
-- Đòn gõ thường: hoạt ảnh tấn công, muzzle, projectile sprite theo cảnh giới, đuôi
-  hạt ngắn, impact. Không vẽ chồng kiếm fallback khi sprite đã tải, không kéo một
-  vệt sáng liền từ người đến đá. Tuyệt kỹ phải khác đòn gõ thường.
+- Đòn gõ thường: attack pose, muzzle, projectile và kiếm khí raster có animation
+  theo cảnh giới, impact. Người dùng đã yêu cầu khôi phục kiếm khí rộng như ảnh cũ:
+  beam sheet có hình được dùng, đòn kết từ rộng hơn. Bỏ kiếm lơ lửng và đường ngắm
+  nét đứt trong CatCultivator; không nhầm chúng với projectile. Không vẽ fallback
+  hình học chồng lên sprite; tuyệt kỹ vẫn có nhịp và hình khác.
+- Dữ liệu nghĩa game: `backend/game_data/meowcha_meaning_corrections.json` sửa
+  theo từ loại. API và client chọn một nghĩa cụ thể; không ghép nhiều POS bằng `|`
+  vào gợi ý. `LearningText` còn sửa từ cũ khi sinh ma thạch từ SRS/save. Không dùng
+  nhãn “Từ vựng học thuật” làm nghĩa; không sửa dữ liệu Oxford của trang vocab khác.
+- Thẻ từ/IPA/nghĩa xuống dòng, nằm dưới HUD. Đàn kiếm phải có chiều cao chữ thật,
+  tránh flex ép chữ mất; đo cả khi bàn phím mở. Bản 14.1 có layout gọn riêng cho
+  điện thoại thấp, không coi đổi viewport thành kiểm thử thiết bị thật.
+- Chứng đạo/xác nhận có thể nằm ngoài `#gameAppWrapper`; CSS hệ mỹ thuật cần
+  bao cả `.meowcha-modal-overlay`, nếu chỉ chọn wrapper thì các luồng này vẫn
+  giữ giao diện cũ dù menu khác đã đổi. Màn hình ngang thấp đặt nhân vật bên trái.
 - Âm đúng/sai, kiếm, rơi đá, khiên và sát thương là các sự kiện riêng. BGM/voice
   không bị khởi động lại cho mỗi từ. Mute phải được tôn trọng. Từ ngoài Oxford thiếu
   MP3 dùng lại `/api/tts` của website với timeout/cache; giọng OS là dự phòng cuối,
@@ -67,4 +79,5 @@
 - Trước push/deploy: kiểm tra branch, diff; giữ dữ liệu/runtime MP3 ngoài Git;
   backup nhánh sạch, không add toàn bộ browser profiles hay output tạm.
 - [Bản sửa 12.4](meowcha-production-fixes-12.4.md),
-  [đợt kiếm bài/chiến đấu](meowcha-sword-combat-tasks.md).
+  [đợt kiếm bài/chiến đấu](meowcha-sword-combat-tasks.md),
+  [hoàn thiện nghĩa/kiếm khí/UI 14.1](meowcha-completion-14.1.md).

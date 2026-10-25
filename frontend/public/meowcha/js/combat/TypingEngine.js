@@ -3,6 +3,7 @@
  * Khi trảm xong từ: Phóng kiếm xé toạc màn hình, nổ tung tại chỗ kèm vòng Bát Quái + IPA + Hút EXP
  */
 (function(root) {
+  const combatX = canvas => canvas ? ((root.Meowcha.getBattleLayout && root.Meowcha.getBattleLayout(canvas).catX) || canvas.width / 2) : 400;
   class TypingEngine {
     constructor(gameState, asteroidManager, projectileSystem, particleEngine, audioManager, floatingText, realmVFX, unityBridge = null, animator = null, saveSystem = null) {
       this.saveSystem = saveSystem;
@@ -96,13 +97,14 @@
 
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
-        const catX = canvas.width / 2;
+        const catX = combatX(canvas);
         const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
         // Phóng phi kiếm hướng tới ma thạch
         const realms = root.Meowcha.CULTIVATION_REALMS || [];
         const realmData = realms[this.state.realmIdx] || realms[0] || { swordColor: "#67E8F9" };
-        this.projectiles.spawn(catX + (isMobile ? 20 : 28), catY - (isMobile ? 70 : 98), target.x, target.y, this.state.realmIdx, realmData.swordColor);
+        const geometry = root.Meowcha.getBattleLayout ? root.Meowcha.getBattleLayout(canvas) : {};
+        this.projectiles.spawn(geometry.attackX || catX + (isMobile ? 20 : 28), geometry.attackY || catY - (isMobile ? 70 : 98), target.x, target.y, this.state.realmIdx, realmData.swordColor, {finisher:target.typedLen >= target.word.length});
         this.audio.play('sword_launch');
 
         // Hiệu ứng tia lửa & nội tại hàn băng Trúc Cơ
@@ -157,7 +159,7 @@
 
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
-        const catX = canvas.width / 2;
+        const catX = combatX(canvas);
         const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
         this.state.setCatState("HURT", 140);
@@ -223,7 +225,7 @@
       if (success && this.floatingText) {
         const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas ? canvas.width <= 768 : false);
-        const catX = canvas ? canvas.width / 2 : 400;
+        const catX = combatX(canvas);
         const catY = canvas ? ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450)) : 500;
         const M = root.Meowcha || {};
         const sDef = M.BREAKTHROUGH_SKILLS && M.BREAKTHROUGH_SKILLS[skillId];
@@ -286,7 +288,7 @@
           if (ast) {
             const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas && canvas.width <= 768);
-            const catX = canvas ? canvas.width / 2 : 400;
+            const catX = combatX(canvas);
             const catY = canvas ? ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450)) : 500;
             this.state.chibiAttackFlash = 1.0;
             this.projectiles.spawn(catX - 70, catY - 60, ast.x, ast.y, 3, "#C084FC");
@@ -433,7 +435,7 @@
 
       const D = root.Meowcha && root.Meowcha.Device;
         const isMobile = D ? D.info.isMobile : (canvas.width <= 768);
-      const catX = canvas.width / 2;
+      const catX = combatX(canvas);
       const catY = ((root.Meowcha && typeof root.Meowcha.getBattleLayout === 'function') ? root.Meowcha.getBattleLayout(canvas).catY : (canvas ? canvas.height * 0.75 : 450));
 
       // 1. Phóng phi kiếm thần tốc + Thiên Kiếm Giáng Thế + Slash VFX đa khung hình theo Cảnh Giới
@@ -640,7 +642,7 @@
         if (this.audio) this.audio.play("type");
         const altarSub = document.getElementById("swordTargetMeaning");
         if (altarSub && this.state && this.state.gameMode === "AUDIO") {
-          altarSub.textContent = `[ 聽 ] Đang phát lại tiên âm: ${target.ipa || '/.../'}`;
+          altarSub.textContent = 'Đang phát lại tiên âm • Nghe và gõ';
         }
         return true;
       }
@@ -691,41 +693,6 @@
       const typed = Math.min(target.typedLen, word.length);
       const pct = Math.round((typed / word.length) * 100);
 
-      // XỬ LÝ HIỂN THỊ CHỮ GÕ & CHỮ CHƯA GÕ TRÊN CUỘN THƯ BÍ KÍP (MỰC TÀU CỔ PHONG ĐẬM NÉT):
-      let wordDisplayHtml = "";
-
-      if (curMode === "CLOZE") {
-        // CHẾ ĐỘ NGỘ ĐẠO THÔNG LINH (ĐOÁN TỰ):
-        // 1. Chữ đã gõ: Mực ngọc lục bảo đậm #065F46
-        // 2. Ký tự đầu tiên: Nếu chưa gõ thì hiện làm gợi ý mở đầu bằng mực chu sa #991B1B
-        // 3. Ký tự cuối cùng: Luôn hiện làm gợi ý chốt đuôi nếu từ >= 3 chữ bằng mực chu sa #991B1B
-        // 4. Ký tự ở giữa: Giấu kín tuyệt đối bằng ký hiệu gạch chân "_ "
-        for (let i = 0; i < word.length; i++) {
-          if (i < typed) {
-            wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
-          } else if (i === 0 && typed === 0) {
-            wordDisplayHtml += `<span class="altar-hint-char">${word[0]}</span> `;
-          } else if (i === word.length - 1 && word.length >= 3) {
-            wordDisplayHtml += `<span class="altar-hint-char">${word[i]}</span> `;
-          } else {
-            wordDisplayHtml += `<span class="altar-untyped-txt">_ </span>`;
-          }
-        }
-      } else if (curMode === "AUDIO") {
-        // CHẾ ĐỘ THÍNH TIÊN BIỆN ÂM:
-        for (let i = 0; i < word.length; i++) {
-          if (i < typed) {
-            wordDisplayHtml += `<span class="altar-typed-txt">${word[i]}</span> `;
-          } else {
-            wordDisplayHtml += `<span class="altar-untyped-txt">_ </span>`;
-          }
-        }
-      } else {
-        // CHẾ ĐỘ TRỰC DIỆN TRẢM MA:
-        const typedPart = word.substring(0, typed);
-        const untypedPart = word.substring(typed);
-        wordDisplayHtml = `<span class="altar-typed-txt">${typedPart}</span><span class="altar-untyped-txt">${untypedPart}</span>`;
-      }
 
       if (intentEl) {
         intentEl.replaceChildren();
@@ -734,16 +701,16 @@
             const span = document.createElement("span");
             if (i < typed) {
               span.className = "altar-typed-txt";
-              span.textContent = word[i] + " ";
+              span.textContent = word[i];
             } else if (i === 0 && typed === 0) {
               span.className = "altar-hint-char";
-              span.textContent = word[0] + " ";
+              span.textContent = word[0];
             } else if (i === word.length - 1 && word.length >= 3) {
               span.className = "altar-hint-char";
-              span.textContent = word[i] + " ";
+              span.textContent = word[i];
             } else {
               span.className = "altar-untyped-txt";
-              span.textContent = "_ ";
+              span.textContent = "·";
             }
             intentEl.appendChild(span);
           }
@@ -752,7 +719,7 @@
             const span = document.createElement("span");
             if (i < typed) {
               span.className = "altar-typed-txt";
-              span.textContent = word[i] + " ";
+              span.textContent = word[i];
             } else {
               span.className = "altar-untyped-txt";
               span.textContent = "_ ";
@@ -779,7 +746,7 @@
         } else if (typed >= word.length) {
           meaningEl.textContent = `${target.word}: ${target.meaning || target.definition || ''} (${target.ipa || ''})`;
         } else if (curMode === 'CLOZE') {
-          meaningEl.textContent = `Nghĩa: ${target.meaning || target.definition || 'Đoán từ tiếng Anh'} • ${word.length} chữ`;
+          meaningEl.textContent = `${target.type ? target.type + ' • ' : ''}${target.meaning || target.definition || 'Đoán từ tiếng Anh'}`;
         } else {
           meaningEl.textContent = `Tiến độ xuất kiếm: ${typed}/${word.length}${target.cefr ? ' • CEFR ' + target.cefr : ''}`;
         }

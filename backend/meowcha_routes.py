@@ -23,6 +23,7 @@ from meowcha_integrity import (MeowchaRun, MeowchaSaveSnapshot, RunStart, RunCom
     SaveSnapshotPayload, start_run, complete_run, require_user)
 
 from services.oxford_dataset_service import OxfordDatasetService
+from meowcha_learning import normalize_word
 
 logger = logging.getLogger("meowcha_routes")
 
@@ -179,7 +180,7 @@ def get_vocab_deck(
         ]
 
         return api_response(
-            data=result_data,
+            data=[normalize_word(item) for item in result_data],
             meta={
                 "total": total_count,
                 "page": page,
@@ -214,7 +215,7 @@ def get_vocab_deck(
                 if w_clean and w_clean not in seen_dict:
                     seen_dict[w_clean] = e
 
-            valid_words = list(seen_dict.values())
+            valid_words = [normalize_word(item) for item in seen_dict.values()]
 
             if search and search.strip():
                 query_clean = search.strip().lower()
@@ -265,7 +266,7 @@ def get_vocab_deck(
             ]
 
             return api_response(
-                data=result_data,
+                data=[normalize_word(item) for item in result_data],
                 meta={
                     "total": total_matches,
                     "page": page,

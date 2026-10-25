@@ -16,14 +16,18 @@
     }
     const keyboardHeight = visibleKeyboard && keyRect.left < canvas.width - 10 ? Math.max(0, canvas.height - keyRect.top) : 0;
     document.documentElement.style.setProperty('--mc-keyboard-height', `${keyboardHeight}px`);
-    const compact = canvas.width <= 768 || canvas.height < 550 || (M.Device && M.Device.info.isTouchDevice);
-    if (!compact && !keyboardHeight) { M.battleLayout = fallback; return fallback; }
     const hud = document.querySelector('.sect-scroll-hud');
     const hudBottom = hud ? hud.getBoundingClientRect().bottom : 90;
     const altar = document.getElementById('swordIntentBox');
-    const altarHeight = altar ? Math.min(100, altar.getBoundingClientRect().height) : 65;
-    const catY = Math.max(hudBottom + 70, canvas.height - keyboardHeight - altarHeight - 28);
-    M.battleLayout = { catY, bottomThreshold: Math.max(hudBottom + 30, catY - 50) };
+    const altarHeight = altar ? altar.getBoundingClientRect().height : 65;
+    const wideShort = canvas.height < 500 && (root.innerWidth || canvas.width) > canvas.height * 1.3;
+    const tight = wideShort || (visibleKeyboard && canvas.width <= 600 && canvas.height <= 650);
+    const characterSize = tight ? 90 : canvas.width <= 768 ? 125 : 180;
+    const catX = wideShort ? canvas.width * .08 : canvas.width / 2;
+    const catY = Math.max(hudBottom + 70, canvas.height - keyboardHeight - altarHeight - (tight ? 18 : 28));
+    M.battleLayout = { catX, catY, hudBottom, characterSize, tight,
+      attackX: catX + characterSize * .16, attackY: catY - characterSize * .54,
+      bottomThreshold: Math.max(hudBottom + 30, catY - 50) };
     return M.battleLayout;
   };
   M.getBattleLayout = canvas => M.battleLayout || M.refreshBattleLayout(canvas);

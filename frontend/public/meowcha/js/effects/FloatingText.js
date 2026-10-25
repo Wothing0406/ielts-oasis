@@ -36,6 +36,7 @@
     paper(ctx,x,y,w,h) {
       const paper=this.assets.ivory_scroll;
       if(paper && paper.loaded) {
+        ctx.fillStyle='#F5E7C7';ctx.fillRect(x-w*.4,y-h*.29,w*.8,h*.58);
         ctx.imageSmoothingEnabled=false;
         ctx.drawImage(paper.img,x-w/2,y-h/2,w,h);
       } else { ctx.fillStyle='#F5E7C7'; ctx.fillRect(x-w*.45,y-h*.35,w*.9,h*.65); }
@@ -60,10 +61,13 @@
       const ipaLines = this.wrap(ctx, burst.ipa && burst.ipa !== '/.../' ? burst.ipa : 'Chưa có phiên âm trong bộ từ này', width * .76);
       ctx.font = "800 19px 'Be Vietnam Pro',sans-serif";
       const wordLines = this.wrap(ctx, burst.word, width * .72);
-      const textHeight = 31 + ipaLines.length * 17 + wordLines.length * 20;
+      ctx.font = "12px 'Be Vietnam Pro',sans-serif";
+      const M = root.Meowcha;
+      const meaningLines = M.wrapLearningText ? M.wrapLearningText(ctx, burst.meaning, width * .75) : this.wrap(ctx, burst.meaning, width * .75);
+      const textHeight = 15 + meaningLines.length * 16 + ipaLines.length * 17 + wordLines.length * 20;
       const height = Math.max(145, (textHeight + 16) / .58);
       const half = height / 2;
-      return { width, height, ipaLines, wordLines, textHeight,
+      return { width, height, ipaLines, wordLines, meaningLines, textHeight,
         x:Math.max(width/2 + 8, Math.min(ctx.canvas.width - width/2 - 8, burst.x)),
         y:Math.max(half + 82, Math.min(ctx.canvas.height - half - 104, burst.y)) };
     }
@@ -85,7 +89,7 @@
         const age=b.maxLife-b.life;
         ctx.globalAlpha=Math.min(1,age*7,b.life/.35);
         const layout = this.getBurstLayout(ctx, b);
-        const {x,y,width,height,ipaLines,wordLines} = layout;
+        const {x,y,width,height,ipaLines,wordLines,meaningLines} = layout;
         this.paper(ctx,x,y,width,height);
         let textY = y - height*.05 - layout.textHeight/2 + 12;
         ctx.fillStyle='#20332D'; ctx.font="800 19px 'Be Vietnam Pro',sans-serif";
@@ -93,9 +97,9 @@
         ctx.fillStyle='#37665C'; ctx.font="14px 'Be Vietnam Pro',sans-serif";
         for (const line of ipaLines) { ctx.fillText(line,x,textY); textY += 17; }
         ctx.fillStyle='#614734'; ctx.font="12px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText(this.fit(ctx,b.meaning,width*.75),x,textY+2);
+        for(const line of meaningLines) { ctx.fillText(line,x,textY+2); textY+=16; }
         ctx.fillStyle='#597C62'; ctx.font="bold 11px 'Be Vietnam Pro',sans-serif";
-        ctx.fillText('+'+b.points+' Tu Vi',x,textY+19);
+        ctx.fillText('+'+b.points+' Tu Vi',x,textY+3);
         ctx.restore();
       }
       ctx.globalAlpha=1;

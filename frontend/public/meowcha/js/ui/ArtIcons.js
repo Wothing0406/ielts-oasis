@@ -23,6 +23,9 @@
     document.querySelectorAll('.pill-icon').forEach((element,index)=>{
       element.innerHTML=M.pixelIcon(index===0?'cauldron':'scroll-unfurled');
     });
+    document.querySelectorAll('.podium-empty-placeholder').forEach(element=>{
+      element.innerHTML=M.pixelIcon('shield');
+    });
     M.replacePixelImages(document);
     if (!M.pixelObserver && typeof MutationObserver !== 'undefined') {
       const mount = document.getElementById('gameAppWrapper');

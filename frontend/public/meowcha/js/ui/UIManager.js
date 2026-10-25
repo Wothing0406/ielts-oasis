@@ -624,6 +624,7 @@
         // Highlight mode cards
         modal.querySelectorAll(".setup-mode-card").forEach(card => {
           card.classList.toggle("active-mode", card.getAttribute("data-mode") === selectedMode);
+          card.setAttribute('aria-pressed', String(card.getAttribute('data-mode') === selectedMode));
         });
 
         // Highlight realm step in unified track
@@ -751,6 +752,9 @@
 
       // Gắn sự kiện chọn Pháp Môn
       modal.querySelectorAll(".setup-mode-card").forEach(card => {
+        card.setAttribute('role', 'button');
+        card.tabIndex = 0;
+        card.onkeydown = event => { if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); } };
         card.onclick = () => {
           selectedMode = card.getAttribute("data-mode");
           this.audio.play("chime");
@@ -863,7 +867,8 @@
 
       // Tốc độ Kiếm Tự
       if (this.hudWpm) {
-        this.hudWpm.innerText = `${s.wpm} TỪ/PHÚT (WPM)`;
+        this.hudWpm.innerText = `${s.wpm} WPM`;
+        this.hudWpm.title = 'Tốc độ tự gõ: ký tự đúng / 5 / phút luyện tập';
       }
 
       // Cập nhật thông số Sảnh Thiền Định (Tầng 2: Mini Jade HP Bar, Tu Vi, Cổ Ngữ, Kiếm Tốc)
@@ -1924,20 +1929,20 @@
       this.vaultWordsGrid.innerHTML = words.map(item => `
         <div class="vocab-card">
           <div class="vocab-card-header">
-            <span class="vocab-word-title ${currentClass}">${item.word}</span>
-            <span class="vocab-type-badge">${item.type || 'vocab'}</span>
+            <span class="vocab-word-title ${currentClass}">${escapeHTML(item.word)}</span>
+            <span class="vocab-type-badge">${escapeHTML(item.type || 'vocab')}</span>
           </div>
           <div class="vocab-card-body">
-            <span class="vocab-ipa-text">${item.ipa || '/.../'}</span>
-            <button class="btn-pronounce-speaker" data-word="${item.word}" data-audio="${item.audio_url || ''}" title="Nghe phát âm chuẩn Oxford">
+            <span class="vocab-ipa-text">${escapeHTML(item.ipa || '/.../')}</span>
+            <button class="btn-pronounce-speaker" data-word="${escapeHTML(item.word)}" data-audio="${escapeHTML(item.audio_url || '')}" title="Nghe phát âm chuẩn Oxford">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
               </svg>
             </button>
           </div>
-          <div class="vocab-meaning-text" title="${item.meaning || ''}">
-            ${item.meaning || 'Ý nghĩa đang ngưng tụ'}
+          <div class="vocab-meaning-text" title="${escapeHTML(item.meaning || '')}">
+            ${escapeHTML(item.meaning || 'Chưa có nghĩa trong bộ từ này')}
           </div>
         </div>
       `).join("");
@@ -2359,7 +2364,7 @@
       if (accEl) accEl.innerText = `${this.state.accuracy || 100}%`;
 
       const wpmEl = document.getElementById("profileModalWpm");
-      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} TỪ/PHÚT (WPM)`;
+      if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} WPM`;
 
       const hpEl = document.getElementById("profileModalHp");
       if (hpEl) hpEl.innerText = `${this.state.hp} / ${this.state.maxHp} HP`;

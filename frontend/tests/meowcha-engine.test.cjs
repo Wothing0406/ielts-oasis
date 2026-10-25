@@ -13,7 +13,7 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
+  for (const file of ['data/MeaningCorrections.js', 'core/LearningText.js', 'core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
@@ -85,7 +85,7 @@ test('word reward remains at the kill location and preserves all IPA characters 
 
 test('full Oxford view includes short words and hyphenated entries and paginates locally',async()=>{
  const r=runtime();let downloads=0;
- r.sandbox.fetch=async url=>{assert.equal(url,'./data/oxford_5000.json');downloads++;return {ok:true,json:async()=>[
+ r.sandbox.fetch=async url=>{assert.match(url,/^\.\/data\/oxford_5000\.json\?v=\d+\.\d+$/);downloads++;return {ok:true,json:async()=>[
  {word:'a',phonetic:'/eɪ/',level:'A1'},{word:'be',phonetic:'/biː/',level:'A1'},
  {word:'self-esteem',phonetic:'/ˌself ɪˈstiːm/',meaning:'lòng tự trọng',level:'C1'}]};};
  vm.runInContext(fs.readFileSync(path.join(base,'js/core/VocabLoader.js'),'utf8'),r.sandbox);
@@ -580,6 +580,54 @@ test('five realm projectiles render authored frames once, face the target and ha
  assert.ok(p.projectiles.every(item=>item.trail.length<=4));
  p.update(.3,()=>hits++);assert.equal(hits,5);assert.equal(p.projectiles.length,0);
  p.update(.3,()=>hits++);assert.equal(hits,5);p.clear();assert.equal(p.shockwaves.length,0);
+});
+
+test('cached placeholder senses are repaired by POS and all shipped meanings are concrete',()=>{
+ const r=runtime(),source=JSON.parse(fs.readFileSync(path.join(base,'data/oxford_5000.json'),'utf8'));
+ r.M.registerLearningLexicon(source);
+ for(const item of source) assert.doesNotMatch(item.meaning,/từ vựng học thuật/i);
+ const single=r.M.normalizeLearningWord({word:'SINGLE',type:'adjective, noun',meaning:'Từ vựng học thuật (adjective) | Từ vựng học thuật (noun)'});
+ assert.equal(single.type,'adjective');assert.match(single.meaning,/đơn/);assert.doesNotMatch(single.meaning,/\|/);
+ const square=r.M.normalizeLearningWord({word:'SQUARE',type:'noun',meaning:'To ngang | Hình vuông'});
+ assert.match(square.meaning,/hình vuông/);
+ const manager=new r.M.AsteroidManager();manager.gameState={gameMode:'CLOZE'};
+ const cached=manager.spawn({word:'SINGLE',type:'adjective',meaning:'Từ vựng học thuật'},320);
+ assert.equal(cached.meaning,single.meaning);
+});
+
+test('narrow meteor cards wrap full clues below the HUD without clipped letters',()=>{
+ const r=runtime(),manager=new r.M.AsteroidManager();
+ const ctx={canvas:{width:320,height:568},measureText:t=>({width:t.length*6})};
+ const target={word:'INCOMPREHENSIBLE',isCloze:true,meaning:'khó hiểu, không thể hiểu được; một nghĩa dài để kiểm tra xuống dòng',x:20,y:-80};
+ const box=manager.cardLayout(ctx,target);
+ assert.ok(box.safeX-box.paperW/2>=0);assert.ok(box.safeX+box.paperW/2<=320);
+ assert.ok(box.cardY-box.paperH/2>=76);assert.ok(box.detailLines.length>1);
+ assert.equal(box.detailLines.join(' '),target.meaning);assert.ok(box.cols<=16);
+});
+
+test('new meteors share the visible clue position and keep a fair typing window on short screens',()=>{
+ const r=runtime();r.M.battleLayout={hudBottom:80,bottomThreshold:500};
+ const desktop=new r.M.AsteroidManager().spawn({word:'SINGLE',meaning:'đơn lẻ'},1280);
+ r.M.battleLayout={hudBottom:80,bottomThreshold:240};
+ const mobile=new r.M.AsteroidManager().spawn({word:'SINGLE',meaning:'đơn lẻ'},320);
+ assert.equal(desktop.y,160);assert.equal(mobile.y,160);
+ const deskTime=(500-desktop.y)/desktop.vy,phoneTime=(240-mobile.y)/mobile.vy;
+ assert.ok(Math.abs(deskTime-phoneTime)<.01);
+});
+
+test('finishing keys emit one authored wide beam and keep scoring independent of flight',()=>{
+ const r=runtime(),assets={};
+ for(let realm=0;realm<5;realm++)assets['char_r'+realm+'_beam_sheet']={loaded:true,img:{naturalWidth:1024,naturalHeight:128}};
+ const system=new r.M.ProjectileSystem(assets),draws=[];
+ const ctx={save(){},restore(){},translate(){},rotate(){},drawImage:(...a)=>draws.push(a),fillRect(){}};
+ for(let realm=0;realm<5;realm++)system.spawn(600,550,300,150,realm,'#fff',{finisher:true});
+ system.update(.14);system.draw(ctx);
+ assert.equal(draws.length,5);assert.ok(draws.every(a=>a[8]===100&&a[7]>180));
+ r.engine.projectiles=system;const target=word('CAT');r.asteroids.asteroids.push(target);
+ for(const key of 'CAT')r.engine.processKey(key,r.canvas);
+ assert.equal(r.state.humanWords,1);assert.equal(system.projectiles.filter(p=>p.isFinisher).length,6);
+ const score=r.state.score;system.update(1);assert.equal(r.state.score,score);
+ assert.doesNotMatch(fs.readFileSync(path.join(base,'js/entities/CatCultivator.js'),'utf8'),/drawAimingSwordAndTether|setLineDash/);
 });
 
 test('typing errors use the error cue even under immunity and never become a meteor cue',()=>{

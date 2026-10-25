@@ -8,12 +8,12 @@
     clear() {
       this.projectiles = []; this.skyStrikes = []; this.shockwaves = []; this.muzzleFlashes = [];
     }
-    spawn(fromX, fromY, targetX, targetY, realmIdx = 0, color = '#70B998') {
+    spawn(fromX, fromY, targetX, targetY, realmIdx = 0, color = '#70B998', options = {}) {
       const realm = Math.min(4, Math.max(0, realmIdx));
       const angle = Math.atan2(targetY-fromY, targetX-fromX);
       const duration = Math.min(.32, Math.max(.15, Math.hypot(targetX-fromX,targetY-fromY)/2200));
       this.projectiles.push({x:fromX,y:fromY,startX:fromX,startY:fromY,targetX,targetY,
-        realmIdx:realm,color,angle,duration,elapsed:0,trail:[],birthTime:performance.now()});
+        realmIdx:realm,color,angle,duration,isFinisher:!!options.finisher,elapsed:0,trail:[],birthTime:performance.now()});
       if (this.animator) this.animator.spawnVFXClip(`char_r${realm}_muzzle_sheet`,
         fromX + Math.cos(angle)*14, fromY + Math.sin(angle)*14,
         {frames:4,frameW:256,frameH:160,fps:24,size:54,rotation:angle+Math.PI,color});
@@ -75,6 +75,22 @@
         }
       }
     }
+    drawBeam(ctx, p) {
+      const sheet = this.assets[`char_r${p.realmIdx}_beam_sheet`];
+      const single = this.assets[`char_r${p.realmIdx}_beam`];
+      const asset = sheet && sheet.loaded && sheet.img ? sheet : single && single.loaded && single.img ? single : null;
+      if(!asset) return;
+      const image = asset.img, frames = asset === sheet ? 4 : 1;
+      const frameW = (image.naturalWidth || image.width) / frames, frameH = image.naturalHeight || image.height;
+      const distance = Math.hypot(p.x-p.startX,p.y-p.startY);
+      const length = Math.min(distance + 36, p.isFinisher ? 420 : 180);
+      const height = p.isFinisher ? 100 : 62;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.angle); ctx.imageSmoothingEnabled=false;
+      ctx.globalAlpha = p.isFinisher ? .95 : .82;
+      // All authored beam masters point right. Leave the word card above the impact unobscured.
+      ctx.drawImage(image,Math.floor(p.elapsed*24)%frames*frameW,0,frameW,frameH,-length,-height/2,length,height);
+      ctx.restore();
+    }
     draw(ctx) {
       ctx.save();
       for(const p of this.projectiles) {
@@ -82,7 +98,7 @@
           const q=p.trail[i];ctx.globalAlpha=(1-i/p.trail.length)*.55;
           ctx.fillStyle=p.color;ctx.fillRect(q.x-1,q.y+(i%2?3:-3),3,3);
         }
-        ctx.globalAlpha=1;this.drawSprite(ctx,p);
+        ctx.globalAlpha=1;this.drawBeam(ctx,p);this.drawSprite(ctx,p);
         if(p.realmIdx===1) {
           ctx.save();ctx.translate(-Math.sin(p.angle)*9,Math.cos(p.angle)*9);
           ctx.globalAlpha=.65;this.drawSprite(ctx,p);ctx.restore();

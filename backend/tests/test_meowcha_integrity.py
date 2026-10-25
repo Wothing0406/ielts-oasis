@@ -186,5 +186,29 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual({row['user_id'] for row in legacy}, {self.user.id, self.other.id})
 
 
+    def test_vocab_normalizes_combined_cached_meanings_and_preserves_other_game_data(self):
+        from models import MeowchaVocab
+        from meowcha_learning import normalize_word
+        from repair_meowcha_meanings import repair
+        import tempfile
+        self.db.add(MeowchaVocab(word='SINGLE', ipa='/ˈsɪŋɡl/', part_of_speech='adjective, noun',
+            meaning='Từ vựng học thuật (adjective) cấp độ A2 | Từ vựng học thuật (noun)',
+            band_level=0, is_active=True))
+        self.db.commit()
+        result = self.client.get('/api/meowcha/vocab?search=SINGLE').json()['data'][0]
+        self.assertEqual(result['type'], 'adjective')
+        self.assertNotIn('Từ vựng học thuật', result['meaning'])
+        self.assertNotIn('|', result['meaning'])
+        self.assertEqual(result['cefr'], 'A2')
+        self.assertIn('hình vuông', normalize_word({'word':'SQUARE','type':'noun'})['meaning'])
+        with tempfile.TemporaryDirectory() as folder:
+            backup = Path(folder) / 'before.json'
+            self.assertEqual(repair(self.db, backup), 1)
+            self.assertTrue(backup.exists())
+            self.assertEqual(repair(self.db, backup), 0)
+        self.assertEqual(self.db.query(MeowchaRun).count(), 0)
+        self.assertEqual(self.db.query(User).count(), 2)
+
+
 if __name__ == '__main__':
     unittest.main()

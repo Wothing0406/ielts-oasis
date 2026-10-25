@@ -50,7 +50,7 @@ app.include_router(router)
 def preview():
     return '''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;background:#100d12"><main style="position:fixed;inset:0;height:100dvh;overflow:hidden">
-    <iframe src="/meowcha/index.html?v=13.0" title="Meowcha IELTS Game"
+    <iframe src="/meowcha/index.html?v=14.1" title="Meowcha IELTS Game"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
     allow="autoplay; fullscreen; clipboard-write" style="border:0;width:100%;height:100%;display:block"></iframe>
     <script>addEventListener('message', event => {

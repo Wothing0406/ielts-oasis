@@ -26,9 +26,22 @@ are under `frontend/public/meowcha/assets/ui/sword-command-v1.png` and
 `docs/prompts/meowcha/sword-command-art.txt`. Preserve readable paper and the
 cute pixel cultivation world; functional SVG controls may remain.
 
-For attacks, inspect sprite orientation/frame dimensions; render one principal
-projectile plus a short trail. Test correct/wrong key, completion, meteor fall,
-shield, pause and voice together. Do not replace all of them with generic hurt.
+For attacks, inspect sprite orientation/frame dimensions. The current reference
+requests a visible authored beam sheet plus projectile, with a wider finishing
+strike. Remove the old CatCultivator aiming tether/hovering sword; changing the
+projectile alone leaves that dashed line visible. Keep timing, impact and score
+separate. Test correct/wrong key, completion, meteor fall, shield, pause and voice.
+
+For meaning repairs, use backend/game_data/meowcha_meaning_corrections.json and
+LearningText normalization at load AND spawn, so SRS/save words are corrected.
+Select one POS/sense for a clue, never a generic academic-vocabulary label or a
+pipe-joined set of senses. Keep the shared IELTS vocabulary dataset unchanged.
+Read docs/meowcha-completion-14.1.md for the data repair/backup procedure.
+
+UI frames and secondary plaques live in assets/ui/jade-frame-v1.png and
+carved-plaque-v1.png. Preserve primary sword actions. Check text's actual height
+inside the parchment flex layout, not just its presence in the accessibility tree;
+include a low phone with the keyboard open. Keep all asset versions in sync.
 
 Run relevant engine/audio and API regressions plus the frontend build. Use the
 isolated preview fixture for browser QA; never publish its controls. Check actual

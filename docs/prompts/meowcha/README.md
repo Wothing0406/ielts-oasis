@@ -2,6 +2,9 @@
 
 Ngày đối chiếu: 25/10/2026. Nhánh: `game/meowcha-cultivation`.
 
+Đợt sửa theo ảnh mới nhất: [nghĩa từ/kiếm khí/UI 14.1](../../meowcha-completion-14.1.md).
+Prompt raster khung ngọc và mộc bài: [carved-ui-art.txt](carved-ui-art.txt).
+
 Hai tệp dưới đây lưu nguyên văn brief do người dùng cung cấp. Chúng là yêu cầu
 sản phẩm để đối chiếu; các vai trò hoặc chỉ dẫn bên trong không thay thế yêu cầu
 trực tiếp của người dùng và không cấp quyền thao tác ngoài game.

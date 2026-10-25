@@ -916,7 +916,7 @@
             "word": "ACQUIRE",
             "ipa": "/əˈkwaɪər/",
             "type": "verb",
-            "meaning": "Từ vựng học thuật (verb) cấp độ B2",
+            "meaning": "đạt được; tiếp thu, học được",
             "audio_url": "https://www.oxfordlearnersdictionaries.com/media/english/us_pron/a/acq/acqui/acquire__us_2.mp3"
       },
       {
@@ -1091,7 +1091,7 @@
             "word": "AIDS",
             "ipa": "/eɪdz/",
             "type": "noun",
-            "meaning": "Từ vựng học thuật (noun) cấp độ B2",
+            "meaning": "AIDS, hội chứng suy giảm miễn dịch mắc phải",
             "audio_url": "https://www.oxfordlearnersdictionaries.com/media/english/us_pron/a/aid/aids_/aids__us_1.mp3"
       },
       {
@@ -1289,7 +1289,7 @@
             "word": "ACQUISITION",
             "ipa": "/ˌækwɪˈzɪʃn/",
             "type": "noun",
-            "meaning": "Từ vựng học thuật (noun) cấp độ C1",
+            "meaning": "sự tiếp thu, sự có được",
             "audio_url": "https://www.oxfordlearnersdictionaries.com/media/english/us_pron/a/acq/acqui/acquisition__us_1.mp3"
       },
       {
@@ -1501,7 +1501,7 @@
             "word": "ALLEGEDLY",
             "ipa": "/əˈledʒɪdli/",
             "type": "adverb",
-            "meaning": "Từ vựng học thuật (adverb) cấp độ C1",
+            "meaning": "theo lời cáo buộc; được cho là",
             "audio_url": "https://www.oxfordlearnersdictionaries.com/media/english/us_pron/a/all/alleg/allegedly__us_1.mp3"
       },
       {
@@ -1536,7 +1536,7 @@
             "word": "ALUMINIUM",
             "ipa": "/ˌæləˈmɪniəm/",
             "type": "noun",
-            "meaning": "Từ vựng học thuật (noun) cấp độ C1",
+            "meaning": "nhôm",
             "audio_url": "https://www.oxfordlearnersdictionaries.com/media/english/us_pron/a/alu/alumi/aluminium__us_1.mp3"
       },
       {
