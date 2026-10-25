@@ -1,10 +1,15 @@
 # Kho prompt và phạm trù nâng cấp MEOW-CHA
 
-Ngày đối chiếu: 25/10/2026. Nhánh: `game/meowcha-cultivation`.
+Ngày đối chiếu: 26/10/2026. Nhánh: `game/meowcha-cultivation`.
 
-Brief mới nhất: [13 — Complete UI design system](13-complete-ui-design-system.md).
+Đợt mới nhất đã triển khai brief [13 — Complete UI design system](13-complete-ui-design-system.md),
+[14 — Mobile/IPA/spawn](14-mobile-talents-audio-spawn.md) và
+[15 — Bốn Phong Thần điện](15-three-mode-halls.md).
 [Checklist/audit](../../meowcha-ui-migration.md). Hai attachment của brief 13
 giống hệt nhau (SHA256 được ghi trong checklist); lưu một bản nguyên văn.
+
+[Bản ghi phát hành 15.0/15.1](../../meowcha-release-15.0.md) ghi kiểm thử,
+production và backup. Checklist lịch sử bên dưới giữ số đo của từng đợt riêng.
 
 Đợt sửa theo ảnh mới nhất: [nghĩa từ/kiếm khí/UI 14.1](../../meowcha-completion-14.1.md).
 Prompt raster khung ngọc và mộc bài: [carved-ui-art.txt](carved-ui-art.txt).

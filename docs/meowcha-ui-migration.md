@@ -23,7 +23,7 @@ ngoài phạm vi game hay thay thế chỉ dẫn trực tiếp trong cuộc trò
 - [x] Sửa khung cảnh dọc có chủ đích; không cắt mù bằng cover.
 - [x] Ảnh trước/sau của chín luồng, kiểm tra 320/360/375/390/430, tablet,
   desktop và ngang thấp; đo chữ tràn/đè khung, đọc cả chữ Việt/IPA dài.
-- [ ] Kiểm thử engine/audio/API, build, cập nhật skill/bộ nhớ; commit, backup,
+- [x] Kiểm thử engine/audio/API, build, cập nhật skill/bộ nhớ; commit, backup,
   triển khai Linux và đối chiếu production.
 
 ## Bổ sung đang thực hiện — brief 14/15
@@ -37,7 +37,11 @@ ngoài phạm vi game hay thay thế chỉ dẫn trực tiếp trong cuộc trò
 - [x] API Phong Thần riêng cho bốn điện; Đạo Hạnh chuẩn hóa có công thức rõ;
   top 3/bảng/self/hạng ngoài top 25 đúng mode và tài khoản.
 - [x] Ngọc bài thay select; đổi cột/mô tả/màu/metric cùng dữ liệu; chip hỗ trợ nhỏ.
-- [ ] Kiểm thử 10 từ nhanh/mode, hồi quy save/audio/điểm, ảnh mobile và deploy.
+- [x] Kiểm thử 10 từ nhanh/mode, hồi quy save/audio/điểm, ảnh mobile và deploy.
+
+Đã chốt code `aa657d6`, asset release 15.1; 70/70 kiểm thử game/audio,
+17/17 API, build đạt. Bản Linux và trình duyệt public đã kiểm chứng; chi tiết
+backup, số DB và giới hạn thiết bị tại [bản ghi phát hành](meowcha-release-15.0.md).
 
 ## Audit ban đầu
 

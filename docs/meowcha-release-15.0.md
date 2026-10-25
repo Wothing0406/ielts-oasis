@@ -1,4 +1,4 @@
-# MEOW-CHA 15.0 — hệ UI, Phong Thần điện và nhịp học
+# MEOW-CHA 15.0 / 15.1 — hệ UI, Phong Thần điện và nhịp học
 
 Phạm vi: yêu cầu trực tiếp tiếp tục kế hoạch cũ, triển khai brief 13/14 và yêu cầu
 bốn điện ở brief 15. Tài liệu gốc trong `docs/prompts/meowcha/`; hai attachment
@@ -64,9 +64,35 @@ qua fixture có overlay asset không đổi; không giả lập ảnh trước b
 
 ## Triển khai
 
-- [ ] Commit/push nhánh game và backup trước/sau.
-- [ ] Linux backup image, cập nhật web/backend; giữ runtime MP3, đối chiếu số DB.
-- [ ] Kiểm tra tài sản/API production và ảnh trình duyệt.
+- [x] Commit/push nhánh game và backup trước/sau.
+- [x] Linux backup image, cập nhật web/backend; giữ runtime MP3, đối chiếu số DB.
+- [x] Kiểm tra tài sản/API production và ảnh trình duyệt.
+
+Ngày 26/10/2026: code chính `9aed09d`; bản chốt `aa657d6` sửa lời thoại canvas
+ngắt theo từ và đồng bộ toàn bộ HTML/CSS/JS/iframe/JSON lên `15.1`. Chạy lại
+70/70 kiểm thử sau bản chốt; build web Linux thành công. Web/backend healthy.
+
+Git backup trước: `codex/backup-meowcha-before-15-20261026` tại `0bfdb09`.
+Git backup hoàn tất: `codex/backup-meowcha-complete-15-20261026`.
+Linux giữ hai Docker image tag `before-meowcha-15-20261026` và log build tại
+`/home/quang/meowcha-backups/15.0-20261026/`. Không thay schema hay xóa dữ liệu.
+
+Đối chiếu trước/sau: vocabulary 4.981, legacy leaderboard 5, runs 10, battle logs 3,
+save snapshots 1. Giữ đủ bốn runtime MP3 untracked trên máy chủ; không đưa vào Git.
+HTML, CSS, JS và hai asset mới trả 200; bundle trang cha chứa iframe `15.1`.
+Trình duyệt mở `/games/meowcha` public bình thường, tải đúng iframe 15.1 và sảnh;
+ảnh `production-parent-lobby.png` ghi giao diện trong website chính.
+
+API nội bộ trả 200: Tổng Đạo 1 người, DIRECT 1, CLOZE/AUDIO 0 và Lưu Trữ 5.
+Trình duyệt public xác nhận đúng số này, chuyển tab đổi cột/bục/mô tả; không có
+console error khi mở và chuyển bảng. Client CLI bị Cloudflare 403, nên chỉ dùng
+trình duyệt bình thường để kiểm chứng public, không vượt xác minh.
+
+Ảnh production: `production-overall.png`, `production-direct.png`,
+`production-cloze.png`, `production-audio.png`, `production-legacy.png` trong
+thư mục bằng chứng trên. `game-over-once.json` ghi đúng một defeat/hurt sau khi
+để vòng lặp chạy tiếp. Định Thân chạm thật gọi engine và bắt đầu hồi chiêu,
+không sinh thêm phím đúng giả.
 
 Kiểm thử điện thoại là viewport/cảm ứng mô phỏng trong trình duyệt PC, chưa thiết
 bị iOS/Android thật. Audio vẫn dùng Web Audio/MP3/TTS/OS dự phòng có sẵn; chưa

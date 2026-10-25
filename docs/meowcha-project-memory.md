@@ -130,3 +130,8 @@
   không dùng __meowchaGame không tồn tại. Stat thấp 320px dùng hàng gọn, không
   bẻ WPM thành từng chữ. Pha is-reviewing ẩn đàn mục tiêu và bar kỹ năng để
   chúng không đè lên thẻ thưởng; record học vẫn giữ riêng.
+
+- Đã triển khai đợt UI/Phong Thần/IPA/spawn ngày 26/10/2026: code `aa657d6`,
+  toàn bộ asset release `15.1`. Lời thoại canvas dùng wrapLearningText để không
+  bẻ chữ Việt giữa âm tiết. Kết quả/backup/giới hạn ở meowcha-release-15.0.md.
+  70 kiểm thử game/audio, 17 API đạt; web/backend Linux healthy, dữ liệu giữ nguyên.

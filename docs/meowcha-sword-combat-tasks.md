@@ -55,7 +55,8 @@ sample thu âm đầy đủ trong brief 06.
 
 ## Backlog được lưu từ tài liệu, chưa mặc nhận hoàn thành
 
-- Brief 05: metric Nhất Ngộ/Nhất Thính, rating Tổng Đạo và profile Tam Pháp đầy đủ.
+- Brief 05: Nhất Ngộ/Nhất Thính và Tổng Đạo đã có ở bản 15.1; profile Tam Pháp
+  đầy đủ vẫn là phần mở rộng. Xem [bản ghi 15.1](meowcha-release-15.0.md).
 - Brief 06: sample nhạc cụ/foley có nguồn quyền rõ ràng, ambience bus/settings riêng.
 - Brief 07: auth gate, vòng đời hết phiên/đổi tài khoản và OAuth return-to-game end-to-end.
 - Kiểm tra thiết bị iOS/Android thật và phiên chơi dài trên thiết bị.
