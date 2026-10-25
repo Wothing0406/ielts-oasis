@@ -148,7 +148,7 @@
         if (this.state.passiveModifiers && this.state.passiveModifiers.mindHint && this.mistakeStreak >= 2 && this.currentTarget) {
           const nextChar = this.currentTarget.word[this.currentTarget.typedLen] || '';
           if (nextChar && this.floatingText) {
-            this.floatingText.add(this.currentTarget.x, this.currentTarget.y - 32, `[ 慧 ] ${nextChar}`, "#C084FC", isMobile ? 14 : 16);
+            this.floatingText.add(this.currentTarget.x, this.currentTarget.y - 32, `[ 慧 ] ${nextChar}`, "#9CB7D4", canvas.width <= 768 ? 14 : 16);
           }
         }
         this.state.combo = 0;
@@ -244,7 +244,7 @@
       this.hazardTimer = 14.0;
       this.hazardLightningTimer = 0;
       this.purifiedWordsStreak = 0;
-      this.hazardReqWords = 2; // Chỉ cần trảm 2 từ thong thả là phá giải thiên kiếp thành công
+      this.hazardReqWords = ((this.state.passiveModifiers && this.state.passiveModifiers.hazardDurationBonus) || 1) < 1 ? 1 : 2; // Chỉ cần trảm 2 từ thong thả là phá giải thiên kiếp thành công
 
       this.state.triggerLightning(12);
       this.audio.play("lightning");
@@ -261,74 +261,13 @@
 
     triggerRealmPassiveSkill(target, canvas, catX, catY, isMobile) {
       if (!target) return;
-      const rIdx = Math.min(4, Math.max(0, this.state.realmIdx || 0));
-
-      if (rIdx === 0) {
-        // Cảnh 0 (Luyện Khí): Trúc Phong Trì Hoãn - Làm chậm ma thạch 22% trong 2.8s
-        target.slowTimer = 2.8;
-        target.slowMult = 0.78;
-        if (this.animator) {
-          this.animator.spawnVFXClip("vfx_slash_r0_sheet", target.x, target.y, { size: 110, fps: 22, color: "#34D399" });
-        }
-        this.particles.createBambooLeaves(target.x, target.y, 6);
-        this.floatingText.add(target.x, target.y - 38, "[ 竹 ] TRÚC PHONG TRÌ HOÃN", "#34D399", isMobile ? 13 : 15);
-      } else if (rIdx === 1) {
-        // Cảnh 1 (Trúc Cơ): Song Kiếm Hợp Bích - Tự động khắc +1 cổ tự (ở chế độ thường) & đẩy lùi ma thạch 26px
-        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
-          target.typedLen++;
-          this.state.markAssistance(target);
-        }
-        target.y = Math.max(-target.radius, target.y - 26);
-        this.projectiles.spawnSkyStrike(target.x, target.y, 1);
-        if (this.animator) {
-          this.animator.spawnVFXClip("vfx_slash_r1_sheet", target.x, target.y, { size: 124, fps: 22, color: "#38BDF8" });
-        }
-        const tag1 = this.state.gameMode === "CLOZE" ? "[ 雙 ] SONG KIẾM ĐẨY LÙI" : "[ 雙 ] SONG KIẾM TRẢM (+1 Tự)";
-        this.floatingText.add(target.x, target.y - 40, tag1, "#38BDF8", isMobile ? 13 : 15);
-      } else if (rIdx === 2) {
-        // Cảnh 2 (Kim Đan): Kim Liên Bạo Phá - Tự động khắc +1 cổ tự (ở chế độ thường), đẩy lùi 22px & +30 Tu Vi
-        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
-          target.typedLen++;
-          this.state.markAssistance(target);
-        }
-        target.y = Math.max(-target.radius, target.y - 22);
-        this.state.addScore(30);
-        this.projectiles.spawnSkyStrike(target.x, target.y, 2);
-        if (this.animator) {
-          this.animator.spawnVFXClip("vfx_slash_r2_sheet", target.x, target.y, { size: 128, fps: 22, color: "#FBBF24" });
-        }
-        const tag2 = this.state.gameMode === "CLOZE" ? "[ 丹 ] KIM LIÊN BẠO (+30 Tu Vi)" : "[ 丹 ] KIM LIÊN BẠO (+1 Tự • +30 Tu Vi)";
-        this.floatingText.add(target.x, target.y - 42, tag2, "#FBBF24", isMobile ? 13 : 15);
-      } else if (rIdx === 3) {
-        // Cảnh 3 (Nguyên Anh): Nguyên Anh Lôi Kích - Định thân ma thạch 0.9s & tự động khắc +1 cổ tự (ở chế độ thường)
-        if (this.state.gameMode !== "CLOZE" && target.typedLen < target.word.length) {
-          target.typedLen++;
-          this.state.markAssistance(target);
-        }
-        target.freezeTimer = 0.9;
-        this.state.chibiAttackFlash = 1.0;
-        this.projectiles.spawnSkyStrike(target.x, target.y, 3);
-        if (this.animator) {
-          this.animator.spawnVFXClip("vfx_slash_r3_sheet", target.x, target.y, { size: 132, fps: 22, color: "#C084FC" });
-        }
-        const tag3 = this.state.gameMode === "CLOZE" ? "[ 雷 ] NGUYÊN ANH ĐỊNH THÂN" : "[ 雷 ] NGUYÊN ANH LÔI KÍCH (+1 Tự • Định Thân)";
-        this.floatingText.add(target.x, target.y - 42, tag3, "#C084FC", isMobile ? 13 : 15);
-      } else if (rIdx >= 4) {
-        // Cảnh 4 (Độ Kiếp): Chân Long Phệ Thiên - Tự động khắc tới +2 cổ tự (ở chế độ thường), đẩy lùi 34px & +50 Tu Vi
-        if (this.state.gameMode !== "CLOZE") {
-          const carve = Math.min(2, Math.max(0, target.word.length - target.typedLen));
-          target.typedLen += carve;
-          this.state.markAssistance(target, carve);
-        }
-        target.y = Math.max(-target.radius, target.y - 34);
-        this.state.addScore(50);
-        this.projectiles.spawnSkyStrike(target.x, target.y, 4);
-        if (this.animator) {
-          this.animator.spawnVFXClip("vfx_slash_r4_sheet", target.x, target.y, { size: 142, fps: 24, color: "#F59E0B" });
-        }
-        const tag4 = this.state.gameMode === "CLOZE" ? "[ 龍 ] CHÂN LONG PHỆ THIÊN (+50 Tu Vi)" : `[ 龍 ] CHÂN LONG TRẢM (+Tự)`;
-        this.floatingText.add(target.x, target.y - 45, tag4, "#F59E0B", isMobile ? 14 : 16);
-      }
+      // Realm support gives time and visual feedback; the player still types every letter.
+      const realm = Math.min(4, Math.max(0, this.state.realmIdx || 0));
+      if (realm === 0) { target.slowTimer = 2.8; target.slowMult = 0.78; }
+      else if (realm === 3) target.freezeTimer = Math.max(target.freezeTimer || 0, 0.9);
+      else target.y = Math.max(-target.radius, target.y - 22 - realm * 3);
+      this.projectiles.spawnSkyStrike(target.x, target.y, realm);
+      if (this.animator) this.animator.spawnVFXClip(`vfx_slash_r${realm}_sheet`, target.x, target.y, { size: 112, fps: 22 });
     }
 
     updateHazard(dt, canvas) {
@@ -362,17 +301,20 @@
               this.animator.spawnVFXClip("vfx_slash_r3_sheet", ast.x, ast.y, { size: 120, fps: 22, color: "#C084FC" });
             }
             ast.freezeTimer = Math.max(ast.freezeTimer || 0, 0.6);
-            if (this.state.gameMode !== "CLOZE" && ast.typedLen < ast.word.length - 1) {
-              ast.typedLen++;
-              this.state.markAssistance(ast);
-              this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO LÔI KÍCH (+1 Tự)", "#C084FC", isMobile ? 12 : 14);
-            } else {
-              this.floatingText.add(ast.x, ast.y - 36, "[ 嬰 ] HỘ ĐẠO ĐỊNH THÂN", "#C084FC", isMobile ? 12 : 14);
-            }
+            this.floatingText.add(ast.x, ast.y - 36, "HỘ ĐẠO ĐỊNH THÂN", "#9CB7D4", isMobile ? 12 : 14);
           }
         }
       }
 
+      if (this.isCloudHazard && !this.isLightningHazard) {
+        const factor = (this.state.passiveModifiers && this.state.passiveModifiers.hazardDurationBonus) || 1;
+        this.cloudElapsed = (this.cloudElapsed || 0) + dt;
+        if (factor < 1 && this.cloudElapsed >= 14 * factor) {
+          this.isCloudHazard = false; this.cloudElapsed = 0; this.mistakeStreak = 0;
+          this.cloudMistakeCount = 0; this.cloudPurifiedCount = 0;
+          if (this.realmVFX) this.realmVFX.clearClouds();
+        }
+      } else this.cloudElapsed = 0;
       if (!this.isLightningHazard) return;
 
       this.hazardTimer -= dt;
@@ -424,7 +366,7 @@
       if (!target || !this.asteroids.asteroids.includes(target)) return;
       if (assisted) this.state.markAssistance(target, Math.max(0, target.word.length - target.typedLen));
       if (target.assistedKeystrokes) this.state.assistedWords++;
-      else { this.state.humanWords++; this.state.humanWordCombo++; }
+      else { this.state.humanWords++; this.state.humanWordCombo = target.hadTypo ? 0 : this.state.humanWordCombo + 1; }
       if (!target.assistedKeystrokes && this.saveSystem && this.saveSystem.recordReviewResult) {
         this.saveSystem.recordReviewResult(target, !target.hadTypo && !target.assistedKeystrokes);
       }
@@ -513,30 +455,30 @@
       // Nội tại Đột Phá theo Cảnh Giới:
       // 1. Luyện Khí (Kiếm Khí Hộ Thể): Sau mỗi 5 từ hoàn thành không sai -> +1 Hộ Thuẫn (tối đa 2)
       const hasQiShield = (this.state.isSkillUnlocked && this.state.isSkillUnlocked("QI_SHIELD_PASSIVE")) || this.state.realmIdx >= 0;
-      if (hasQiShield && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 5 === 0 && (this.state.shieldCharges || 0) < 2) {
+      if (!assisted && !target.hadTypo && hasQiShield && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 5 === 0 && (this.state.shieldCharges || 0) < 2) {
         this.state.shieldCharges = Math.min(2, (this.state.shieldCharges || 0) + 1);
         this.state.talents.shieldCharges = this.state.shieldCharges;
         this.state.notify("shield");
         this.floatingText.add(catX, catY - 75, "[ 盾 ] KIẾM KHÍ HỘ THỂ (+1 Khiên)", "#10B981", isMobile ? 13 : 15);
       }
       // 2. Kim Đan (Kim Đan Hồi Nguyên): Mỗi 4 từ đúng liên tiếp hồi 3-4 HP
-      const hasCoreRegen = (this.state.isSkillUnlocked && this.state.isSkillUnlocked("GOLDEN_CORE_REGEN")) || this.state.realmIdx === 2;
-      if (hasCoreRegen && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 4 === 0 && this.state.hp < this.state.maxHp) {
+      const hasCoreRegen = (this.state.isSkillUnlocked && this.state.isSkillUnlocked("GOLDEN_CORE_REGEN")) || this.state.realmIdx >= 2;
+      if (!assisted && !target.hadTypo && hasCoreRegen && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 4 === 0 && this.state.hp < this.state.maxHp) {
         const heal = (this.state.getSkillLevel && this.state.getSkillLevel("GOLDEN_CORE_REGEN") >= 3) ? 4 : 3;
         this.state.hp = Math.min(this.state.maxHp, this.state.hp + heal);
         this.state.notify("hp");
         this.floatingText.add(catX, catY - 75, `[ 丹 ] KIM ĐAN HỒI NGUYÊN (+${heal} HP)`, "#34D399", isMobile ? 13 : 15);
       }
       // 3. Độ Kiếp (Chân Long Hộ Thuẫn): Mỗi 5 từ hồi +1 khiên (tối đa 3)
-      if (this.state.realmIdx >= 4 && this.state.wordsSlain % 5 === 0 && (this.state.shieldCharges || 0) < 3) {
+      if (!assisted && !target.hadTypo && this.state.realmIdx >= 4 && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 5 === 0 && (this.state.shieldCharges || 0) < 3) {
         this.state.shieldCharges = (this.state.shieldCharges || 0) + 1;
         this.state.talents.shieldCharges = this.state.shieldCharges;
         this.state.notify("shield");
         this.floatingText.add(catX, catY - 75, "[ 盾 ] CHÂN LONG HỘ THUẪN (+1)", "#FDE047", isMobile ? 13 : 15);
       }
       // 4. Thưởng gõ từ dài (>= 7 ký tự)
-      if (target.word.length >= 7) {
-        this.state.addScore(25);
+      if (!assisted && target.word.length >= 7) {
+        this.state.addScore(25 + ((this.state.passiveModifiers && this.state.passiveModifiers.longWordBonus) || 0));
         this.floatingText.add(catX, catY - 90, `[ 豪 ] ĐẠI TỰ THƯỞNG (+25 Tu Vi)`, "#F59E0B", isMobile ? 12 : 14);
       }
 
@@ -597,7 +539,8 @@
       }
 
       // 3. Tính điểm Tu Vi chuẩn xác
-      const basePoints = target.word.length * 15;
+      const scoreCrit = !assisted && this.state.talents.critMode === 'score' && Math.random() < (this.state.talents.critChance || 0);
+      const basePoints = target.word.length * 15 * (scoreCrit ? 2 : 1);
       const gainedScore = this.state.addScore(basePoints);
 
       // Càng trảm nhiều từ hoặc giữ chuỗi combo cao, tốc độ ma thạch rơi càng dồn dập (nhẹ nhàng, mượt mà)
@@ -606,20 +549,12 @@
       this.state.speedMultiplier = Math.min(1.35, 1.0 + waveBonus + streakBonus);
 
       // 4. HIỆN VÒNG BÁT QUÁI + TỪ VỰNG + PHIÊN ÂM IPA NGAY TẠI TÂM NỔ (IN-SITU BURST)
-      this.floatingText.addInSituBurst(target.x, target.y, target);
+      this.floatingText.addInSituBurst(target.x, target.y, { ...target, points: gainedScore });
 
       // 5. HẠT TU VI (+EXP) BAY THEO QUỸ ĐẠO HÚT VỀ MIÊU KIẾM TÔN
       this.floatingText.addExpOrb(target.x, target.y, catX, catY, gainedScore);
 
-      // 7. Vụ nổ tiên đạo: Sóng Bát Quái + cánh sen + tàn kiếm khí + mảnh vỡ pixel
-      if (this.particles.createXianxiaWordBurst) {
-        this.particles.createXianxiaWordBurst(target.x, target.y, this.state.realmIdx || 0);
-      }
-      this.particles.createPixelShards(target.x, target.y, [target.coreColor, "#FEF08A", "#EF4444", "#38BDF8", "#170D08"], 36);
-      this.particles.createExplosion(target.x, target.y, target.color, 24);
-      if (this.state.realmIdx <= 1) {
-        this.particles.createBambooLeaves(target.x, target.y, 8);
-      }
+      this.particles.createPixelShards(target.x, target.y, [target.coreColor, "#F5E7C7", "#70B998", "#D88781"], 16);
 
       // 8. Khẩu quyết tiên hiệp & Thoại cute meow
       const comboSpeeches = (root.Meowcha && root.Meowcha.COMBO_SPEECHES) || {};
@@ -663,7 +598,7 @@
       if (!assisted) {
         const candidates = this.asteroids.asteroids.filter(a => !a.isBoss);
         const auto = this.state.talents.autoKill && this.state.humanWordCombo > 0 && this.state.humanWordCombo % 3 === 0;
-        const crit = Math.random() < (this.state.talents.critChance || 0);
+        const crit = this.state.talents.critMode !== 'score' && Math.random() < (this.state.talents.critChance || 0);
         if ((auto || crit) && candidates.length) {
           this.handleWordSlain(candidates.sort((a, b) => b.y - a.y)[0], canvas, true);
         } else if (auto || crit) {
@@ -703,88 +638,12 @@
     }
 
     playWordAudio(target) {
-      if (!target) return;
-
-      // 0. TRIỆT TIÊU TOÀN BỘ ÂM THANH TRƯỚC ĐÓ ĐỂ ĐẢM BẢO KHÔNG BAO GIỜ BỊ VỌNG HOẶC CHỒNG 2 GIỌNG
-      if (this.currentAudioInstance) {
-        try {
-          this.currentAudioInstance.pause();
-          this.currentAudioInstance.currentTime = 0;
-        } catch (_) {}
-        this.currentAudioInstance = null;
-      }
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        try {
-          window.speechSynthesis.cancel();
-        } catch (_) {}
-      }
-
-      const audioUrl = target.audio_url;
-
-      // 1. ƯU TIÊN PHÁT DUY NHẤT 1 LẦN GIỌNG BẢN XỨ OXFORD CHUẨN XÁC
-      if (audioUrl && typeof audioUrl === "string" && audioUrl.startsWith("http")) {
-        try {
-          const audio = new Audio(audioUrl);
-          this.currentAudioInstance = audio;
-          audio.volume = 1.0;
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(() => {
-              // Nếu mạng chặn hoặc lỗi mp3 -> Mới Fallback về Web Speech API
-              this.speakWord(target.word);
-            });
-          }
-          return;
-        } catch (_) {
-          // Fallback
-        }
-      }
-
-      // 2. Fallback: Phát âm qua Web Speech API duy nhất 1 lần nếu không có URL mp3
-      this.speakWord(target.word);
+      if (this.audio && this.audio.playWord) return this.audio.playWord(target);
+      return false;
     }
 
-    speakWord(word) {
-      if (typeof window === "undefined" || !("speechSynthesis" in window) || !word) return;
-      try {
-        const synth = window.speechSynthesis;
-        if (synth.paused) {
-          synth.resume();
-        }
-        if (synth.speaking || synth.pending) {
-          synth.cancel();
-        }
+    speakWord(word) { return this.playWordAudio({ word }); }
 
-        const utterance = new SpeechSynthesisUtterance(word.trim());
-        utterance.lang = "en-US";
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-
-        const findVoice = () => {
-          const voices = synth.getVoices();
-          if (voices && voices.length > 0) {
-            const enVoice = voices.find(v => v.lang === "en-US" || v.lang === "en_US") 
-              || voices.find(v => v.lang && v.lang.startsWith("en"));
-            if (enVoice) utterance.voice = enVoice;
-          }
-        };
-
-        findVoice();
-        if (!utterance.voice && synth.onvoiceschanged !== undefined) {
-          synth.onvoiceschanged = () => findVoice();
-        }
-
-        setTimeout(() => {
-          try {
-            if (synth.paused) synth.resume();
-            synth.speak(utterance);
-          } catch (_) {}
-        }, 30);
-      } catch (e) {
-        console.warn("[Meowcha Speech Synthesis]", e);
-      }
-    }
     replayCurrentAudio() {
       const activeList = (this.asteroids && this.asteroids.asteroids) || [];
       const target = this.currentTarget || (activeList.length > 0 ? activeList[0] : null);
@@ -819,9 +678,9 @@
         if (intentEl) {
           const isMobile = (typeof window !== "undefined" && window.innerWidth <= 768);
           const idleMsgs = {
-            DIRECT: isMobile ? "[ 斩 ] TRỰC DIỆN TRẢM MA" : "[ 斩 ] TRỰC DIỆN TRẢM MA • GÕ CỔ TỰ TỐC ĐỘ ĐỂ XUẤT KIẾM [ 诀 ]",
-            CLOZE:  isMobile ? "[ 悟 ] NGỘ ĐẠO THÔNG LINH" : "[ 悟 ] NGỘ ĐẠO THÔNG LINH • NHÌN NGHĨA TIẾNG VIỆT ĐOÁN TỰ PHÁ PHÙ [ 诀 ]",
-            AUDIO:  isMobile ? "[ 听 ] THÍNH TIÊN BIỆN ÂM" : "[ 听 ] THÍNH TIÊN BIỆN ÂM • LẮNG NGHE CHÂN NGÔN (PHÍM TAB NGHE LẠI) [ 诀 ]"
+            DIRECT: "Gõ từ trên ma thạch để xuất kiếm",
+            CLOZE: "Nhìn nghĩa, nhớ từ",
+            AUDIO: "Lắng nghe • Tab để nghe lại"
           };
           intentEl.innerHTML = `<span class="altar-idle-msg">${idleMsgs[curMode] || idleMsgs.DIRECT}</span>`;
         }

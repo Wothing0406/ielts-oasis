@@ -41,10 +41,15 @@ app.include_router(router)
 def preview():
     return '''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
     <body style="margin:0;background:#100d12"><main style="position:fixed;inset:0;height:100dvh;overflow:hidden">
-    <iframe src="/meowcha/index.html?v=2026.10.24.2" title="Meowcha IELTS Game"
+    <iframe src="/meowcha/index.html?v=12.3" title="Meowcha IELTS Game"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
     allow="autoplay; fullscreen" style="border:0;width:100%;height:100%;display:block"></iframe>
     </main></body></html>'''
+
+
+@app.get('/preview/meowcha-qa', response_class=HTMLResponse)
+def qa_preview():
+    return (Path(__file__).with_name('meowcha_qa.html')).read_text(encoding='utf-8')
 
 
 app.mount('/', StaticFiles(directory=root / 'frontend/public', html=True), name='public')

@@ -816,6 +816,7 @@
     }
 
     updateHUD() {
+      this.updateActiveSkillsHUD();
       const s = this.state;
       const realms = root.Meowcha.CULTIVATION_REALMS || [];
       const realmData = realms[s.realmIdx] || realms[0];
@@ -1220,10 +1221,7 @@
           const rarityBadge = talent.rarityName || talent.rarity || "LINH PHẨM";
           const rarityCol = talent.rarityColor || "#38BDF8";
 
-          let iconHtml = `<div class="perk-icon-seal">${talent.icon || "悟"}</div>`;
-          if (talent.iconSvg) {
-            iconHtml = `<img src="./assets/svg/${talent.iconSvg}.svg" width="36" height="36" alt="" class="perk-icon-art" onerror="this.outerHTML='<div class=\'perk-icon-seal\'>${talent.icon || '悟'}</div>';" />`;
-          }
+          const iconHtml = root.Meowcha.pixelIcon(talent.iconSvg, 'perk-icon-art');
 
           card.innerHTML = `
             <div class="perk-card-top-badges">
@@ -1297,12 +1295,8 @@
 
       const activeSlots = slotList.filter(s => {
         if (unlocked.includes(s.id) || (levels[s.id] && levels[s.id] > 0)) return true;
-        if (s.slot === 1 && this.state.realmIdx >= 1) return true;
-        if (s.slot === 2 && this.state.realmIdx >= 2) return true;
-        if (s.slot === 3 && this.state.realmIdx >= 3) return true;
-        if (s.slot === 4 && this.state.realmIdx >= 4) return true;
         return false;
-      });
+      }).slice(-3);
 
       if (activeSlots.length === 0) {
         container.innerHTML = "";
@@ -1313,19 +1307,22 @@
       for (const item of activeSlots) {
         const sDef = skillsDef[item.id] || {};
         const cd = Math.max(0, (this.state.skillCooldowns && this.state.skillCooldowns[item.id]) || 0);
-        const isReady = cd <= 0 && (item.id !== "TEN_THOUSAND_SWORDS" || this.state.combo >= 10);
+        const isReady = this.state.canActivateSkill(item.id);
         const lv = (levels[item.id]) || 1;
         const isUltimate = item.slot === 4;
 
         html += `
           <button class="active-skill-btn ${isReady ? 'ready-glow' : 'on-cooldown'} ${isUltimate ? 'ultimate-skill' : ''}"
-            data-slot="${item.slot}" data-skill="${item.id}" type="button" title="${sDef.name || item.defaultName} [ Phím ${item.slot} ]">
+            data-slot="${item.slot}" data-skill="${item.id}" type="button" ${isReady ? '' : 'disabled'}
+            aria-label="${sDef.name || item.defaultName} • Phím ${item.slot} • ${cd > 0 ? 'Còn ' + Math.ceil(cd) + ' giây' : isReady ? 'Sẵn sàng' : item.id === 'GOLDEN_CORE_REGEN' ? 'Đầy Khí Huyết' : 'Cần combo 10'}"
+            title="${sDef.name || item.defaultName} [ Phím ${item.slot} ]">
             <div class="skill-hotkey-badge">[ ${item.slot} ]</div>
             <div class="skill-level-badge">Lv.${lv}</div>
             <div class="skill-icon-wrap">
-              <img src="./assets/svg/${item.icon}.svg" alt="" width="24" height="24" class="skill-svg-icon" />
+              ${root.Meowcha.pixelIcon(item.icon, 'skill-pixel-icon')}
             </div>
             <div class="skill-name-label">${sDef.name ? sDef.name.split(' ')[0] : item.defaultName}</div>
+            <progress class="skill-cooldown-progress" max="100" value="${Math.floor(100 * Math.max(0, 1 - cd / (((sDef.levels || [])[lv - 1] || {}).cd || 40)))}" aria-label="Tiến độ hồi kỹ năng"></progress>
             ${!isReady && cd > 0 ? `<div class="skill-cooldown-overlay"><span class="cd-num">${Math.ceil(cd)}s</span></div>` : ''}
             ${!isReady && cd <= 0 && isUltimate ? `<div class="skill-cooldown-overlay req-combo"><span class="cd-num">x10</span></div>` : ''}
           </button>
@@ -1932,30 +1929,11 @@
     }
 
     speakWord(word, audioUrl) {
-      if (audioUrl && audioUrl.trim()) {
-        try {
-          const snd = new Audio(audioUrl.trim());
-          snd.volume = 0.9;
-          const p = snd.play();
-          if (p !== undefined) {
-            p.catch(() => this._synthSpeak(word));
-            return;
-          }
-        } catch (_) {}
-      }
-      this._synthSpeak(word);
+      if (this.audio && this.audio.playWord) this.audio.playWord({ word, audio_url: audioUrl });
     }
 
     _synthSpeak(word) {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(word);
-          utterance.lang = "en-US";
-          utterance.rate = 0.88;
-          window.speechSynthesis.speak(utterance);
-        } catch (_) {}
-      }
+      this.speakWord(word);
     }
 
     /* =========================================================================

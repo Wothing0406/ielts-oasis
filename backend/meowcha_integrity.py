@@ -73,7 +73,9 @@ class RunComplete(BaseModel):
             raise ValueError('Typing speed exceeds the practice limit (300 WPM)')
         if self.words_slain > self.correct_keystrokes + self.assisted_keystrokes:
             raise ValueError('Words require human or assisted characters')
-        maximum_score = self.words_slain * 480 * (1 + self.words_slain * .08) * 3 + self.correct_keystrokes * 30
+        # 32 letters, score-only criticals, capped 20% combo and x3 focus.
+        # This remains a plausibility ceiling, not authoritative replay validation.
+        maximum_score = self.words_slain * 1100 * (1 + self.words_slain * .20) * 3 + self.correct_keystrokes * 30
         if self.score > maximum_score:
             raise ValueError('Score is inconsistent with word/typing counts')
         return self

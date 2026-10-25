@@ -54,6 +54,8 @@
         type = "MOBILE";
       } else if (isTabletUA) {
         type = "TABLET";
+      } else if (isDesktopOS) {
+        type = "DESKTOP";
       } else if (hasCoarsePointer && !hasHoverCapability && maxTouchPoints > 0) {
         // Thiết bị thuần cảm ứng ngón tay, không có chuột hover
         type = "MOBILE";
@@ -110,6 +112,7 @@
     }
 
     shouldShowVirtualKeyboard() {
+      if (this.info.isDesktop) return false;
       // Nếu người dùng đã tự bấm nút Bật/Tắt phím ảo, tôn trọng lựa chọn người dùng
       if (this.userPrefKeyboard !== null) {
         return this.userPrefKeyboard;
@@ -123,7 +126,8 @@
     }
 
     setUserPrefKeyboard(show) {
-      this.userPrefKeyboard = Boolean(show);
+      show = Boolean(show) && !this.info.isDesktop;
+      this.userPrefKeyboard = show;
       const container = document.getElementById("virtualKeyboardContainer");
       if (container) {
         if (show) {

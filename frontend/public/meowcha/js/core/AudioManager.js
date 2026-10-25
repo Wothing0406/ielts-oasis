@@ -1,486 +1,166 @@
-/**
- * AudioManager.js - Động Cơ Âm Thanh Web Audio Tiên Đạo (Meow-Cha Xianxia Audio Engine)
- * Tạo nhạc nền Cổ Cầm thiền định đa tầng (Drone + Guqin Strings + Wind Chime)
- * và tổng hợp toàn bộ hiệu ứng âm thanh trảm kiếm, sấm sét, đột phá tiên gia
- */
+/* Independent BGM/SFX/VOICE channels, serialized pronunciation and interruption recovery. */
 (function(root) {
   class AudioManager {
     constructor() {
       this.ctx = null;
-      this.soundEnabled = true;
-      this.zenMusicPlaying = false;
-      this.zenTimer = null;
-      this.chimeTimer = null;
-      this.droneGain = null;
-      this.droneOsc1 = null;
-      this.droneOsc2 = null;
-      this.droneOsc3 = null;
-
-      // Thang âm ngũ cung Trung Hoa Cổ Cầm (D, F, G, A, C)
-      this.guqinNotes = [146.83, 174.61, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-      this.melodicMotifs = [
-        [220.00, 261.63, 293.66],
-        [293.66, 329.63, 261.63, 220.00],
-        [196.00, 220.00, 261.63],
-        [329.63, 293.66, 261.63, 196.00],
-        [261.63, 293.66, 392.00, 440.00]
-      ];
-      this.motifStep = 0;
-    }
-
-    init() {
-      if (!this.ctx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioContextClass) {
-          this.ctx = new AudioContextClass();
-        }
-      }
-      if (this.ctx && this.ctx.state === "suspended") {
-        this.ctx.resume().catch(() => {});
-      }
-    }
-
-    // Mở khóa AudioContext ngay khi người chơi chạm hoặc bấm phím bất kỳ
-    unlockAudioContext() {
-      this.init();
-      if (this.ctx && this.ctx.state === "suspended") {
-        this.ctx.resume().then(() => {
-          if (this.soundEnabled && !this.zenMusicPlaying) {
-            this.startZenGuqin();
-          }
-        }).catch(() => {});
-      } else if (this.soundEnabled && !this.zenMusicPlaying) {
-        this.startZenGuqin();
-      }
-    }
-
-    toggleSound() {
-      // Nếu audio context chưa chạy hoặc nhạc nền chưa phát: Bấm vào là để BẬT!
-      if (!this.ctx || this.ctx.state !== "running" || !this.zenMusicPlaying || !this.soundEnabled) {
-        this.soundEnabled = true;
-        this.init();
-        if (this.ctx && this.ctx.state === "suspended") {
-          this.ctx.resume().then(() => {
-            this.startZenGuqin();
-            this.playChord([220, 261.63, 329.63, 440]);
-          }).catch(() => {});
-        } else {
-          this.startZenGuqin();
-          this.playChord([220, 261.63, 329.63, 440]);
-        }
-        return true;
-      }
-
-      // Nếu đang phát bình thường, bấm lần nữa mới là TẮT
-      this.soundEnabled = false;
-      this.stopZenGuqin();
-      return false;
-    }
-
-    playChord(freqs, duration = 0.8, type = "sine") {
-      if (!this.ctx || !this.soundEnabled) return;
-      if (this.ctx.state === "suspended") {
-        this.ctx.resume().catch(() => {});
-      }
-      const t = this.ctx.currentTime;
-      freqs.forEach((freq, idx) => {
-        try {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, t + idx * 0.05);
-          gain.gain.setValueAtTime(0.0001, t + idx * 0.05);
-          gain.gain.linearRampToValueAtTime(0.12, t + idx * 0.05 + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + idx * 0.05 + duration);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(t + idx * 0.05);
-          osc.stop(t + idx * 0.05 + duration + 0.05);
-        } catch (_) {}
+      try { this.soundEnabled = localStorage.getItem('meowcha_sound') !== 'off'; } catch (_) { this.soundEnabled = true; }
+      this.zenMusicPlaying = false; this.musicRequested = false; this.musicNodes = [];
+      this.voiceQueue = []; this.voiceJob = null; this.voiceGeneration = 0; this.motifStep = 0;
+      this.stats = { voiceCompleted: 0, voiceFallbacks: 0, voiceFailed: 0, sfxPlayed: 0 };
+      if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', () => {
+        if (!root.document.hidden && this.soundEnabled) this.recover();
       });
     }
-
-    startZenGuqin() {
+    init() {
+      if (this.ctx && this.ctx.state === 'closed') {
+        const requested = this.musicRequested;
+        this.stopZenGuqin(); this.musicRequested = requested; this.ctx = null;
+      }
+      if (this.ctx) return;
+      const Ctx = root.AudioContext || root.webkitAudioContext;
+      if (!Ctx) return;
+      try {
+        this.ctx = new Ctx();
+        this.master = this.ctx.createGain(); this.bgm = this.ctx.createGain(); this.sfx = this.ctx.createGain();
+        this.master.gain.value = this.soundEnabled ? 0.72 : 0; this.bgm.gain.value = 0.7; this.sfx.gain.value = 0.18;
+        const limiter = this.ctx.createDynamicsCompressor();
+        limiter.threshold.value = -14; limiter.ratio.value = 8;
+        this.bgm.connect(this.master); this.sfx.connect(this.master); this.master.connect(limiter); limiter.connect(this.ctx.destination);
+        this.ctx.onstatechange = () => { this.zenMusicPlaying = this.ctx.state === 'running' && this.musicNodes.length > 0; };
+      } catch (_) { this.ctx = null; }
+    }
+    recover() {
       if (!this.soundEnabled) return;
       this.init();
-      if (!this.ctx) return;
-
-      // Dừng phiên nhạc trước đó nếu còn
-      this.stopZenGuqin(false);
-
-      if (this.ctx.state === "suspended") {
-        this.ctx.resume().then(() => {
-          this._startDroneAndMelody();
-        }).catch(() => {});
-        return;
-      }
-
-      this._startDroneAndMelody();
+      const resume = this.ctx && this.ctx.state !== 'running' ? this.ctx.resume() : Promise.resolve();
+      Promise.resolve(resume).then(() => {
+        if (!this.soundEnabled) return;
+        if (this.musicRequested && !this.musicNodes.length) this._startDroneAndMelody();
+        this.zenMusicPlaying = !!(this.ctx && this.ctx.state === 'running' && this.musicNodes.length);
+        if (root.speechSynthesis && root.speechSynthesis.paused) root.speechSynthesis.resume();
+        this._drainVoice();
+      }).catch(() => {});
     }
-
+    unlockAudioContext() { if (this.soundEnabled) { this.musicRequested = true; this.recover(); } }
+    toggleSound() {
+      this.soundEnabled = !this.soundEnabled;
+      try { localStorage.setItem('meowcha_sound', this.soundEnabled ? 'on' : 'off'); } catch (_) {}
+      if (this.master) this.master.gain.value = this.soundEnabled ? 0.72 : 0;
+      if (this.soundEnabled) this.startZenGuqin(); else { this.stopZenGuqin(); this.stopVoice(); }
+      return this.soundEnabled;
+    }
+    _tone(freq, duration, volume, type = 'sine', channel = this.sfx, delay = 0, endFreq = freq) {
+      if (!this.ctx || !this.soundEnabled || !channel) return;
+      const start = this.ctx.currentTime + delay, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), start + duration);
+      gain.gain.setValueAtTime(0.0001, start); gain.gain.linearRampToValueAtTime(volume, start + 0.014);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain); gain.connect(channel);
+      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+      osc.start(start); osc.stop(start + duration + 0.02);
+    }
+    startZenGuqin() { if (this.soundEnabled) { this.musicRequested = true; this.recover(); } }
     _startDroneAndMelody() {
-      if (!this.ctx || !this.soundEnabled) return;
+      if (!this.ctx || !this.soundEnabled || this.musicNodes.length || this.ctx.state !== 'running') return;
+      for (const freq of [110, 165]) {
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.frequency.value = freq; gain.gain.value = 0.012;
+        osc.connect(gain); gain.connect(this.bgm); osc.start(); this.musicNodes.push({osc, gain});
+      }
       this.zenMusicPlaying = true;
-      const t = this.ctx.currentTime;
-
-      try {
-        // 1. ÂM RUNG NỀN THIỀN ĐỊNH (3-Layer Tibetan Singing Bowl & Qi Drone)
-        // Giảm âm lượng nhạc nền thiền định êm dịu, nhẹ nhàng, không lấn át âm thanh trận chiến
-        this.droneGain = this.ctx.createGain();
-        this.droneGain.gain.setValueAtTime(0.0001, t);
-        this.droneGain.gain.exponentialRampToValueAtTime(0.016, t + 2.5);
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(420, t);
-
-        // Tầng 1: Khí rung căn bản 110Hz (A2)
-        this.droneOsc1 = this.ctx.createOscillator();
-        this.droneOsc1.type = "sine";
-        this.droneOsc1.frequency.setValueAtTime(110, t);
-
-        // Tầng 2: Quãng năm thanh tịnh 165Hz (E3)
-        this.droneOsc2 = this.ctx.createOscillator();
-        this.droneOsc2.type = "triangle";
-        this.droneOsc2.frequency.setValueAtTime(165, t);
-
-        // Tầng 3: Khí vận bát quái 220Hz (A3)
-        this.droneOsc3 = this.ctx.createOscillator();
-        this.droneOsc3.type = "sine";
-        this.droneOsc3.frequency.setValueAtTime(220, t);
-
-        this.droneOsc1.connect(filter);
-        this.droneOsc2.connect(filter);
-        this.droneOsc3.connect(filter);
-        filter.connect(this.droneGain);
-        this.droneGain.connect(this.ctx.destination);
-
-        this.droneOsc1.start(t);
-        this.droneOsc2.start(t);
-        this.droneOsc3.start(t);
-      } catch (err) {
-        console.warn("[AudioManager Drone]", err);
-      }
-
-      // 2. LẬP LỊCH GẨY ĐÀN CỔ CẦM (GUQIN MELODY LOOP)
-      const scheduleNextPluck = () => {
-        if (!this.zenMusicPlaying || !this.ctx || !this.soundEnabled) return;
-
-        // Xen kẽ giữa câu nhạc ngũ cung (melodic motif) và gảy đơn nốt thanh tịnh
-        if (Math.random() < 0.45) {
-          this.playGuqinMotif();
-        } else {
-          this.playGuqinPluck();
-        }
-
-        const nextDelay = 1200 + Math.random() * 1800;
-        this.zenTimer = setTimeout(scheduleNextPluck, nextDelay);
+      const pluck = () => {
+        if (!this.musicRequested || !this.soundEnabled) return;
+        this.playGuqinPluck(); this.zenTimer = setTimeout(pluck, 1800 + Math.random() * 1000);
       };
-
-      // Gảy nốt khai mở ngay lập tức sau 300ms
-      this.zenTimer = setTimeout(scheduleNextPluck, 300);
-
-      // 3. KHÁNH ĐỒNG TIÊN MÔN (WIND CHIME) định kỳ mỗi 8-12 giây
-      const scheduleChime = () => {
-        if (!this.zenMusicPlaying || !this.ctx || !this.soundEnabled) return;
-        this.playTempleChime();
-        this.chimeTimer = setTimeout(scheduleChime, 8000 + Math.random() * 5000);
-      };
-      this.chimeTimer = setTimeout(scheduleChime, 4500);
+      this.zenTimer = setTimeout(pluck, 150);
     }
-
-    playGuqinPluck(customFreq = null) {
-      if (!this.soundEnabled || !this.ctx) return;
-      if (this.ctx.state === "suspended") {
-        this.ctx.resume().catch(() => {});
-      }
-      const now = this.ctx.currentTime;
-      const freq = customFreq || this.guqinNotes[Math.floor(Math.random() * this.guqinNotes.length)];
-
-      try {
-        // Dao động chính (Dây tơ Cổ Cầm - Silk String)
-        const osc = this.ctx.createOscillator();
-        const harm = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const filter = this.ctx.createBiquadFilter();
-
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(freq, now);
-        // Trượt ngón tay nhẹ nhàng đặc trưng Cổ Cầm (Finger slide vibrato)
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.992, now + 1.8);
-
-        // Họa âm dây tơ
-        harm.type = "sine";
-        harm.frequency.setValueAtTime(freq * 2, now);
-
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(freq * 4.2, now);
-        filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + 2.4);
-
-        // Phong bì biên độ (Âm lượng gảy Cổ Cầm êm đềm, ngân dài vừa phải)
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.042, now + 0.025);
-        gain.gain.exponentialRampToValueAtTime(0.0003, now + 2.6);
-
-        osc.connect(filter);
-        harm.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(now);
-        harm.start(now);
-        osc.stop(now + 2.7);
-        harm.stop(now + 2.7);
-      } catch (err) {
-        console.warn("[AudioManager Pluck]", err);
-      }
+    playGuqinPluck(freq) { const notes = [220, 261.63, 293.66, 329.63, 392]; this._tone(freq || notes[(this.motifStep++) % 5], 2.2, 0.055, 'triangle', this.bgm); }
+    playGuqinMotif() { this.playGuqinPluck(); }
+    playTempleChime() { this._tone(880, 2, 0.035, 'sine', this.bgm); }
+    playChord(freqs, duration = 0.8, type = 'sine') { freqs.forEach((f, i) => this._tone(f, duration, 0.08, type, this.sfx, i * 0.06)); }
+    stopZenGuqin() {
+      this.musicRequested = false; this.zenMusicPlaying = false; clearTimeout(this.zenTimer);
+      // Capture and dispose old nodes now; delayed cleanup must never kill a new session.
+      for (const {osc, gain} of this.musicNodes.splice(0)) { try { osc.stop(); osc.disconnect(); gain.disconnect(); } catch (_) {} }
     }
-
-    playGuqinMotif() {
-      if (!this.soundEnabled || !this.ctx) return;
-      const motif = this.melodicMotifs[this.motifStep % this.melodicMotifs.length];
-      this.motifStep++;
-      motif.forEach((freq, idx) => {
-        setTimeout(() => {
-          if (this.zenMusicPlaying && this.soundEnabled) {
-            this.playGuqinPluck(freq);
-          }
-        }, idx * 320);
-      });
-    }
-
-    playTempleChime() {
-      if (!this.soundEnabled || !this.ctx) return;
-      const now = this.ctx.currentTime;
-      const chimeFreq = Math.random() < 0.5 ? 880.00 : 1174.66; // A5 hoặc D6
-      try {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(chimeFreq, now);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.045, now + 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.0);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 4.1);
-      } catch (_) {}
-    }
-
-    stopZenGuqin(fade = true) {
-      this.zenMusicPlaying = false;
-      if (this.zenTimer) {
-        clearTimeout(this.zenTimer);
-        this.zenTimer = null;
-      }
-      if (this.chimeTimer) {
-        clearTimeout(this.chimeTimer);
-        this.chimeTimer = null;
-      }
-      if (this.droneGain && this.ctx) {
-        try {
-          const t = this.ctx.currentTime;
-          const currentGain = Math.max(0.0001, this.droneGain.gain.value);
-          if (fade && currentGain > 0.001) {
-            this.droneGain.gain.setValueAtTime(currentGain, t);
-            this.droneGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-            setTimeout(() => {
-              this._cleanDroneNodes();
-            }, 450);
-          } else {
-            this._cleanDroneNodes();
-          }
-        } catch (e) {
-          this._cleanDroneNodes();
-        }
-      } else {
-        this._cleanDroneNodes();
-      }
-    }
-
-    // Triệt tiêu toàn bộ âm thanh liên tục (dập tắt drone oscillator, timer, chime)
-    silenceAll() {
-      this.stopZenGuqin(false);
-      this._cleanDroneNodes();
-    }
-
-    _cleanDroneNodes() {
-      if (this.droneOsc1) { try { this.droneOsc1.stop(); this.droneOsc1.disconnect(); } catch (_) {} this.droneOsc1 = null; }
-      if (this.droneOsc2) { try { this.droneOsc2.stop(); this.droneOsc2.disconnect(); } catch (_) {} this.droneOsc2 = null; }
-      if (this.droneOsc3) { try { this.droneOsc3.stop(); this.droneOsc3.disconnect(); } catch (_) {} this.droneOsc3 = null; }
-      if (this.droneGain) { try { this.droneGain.disconnect(); } catch (_) {} this.droneGain = null; }
-    }
-
+    silenceAll() { this.stopZenGuqin(); this.stopVoice(); }
     play(type) {
       if (!this.soundEnabled) return;
-      this.init();
+      this.init(); if (!this.ctx) return; if (this.ctx.state !== 'running') this.recover();
+      this.stats.sfxPlayed++;
+      const sounds = { type:[880,.07,.12,'sine',1046], slash:[960,.14,.16,'triangle',320],
+        explosion:[440,.22,.20,'triangle',110], lightning:[170,.3,.17,'triangle',55],
+        hurt:[260,.12,.15,'triangle',100], shatter:[1150,.18,.14,'sine',350] };
+      if (type === 'chime' || type === 'breakthrough') this.playChord(type === 'chime' ? [523,659,784] : [262,330,392,523], type === 'chime' ? .35 : .8);
+      else if (type === 'defeat') this.playChord([349,311,262,196], .6);
+      else if (sounds[type]) { const [f,d,v,s,e] = sounds[type]; this._tone(f,d,v,s,this.sfx,0,e); }
+    }
+    playWord(target) {
+      if (!this.soundEnabled || !target || !target.word) return false;
+      const word = String(target.word).trim();
+      if (this.voiceJob && this.voiceJob.word === word && !this.voiceQueue.length) return true;
+      this.voiceQueue.push({ word, url: target.audio_url || '' });
+      if (this.voiceQueue.length > 24) this.voiceQueue.splice(0, this.voiceQueue.length - 24);
+      this._drainVoice(); return true;
+    }
+    _duckVoice(active) {
       if (!this.ctx) return;
-      if (this.ctx.state === "suspended") {
-        this.ctx.resume().catch(() => {});
+      this.bgm.gain.setTargetAtTime(active ? .32 : .7, this.ctx.currentTime, .08);
+      this.sfx.gain.setTargetAtTime(active ? .08 : .18, this.ctx.currentTime, .04);
+    }
+    _drainVoice() {
+      if (!this.soundEnabled || this.voiceJob || !this.voiceQueue.length) return;
+      const job = this.voiceQueue.shift(), generation = this.voiceGeneration;
+      this.voiceJob = job; this._duckVoice(true);
+      const done = ok => {
+        if (generation !== this.voiceGeneration || this.voiceJob !== job) return;
+        clearTimeout(job.timer);
+        if (job.audio) { job.audio.onended = null; job.audio.onerror = null; job.audio.pause(); }
+        this.voiceJob = null; this.stats[ok ? 'voiceCompleted' : 'voiceFailed']++; this._duckVoice(false); this._drainVoice();
+      };
+      let fellBack = false;
+      const fallback = () => {
+        if (fellBack || generation !== this.voiceGeneration || this.voiceJob !== job) return;
+        fellBack = true;
+        if (job.audio) { job.audio.onerror = null; job.audio.onended = null; job.audio.pause(); }
+        this.stats.voiceFallbacks++;
+        const synth = root.speechSynthesis;
+        if (!synth || !root.SpeechSynthesisUtterance) { done(false); return; }
+        try {
+          const u = new root.SpeechSynthesisUtterance(job.word); u.lang = 'en-US'; u.rate = .9; u.volume = .95;
+          const voices = synth.getVoices();
+          u.voice = voices.find(v => /^en[-_]US$/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang)) || null;
+          u.onend = () => done(true); u.onerror = () => done(false); job.utterance = u;
+          if (synth.paused) synth.resume(); synth.speak(u);
+        } catch (_) { done(false); }
+      };
+      job.timer = setTimeout(() => {
+        if (this.voiceJob !== job || generation !== this.voiceGeneration) return;
+        if (!fellBack) { clearTimeout(job.timer); job.timer = setTimeout(() => done(false), 8000); fallback(); }
+        else { if (root.speechSynthesis) root.speechSynthesis.cancel(); done(false); }
+      }, 8000);
+      try {
+        const url = job.url && new URL(job.url, root.location && root.location.href || 'https://localhost/');
+        if (url && /^https?:$/.test(url.protocol) && root.Audio) {
+          const audio = new root.Audio(url.href); job.audio = audio; audio.volume = .95;
+          audio.onended = () => done(true); audio.onerror = fallback;
+          const promise = audio.play(); if (promise && promise.catch) promise.catch(fallback);
+        } else fallback();
+      } catch (_) { fallback(); }
+    }
+    stopVoice() {
+      this.voiceGeneration++; this.voiceQueue = [];
+      if (this.voiceJob) {
+        clearTimeout(this.voiceJob.timer);
+        if (this.voiceJob.audio) { this.voiceJob.audio.onended = null; this.voiceJob.audio.onerror = null; this.voiceJob.audio.pause(); }
       }
-
-      const t = this.ctx.currentTime;
-
-      switch (type) {
-        case "type": {
-          // Gõ phím đúng: Tiếng khánh ngọc thanh thoát (crisp jade chime ping), nghe cực kỳ rõ và sảng khoái trên loa di động
-          const osc1 = this.ctx.createOscillator();
-          const osc2 = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc1.type = "sine";
-          osc1.frequency.setValueAtTime(880, t); // A5
-          osc1.frequency.exponentialRampToValueAtTime(1046.5, t + 0.08);
-          osc2.type = "triangle";
-          osc2.frequency.setValueAtTime(1760, t); // Họa âm ngọc bích
-          gain.gain.setValueAtTime(0.24, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc1.start(t); osc2.start(t);
-          osc1.stop(t + 0.09); osc2.stop(t + 0.09);
-          break;
-        }
-
-        case "slash": {
-          // Xuất kiếm: Tiếng kiếm khí xé gió vút qua sắc lẹm
-          const osc = this.ctx.createOscillator();
-          const filter = this.ctx.createBiquadFilter();
-          const gain = this.ctx.createGain();
-          osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(1600, t);
-          osc.frequency.exponentialRampToValueAtTime(320, t + 0.14);
-          filter.type = "bandpass";
-          filter.frequency.setValueAtTime(1200, t);
-          filter.Q.setValueAtTime(3.0, t);
-          gain.gain.setValueAtTime(0.28, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-          osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(t); osc.stop(t + 0.14);
-          break;
-        }
-
-        case "lightning": {
-          // Sấm sét Cửu Thiên (Nguyên Anh Kỳ)
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "square";
-          osc.frequency.setValueAtTime(160, t);
-          osc.frequency.exponentialRampToValueAtTime(30, t + 0.38);
-          gain.gain.setValueAtTime(0.38, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(t); osc.stop(t + 0.38);
-          break;
-        }
-
-        case "explosion": {
-          // Trảm diệt ma thạch: Vỡ tung giòn giã, có xung lực trung âm nghe rõ trên mọi loa
-          const osc = this.ctx.createOscillator();
-          const noise = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          const filter = this.ctx.createBiquadFilter();
-          osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(360, t);
-          osc.frequency.exponentialRampToValueAtTime(60, t + 0.35);
-          noise.type = "square";
-          noise.frequency.setValueAtTime(820, t);
-          noise.frequency.exponentialRampToValueAtTime(120, t + 0.25);
-          filter.type = "lowpass";
-          filter.frequency.setValueAtTime(950, t);
-          gain.gain.setValueAtTime(0.38, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-          osc.connect(filter);
-          noise.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(t); noise.start(t);
-          osc.stop(t + 0.35); noise.stop(t + 0.35);
-          break;
-        }
-
-        case "chime": {
-          // Chuông ngân khánh ngọc thanh khiết
-          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, t + i * 0.05);
-            gain.gain.setValueAtTime(0.22, t + i * 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.45);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(t + i * 0.05); osc.stop(t + i * 0.05 + 0.45);
-          });
-          break;
-        }
-
-        case "breakthrough": {
-          // Đột phá thăng thiên: Hợp âm ngũ cung đại đạo bừng nở
-          const chord = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
-          chord.forEach((freq, idx) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = "triangle";
-            osc.frequency.setValueAtTime(freq, t + idx * 0.09);
-            gain.gain.setValueAtTime(0.15, t + idx * 0.09);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.09 + 0.9);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(t + idx * 0.09); osc.stop(t + idx * 0.09 + 0.95);
-          });
-          break;
-        }
-
-        case "hurt": {
-          // Gõ sai / bị chấn động đan điền: Tiếng mộc đao khựng lại rõ ràng
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "square";
-          osc.frequency.setValueAtTime(280, t);
-          osc.frequency.exponentialRampToValueAtTime(80, t + 0.16);
-          gain.gain.setValueAtTime(0.28, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(t); osc.stop(t + 0.16);
-          break;
-        }
-
-        case "shatter": {
-          // Hộ thuẫn tan vỡ / mảnh ngọc văng tung tóe
-          [920, 1150, 680].forEach((freq, idx) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = "triangle";
-            osc.frequency.setValueAtTime(freq, t + idx * 0.03);
-            osc.frequency.exponentialRampToValueAtTime(160, t + idx * 0.03 + 0.18);
-            gain.gain.setValueAtTime(0.22, t + idx * 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.03 + 0.18);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(t + idx * 0.03); osc.stop(t + idx * 0.03 + 0.19);
-          });
-          break;
-        }
-
-        case "defeat": {
-          // Thất bại: Giai điệu trầm buồn hạ âm
-          [349.23, 311.13, 261.63, 196.00].forEach((freq, idx) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, t + idx * 0.18);
-            gain.gain.setValueAtTime(0.18, t + idx * 0.18);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.18 + 0.6);
-            osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.start(t + idx * 0.18); osc.stop(t + idx * 0.18 + 0.65);
-          });
-          break;
-        }
-      }
+      this.voiceJob = null; if (root.speechSynthesis) root.speechSynthesis.cancel(); this._duckVoice(false);
+    }
+    getStatus() {
+      return { enabled:this.soundEnabled, context:this.ctx ? this.ctx.state : 'uninitialized', bgm:this.zenMusicPlaying,
+        voicePending:this.voiceQueue.length, voiceActive:!!this.voiceJob, ...this.stats };
     }
   }
-
-  root.Meowcha = root.Meowcha || {};
-  root.Meowcha.AudioManager = AudioManager;
+  root.Meowcha = root.Meowcha || {}; root.Meowcha.AudioManager = AudioManager;
 })(typeof window !== 'undefined' ? window : globalThis);

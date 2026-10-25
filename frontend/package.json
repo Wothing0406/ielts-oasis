@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:meowcha": "node --test tests/meowcha-engine.test.cjs",
+    "test:meowcha": "node --test tests/meowcha-engine.test.cjs tests/meowcha-audio.test.cjs",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

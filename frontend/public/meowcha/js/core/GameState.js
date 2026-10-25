@@ -70,23 +70,8 @@
         autoKill: false,
         typoImmune: false
       };
-      this.unlockedSkills = [];
-      this.skillLevels = {};
-      this.skillCooldowns = {};
-      this.activeSkillEffects = {};
-      this.selectedTalents = [];
-      this.passiveModifiers = {
-        damageReduction: 0,
-        comboBonus: 0.08,
-        meaningDisplayDuration: 3200,
-        weakWordWeight: 1.0,
-        hazardDurationBonus: 1.0,
-        mindHint: false
-      };
-
-      // Kỹ năng đột phá theo cảnh giới & Bổ trợ chuyên sâu
-      this.unlockedSkills = [];
-      this.skillLevels = {};
+      this.unlockedSkills = ['QI_SHIELD_PASSIVE'];
+      this.skillLevels = { QI_SHIELD_PASSIVE: 1 };
       this.skillCooldowns = {};
       this.activeSkillEffects = {};
       this.selectedTalents = [];
@@ -319,6 +304,9 @@
     canActivateSkill(skillId) {
       if (this.currentScene !== "BATTLE" || this.isPaused || this.isGameOver || this.catState === "BREAKTHROUGH") return false;
       if (!this.isSkillUnlocked(skillId)) return false;
+      const def = root.Meowcha.BREAKTHROUGH_SKILLS && root.Meowcha.BREAKTHROUGH_SKILLS[skillId];
+      if (!def || def.kind === 'PASSIVE' || this.realmIdx < def.minRealm) return false;
+      if (skillId === 'GOLDEN_CORE_REGEN' && this.hp >= this.maxHp) return false;
       if (this.getSkillCooldown(skillId) > 0) return false;
       if (skillId === "TEN_THOUSAND_SWORDS") {
         return this.combo >= 10;
@@ -328,6 +316,7 @@
 
     activateSkill(skillId, engine, audioManager) {
       if (!this.canActivateSkill(skillId)) return false;
+      if (skillId === 'NASCENT_SOUL_FREEZE' && (!engine || !engine.asteroids || !engine.asteroids.asteroids.length)) return false;
       const M = root.Meowcha || {};
       const skillDef = M.BREAKTHROUGH_SKILLS && M.BREAKTHROUGH_SKILLS[skillId];
       if (!skillDef) return false;
@@ -390,11 +379,13 @@
           engine.mistakeStreak = 0;
           if (engine.realmVFX) engine.realmVFX.clearClouds();
 
-          const nonBoss = engine.asteroids.asteroids.filter(a => !a.isBoss);
-          if (nonBoss.length > 0) {
-            const lowest = nonBoss.sort((a, b) => b.y - a.y)[0];
-            engine.handleWordSlain(lowest, { width: 800, height: 600 }, true);
+          // Clear danger without completing the word or adding typing statistics.
+          const targets = engine.asteroids && engine.asteroids.asteroids || [];
+          for (const target of targets) {
+            target.freezeTimer = Math.max(target.freezeTimer || 0, 1.5);
+            if (engine.projectiles && engine.projectiles.spawnSkyStrike) engine.projectiles.spawnSkyStrike(target.x, target.y, 4);
           }
+          this.combo = 0;
         }
         this.screenShake = 16;
         this.screenFlash = 0.8;
@@ -411,7 +402,7 @@
     }
 
     updateSkills(dt = 0.016) {
-      if (this.isPaused) return;
+      if (this.currentScene !== 'BATTLE' || this.isPaused || this.isGameOver || this.catState === 'BREAKTHROUGH') return;
       let changed = false;
       if (this.skillCooldowns) {
         for (const sKey of Object.keys(this.skillCooldowns)) {
@@ -478,7 +469,7 @@
         typoImmune: false
       }, slot.talents || {});
       this.shieldCharges = slot.shieldCharges !== undefined ? slot.shieldCharges : (this.talents.shieldCharges || 0);
-      this.unlockedSkills = Array.isArray(slot.unlockedSkills) ? [...slot.unlockedSkills] : [];
+      this.unlockedSkills = Array.isArray(slot.unlockedSkills) ? [...slot.unlockedSkills] : ['QI_SHIELD_PASSIVE'];
       this.skillLevels = (slot.skillLevels && typeof slot.skillLevels === 'object') ? { ...slot.skillLevels } : {};
       this.selectedTalents = Array.isArray(slot.selectedTalents) ? [...slot.selectedTalents] : [];
       this.passiveModifiers = Object.assign({
@@ -493,6 +484,8 @@
       this.notify("score");
       this.notify("highScore");
       this.notify("realm");
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
       this.notify("load");
     }
 
@@ -522,7 +515,7 @@
         typoImmune: false
       }, modeData.talents || {});
       this.shieldCharges = modeData.shieldCharges !== undefined ? modeData.shieldCharges : (this.talents.shieldCharges || 0);
-      this.unlockedSkills = Array.isArray(modeData.unlockedSkills) ? [...modeData.unlockedSkills] : [];
+      this.unlockedSkills = Array.isArray(modeData.unlockedSkills) ? [...modeData.unlockedSkills] : ['QI_SHIELD_PASSIVE'];
       this.skillLevels = (modeData.skillLevels && typeof modeData.skillLevels === 'object') ? { ...modeData.skillLevels } : {};
       this.selectedTalents = Array.isArray(modeData.selectedTalents) ? [...modeData.selectedTalents] : [];
       this.passiveModifiers = Object.assign({
@@ -543,6 +536,8 @@
       this.notify("score");
       this.notify("highScore");
       this.notify("realm");
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
       this.notify("load");
     }
 
@@ -566,8 +561,8 @@
         autoKill: false,
         typoImmune: false
       };
-      this.unlockedSkills = [];
-      this.skillLevels = {};
+      this.unlockedSkills = ['QI_SHIELD_PASSIVE'];
+      this.skillLevels = { QI_SHIELD_PASSIVE: 1 };
       this.skillCooldowns = {};
       this.activeSkillEffects = {};
       this.selectedTalents = [];
@@ -588,6 +583,8 @@
       this.notify("hp");
       this.notify("score");
       this.notify("realm");
+      this.skillCooldowns = {};
+      this.activeSkillEffects = {};
       this.notify("load");
     }
   }

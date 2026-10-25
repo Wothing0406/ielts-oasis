@@ -14,6 +14,7 @@
 
       // Khởi tạo Asset Loader theo cấu trúc thư mục phân tầng chuẩn (characters/, asteroids/, maps/)
       this.assets = {
+        ivory_scroll: { src:'./assets/ui/ivory-scroll-v1.png', img:new Image(), loaded:false },
         cultivation_dais: { src: './assets/ui/cultivation-dais-v1.png', img: new Image(), loaded: false },
         bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: new Image(), loaded: false },
         cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: new Image(), loaded: false },
@@ -133,7 +134,7 @@
       this.animator = M.SpriteAnimator ? new M.SpriteAnimator(this.assets) : null;
       this.particles = new M.ParticleEngine();
       this.realmVFX = new M.RealmVFX(this.assets);
-      this.floatingText = new M.FloatingText();
+      this.floatingText = new M.FloatingText(this.assets);
       this.cat = new M.CatCultivator(this.assets, this.realmVFX, this.animator);
       this.asteroids = new M.AsteroidManager(this.assets, this.gameState);
       this.projectiles = new M.ProjectileSystem(this.assets, this.animator);
@@ -152,6 +153,7 @@
     }
 
     init() {
+      if (M.installPixelArt) M.installPixelArt();
       this.loadAllAssets();
       this.initCanvasSize();
       this.unityBridge.init();
@@ -171,6 +173,7 @@
           this.typing.processKey(key, this.canvas);
         });
       }
+      if (M.Device && M.Device.info.isDesktop && document.getElementById('btnToggleVirtualKeyboard')) document.getElementById('btnToggleVirtualKeyboard').hidden = true;
       if (typeof ResizeObserver !== 'undefined') {
         this.layoutObserver = new ResizeObserver(() => { if (typeof M.refreshBattleLayout === 'function') if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas); });
         [kbContainer, document.querySelector('.sect-scroll-hud'), document.getElementById('swordIntentBox')]
@@ -795,7 +798,11 @@
         candidatePool = matchedList;
       }
 
-      let wordItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+      const weak = new Set(this.saveSystem.getWeaknessWords().map(w => String(w.word).toUpperCase()));
+      const weight = Math.max(1, (this.gameState.passiveModifiers && this.gameState.passiveModifiers.weakWordWeight) || 1);
+      const totalWeight = candidatePool.reduce((sum, w) => sum + (weak.has(String(w.word).toUpperCase()) ? weight : 1), 0);
+      let cursor = Math.random() * totalWeight;
+      let wordItem = candidatePool.find(w => (cursor -= weak.has(String(w.word).toUpperCase()) ? weight : 1) < 0);
       if (!wordItem) {
         // Fallback kiên cố nếu danh sách tạm thời rỗng để game không bao giờ bị dừng
         const fallbackWords = [

@@ -142,6 +142,7 @@
           ? root.Meowcha.generateBreakthroughChoices(this.state, targetRealm)
           : [...(root.Meowcha.TALENT_POOL || [])].sort(() => Math.random() - 0.5).slice(0, 3);
 
+        this.offeredChoices = selectedTalents;
         if (this.onShowTalentModal) {
           this.onShowTalentModal(selectedTalents, targetRealm);
         }
@@ -150,13 +151,15 @@
 
     cancel() {
       this._generation++;
+      this.offeredChoices = null;
       this.isBossEncounterActive = false;
       this.pendingRealmIdx = null;
       this.state.pendingBreakthrough = false;
     }
 
     selectTalent(talent) {
-      if (!talent) return;
+      if (!talent || !this.offeredChoices || !this.offeredChoices.includes(talent)) return false;
+      this.offeredChoices = null;
       if (typeof talent.apply === "function") {
         talent.apply(this.state);
       }
@@ -168,6 +171,7 @@
       this.audio.play("chime");
       this.state.setSpeech(`Đã đắc ngộ: [${talent.name}]!`, 2500);
       this.state.setCatState("IDLE");
+      return true;
     }
   }
 

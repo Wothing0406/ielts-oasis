@@ -1,0 +1,27 @@
+<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;background:#20332d;color:#f5e7c7;font:12px sans-serif}#tools{position:fixed;top:0;left:0;z-index:999;background:#20332dee;padding:4px;max-width:100%;box-sizing:border-box}button{padding:8px;margin:2px;min-height:36px}iframe{width:100vw;height:100dvh;border:0;display:block}#status{max-height:65px;overflow:auto;max-width:90vw;white-space:pre-wrap}</style>
+<div id="tools"><button id="qaVoices">Trảm thử 20 từ</button><button id="qaChoice">Thử đột phá</button><button id="qaDamage">Tạo thiếu HP</button><button id="qaMobile">Mô phỏng cảm ứng</button><button id="qaHide">Ẩn công cụ</button><pre id="status">Đang nạp...</pre></div>
+<iframe id="game" src="/meowcha/index.html?v=12.3" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+<script>
+const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
+function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
+setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,audio:g.audio.getStatus(),mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
+document.getElementById('qaVoices').onclick=async()=>{
+ if(running)return;running=true;step=0;const g=app();if(!g)return;
+ await g.startBattle();g.gameState.hp=g.gameState.maxHp=500;g.gameState.isGameOver=false;g.gameState.isPaused=false;g.gameState.realmIdx=0;
+ g.gameState.talents.autoKill=false;g.gameState.talents.critChance=0;
+ const check=g.breakthrough.checkProgress;g.breakthrough.checkProgress=()=>false;
+ const vocabulary=await (await fetch('/meowcha/data/oxford_5000.json')).json();
+ const words=['cat','dog','tea','moon','jade','river','cloud','peace','stone','light','book','water','flower','sword','dream','star','wind','garden','friend','home'];
+ const tick=()=>{if(step>=words.length){running=false;result='Đã trảm 20 từ qua TypingEngine';g.breakthrough.checkProgress=check;return;}
+  const item=vocabulary.find(w=>w.word===words[step])||{word:words[step],meaning:'Từ kiểm thử'};
+  g.asteroids.clear();g.typing.currentTarget=null;const a=g.asteroids.spawn({...item,ipa:item.phonetic||''},g.canvas.width,0,0.01,0,'ice');a.y=200;
+  for(const char of a.word)g.typing.processKey(char,g.canvas);step++;setTimeout(tick,1200);
+ };result='Đang chạy';tick();
+};
+document.getElementById('qaChoice').onclick=()=>{const g=app();if(!g)return;g.startBattle();g.gameState.realmIdx=1;g.gameState.isPaused=false;g.gameState.isGameOver=false;g.breakthrough.triggerBreakthrough(2);result='Đang mở cơ duyên Kim Đan';};
+document.getElementById('qaDamage').onclick=()=>{const g=app();if(!g)return;g.gameState.shieldCharges=0;g.gameState.takeDamage(8);g.ui.updateHUD();result='Đã gây 8 sát thương qua GameState';};
+document.getElementById('qaMobile').onclick=()=>{const g=app(),D=frame.contentWindow.Meowcha.Device;if(!g)return;
+ D.info.isDesktop=false;D.info.isMobile=true;D.info.isTablet=false;D.info.isTouchDevice=true;D.applyDOMClasses();D.setUserPrefKeyboard(true);g.vKeyboard.show();g.initCanvasSize();result='Mô phỏng layout cảm ứng (không phải thiết bị thật)';};
+document.getElementById('qaHide').onclick=()=>document.getElementById('tools').style.display='none';
+</script></html>

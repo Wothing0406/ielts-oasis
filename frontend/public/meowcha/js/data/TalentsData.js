@@ -126,7 +126,7 @@
           state.unlockedSkills.push("WIND_SWORD_DOMAIN");
         }
         state.skillLevels = state.skillLevels || {};
-        state.skillLevels["WIND_SWORD_DOMAIN"] = targetLevel;
+        state.skillLevels["WIND_SWORD_DOMAIN"] = Math.max(1, Math.min(3, Math.floor(Number(targetLevel) || 1)));
       }
     },
 
@@ -177,7 +177,7 @@
           state.unlockedSkills.push("GOLDEN_CORE_REGEN");
         }
         state.skillLevels = state.skillLevels || {};
-        state.skillLevels["GOLDEN_CORE_REGEN"] = targetLevel;
+        state.skillLevels["GOLDEN_CORE_REGEN"] = Math.max(1, Math.min(3, Math.floor(Number(targetLevel) || 1)));
       }
     },
 
@@ -222,7 +222,7 @@
           state.unlockedSkills.push("NASCENT_SOUL_FREEZE");
         }
         state.skillLevels = state.skillLevels || {};
-        state.skillLevels["NASCENT_SOUL_FREEZE"] = targetLevel;
+        state.skillLevels["NASCENT_SOUL_FREEZE"] = Math.max(1, Math.min(3, Math.floor(Number(targetLevel) || 1)));
       }
     },
 
@@ -242,8 +242,8 @@
         {
           level: 1,
           reqCombo: 10,
-          desc: "Điều kiện: Chuỗi Combo >= 10. Phóng vạn đạo phi kiếm hóa giải ngay ma chướng và lôi kiếp, đồng thời trảm 1 ma thạch nguy hiểm nhất.",
-          summary: "Điều kiện Combo >= 10 • Hóa giải Hazard • Trảm ma thạch"
+          desc: "Điều kiện: Chuỗi Combo >= 10. Phóng vạn đạo phi kiếm hóa giải ngay ma chướng và lôi kiếp, định thân ma thạch 1,5 giây. Người chơi vẫn tự hoàn thành từ.",
+          summary: "Điều kiện Combo >= 10 • Hóa giải ma chướng • Không tự gõ từ"
         }
       ],
       apply: (state) => {
@@ -399,10 +399,10 @@
       rarityColor: "#38BDF8",
       type: "Kiếm Đạo Liên Kích",
       statName: "Kiếm Thế",
-      desc: "Mỗi nấc Combo gia tăng thêm 35% điểm thưởng Tu Vi, giúp bứt phá kỷ lục Bảng Phong Thần.",
+      desc: "Mỗi nấc Combo tăng thêm 3 điểm phần trăm hệ số thưởng Tu Vi, giúp bứt phá kỷ lục Bảng Phong Thần.",
       apply: (state) => {
         state.passiveModifiers = state.passiveModifiers || {};
-        state.passiveModifiers.comboBonus = (state.passiveModifiers.comboBonus || 0.08) + 0.03;
+        state.passiveModifiers.comboBonus = Math.min(0.2, (state.passiveModifiers.comboBonus || 0.08) + 0.03);
       }
     },
     {
@@ -435,10 +435,10 @@
       rarityColor: "#38BDF8",
       type: "Linh Vực Trừ Tà",
       statName: "Tẩy Uế",
-      desc: "Linh quang bảo hộ, giảm 40% thời gian ma vân che mắt và giảm số từ cần thiết để giải Thiên Kiếp.",
+      desc: "Linh quang bảo hộ, giảm 40% thời gian ma vân che mắt; chỉ cần 1 từ đúng để giải Thiên Kiếp.",
       apply: (state) => {
         state.passiveModifiers = state.passiveModifiers || {};
-        state.passiveModifiers.hazardDurationBonus = (state.passiveModifiers.hazardDurationBonus || 1.0) * 0.6;
+        state.passiveModifiers.hazardDurationBonus = Math.max(0.4, (state.passiveModifiers.hazardDurationBonus || 1.0) * 0.6);
       }
     },
     {
@@ -501,157 +501,70 @@
 
   // 5. THUẬT TOÁN SINH LỰA CHỌN CƠ DUYÊN NGỘ ĐẠO (ANTI-COLLISION & PATH DIVERSITY)
   function generateBreakthroughChoices(state, targetRealm) {
+    const realm = targetRealm && Number.isInteger(targetRealm.id) ? targetRealm.id :
+      targetRealm && Number.isInteger(targetRealm.index) ? targetRealm.index : (state.realmIdx || 0);
+    const t = state.talents || {}, p = state.passiveModifiers || {}, levels = state.skillLevels || {};
     const choices = [];
-    const targetRealmIdx = (targetRealm && typeof targetRealm.index === "number") ? targetRealm.index : (state.realmIdx || 1);
-    const unlocked = state.unlockedSkills || [];
-    const levels = state.skillLevels || {};
-
-    // 1. Kiểm tra kỹ năng đặc trưng của cảnh giới mới (nếu chưa mở)
-    const realmSkillKeyMap = {
-      0: "QI_SHIELD_PASSIVE",
-      1: "WIND_SWORD_DOMAIN",
-      2: "GOLDEN_CORE_REGEN",
-      3: "NASCENT_SOUL_FREEZE",
-      4: "TEN_THOUSAND_SWORDS"
+    const pool = [];
+    for (const def of Object.values(BREAKTHROUGH_SKILLS)) {
+      if (def.minRealm > realm || def.kind === 'PASSIVE') continue;
+      const level = levels[def.id] || 0;
+      if (level >= def.maxLevel) continue;
+      const next = level + 1, data = def.levels[next - 1], rarity = RARITY_INFO[def.rarity];
+      pool.push({ id:def.id, skillId:def.id, isSkill:true, targetLevel:next,
+        name:def.name + (next > 1 ? ' ' + ['','I','II','III'][next] : ''),
+        category:def.category, kind:def.kind, rarityKey:def.rarity, rarityName:rarity.name,
+        rarityColor:rarity.color, iconSvg:def.iconSvg, desc:data.desc,
+        statChange:level ? 'Cấp ' + level + ' → ' + next : 'Chưa lĩnh ngộ → Cấp I',
+        apply:st => def.apply(st,next) });
+    }
+    const maxed = {
+      CRIT_STRIKE:t.critChance >= 1, SLOW_TIME:t.slowFactor <= .3, SCORE_FOCUS:t.scoreMultiplier >= 3 && t.typoImmune,
+      SWORD_MASTERY:t.scoreMultiplier >= 3, COMBO_POTENCY:p.comboBonus >= .2,
+      DAMAGE_REDUCTION:p.damageReduction >= .5, HAZARD_DAMPENER:p.hazardDurationBonus <= .4,
+      MIND_HINT:p.mindHint, MEANING_PERSISTENCE:p.meaningDisplayDuration >= 6000, WEAK_WORD_AFFINITY:p.weakWordWeight >= 2
     };
-
-    const signatureKey = realmSkillKeyMap[targetRealmIdx];
-    if (signatureKey && BREAKTHROUGH_SKILLS[signatureKey]) {
-      const skillDef = BREAKTHROUGH_SKILLS[signatureKey];
-      const curLv = levels[signatureKey] || 0;
-      if (curLv === 0) {
-        // Đưa kỹ năng đặc trưng của cảnh giới vào danh sách lựa chọn
-        const lv1 = skillDef.levels[0];
-        choices.push({
-          id: skillDef.id,
-          isSkill: true,
-          skillId: skillDef.id,
-          targetLevel: 1,
-          name: skillDef.name,
-          category: skillDef.category,
-          kind: skillDef.kind,
-          rarityKey: skillDef.rarity,
-          rarityColor: (RARITY_INFO[skillDef.rarity] || RARITY_INFO.HUYEN_PHAM).color,
-          rarityName: (RARITY_INFO[skillDef.rarity] || RARITY_INFO.HUYEN_PHAM).name,
-          icon: skillDef.icon,
-          iconSvg: skillDef.iconSvg,
-          desc: lv1.desc,
-          summary: lv1.summary || lv1.desc,
-          statChange: `Khai mở Thần Thông [ Cấp I ]`,
-          apply: (st) => skillDef.apply(st, 1)
-        });
-      }
+    // Retain old auto-complete talents for existing saves only; new builds support human typing.
+    for (const def of ALL_TALENTS) {
+      if (['AUTO_SWORD','SCORE_FOCUS'].includes(def.id) || maxed[def.id]) continue;
+      const rarity = RARITY_INFO[def.rarityKey] || RARITY_INFO.PHAM_PHAM;
+      const describe = {
+        MAX_HP:state.maxHp + ' → ' + (state.maxHp + 25) + ' Khí Huyết',
+        GOLDEN_SHIELD:(state.shieldCharges || 0) + ' → ' + ((state.shieldCharges || 0) + 2) + ' lớp khiên',
+        SLOW_TIME:Math.round((t.slowFactor || 1) * 100) + '% → ' + Math.round(Math.max(.3,(t.slowFactor || 1) * .75) * 100) + '% tốc độ',
+        SWORD_MASTERY:'Tu Vi ×' + (t.scoreMultiplier || 1).toFixed(1) + ' → ×' + Math.min(3,(t.scoreMultiplier || 1) + .3).toFixed(1),
+        COMBO_POTENCY:Math.round((p.comboBonus || .08) * 100) + '% → ' + Math.round(Math.min(.2,(p.comboBonus || .08) + .03) * 100) + '% / combo',
+        DAMAGE_REDUCTION:Math.round((p.damageReduction || 0) * 100) + '% → ' + Math.round(Math.min(.5,(p.damageReduction || 0) + .25) * 100) + '% giảm sát thương',
+        MEANING_PERSISTENCE:'Giải nghĩa ' + ((p.meaningDisplayDuration || 3200)/1000) + 's → 6s',
+        WEAK_WORD_AFFINITY:'Trọng số từ cần ôn ×1 → ×2',
+        HAZARD_DAMPENER:'Thời gian ma chướng ×' + (p.hazardDurationBonus || 1).toFixed(1) + ' → ×' + Math.max(.4,(p.hazardDurationBonus || 1) * .6).toFixed(1)
+      };
+      pool.push({ ...def, rarityName:rarity.name, rarityColor:rarity.color,
+        desc:def.id === 'CRIT_STRIKE' ? 'Thêm 35% cơ hội nhận gấp đôi Tu Vi cơ bản của từ tự gõ. Không tự trảm từ khác.' : def.desc,
+        statChange:def.id === 'CRIT_STRIKE' ? Math.round((t.critChance || 0)*100)+'% → '+Math.round(Math.min(1,(t.critChance || 0)+.35)*100)+'% bạo kích Tu Vi' : describe[def.id] || 'Khai mở gợi ý sau hai lần sai',
+        apply:st => { def.apply(st); if(def.id === 'CRIT_STRIKE') st.talents.critMode='score'; } });
     }
-
-    // 2. Kiểm tra nâng cấp cho các kỹ năng đã mở khóa (Level Up 1 -> 2 hoặc 2 -> 3)
-    for (const sKey of unlocked) {
-      if (choices.length >= 2) break;
-      const sDef = BREAKTHROUGH_SKILLS[sKey];
-      if (!sDef || !sDef.levels) continue;
-      const curLv = levels[sKey] || 1;
-      if (curLv < sDef.maxLevel) {
-        const nextLv = curLv + 1;
-        const curData = sDef.levels[curLv - 1];
-        const nextData = sDef.levels[nextLv - 1];
-        choices.push({
-          id: `${sDef.id}_LV${nextLv}`,
-          isSkill: true,
-          skillId: sDef.id,
-          targetLevel: nextLv,
-          name: `${sDef.name} ${nextLv === 2 ? "II" : "III"}`,
-          category: sDef.category,
-          kind: sDef.kind,
-          rarityKey: nextLv === 3 ? "THIEN_PHAM" : "HUYEN_PHAM",
-          rarityColor: (RARITY_INFO[nextLv === 3 ? "THIEN_PHAM" : "HUYEN_PHAM"]).color,
-          rarityName: (RARITY_INFO[nextLv === 3 ? "THIEN_PHAM" : "HUYEN_PHAM"]).name,
-          icon: sDef.icon,
-          iconSvg: sDef.iconSvg,
-          desc: nextData.desc,
-          summary: nextData.summary || nextData.desc,
-          statChange: `Cấp ${curLv} ➔ Cấp ${nextLv}`,
-          apply: (st) => sDef.apply(st, nextLv)
-        });
-      }
+    // An uncapped, implemented upgrade keeps the late-run pool useful and diverse.
+    pool.push({ id:'LONG_WORD_BONUS', name:'Trường Văn Kiếm Ý', category:'KIEM_DAO', kind:'PASSIVE',
+      rarityKey:'PHAM_PHAM', rarityName:'PHÀM PHẨM', rarityColor:'#E5BE72', iconSvg:'broadsword',
+      desc:'Thêm 10 Tu Vi cơ bản cho mỗi từ từ 7 ký tự do chính tay hoàn thành.',
+      statChange:'Thưởng từ dài +' + (p.longWordBonus || 0) + ' → +' + ((p.longWordBonus || 0) + 10),
+      apply:st => { st.passiveModifiers.longWordBonus = (st.passiveModifiers.longWordBonus || 0) + 10; } });
+    const signature = pool.find(c => c.isSkill && BREAKTHROUGH_SKILLS[c.skillId].minRealm === realm && c.targetLevel === 1);
+    if (signature) { choices.push(signature); pool.splice(pool.indexOf(signature),1); }
+    const weights = { PHAM_PHAM:5, LINH_PHAM:3, HUYEN_PHAM:2, THIEN_PHAM:1 };
+    while (choices.length < 3 && pool.length) {
+      const requireOther = choices.length === 2 && new Set(choices.map(c=>c.category)).size === 1;
+      const candidates = requireOther ? pool.filter(c=>c.category !== choices[0].category) : pool;
+      const eligible = candidates.length ? candidates : pool;
+      const total = eligible.reduce((sum,c)=>sum+(weights[c.rarityKey] || 1),0);
+      let cursor = Math.random() * total;
+      const choice = eligible.find(c => (cursor -= weights[c.rarityKey] || 1) < 0) || eligible[eligible.length-1];
+      choices.push(choice); pool.splice(pool.indexOf(choice),1);
     }
-
-    // 3. Bổ sung từ ALL_TALENTS hợp lệ (Anti-maxed & Diversity check)
-    const candidateTalents = ALL_TALENTS.filter(t => {
-      // Loại trừ các talent đã đạt giới hạn cứng
-      if (t.id === "SLOW_TIME" && state.talents && state.talents.slowFactor <= 0.3) return false;
-      if (t.id === "CRIT_STRIKE" && state.talents && state.talents.critChance >= 1.0) return false;
-      if (t.id === "SCORE_FOCUS" && state.talents && state.talents.scoreMultiplier >= 3.0 && state.talents.typoImmune) return false;
-      if (t.id === "AUTO_SWORD" && state.talents && state.talents.autoKill) return false;
-      if (t.id === "MIND_HINT" && state.passiveModifiers && state.passiveModifiers.mindHint) return false;
-      if (t.id === "MEANING_PERSISTENCE" && state.passiveModifiers && state.passiveModifiers.meaningDisplayDuration >= 6000) return false;
-      if (t.id === "WEAK_WORD_AFFINITY" && state.passiveModifiers && state.passiveModifiers.weakWordWeight >= 2.0) return false;
-      // Tránh trùng lặp với các lựa chọn đã có
-      if (choices.some(c => c.id === t.id)) return false;
-      return true;
-    });
-
-    // Shuffle ngẫu nhiên danh sách ứng viên
-    const shuffledTalents = candidateTalents.sort(() => Math.random() - 0.5);
-
-    // Lọc lấy các lựa chọn sao cho ít nhất 2/3 lựa chọn khác nhóm gameplay (category)
-    for (const tal of shuffledTalents) {
-      if (choices.length >= 3) break;
-
-      // Kiểm tra đa dạng nhóm: Tránh đưa cả 3 lựa chọn cùng 1 nhóm nếu còn ứng viên nhóm khác
-      const existingCategories = choices.map(c => c.category);
-
-      // Nếu đã có 2 lựa chọn cùng nhóm này, ưu tiên chọn nhóm khác
-      const categoryCount = existingCategories.filter(cat => cat === tal.category).length;
-      if (categoryCount >= 2 && shuffledTalents.some(t => !existingCategories.includes(t.category) && !choices.some(c => c.id === t.id))) {
-        continue;
-      }
-
-      const rInfo = RARITY_INFO[tal.rarityKey] || RARITY_INFO.LINH_PHAM;
-      choices.push({
-        id: tal.id,
-        isSkill: false,
-        name: tal.name,
-        category: tal.category || "HO_DAO",
-        kind: tal.kind || "PASSIVE",
-        rarityKey: tal.rarityKey || "LINH_PHAM",
-        rarityColor: tal.rarityColor || rInfo.color,
-        rarityName: rInfo.name,
-        icon: tal.icon,
-        iconSvg: tal.iconSvg || "cauldron",
-        type: tal.type,
-        statName: tal.statName,
-        desc: tal.desc,
-        summary: tal.desc,
-        statChange: `Đắc ngộ Thần Thông`,
-        apply: (st) => tal.apply(st)
-      });
-    }
-
-    // Fallback an toàn nếu pool bị hạn chế: Lấy ngẫu nhiên từ TALENT_POOL
-    if (choices.length < 3) {
-      for (const t of TALENT_POOL) {
-        if (choices.length >= 3) break;
-        if (!choices.some(c => c.id === t.id)) {
-          choices.push({
-            id: t.id,
-            isSkill: false,
-            name: t.name,
-            category: t.category || "HO_DAO",
-            kind: "PASSIVE",
-            rarityKey: t.rarityKey || "PHAM_PHAM",
-            rarityColor: t.rarityColor || "#10B981",
-            rarityName: "PHÀM PHẨM",
-            icon: t.icon,
-            iconSvg: t.iconSvg || "cauldron",
-            desc: t.desc,
-            summary: t.desc,
-            statChange: "Lĩnh ngộ",
-            apply: (st) => t.apply(st)
-          });
-        }
-      }
-    }
-
-    return choices.slice(0, 3);
+    // Fisher–Yates avoids biased sort comparators and fixed card positions.
+    for (let i=choices.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [choices[i],choices[j]]=[choices[j],choices[i]]; }
+    return choices;
   }
 
   root.Meowcha = root.Meowcha || {};

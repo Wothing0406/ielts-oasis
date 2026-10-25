@@ -28,6 +28,48 @@ function runtime() {
 }
 const word = (text = 'CAT') => ({ word: text, typedLen: 0, x: 100, y: 100, radius: 30, meaning: 'test', coreColor: '#fff' });
 
+test('new critical talent rewards score without auto-completing another word',()=>{
+ const r=runtime();let choice;
+ for(let i=0;i<200&&!choice;i++)choice=r.M.generateBreakthroughChoices(r.state,{id:1}).find(c=>c.id==='CRIT_STRIKE');
+ assert.ok(choice);choice.apply(r.state);r.state.talents.critChance=1;
+ r.asteroids.asteroids.push(word('CAT'),word('DOG'));
+ for(const c of 'CAT')r.engine.processKey(c,r.canvas);
+ assert.equal(r.state.wordsSlain,1);assert.equal(r.state.assistedWords,0);
+ assert.equal(r.asteroids.asteroids[0].word,'DOG');assert.equal(r.asteroids.asteroids[0].typedLen,0);
+ assert.equal(r.state.correctKeystrokes,3);assert.ok(r.state.score>=90);
+});
+
+test('purifying modifier dissipates clouds and reduces the word requirement without shortening lightning reaction time',()=>{
+ const r=runtime();r.state.passiveModifiers.hazardDurationBonus=.6;
+ r.engine.isCloudHazard=true;r.engine.updateHazard(9,r.canvas);assert.equal(r.engine.isCloudHazard,false);
+ r.engine.triggerLightningHazard(r.canvas);assert.equal(r.engine.hazardReqWords,1);
+ r.engine.updateHazard(2,r.canvas);assert.equal(r.engine.hazardTimer,12);
+});
+
+test('one breakthrough offer accepts exactly one of its three choices',()=>{
+ const r=runtime();const flow=new r.M.BreakthroughFlow(r.state,new Proxy({},{get:()=>()=>{}}));
+ const choices=r.M.generateBreakthroughChoices(r.state,{id:1});flow.offeredChoices=choices;
+ assert.equal(flow.selectTalent(choices[0]),true);const before=JSON.stringify(r.state);
+ assert.equal(flow.selectTalent(choices[1]),false);assert.equal(JSON.stringify(r.state),before);
+});
+
+test('desktop touch screens never open virtual keyboard; phones and iPads can',()=>{
+ for(const spec of [
+  {ua:'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',platform:'Win32',touch:10,desktop:true},
+  {ua:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile',platform:'iPhone',touch:5,desktop:false},
+  {ua:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)',platform:'MacIntel',touch:5,desktop:false}
+ ]){
+  const classes={add(){},remove(){}},container={style:{},classList:classes};
+  const box={navigator:{userAgent:spec.ua,platform:spec.platform,maxTouchPoints:spec.touch},
+   document:{documentElement:{classList:classes},body:{classList:classes},getElementById:()=>container},
+   addEventListener(){},matchMedia:q=>({matches:q==='(pointer: coarse)'})};
+  box.window=box;vm.createContext(box);
+  vm.runInContext(fs.readFileSync(path.join(base,'js/core/DeviceDetector.js'),'utf8'),box);
+  const D=box.Meowcha.Device;assert.equal(D.info.isDesktop,spec.desktop);
+  D.setUserPrefKeyboard(true);assert.equal(D.shouldShowVirtualKeyboard(),!spec.desktop);
+ }
+});
+
 test('functional, empty-scene, paused and invalid input do not change typing counters', () => {
   const r = runtime(); let replay = 0; r.engine.replayCurrentAudio = () => replay++;
   for (const key of [' ', 'Backspace', 'Tab', 'Shift', 'Enter', 'A']) r.engine.processKey(key, r.canvas);
@@ -256,7 +298,7 @@ test('breakthrough choices provide 4 paths with anti-collision and realm signatu
 
 test('active skills activate through engine, respect cooldowns, and trigger effects', () => {
   const r = runtime();
-  r.state.realmIdx = 1;
+  r.state.realmIdx = 4;
   r.state.unlockedSkills = ['WIND_SWORD_DOMAIN', 'GOLDEN_CORE_REGEN', 'NASCENT_SOUL_FREEZE', 'TEN_THOUSAND_SWORDS'];
   r.state.skillLevels = { WIND_SWORD_DOMAIN: 1, GOLDEN_CORE_REGEN: 1, NASCENT_SOUL_FREEZE: 1, TEN_THOUSAND_SWORDS: 1 };
   r.state.hp = 20;
@@ -330,4 +372,70 @@ test('domainSlow slows asteroids smoothly and pendingAutoKill consumes on next a
   assert.equal(r.engine.pendingAutoKill, false);
   assert.equal(r.asteroids.asteroids.length, 0);
   assert.equal(r.state.assistedWords, 1);
+});
+
+test('realm skills never complete the current word and reject unavailable or passive activation', () => {
+  const r=runtime(), target=word('VOCABULARY'); r.asteroids.asteroids.push(target);
+  for(let realm=0;realm<5;realm++) {
+    r.state.realmIdx=realm;
+    const before=target.typedLen; r.engine.triggerRealmPassiveSkill(target,r.canvas,600,600,false);
+    assert.equal(target.typedLen,before);
+  }
+  r.state.skillLevels={TEN_THOUSAND_SWORDS:1}; r.state.unlockedSkills=['TEN_THOUSAND_SWORDS'];
+  r.state.realmIdx=3;r.state.combo=10;assert.equal(r.state.activateSkill('TEN_THOUSAND_SWORDS',r.engine),false);
+  r.state.realmIdx=4;r.engine.isCloudHazard=true;r.engine.isLightningHazard=true;
+  const before={words:r.state.wordsSlain,keys:r.state.correctKeystrokes,score:r.state.score};
+  assert.equal(r.state.activateSkill('TEN_THOUSAND_SWORDS',r.engine),true);
+  assert.equal(r.asteroids.asteroids.includes(target),true);assert.equal(target.typedLen,0);
+  assert.equal(r.state.wordsSlain,before.words);assert.equal(r.state.correctKeystrokes,before.keys);assert.equal(r.state.score,before.score);
+  assert.equal(r.engine.isCloudHazard,false);assert.equal(r.engine.isLightningHazard,false);
+  assert.equal(r.state.canActivateSkill('QI_SHIELD_PASSIVE'),false);
+});
+
+test('choices stay distinct and useful after stat caps, and every offered modifier changes runtime state', () => {
+  const r=runtime();
+  r.state.talents.slowFactor=.3; r.state.talents.scoreMultiplier=3;
+  r.state.talents.critChance=1;
+  Object.assign(r.state.passiveModifiers,{comboBonus:.2,damageReduction:.5,hazardDurationBonus:.4,mindHint:true,meaningDisplayDuration:6000,weakWordWeight:2});
+  r.state.realmIdx=4;
+  r.state.unlockedSkills=Object.keys(r.M.BREAKTHROUGH_SKILLS);
+  r.state.skillLevels=Object.fromEntries(Object.entries(r.M.BREAKTHROUGH_SKILLS).map(([k,v])=>[k,v.maxLevel]));
+  for(let i=0;i<100;i++) {
+    const choices=r.M.generateBreakthroughChoices(r.state,{id:4});
+    assert.equal(choices.length,3);assert.equal(new Set(choices.map(c=>c.id)).size,3);
+    assert.ok(new Set(choices.map(c=>c.category)).size>=2);
+    for(const c of choices) {
+      assert.ok(!['AUTO_SWORD','CRIT_STRIKE','SLOW_TIME','SWORD_MASTERY','DAMAGE_REDUCTION','COMBO_POTENCY','HAZARD_DAMPENER','MIND_HINT','MEANING_PERSISTENCE','WEAK_WORD_AFFINITY'].includes(c.id));
+      const fresh=new r.M.GameState(),before=JSON.stringify(fresh);c.apply(fresh);assert.notEqual(JSON.stringify(fresh),before);
+    }
+  }
+});
+
+test('skill upgrades cap at level three, pause freezes cooldown, load clears transient effects', () => {
+ const r=runtime();r.state.realmIdx=3;
+ const skill=r.M.BREAKTHROUGH_SKILLS.WIND_SWORD_DOMAIN; skill.apply(r.state,3);
+ assert.equal(r.state.activateSkill(skill.id,r.engine),true);
+ assert.equal(r.state.activeSkillEffects.windSwordSlow,.55);assert.equal(r.state.activeSkillEffects.windSwordTimer,8);
+ assert.equal(r.state.getSkillCooldown(skill.id),20);
+ r.state.isPaused=true;r.state.updateSkills(10);assert.equal(r.state.getSkillCooldown(skill.id),20);
+ r.state.isPaused=false;r.state.updateSkills(5);assert.equal(r.state.getSkillCooldown(skill.id),15);
+ r.save.saveGame(1,r.state);r.state.loadFromModeData(r.save.getSlotModeData(1,'DIRECT'),'DIRECT');
+ assert.equal(r.state.getSkillLevel(skill.id),3);assert.equal(r.state.getSkillCooldown(skill.id),0);
+ assert.equal(Object.keys(r.state.activeSkillEffects).length,0);
+});
+
+test('a word with a typo or assistance cannot earn a flawless-streak passive reward',()=>{
+ const r=runtime();r.state.humanWordCombo=4;r.state.hp=20;
+ const t={...word('DOG'),hadTypo:true};r.asteroids.asteroids.push(t);
+ for(const c of 'DOG')r.engine.processKey(c,r.canvas);
+ assert.equal(r.state.shieldCharges,0);assert.equal(r.state.humanWordCombo,0);
+ const t2=word('CAT');r.asteroids.asteroids.push(t2);r.state.humanWordCombo=5;
+ r.engine.handleWordSlain(t2,r.canvas,true);assert.equal(r.state.shieldCharges,0);
+});
+
+test('Ngộ Đạo hint works after two errors without revealing an AUDIO answer or crashing',()=>{
+ const r=runtime();r.state.passiveModifiers.mindHint=true;r.state.gameMode='AUDIO';
+ const target=word('CAT');target.isAudio=true;r.asteroids.asteroids.push(target);r.engine.currentTarget=target;
+ r.engine.processKey('X',r.canvas);r.engine.processKey('X',r.canvas);
+ assert.equal(r.state.totalKeystrokes,2);assert.equal(r.state.correctKeystrokes,0);assert.equal(target.typedLen,0);
 });

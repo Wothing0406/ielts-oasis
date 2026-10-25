@@ -18,7 +18,7 @@ from sqlalchemy.pool import StaticPool
 
 from database import Base, get_db
 from models import User, MeowchaUserProfile, MeowchaBattleLog, MeowchaLeaderboard
-from meowcha_integrity import MeowchaRun, MeowchaSaveSnapshot
+from meowcha_integrity import MeowchaRun, MeowchaSaveSnapshot, RunComplete
 from meowcha_routes import router, get_meowcha_user_from_token
 
 
@@ -131,6 +131,11 @@ class IntegrityTests(unittest.TestCase):
                       {'DIRECT': {'realmIdx': 10}}, {'CLOZE': {'correctKeystrokes': 10, 'totalKeystrokes': 1}}]:
             self.assertEqual(self.client.post('/api/meowcha/save-snapshots/1', json={
                 'snapshot': {'updatedAt': int(time.time() * 1000), 'modes': modes}}).status_code, 422)
+
+    def test_legitimate_critical_and_combo_build_fits_score_ceiling(self):
+        result = RunComplete(run_id=uuid4(), score=2_000_000, words_slain=100,
+            realm_idx=4, active_ms=120_000, correct_keystrokes=2000, total_keystrokes=2000)
+        self.assertEqual(result.score, 2_000_000)
 
     def test_additive_migration_is_repeatable_and_preserves_legacy_rows(self):
         sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'migrations'))

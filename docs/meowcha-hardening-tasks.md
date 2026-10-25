@@ -31,10 +31,24 @@ but must not be ancestors of the recovered game commits or uploaded backup.
 The last vocabulary-only commit before the recent game edits is `b5aa5ce`;
 the earlier response's `e96608e` reference was incorrect.
 
-## Production Verification & Results
+## Đợt hoàn thiện hai prompt — 25/10/2026
 
-- **Frontend Engine Unit Tests:** 22/22 passed (0.15s) via `npm run test:meowcha`.
-- **Backend Integrity & Security Tests:** 9/9 passed (0.75s) via `test_meowcha_integrity.py`.
-- **Next.js Production Build & Lint:** `Compiled successfully` with static prerendering on `/games/meowcha` (138 B / 87.4 kB).
-- **Art Direction & Assets:** 100% vector placeholders replaced with authored Xianxia game art; zero 404s on all 98 audio, sprite, map and SVG endpoints.
-- **Git Repository & Backup:** Working tree clean; pushed to `game/meowcha-cultivation` and backup branch `backup/meowcha-cultivation-verified-20261025`.
+Theo dõi riêng trong [docs/prompts/meowcha/README.md](prompts/meowcha/README.md).
+Bản trước đã dùng lại một số asset và bổ sung SVG; nhận định cũ “100% vector
+placeholders replaced” không chính xác và được thay bằng phạm vi thực tế dưới đây.
+
+- 35/35 ca kiểm thử engine/audio đạt. Bao gồm context gián đoạn, mute, hàng đợi
+  20 voice, cơ duyên hết cấp, kỹ năng thật, bạo kích Tu Vi và thống kê tự gõ.
+- 10/10 ca kiểm thử API dữ liệu đạt với cơ sở dữ liệu thử nghiệm.
+- Next.js build thành công, có cảnh báo sẵn có ngoài phạm vi thay đổi.
+- Trình duyệt thật: 20 từ trảm qua TypingEngine, 20 voice hoàn tất, 1 lần dùng
+  giọng dự phòng, không voice thất bại, BGM còn chạy.
+- Đã thấy ba thẻ cơ duyên dùng icon pixel; chọn Kim Đan, tải lại vẫn giữ cấp I,
+  kích hoạt hồi 8 HP và hiển thị hồi chiêu/progress từ 35 giây.
+- Tạo mới giấy tiên và atlas tám icon pixel; giữ bốn sprite nguyên tố có chất
+  lượng tốt. SVG chức năng và một phần trang trí khung vẫn được giữ.
+- PC ẩn bàn phím, kể cả máy Windows cảm ứng; sửa khung trận bị cuộn lệch.
+- Kiểm tra cảm ứng bằng fixture và nhiều kích thước; chưa kiểm tra máy iOS hoặc
+  Android thật. Trạng thái âm thanh không chứng minh chất lượng loa của thiết bị.
+
+Git/deploy của đợt này được cập nhật trong tài liệu prompt sau khi xác minh xong.

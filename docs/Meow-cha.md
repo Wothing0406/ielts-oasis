@@ -1,6 +1,10 @@
 # MEOW-CHA TRÀ ĐẠO — gameplay và kiến trúc hiện tại
 
-Phiên bản tài nguyên: `12.0` (Production Release). Nhánh làm việc: `game/meowcha-cultivation`.
+Phiên bản tài nguyên: `12.3`. Nhánh làm việc: `game/meowcha-cultivation`.
+
+Đợt hoàn thiện đồ họa/âm thanh và cơ duyên ngày 25/10/2026 được chia task,
+lưu nguyên văn hai brief và ghi kết quả tại
+[docs/prompts/meowcha/README.md](prompts/meowcha/README.md).
 
 ## Engine thực thi
 
