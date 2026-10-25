@@ -36,8 +36,23 @@ Tiếp tục bảo vệ âm thanh, điểm và bản lưu. Nhánh `game/meowcha-
   Sai phím, khiên, khiên vỡ, đá rơi và hurt có sự kiện riêng; sau va chạm HP 500→492.
 - [x] Build cuối đạt (các warning cũ ngoài game vẫn còn), 28 script JS qua syntax,
   diff sạch, skill qua quick_validate; cập nhật bộ nhớ và prompt raster nguyên văn.
-- [ ] Commit/push nhánh game, tạo nhánh backup, sao lưu và sửa các dòng placeholder
-  trên Linux; triển khai, kiểm tra tài sản public, API, số liệu và trạng thái dịch vụ.
+- [x] Commit/push nhánh game: code `2e8b8d6`, chỉnh label/control cuối `1cc6e64`.
+  Backup trước sửa `codex/backup-meowcha-before-14-1-20261025`; backup bản hoàn
+  thiện `codex/backup-meowcha-complete-20261025` đi cùng commit báo cáo này.
+- [x] Linux build web thành công, nạp lại backend; cả hai healthy. Sửa 75 dòng DB,
+  kiểm tra còn 0 placeholder; chạy lại script sửa được 0 dòng. File gốc lưu tại
+  `/home/quang/meowcha-backups/14.1-20261025/meanings-before.json` (quyền 600),
+  Docker image trước sửa `ielts-oasis-web:before-meowcha-14-1-20261025` được giữ.
+- [x] Đối chiếu sau sửa: 4.981 dòng vocab, 5 dòng bảng cũ, 8 run, 3 battle log,
+  1 cloud snapshot; các số bản ghi được giữ. Ba MP3 runtime chưa theo dõi trên
+  Linux được giữ nguyên, không đưa vào Git.
+- [x] HTML/CSS/JS/hai PNG trên web trả 200. API thật trả SINGLE/adjective/A2 với
+  nghĩa “đơn lẻ, chỉ một; độc thân”; bảng LEGACY còn 5 kết quả. Bundle trang cha
+  `.next/static/chunks/app/games/meowcha/page-abe779d66e50ac5b.js` chứa iframe
+  `?v=14.1`. Trang cha có bước xác minh phía client nên không suy ra phiên bản
+  iframe chỉ từ HTML ban đầu; không vượt bước xác minh đó.
+- [x] Browser public: sảnh 14.1 có kiếm/mộc bài/khung stat mới; tìm SINGLE trong
+  kho hiển thị nghĩa cụ thể. Ảnh production được lưu cùng bằng chứng cục bộ.
 
 ## Dữ liệu và khôi phục
 
