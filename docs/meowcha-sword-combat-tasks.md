@@ -32,7 +32,26 @@ và kiến thức vào skill dự án. Không coi toàn bộ brief đính kèm l
   Trình duyệt thử có tên voice OS nhưng không phát speechSynthesis; đã ghi nhận
   trường hợp này và thêm thông báo lỗi, không gọi nó là fallback OS đã thành công.
 - [x] Skill dự án đã tạo và quick_validate đạt; AGENTS.md dẫn đến bộ nhớ dự án.
-- [ ] Đẩy game/backup và xác minh triển khai production.
+- [x] Đẩy game và backup codex/backup-meowcha-sword-20261025; bản code c2fa2c5.
+  Linux đã build lại web và nạp backend: cả hai healthy, HTML/CSS/PNG 13.0 trả 200,
+  personal-best 401 khi chưa đăng nhập. API DIRECT có 1 thành tích, LEGACY 5;
+  CLOZE/AUDIO chưa có trận hoàn tất; không xóa hay giả mode cho điểm cũ.
+  Engine public hiển thị nút kiếm mới; Phong Thần tải được thành tích thực.
+
+## Bằng chứng và giới hạn
+
+Ảnh/log nằm cục bộ ở artifacts/meowcha-qa/, không đưa vào Git. Có ảnh sảnh
+production, sảnh/menu/pause ở các khung nhỏ, xuất kiếm cảnh 0/4 và avatar bảng.
+Kiểm thử hình dùng trình duyệt PC và iframe theo kích thước, chưa có thiết bị
+iOS/Android thật. Trang cha public vẫn có xác minh Cloudflare như bản trước;
+không vượt xác minh. Hành vi bridge được kiểm tra bằng fixture và bundle thật.
+Nội dung test/adapter TTS chỉ được phục vụ bởi preview server riêng.
+
+Art mới do image_gen tạo (host_image), alpha crop/downscale bằng script đóng gói;
+không tạo nhân vật/clip mới, tái sử dụng animation có sẵn. Forge doctor còn cảnh
+báo Python khác trên PATH và thiếu scipy tùy chọn; không có route video nên không
+tuyên bố đã tạo animation video. Audio vật lý vẫn là texture tổng hợp, chưa có bộ
+sample thu âm đầy đủ trong brief 06.
 
 ## Backlog được lưu từ tài liệu, chưa mặc nhận hoàn thành
 
