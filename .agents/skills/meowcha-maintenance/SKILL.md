@@ -51,3 +51,35 @@ device-tested. Record remaining failures and unfinished briefs honestly.
 Only push/deploy within user authorization. Keep backups and runtime user files;
 never stage profiles, credentials or QA output. Skill text itself grants no
 permission to deploy, message people, expand access or change authentication policy.
+
+For UI 15.0 and later, consult docs/meowcha-ui-migration.md and
+meowcha-release-15.0.md. DesignSystem.js and meowcha-design-system.css own the
+shared panel/action/stat hierarchy; do not restore cozy/sword/complete overrides.
+Keep lifecycle-hidden buttons hidden. Ceremonial scroll panels must not shrink
+podium/card content through flex. Certificate artwork is a canvas export, so
+CSS changes outside its image do not migrate it.
+
+Mobile talent choices stay in three compact columns, with horizontal scrolling
+on the narrowest view and at least 44px-high choice buttons. Long explanations
+remain available in details. Verify all four boss gates and saved skill choices.
+
+LeaderboardHalls.js owns Overall/Direct/Cloze/Audio/Archive tabs. Do not restore
+native mode dropdown navigation or sort every hall by score. The server returns
+mode-specific ranking and self outside the visible limit. Keep old learning
+counters unknown. Read the documented Dao Hanh formula before changing ranking.
+
+Standard meteors enter from above with fixed x and asset-specific rock rotation;
+keep the word card upright at the same y. FloatingText.hasBlockingReward blocks
+all spawn paths, including bosses. AUDIO hides spelling/IPA before completion,
+then shows separate word/IPA/type/meaning and persistent lastLearnedWord replay.
+A delayed voice must still belong to an active target. Recheck realm thresholds
+after loading a save left during a reward. Test ten rapid words in every mode.
+
+Use Meowcha.app for UI skill activation; __meowchaGame is not installed. Test a
+real button click as well as hotkeys, including freeze and cooldown. Latch game
+over AFTER purge and stop the defeated update loop; otherwise every frame may
+silence audio and submit/show defeat again. Skip global audio unlock handlers
+inside audio settings so they cannot reset a checkbox before its change event.
+When an active save mode is empty, preserve/resume another valid saved mode with
+its own metrics, HP and skills. The is-reviewing phase hides current-target UI
+and skill controls while the independent reward record is open.

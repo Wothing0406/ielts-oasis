@@ -56,14 +56,12 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-cozy.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-sword.css?v=14.1" />
-    <link rel="stylesheet" href="./css/meowcha-complete.css?v=14.1" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=15.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=15.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=15.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=15.0" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=15.0" />
+    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=15.0" />
   </head>
   <body>
     <div id="gameAppWrapper">
@@ -532,7 +530,7 @@
               <svg width="15" height="15" viewBox="0 0 512 512" fill="#FDE047">
                 <path d="M256 23C127.424 23 23 127.424 23 256s104.424 233 233 233 233-104.424 233-233S384.576 23 256 23zm-6.094 18.09C128.036 47.807 130.066 256 256 256c125.215 0 127.935 205.872 8.168 214.83-2.71.1-5.432.17-8.168.17-118.848 0-215-96.152-215-215 0-116.81 92.883-211.69 208.906-214.91zM256 103c22.537 0 41 18.463 41 41s-18.463 41-41 41-41-18.463-41-41 18.463-41 41-41zm0 224c-22.537 0-41 18.463-41 41s18.463 41 41 41 41-18.463 41-41-18.463-41-41-41z"/>
               </svg>
-              <span>TRÙNG TU TIÊN ĐẠO (Tẩy Tủy Trùng Tu)</span>
+              <span>TRÙNG TU TIÊN ĐẠO</span>
             </button>
 
             <!-- COMPACT STAT PLAQUES (2 Thẻ Bài Gỗ Tử Đàn Nạm Chỉ Vàng Chuẩn Cổ Phong) -->
@@ -829,8 +827,8 @@
         </div>
 
         <!-- BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD) -->
-        <div class="battle-active-skills-bar" id="battleActiveSkillsBar"></div>
         <div class="sword-altar-hud" id="swordIntentBox">
+          <div class="battle-active-skills-bar" id="battleActiveSkillsBar"></div>
 
           <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong Viền Vàng Uốn Lượn -->
           <div class="altar-ribbon-banner" id="swordAltarRibbon">
@@ -880,6 +878,7 @@
             </div>
           </div>
 
+          <details id="lastLearnedWord" class="last-learned-word" hidden></details>
           <!-- Hữu Hộ Pháp: Bộ Đếm Phù Văn + Lưỡng Nghi Trận + Bảo Phù Bạch Long -->
           <div class="altar-guardian right">
             <span class="altar-counter" id="swordTargetCounter">0/0</span>
@@ -1297,6 +1296,21 @@
       </div>
 
       <!-- ========================================================= -->
+      <!-- Kết thúc trận: the engine's existing result flow now has a real screen. -->
+      <div class="meowcha-modal-overlay" id="modalGameOver" style="display:none" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+        <div class="modal-content-box mc-game-over">
+          <div class="modal-header"><h2 id="gameOverTitle">Đạo tâm chưa tắt</h2></div>
+          <p>Thu kiếm dưỡng khí. Mỗi từ đã luyện đều là một bước tiến.</p>
+          <p id="gameOverFinalRealm"></p>
+          <div class="mc-results" id="gameOverStats"></div>
+          <div class="pause-btn-stack">
+            <button id="btnRebirth" type="button">Trở lại độ kiếp</button>
+            <button id="btnReturnLobbyGameOver" type="button">Trở về tiên môn</button>
+            <button class="mc-utility" id="btnExportCertGameOver" type="button">Xem chứng đạo</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 5. HỘP THOẠI TẠM DỪNG (PAUSE MODAL) -->
       <!-- ========================================================= -->
       <div class="meowcha-modal-overlay" id="modalPause" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
@@ -1310,6 +1324,7 @@
             <button class="btn-xianxia-seal secondary" id="btnQuitToLobby">TRỞ VỀ TIÊN MÔN</button>
           </div>
           <div id="typingPracticeStats"></div>
+          <div class="mc-utility-bar"><button type="button" class="mc-utility" id="btnAudioSettings">Cài đặt tiên nhạc</button></div>
         </div>
       </div>
       <!-- ========================================================= -->
@@ -1879,41 +1894,57 @@
         </div>
       </div>
 
+      <div class="meowcha-modal-overlay" id="modalAudioSettings" style="display:none" role="dialog" aria-modal="true" aria-labelledby="audioSettingsTitle">
+        <div class="modal-content-box">
+          <div class="modal-header"><h2 id="audioSettingsTitle">Tiên nhạc</h2><button class="btn-modal-close" id="btnCloseAudioSettings" aria-label="Đóng cài đặt âm thanh">×</button></div>
+          <label class="mc-audio-switch"><input type="checkbox" id="audioMasterEnabled"> Bật nhạc, hiệu ứng và phát âm</label>
+          <div class="mc-audio-channels">
+            <p><strong>Nhạc nền</strong> • Giai điệu tu luyện xuyên suốt trận.</p>
+            <p><strong>Hiệu ứng</strong> • Kiếm, gõ sai, khiên và ma thạch có âm riêng.</p>
+            <p><strong>Phát âm</strong> • Đọc từ sau khi trảm; Tab hoặc Thính Âm để nghe lại.</p>
+          </div>
+          <p id="audioSettingsStatus" role="status"></p>
+          <button id="btnAudioRecover" class="btn-xianxia-seal" type="button">Khôi phục âm thanh</button>
+        </div>
+      </div>
+
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/data/RealmsData.js?v=14.1"></script>
-    <script src="./js/data/MeaningCorrections.js?v=14.1"></script>
-    <script src="./js/core/LearningText.js?v=14.1"></script>
-    <script src="./js/data/WordDecks.js?v=14.1"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=14.1"></script>
-    <script src="./js/data/TalentsData.js?v=14.1"></script>
-    <script src="./js/data/SpeechesData.js?v=14.1"></script>
+    <script src="./js/data/RealmsData.js?v=15.0"></script>
+    <script src="./js/data/MeaningCorrections.js?v=15.0"></script>
+    <script src="./js/core/LearningText.js?v=15.0"></script>
+    <script src="./js/data/WordDecks.js?v=15.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=15.0"></script>
+    <script src="./js/data/TalentsData.js?v=15.0"></script>
+    <script src="./js/data/SpeechesData.js?v=15.0"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=14.1"></script>
-    <script src="./js/core/AudioManager.js?v=14.1"></script>
-    <script src="./js/core/SaveSystem.js?v=14.1"></script>
-    <script src="./js/core/GameState.js?v=14.1"></script>
-    <script src="./js/core/BattleLayout.js?v=14.1"></script>
-    <script src="./js/core/SpriteAnimator.js?v=14.1"></script>
+    <script src="./js/ui/ArtIcons.js?v=15.0"></script>
+    <script src="./js/ui/DesignSystem.js?v=15.0"></script>
+    <script src="./js/core/AudioManager.js?v=15.0"></script>
+    <script src="./js/core/SaveSystem.js?v=15.0"></script>
+    <script src="./js/core/GameState.js?v=15.0"></script>
+    <script src="./js/core/BattleLayout.js?v=15.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=15.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=14.1"></script>
-    <script src="./js/effects/RealmVFX.js?v=14.1"></script>
-    <script src="./js/effects/FloatingText.js?v=14.1"></script>
+    <script src="./js/effects/ParticleEngine.js?v=15.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=15.0"></script>
+    <script src="./js/effects/FloatingText.js?v=15.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=14.1"></script>
-    <script src="./js/entities/AsteroidManager.js?v=14.1"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=14.1"></script>
+    <script src="./js/entities/CatCultivator.js?v=15.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=15.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=15.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=14.1"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=14.1"></script>
+    <script src="./js/combat/TypingEngine.js?v=15.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=15.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=14.1"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=14.1"></script>
-    <script src="./js/ui/UnityBridge.js?v=14.1"></script>
-    <script src="./js/core/VocabLoader.js?v=14.1"></script>
-    <script src="./js/ui/UIManager.js?v=14.1"></script>
+    <script src="./js/ui/IPAToast.js?v=15.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=15.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=15.0"></script>
+    <script src="./js/core/VocabLoader.js?v=15.0"></script>
+    <script src="./js/ui/UIManager.js?v=15.0"></script>
+    <script src="./js/ui/LeaderboardHalls.js?v=15.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=14.1"></script>
-    <script src="./js/main.js?v=14.1"></script>
+    <script src="./js/core/DeviceDetector.js?v=15.0"></script>
+    <script src="./js/main.js?v=15.0"></script>
   </body>
 </html>

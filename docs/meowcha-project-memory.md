@@ -60,8 +60,8 @@
   chống gian lận hoàn chỉnh, không dùng ngôn ngữ “cheat-proof”.
 - Track nhạc và SFX vật lý hiện dùng tổng hợp Web Audio. Không được gọi đó là bộ
   sample nhạc cụ/foley thu âm đã hoàn thiện. Brief 06 là hướng nâng cấp tiếp.
-- Tổng Đạo chuẩn hóa, số đo Nhất Ngộ/Nhất Thính và auth gate toàn bộ vòng đời
-  phiên nằm trong brief 05/07; chỉ đánh dấu hoàn thành khi đã có code và test thực.
+- Tổng Đạo và số đo Nhất Ngộ/Nhất Thính được triển khai trong đợt 15.0, theo
+  brief 14/15. Auth gate toàn bộ vòng đời phiên trong brief 07 vẫn là phạm vi riêng.
 - Không vượt Cloudflare để kiểm tra. Ghi rõ kiểm tra engine public hay trang cha
   bằng fixture; không đánh đồng hai phạm vi.
 
@@ -81,3 +81,52 @@
 - [Bản sửa 12.4](meowcha-production-fixes-12.4.md),
   [đợt kiếm bài/chiến đấu](meowcha-sword-combat-tasks.md),
   [hoàn thiện nghĩa/kiếm khí/UI 14.1](meowcha-completion-14.1.md).
+
+## Hệ UI và nhịp học 15.0
+
+- [Kế hoạch brief 13–15](meowcha-ui-migration.md),
+  [bản ghi triển khai/kiểm chứng](meowcha-release-15.0.md).
+- `js/ui/DesignSystem.js` gắn vai trò panel/hành động lên node thật; theme chung
+  ở `css/meowcha-design-system.css`. Đã thay ba lớp cozy/sword/complete cũ.
+  Không dùng `display:flex!important` để làm hiện lại node đang `display:none`.
+- Kiếm là CTA chính; mộc bài là điều hướng/chọn; chip cho tiện ích; ấn son cho
+  trùng tu/xóa/xác nhận nguy hiểm. Stat là icon/nhãn/giá trị trong cùng nhóm giấy,
+  không trở lại sáu card lớn ở Định Tâm. Modal cần `display:block` để flex không
+  ép bục top 3 hoặc nội dung thành chiều cao 0. Chứng đạo là canvas, phải sửa
+  renderer và ảnh xuất, không chỉ CSS ngoài ảnh.
+- Mobile nâng cấp giữ ba thẻ ngang; 320px được cuộn ngang trong lưới. Nút chọn
+  cao tối thiểu 44px, mô tả dài trong Chi tiết. Mỗi offer nhận đúng một lựa chọn.
+- Nền dọc là bản tái bố cục riêng `bg_study_sanctuary_portrait.webp`;
+  `getSceneFrame` giữ vùng chùa/bệ, bleed 6px. Nền ngang cũ vẫn dùng trên PC.
+- Bốn đá thường có vx=0, x cố định, vào từ trên bằng pha nhập trận rồi rơi.
+  Sprite băng/hư không xoay -45°, hỏa/huyết lôi +45° để đuôi hướng lên; chỉ
+  xoay rock, thẻ chữ giữ thẳng và đi cùng y. Boss có đường bay riêng.
+- `FloatingText.hasBlockingReward()` chặn mọi đường sinh từ/boss. Thời gian đọc
+  mặc định DIRECT 2s, CLOZE 2.8s, AUDIO 3.6s; thiên phú giải nghĩa cộng thêm thời
+  gian. Đồng hồ thiên kiếp không chạy trong khoảng đọc bắt buộc. Kiểm tra lại
+  ngưỡng cảnh giới sau load, kể cả đã thoát trong khoảng đọc. Không giữ callback
+  sinh từ có thể bỏ qua khóa này. Tránh voice trễ của mục tiêu đã bị xóa.
+- AUDIO giấu từ/IPA trước đáp án. Sau trảm: từ, IPA riêng, từ loại, nghĩa trên
+  thẻ tại chỗ; `lastLearnedWord` là record DOM riêng có nghe lại, không bị mục
+  tiêu mới ghi đè. Không phát hint chữ trong AUDIO.
+- `LeaderboardHalls.js` điều khiển Tổng Đạo / DIRECT / CLOZE / AUDIO / Lưu Trữ.
+  Không dùng select làm điều hướng chính. Mỗi ngọc bài đổi top 3, cột, dòng,
+  mô tả, accent và self; mặc định không hỗ trợ. `/api/meowcha/halls` trả self
+  theo user ID kể cả ngoài top 25. `/leaderboard` cũ còn cho tương thích/Lưu Trữ.
+- Nhất Ngộ/Nhất Thính = từ hoàn tất không sai/hint/hỗ trợ (AUDIO thêm không nghe
+  lại) / tổng từ đã xử lý, kể cả đá rơi. Độ chính xác Ngộ/Thính = tỷ lệ phím đúng
+  của mode đó. Đếm nghe lại trước đáp án; nghe lại record đã học là ôn riêng.
+  `learningMetricsVersion=2`; ván cũ không được bịa số đếm mới. Hint làm ván có hỗ trợ.
+- Đạo Hạnh: DIRECT = min(WPM/120,1) × accuracy; CLOZE/AUDIO =
+  0.7 × accuracy + 0.3 × first-success-rate. Lấy mức tốt nhất mỗi mode, cộng
+  tối đa 300. Mode thiếu first-rate chưa đóng góp; Tổng Tu Vi cộng run ID duy nhất.
+  Cùng deck/nhóm hỗ trợ. Đây vẫn là bảng luyện tập kiểm tra hợp lý, chưa server replay.
+- Profile/kỷ lục phải lấy record đúng tài khoản; không mượn global guest high score.
+  Main sở hữu việc nộp kết quả game-over; UI chỉ hiển thị. HUD cập nhật 10 lần/s
+  trong trận, không parse lại menu sảnh theo mỗi khung hình.
+
+- Chốt game-over phải được giữ sau purge (purge chuẩn bị run sau); dừng update
+  trận thua, không lặp âm thua hay nộp điểm mỗi frame. Nút kỹ năng dùng Meowcha.app,
+  không dùng __meowchaGame không tồn tại. Stat thấp 320px dùng hàng gọn, không
+  bẻ WPM thành từng chữ. Pha is-reviewing ẩn đàn mục tiêu và bar kỹ năng để
+  chúng không đè lên thẻ thưởng; record học vẫn giữ riêng.

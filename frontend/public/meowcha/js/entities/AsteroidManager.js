@@ -4,6 +4,7 @@
  * lõi đá nứt rực sáng và từng cổ phù khắc kim phát quang theo nhịp gõ kiếm đạo.
  */
 (function(root) {
+  const SPRITE_ROTATION={ice:-Math.PI/4,void:-Math.PI/4,fire:Math.PI/4,thunder:Math.PI/4};
   class AsteroidManager {
     constructor(assets) {
       this.assets = assets || {};
@@ -195,14 +196,14 @@
 
       // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
       const field = (root.Meowcha && root.Meowcha.battleLayout) || {};
+      const entryTargetY=Math.max((field.hudBottom||76)+28,Math.min((field.hudBottom||76)+70,(field.bottomThreshold||canvasWidth)-36));
       // The word card, rock, projectile and reward must share the same visible position.
-      const spawnY = (field.hudBottom || 76) + 80;
+      const spawnY = -baseRadius-80;
       // Keep the typing window comparable when the keyboard reduces travel distance.
-      const fieldScale = field.bottomThreshold ? Math.max(.08, Math.min(1.5, (field.bottomThreshold - spawnY) / 420)) : 1;
-      const lateralDrift = (Math.random() - 0.5) * 0.18;
+      const fieldScale = field.bottomThreshold ? Math.max(.015, Math.min(1.5, (field.bottomThreshold-entryTargetY) / 420)) : 1;
       const vy = baseSpeed * fieldScale;
-      const vx = lateralDrift * fieldScale;
-      const fallAngle = Math.atan2(vy, vx);
+      const vx = 0;
+      const fallAngle = Math.PI/2;
 
       // Tạo hình dạng đá gồ ghề (12 đỉnh góc đa giác tự nhiên)
       const craggyPoints = [];
@@ -253,6 +254,8 @@
         trailColors: trailColors,
         x: spawnX,
         y: spawnY,
+        entering:true,
+        entryTargetY,
         vx: vx,
         vy: vy,
         fallAngle: fallAngle,
@@ -265,11 +268,8 @@
         typedLen: 0,
         wobbleSeed: Math.random() * 100,
         wobbleSpeed: 1.2 + Math.random() * 0.6,
-        // Chuẩn xác góc xoay dọc thẳng đứng theo đúng mẫu đạo hữu đã duyệt:
-        // Ice và Void: xoay fallAngle - 3*PI/4 (tương đương -45° khi rơi thẳng 90°)
-        // Fire và Thunder: xoay fallAngle - PI/4
-        rot: (asteroidType === "ice" || asteroidType === "void") ? (fallAngle - (3 * Math.PI) / 4) : (fallAngle - Math.PI / 4),
-        rotSpeed: (Math.random() - 0.5) * 0.08,
+        rot:SPRITE_ROTATION[asteroidType]||0,
+        rotSpeed:0,
         hitReaction: 0,
         slowTimer: 0,
         slowMult: 1.0,
@@ -310,38 +310,17 @@
           continue;
         }
 
-        ast.x += ast.vx * 60 * dt * statusSpeedMult;
+        ast.vx=0;
         // Khi bị sấm đánh (thiên kiếp sét): Ma thạch bị lôi đình thúc đẩy, tốc độ rơi tăng vọt (+45%) tạo áp lực thử thách
         const gravMult = isLightningHazard ? 1.45 : 1.0;
-        ast.y += ast.vy * 60 * dt * gravMult * statusSpeedMult;
+        if(ast.entering&&ast.y<ast.entryTargetY){
+          ast.y=Math.min(ast.entryTargetY,ast.y+320*dt*statusSpeedMult);
+          ast.entering=ast.y<ast.entryTargetY;
+        }else {ast.entering=false;ast.y += ast.vy * 60 * dt * gravMult * statusSpeedMult;}
         ast.vy += dt * 0.002; // Gia tốc vi mô cực êm
         // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
-        ast.fallAngle = Math.atan2(ast.vy, ast.vx);
-        const wobble = Math.sin(this.time * 2.5 + ast.wobbleSeed) * 0.03;
-        if (ast.asteroidType === "ice" || ast.asteroidType === "void") {
-          ast.rot = ast.fallAngle - (3 * Math.PI) / 4 + wobble;
-        } else {
-          ast.rot = ast.fallAngle - Math.PI / 4 + wobble;
-        }
-
-        // Giữ ma thạch và toàn bộ từ vựng luôn nằm trọn trong chiến trường, không bao giờ bay tràn mép
-        const isMobileScreen = cWidth <= 600;
-        const charW = isMobileScreen ? 15 : 20;
-        const halfWordW = ((ast.word && ast.word.length) ? ast.word.length : 6) * charW / 2;
-        const safeMargin = Math.max((ast.radius || 46) + 24, halfWordW + 36);
-        let effectiveLeft = safeMargin;
-        let effectiveRight = cWidth - safeMargin;
-        if (!isMobileScreen && ast.y < 108) {
-          effectiveLeft = Math.max(safeMargin, 280);
-          effectiveRight = Math.min(cWidth - safeMargin, cWidth - 300);
-        }
-        if (ast.x < effectiveLeft) {
-          ast.x = effectiveLeft;
-          ast.vx = Math.abs(ast.vx);
-        } else if (ast.x > effectiveRight) {
-          ast.x = effectiveRight;
-          ast.vx = -Math.abs(ast.vx);
-        }
+        ast.fallAngle = Math.PI/2;
+        ast.rot=SPRITE_ROTATION[ast.asteroidType]||0;
 
         if (ast.typoFlash > 0) ast.typoFlash = Math.max(0, ast.typoFlash - dt);
         if (ast.hitReaction > 0) {
@@ -396,7 +375,7 @@
       const paperH=58+rows*(fontSize+2)+detailLines.length*16;
       const battle=M.getBattleLayout?M.getBattleLayout(ctx.canvas):{};
       const top=(battle.hudBottom||76)+6, bottom=Math.max(top+paperH,battle.bottomThreshold||ctx.canvas.height-160);
-      const cardY=Math.max(top+paperH/2,Math.min(bottom-paperH/2,ast.y));
+      const cardY=ast.y;
       return {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap:Math.min(small?15:18,paperW*.76/cols),detailLines};
     }
     draw(ctx) {
@@ -404,14 +383,19 @@
         ctx.save();
         ctx.imageSmoothingEnabled=false; ctx.shadowBlur=0;
         const width=ctx.canvas.width, small=width<600;
-        const x=Math.max(90,Math.min(width-90,ast.x+Math.sin(this.time*ast.wobbleSpeed+ast.wobbleSeed)*3)), y=ast.y;
+        const x=ast.x, y=ast.y;
+        const field=root.Meowcha.getBattleLayout?root.Meowcha.getBattleLayout(ctx.canvas):{};
+        ctx.beginPath();ctx.rect(0,(field.hudBottom||76)+6,width,ctx.canvas.height);ctx.clip();
         const rock=this.assets['prop_asteroid_'+(ast.asteroidType||'void')];
         const size=ast.isBoss?168:(small?122:148);
         for(const p of ast.trail||[]) {
           ctx.globalAlpha=Math.max(0,p.alpha*.55);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);
         }
         ctx.globalAlpha=1;
-        if(rock&&rock.loaded) ctx.drawImage(rock.img,Math.round(x-size/2),Math.round(y-size/2-12),size,size);
+        if(rock&&rock.loaded){
+          const rotation=SPRITE_ROTATION[ast.asteroidType]||0;
+          ctx.save();ctx.translate(x,y-12);ctx.rotate(rotation);ctx.drawImage(rock.img,-size/2,-size/2,size,size);ctx.restore();
+        }
         const M = root.Meowcha, layout = this.cardLayout(ctx, ast);
         const {paperW,paperH,safeX,cardY,cols,rows,fontSize,gap,detailLines} = layout;
         const paper=this.assets.ivory_scroll;

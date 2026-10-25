@@ -1,21 +1,25 @@
 <!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{margin:0;background:#20332d;color:#f5e7c7;font:12px sans-serif}#tools{position:fixed;bottom:0;left:0;z-index:999;background:#20332dee;padding:4px;max-width:100%;box-sizing:border-box}button{padding:8px;margin:2px;min-height:36px}iframe{width:100vw;height:100dvh;border:0;display:block}#status{max-height:65px;overflow:auto;max-width:90vw;white-space:pre-wrap}</style>
 <div id="tools"><select id="qaSize" aria-label="Khung màn hình"><option value="1280,720">PC 1280</option><option value="390,844">Dọc 390</option><option value="320,568">Dọc 320</option><option value="844,390">Ngang 844</option></select><select id="qaRealm" aria-label="Cảnh giới kiểm thử"><option value="0">Luyện Khí</option><option value="1">Trúc Cơ</option><option value="2">Kim Đan</option><option value="3">Nguyên Anh</option><option value="4">Độ Kiếp</option></select><button id="qaAttack">Khung xuất kiếm</button><button id="qaWrong">Gõ sai</button><button id="qaImpact">Đá rơi</button><button id="qaShield">Bật khiên</button><button id="qaPause">Định Tâm</button><button id="qaAccount">Ảnh tài khoản QA</button><button id="qaVoices">Trảm thử 20 từ</button><button id="qaChoice">Thử đột phá</button><button id="qaCertificate">Kỷ lục 12.345</button><button id="qaBurst">IPA dài tại chỗ</button><button id="qaDamage">Tạo thiếu HP</button><button id="qaMobile">Mô phỏng cảm ứng</button><button id="qaHide">Ẩn công cụ</button><pre id="status">Đang nạp...</pre></div>
-<iframe id="game" src="/meowcha/index.html?v=14.1" allow="autoplay; clipboard-write" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"></iframe>
+<button id="qaShow" style="position:fixed;right:0;top:0;z-index:1000" onclick="document.getElementById('tools').style.display='block'">Công cụ QA</button>
+<iframe id="game" src="/meowcha/index.html?v=15.0" allow="autoplay; clipboard-write" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"></iframe>
 <script>
 const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
 function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
-setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,audio:g.audio.getStatus(),mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
+setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
 document.getElementById('qaSize').onchange=event=>{
  const [width,height]=event.target.value.split(',').map(Number);
  frame.style.width=width+'px';frame.style.height=height+'px';
 };
+for(const [value,label] of [['360,640','Dọc 360'],['375,667','Dọc 375'],['430,932','Dọc 430'],['768,1024','Tablet 768'],['1440,900','PC 1440']]){
+ const option=document.createElement('option');option.value=value;option.textContent=label;document.getElementById('qaSize').append(option);
+}
 document.getElementById('qaAccount').onclick=()=>{
  frame.contentWindow.localStorage.setItem('oasis_user',JSON.stringify({id:7001,username:'Tiên Hữu QA',avatar_url:'https://cdn.discordapp.com/embed/avatars/0.png'}));
  frame.contentWindow.location.reload();
 };
 document.getElementById('qaAttack').onclick=()=>{
- const g=app();g.startBattle();g.gameState.hp=g.gameState.maxHp=500;g.gameState.isPaused=false;
+ const g=app();g.startBattle();g.gameState.hp=g.gameState.maxHp=200;g.gameState.isPaused=false;
  g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.asteroids.clear();g.projectiles.clear();
  const target=g.asteroids.spawn({word:'JADE',ipa:'/dʒeɪd/',meaning:'ngọc bích'},g.canvas.width,g.gameState.realmIdx,.01,0,'ice');
  target.x=g.canvas.width*.38;target.y=g.canvas.height*.3;g.typing.currentTarget=target;
@@ -32,7 +36,7 @@ document.getElementById('qaImpact').onclick=()=>{const g=app();g.gameState.isPau
 document.getElementById('qaPause').onclick=()=>{app().ui.setPause(true);result='Định Tâm thật qua UI';};
 document.getElementById('qaVoices').onclick=async()=>{
  const g=app();if(!g||!g.typing||running)return;running=true;step=0;
- g.audio.enableSound();await g.startBattle();g.gameState.hp=g.gameState.maxHp=500;g.gameState.isGameOver=false;g.gameState.isPaused=false;g.gameState.realmIdx=0;
+ g.audio.enableSound();await g.startBattle();g.gameState.hp=g.gameState.maxHp=200;g.gameState.isGameOver=false;g.gameState.isPaused=false;g.gameState.realmIdx=0;
  g.gameState.talents.autoKill=false;g.gameState.talents.critChance=0;
  const check=g.breakthrough.checkProgress;g.breakthrough.checkProgress=()=>false;
  const vocabulary=await (await fetch('/meowcha/data/oxford_5000.json')).json();
@@ -43,7 +47,7 @@ document.getElementById('qaVoices').onclick=async()=>{
   for(const char of a.word)g.typing.processKey(char,g.canvas);step++;setTimeout(tick,1200);
  };result='Đang chạy';tick();
 };
-document.getElementById('qaChoice').onclick=()=>{const g=app();if(!g)return;g.startBattle();g.gameState.realmIdx=1;g.gameState.isPaused=false;g.gameState.isGameOver=false;g.breakthrough.triggerBreakthrough(2);result='Đang mở cơ duyên Kim Đan';};
+document.getElementById('qaChoice').onclick=()=>{const g=app();if(!g)return;g.startBattle();g.gameState.realmIdx=Math.min(3,Number(document.getElementById('qaRealm').value));g.gameState.isPaused=false;g.gameState.isGameOver=false;g.breakthrough.triggerBreakthrough(g.gameState.realmIdx+1);result='Đang mở cơ duyên cảnh '+(g.gameState.realmIdx+1);};
 document.getElementById('qaDamage').onclick=()=>{const g=app();if(!g)return;g.gameState.shieldCharges=0;g.gameState.takeDamage(8);g.ui.updateHUD();result='Đã gây 8 sát thương qua GameState';};
 document.getElementById('qaCertificate').onclick=()=>{
  const g=app();Object.assign(g.gameState,{score:12345,highScore:12345,realmIdx:2,humanWords:30,correctKeystrokes:150,totalKeystrokes:200,activeElapsedMs:60000});
@@ -58,6 +62,39 @@ document.getElementById('qaBurst').onclick=()=>{
 document.getElementById('qaMobile').onclick=()=>{const g=app(),D=frame.contentWindow.Meowcha.Device;if(!g)return;
  D.info.isDesktop=false;D.info.isMobile=true;D.info.isTablet=false;D.info.isTouchDevice=true;D.applyDOMClasses();D.setUserPrefKeyboard(true);g.vKeyboard.show();g.initCanvasSize();result='Mô phỏng layout cảm ứng (không phải thiết bị thật)';};
 function extraButton(id,label,fn){const button=document.createElement('button');button.id=id;button.textContent=label;button.onclick=fn;document.getElementById('tools').insertBefore(button,status);}
+const meteorSelect=document.createElement('select');meteorSelect.id='qaMeteorType';meteorSelect.setAttribute('aria-label','Loại thiên thạch');
+meteorSelect.innerHTML='<option value="ice">Băng</option><option value="fire">Hỏa</option><option value="void">Hư không</option><option value="thunder">Huyết lôi</option>';document.getElementById('tools').insertBefore(meteorSelect,status);
+const modeSelect=document.createElement('select');modeSelect.id='qaMode';modeSelect.setAttribute('aria-label','Pháp môn kiểm thử');modeSelect.innerHTML='<option value="DIRECT">Trực Diện</option><option value="CLOZE">Ngộ Đạo</option><option value="AUDIO">Thính Âm</option>';document.getElementById('tools').insertBefore(modeSelect,status);
+extraButton('qaMeteor','Sinh ma thạch đã chọn',()=>{
+ const g=app(),M=frame.contentWindow.Meowcha;g.gameState.resetForNewMode(modeSelect.value);g.startBattle();g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.gameState.hp=g.gameState.maxHp=200;
+ g.asteroids.clear();const type=meteorSelect.value;
+ const words={ice:['JADE','/dʒeɪd/','ngọc bích'],fire:['COURAGE','/ˈkʌrɪdʒ/','lòng can đảm'],void:['SERENITY','/səˈrenəti/','sự thanh thản'],thunder:['INCOMPREHENSIBLE','/ˌɪnkɒmprɪˈhensəbl/','không thể hiểu được']},item=words[type];
+ const target=g.asteroids.spawn({word:item[0],ipa:item[1],meaning:item[2],type:'noun'},g.canvas.width,g.gameState.realmIdx,.01,0,type);
+ g.typing.currentTarget=target;g.typing.updateSwordAltarUI(target);g.gameState.isPaused=true;
+ result='Ma thạch '+target.asteroidType+', sát thương '+target.damage+', cảnh '+g.gameState.realmIdx;
+});
+extraButton('qaEnter','Cho đá vào tầm nhìn',()=>{const g=app();g.asteroids.update(1,frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold,()=>{},g.canvas.width);result='Đá đi vào bằng update, giữ x cố định';});
+extraButton('qaComplete','Gõ trọn từ hiện tại',()=>{const g=app(),target=g.asteroids.asteroids[0];if(!target)return;g.gameState.isPaused=false;g.typing.currentTarget=target;for(const c of target.word)g.typing.processKey(c,g.canvas);g.floatingText.update(.3);g.gameState.isPaused=true;result='Hoàn tất '+target.word+' qua TypingEngine, chặn sinh: '+g.floatingText.hasBlockingReward();});
+extraButton('qaBoss','Vào boss đột phá',()=>{
+ const g=app(),M=frame.contentWindow.Meowcha,index=Math.min(3,Number(document.getElementById('qaRealm').value));
+ g.gameState.resetForNewMode('DIRECT');g.startBattle();g.gameState.realmIdx=index;g.gameState.hp=g.gameState.maxHp=200;
+ g.gameState.score=M.CULTIVATION_REALMS[index+1].minScore;g.gameState.wordsSlain=M.CULTIVATION_REALMS[index+1].minWords;
+ g.breakthrough.checkProgress(g.asteroids);result='Boss thực từ ngưỡng cảnh '+index+' → '+(index+1);
+});
+extraButton('qaBossWord','Phá một lớp boss',()=>{
+ const g=app(),boss=g.asteroids.asteroids.find(a=>a.isBoss);if(!boss){result='Không có boss';return;}
+ const word=boss.word;g.typing.currentTarget=boss;for(const char of word)g.typing.processKey(char,g.canvas);
+ result='Đã gõ '+word+', lớp còn '+Math.max(0,boss.totalShields-boss.currentShieldIdx);
+});
+extraButton('qaGameOver','Kết thúc trận',()=>{const g=app();g.startBattle();g.gameState.hp=0;g.handleGameOver();result='Kết thúc qua main.handleGameOver, có bảng: '+!!g.ui.modalGameOver;});
+extraButton('qaSaveCheck','Kiểm bản lưu hiện tại',()=>{const g=app(),id=g.gameState.activeSlotId||1,s=g.saveSystem.getSlotModeData(id,g.gameState.gameMode);result=JSON.stringify({slot:id,mode:g.gameState.gameMode,saved:s?{occupied:s.isOccupied,realm:s.realmIdx,score:s.score,hp:s.hp,skills:s.skillLevels}:null});});
+extraButton('qaEquip','Trang bị ba kỹ năng QA',()=>{const g=app();g.gameState.realmIdx=3;g.gameState.skillLevels={...g.gameState.skillLevels,WIND_SWORD_DOMAIN:1,GOLDEN_CORE_REGEN:1,NASCENT_SOUL_FREEZE:1};g.gameState.hp=180;g.ui.updateHUD();g.ui.updateActiveSkillsHUD();g.initCanvasSize();result='Ba kỹ năng có thể chạm qua UI thật';});
+extraButton('qaAssets','Kiểm tài sản năm cảnh',()=>{
+ const g=app(),missing=[];
+ for(let i=0;i<5;i++)for(const suffix of ['idle_sheet','attack_sheet','beam_sheet','projectile_sheet','hit_sheet']){const key='char_r'+i+'_'+suffix;if(!g.assets[key]||!g.assets[key].loaded)missing.push(key);}
+ for(const type of ['ice','fire','void','thunder'])if(!g.assets['prop_asteroid_'+type]?.loaded)missing.push(type);
+ result='Tài sản thiếu: '+JSON.stringify(missing);
+});
 extraButton('qaCloze','Nghĩa từ cũ / dài',()=>{
  const g=app();g.gameState.resetForNewMode('CLOZE');g.startBattle();g.asteroids.clear();
  const target=g.asteroids.spawn({word:'SINGLE',type:'adjective, noun',ipa:'/ˈsɪŋɡl/',meaning:'Từ vựng học thuật (adjective) cấp độ A2 | Từ vựng học thuật (noun)'},g.canvas.width,0,.01,0,'ice');
@@ -65,7 +102,7 @@ extraButton('qaCloze','Nghĩa từ cũ / dài',()=>{
  result='SINGLE từ bản lưu cũ → '+target.type+': '+target.meaning;
 });
 extraButton('qaLive','Đánh sống → nổ → IPA',async()=>{
- const g=app();g.gameState.resetForNewMode('DIRECT');g.startBattle();g.asteroids.clear();g.gameState.hp=g.gameState.maxHp=500;
+ const g=app();g.gameState.resetForNewMode('DIRECT');g.startBattle();g.asteroids.clear();g.gameState.hp=g.gameState.maxHp=200;
  g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.audio.enableSound();
  const target=g.asteroids.spawn({word:'JADE',ipa:'/dʒeɪd/',meaning:'ngọc bích'},g.canvas.width,g.gameState.realmIdx,.01,0,'ice');
  target.x=g.canvas.width*.38;target.y=g.canvas.height*.3;g.typing.currentTarget=target;

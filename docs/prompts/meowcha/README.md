@@ -2,6 +2,10 @@
 
 Ngày đối chiếu: 25/10/2026. Nhánh: `game/meowcha-cultivation`.
 
+Brief mới nhất: [13 — Complete UI design system](13-complete-ui-design-system.md).
+[Checklist/audit](../../meowcha-ui-migration.md). Hai attachment của brief 13
+giống hệt nhau (SHA256 được ghi trong checklist); lưu một bản nguyên văn.
+
 Đợt sửa theo ảnh mới nhất: [nghĩa từ/kiếm khí/UI 14.1](../../meowcha-completion-14.1.md).
 Prompt raster khung ngọc và mộc bài: [carved-ui-art.txt](carved-ui-art.txt).
 
@@ -102,3 +106,7 @@ Bản ghi quyết định: [bộ nhớ dự án](../../meowcha-project-memory.md
 Skill: `.agents/skills/meowcha-maintenance/SKILL.md`.
 Prompt tạo hình kiếm: [sword-command-art.txt](sword-command-art.txt).
 Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
+## Yêu cầu bổ sung 25/10
+
+- [14 — Mobile talents, AUDIO IPA, spawn flow, meteor thẳng](14-mobile-talents-audio-spawn.md).
+- [15 — Bốn Phong Thần điện, ngọc bài và thành tích riêng](15-three-mode-halls.md).

@@ -1,0 +1,148 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const base=path.join(__dirname,'../public/meowcha');
+function setup(){
+ const storage=new Map(),timers=[],box={console,performance,Date,Math,crypto:require('node:crypto').webcrypto,
+ localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)},
+ document:{getElementById:()=>null},addEventListener(){},setTimeout:(fn,ms)=>{if(ms===3500)timers.push(fn);return 1;},clearTimeout(){}};
+ box.window=box;vm.createContext(box);
+ for(const f of ['data/RealmsData.js','data/TalentsData.js','core/GameState.js','core/SaveSystem.js','core/BattleLayout.js','entities/AsteroidManager.js','combat/TypingEngine.js','combat/BreakthroughFlow.js','ui/ArtIcons.js','ui/DesignSystem.js','ui/UIManager.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
+ const M=box.Meowcha,state=new M.GameState();state.currentScene='BATTLE';
+ for(const f of ['effects/FloatingText.js','main.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
+ M.battleLayout={catX:600,catY:650,attackX:625,attackY:560,bottomThreshold:600};
+ const noop=new Proxy({}, {get:()=>()=>{}}),save=new M.SaveSystem(),manager=new M.AsteroidManager();manager.gameState=state;
+ const typing=new M.TypingEngine(state,manager,noop,noop,noop,noop,noop,null,null,save);
+ const flow=new M.BreakthroughFlow(state,noop,null);
+ return {box,M,state,noop,save,manager,typing,flow,timers};
+}
+test('all four realm gates complete their actual three-shield boss, offer once and retain the choice in a save',()=>{
+ const r=setup(),canvas={width:1200,height:800};let offers=[];
+ r.flow.onShowTalentModal=choices=>offers=choices;
+ for(let target=1;target<5;target++){
+  r.state.realmIdx=target-1;r.state.score=r.M.CULTIVATION_REALMS[target].minScore;r.state.wordsSlain=r.M.CULTIVATION_REALMS[target].minWords;
+  r.flow.onSpawnBoss=pool=>r.manager.spawnBoss(pool,canvas.width);
+  r.typing.onBossDefeated=()=>r.flow.onBossSlain(target);
+  assert.equal(r.flow.checkProgress(r.manager),true);
+  const boss=r.manager.asteroids[0];assert.equal(boss.totalShields,3);
+  for(let shield=0;shield<3;shield++){
+   const word=boss.word;r.typing.currentTarget=boss;
+   for(const key of word)r.typing.processKey(key,canvas);
+   assert.equal(boss.currentShieldIdx,shield+1);
+  }
+  assert.equal(r.manager.count,0);assert.equal(r.state.pendingBreakthrough,true);
+  assert.equal(r.timers.length,1);r.timers.pop()();
+  assert.equal(r.state.realmIdx,target);assert.equal(offers.length,3);
+  const keys=r.state.correctKeystrokes,choice=offers.find(c=>c.isSkill)||offers[0];
+  assert.equal(r.flow.selectTalent(choice),true);assert.equal(r.flow.selectTalent(offers[1]),false);
+  assert.equal(r.state.correctKeystrokes,keys);
+  r.save.saveGame(1,r.state);const snapshot=r.save.getSlotModeData(1,'DIRECT');
+  const loaded=new r.M.GameState();loaded.loadFromModeData(snapshot,'DIRECT');
+  assert.equal(loaded.realmIdx,target);assert.deepEqual({...loaded.skillLevels},{...r.state.skillLevels});
+  assert.equal(r.flow.isBossEncounterActive,false);
+ }
+});
+test('defeat actions invoke one owner callback without resetting or submitting a second empty run',()=>{
+ const r=setup();let restarted=0,returned=0;
+ const modal={style:{display:'flex'}};
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,modalGameOver:modal,audio:r.noop,
+ onRestartBattle(){restarted++;},onReturnLobby(){returned++;}});
+ const run=r.state.runId;r.state.gameMode='AUDIO';
+ assert.equal(ui.finishGameOver(true),true);assert.equal(ui.finishGameOver(true),false);
+ assert.equal(restarted,1);assert.equal(r.state.runId,run);assert.equal(r.state.gameMode,'AUDIO');
+ modal.style.display='flex';ui.finishGameOver(false);ui.finishGameOver(false);assert.equal(returned,1);
+});
+test('shared stat text keeps zero, Vietnamese and IPA literal without turning it into player HTML',()=>{
+ const r=setup();const html=r.M.ui.stat('listening','Thính âm /dʒeɪd/',0);
+ assert.match(html,/>0<\/dd>/);assert.match(html,/Thính âm/);
+ assert.doesNotMatch(r.M.ui.stat('accuracy','<img src=x>','<script>'),/<img|<script/);
+});
+
+test('four meteor types at every realm move, freeze and collide once with their scaled damage',()=>{
+ const r=setup(),baseDamage={ice:8,fire:12,void:16,thunder:22};
+ for(let realm=0;realm<5;realm++)for(const type of Object.keys(baseDamage)){
+  r.manager.clear();const meteor=r.manager.spawn({word:'JADE',meaning:'ngọc bích'},390,realm,1,0,type);
+  assert.equal(meteor.damage,baseDamage[type]+realm*2);
+  const y=meteor.y;meteor.freezeTimer=.1;r.manager.update(.05,1000,()=>assert.fail('frozen collision'),390);
+  assert.equal(meteor.y,y);meteor.freezeTimer=0;r.manager.update(.1,1000,()=>assert.fail('early collision'),390);
+  assert.ok(meteor.y>y);let hits=0;
+  meteor.y=1001;r.manager.update(.016,1000,a=>{assert.equal(a,meteor);hits++;},390);
+  r.manager.update(.016,1000,()=>hits++,390);assert.equal(hits,1);assert.equal(r.manager.count,0);
+ }
+});
+
+test('portrait framing keeps the authored temple and terrace inside every supported portrait viewport',()=>{
+ const {M}=setup();
+ for(const [w,h] of [[320,568],[360,640],[375,667],[390,844],[430,932],[768,1024]]){
+  const f=M.getSceneFrame(862,1824,w,h,true);
+  assert.ok(f.sx>=0&&f.sy>=0&&f.sx+f.sw<=862.01&&f.sy+f.sh<=1824.01);
+  assert.ok(f.sx<=100&&f.sx+f.sw>=762,'temple width');
+  assert.ok(f.sy<=540&&f.sy+f.sh>=1540,'temple and terrace height');
+  assert.ok(Math.abs(f.sw/f.sh-f.dw/f.dh)<.0001,'uniform scale');
+ }
+});
+
+test('ten fast completions in each mode cannot spawn over their reward and retain full IPA and type',()=>{
+ for(const mode of ['DIRECT','CLOZE','AUDIO']){
+  const r=setup(),canvas={width:390,height:844};r.state.gameMode=mode;
+  r.M.REALM_DECKS={0:['CAT','DOG','TEA','SUN','SKY','MOON','JADE','BOOK','TREE','WIND'].map(word=>({word,ipa:'/dʒeɪd/',type:'noun',meaning:'ngọc bích'}))};
+  const floating=new r.M.FloatingText();r.typing.floatingText=floating;
+  const app=Object.assign(Object.create(r.M.App.prototype),{gameState:r.state,canvas,asteroids:r.manager,typing:r.typing,floatingText:floating,breakthrough:r.flow,saveSystem:r.save});
+  const lifetime={DIRECT:2,CLOZE:2.8,AUDIO:3.6}[mode];
+  for(let i=0;i<10;i++){
+   app.spawnWord();assert.equal(r.manager.count,1);const target=r.manager.asteroids[0],x=target.x;
+   assert.equal(target.vx,0);assert.ok(target.y<0);r.manager.update(.1,1000,()=>{},390);assert.equal(target.x,x);
+   for(const key of target.word)r.typing.processKey(key,canvas);
+   assert.equal(r.manager.count,0);assert.equal(floating.bursts[0].ipa,'/dʒeɪd/');assert.equal(floating.bursts[0].type,'noun');
+   assert.equal(floating.bursts[0].life,lifetime);app.spawnWord();assert.equal(r.manager.count,0);
+   floating.update(lifetime-.05);app.spawnWord();assert.equal(r.manager.count,0);
+   floating.update(.06);assert.equal(floating.hasBlockingReward(),false);
+  }
+  assert.equal(r.state.learningAttempts,10);assert.equal(r.state.firstSuccesses,10);assert.equal(r.state.humanWords,10);
+ }
+});
+
+test('learning outcomes distinguish first answers, pre-answer replays, hints and meteor falls across save/load',()=>{
+ const r=setup(),canvas={width:390,height:844};r.state.gameMode='AUDIO';
+ let target=r.manager.spawn({word:'CAT'},390);r.typing.currentTarget=target;r.typing.replayCurrentAudio();
+ for(const c of target.word)r.typing.processKey(c,canvas);
+ assert.equal(r.state.replayCount,1);assert.equal(r.state.firstSuccesses,0);
+ r.state.gameMode='CLOZE';r.state.passiveModifiers.mindHint=true;
+ target=r.manager.spawn({word:'DOG'},390);r.typing.currentTarget=target;
+ r.typing.processKey('X',canvas);r.typing.processKey('X',canvas);
+ for(const c of target.word)r.typing.processKey(c,canvas);
+ assert.equal(r.state.hintsUsed,1);assert.equal(r.state.assisted,true);assert.equal(r.state.firstSuccesses,0);
+ r.state.recordLearningOutcome({word:'MISS'},false);assert.equal(r.state.learningAttempts,3);
+ r.save.saveGame(1,r.state);const loaded=new r.M.GameState();loaded.loadFromModeData(r.save.getSlotModeData(1,'CLOZE'),'CLOZE');
+ assert.equal(loaded.learningAttempts,3);assert.equal(loaded.replayCount,1);assert.equal(loaded.hintsUsed,1);
+ loaded.resetForNewMode('AUDIO');assert.equal(loaded.learningAttempts,0);assert.equal(loaded.replayCount,0);
+});
+
+test('resuming after a completed word still opens its saved realm gate after the reward clears',()=>{
+ const r=setup(),canvas={width:390,height:844},floating=new r.M.FloatingText();
+ r.state.score=2000;r.state.wordsSlain=15;r.flow.onSpawnBoss=pool=>r.manager.spawnBoss(pool,390);
+ const app=Object.assign(Object.create(r.M.App.prototype),{gameState:r.state,canvas,asteroids:r.manager,typing:r.typing,floatingText:floating,breakthrough:r.flow,saveSystem:r.save});
+ floating.addInSituBurst(195,200,{word:'JADE',gameMode:'DIRECT'});app.spawnWord();assert.equal(r.manager.count,0);
+ floating.update(2.1);app.spawnWord();assert.equal(r.manager.asteroids[0].isBoss,true);
+});
+
+test('an empty newly selected mode cannot hide another saved journey at startup',()=>{
+ const r=setup();r.state.score=2000;r.state.wordsSlain=15;r.state.realmIdx=1;r.state.hp=38;r.state.maxHp=50;
+ r.state.skillLevels.WIND_SWORD_DOMAIN=1;r.state.correctKeystrokes=55;r.state.totalKeystrokes=60;
+ r.save.saveGame(1,r.state);r.state.resetForNewMode('AUDIO');r.save.saveGame(1,r.state);
+ const resumed=r.save.hasActiveSave();assert.equal(resumed.activeMode,'DIRECT');
+ const loaded=new r.M.GameState();loaded.loadFromSlot(resumed);
+ assert.equal(loaded.hp,38);assert.equal(loaded.realmIdx,1);assert.equal(loaded.skillLevels.WIND_SWORD_DOMAIN,1);
+ assert.equal(loaded.correctKeystrokes,55);assert.equal(loaded.gameMode,'DIRECT');
+});
+
+test('game over remains latched through the real purge, submits and sounds once, then permits a future run',()=>{
+ const r=setup(),calls={submitted:0,reset:0,shown:0,silenced:0},floating=new r.M.FloatingText();r.state.score=100;
+ const app=Object.assign(Object.create(r.M.App.prototype),{gameState:r.state,canvas:{width:390,height:844},asteroids:r.manager,
+  projectiles:r.noop,particles:r.noop,floatingText:floating,typing:r.typing,breakthrough:r.flow,realmVFX:r.noop,unityBridge:r.noop,
+  saveSystem:{resetActiveSave(){calls.reset++;}},audio:{silenceAll(){calls.silenced++;},play(){}},
+  ui:{autoSubmitScoreToPantheon(){calls.submitted++;},updateHUD(){},showGameOverModal(){calls.shown++;}}});
+ app.handleGameOver();app.handleGameOver();app.handleGameOver();
+ assert.deepEqual(calls,{submitted:1,reset:1,shown:1,silenced:1});assert.equal(r.state.isPaused,true);
+ app.purgeAllBattleState();r.state.resetForNewMode('DIRECT');r.state.score=100;app.handleGameOver();assert.equal(calls.shown,2);
+});

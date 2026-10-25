@@ -7,6 +7,7 @@ SOURCE = Path.home() / '.codex/generated_images/01a16e8b-2b14-76c3-8022-5ac4ae49
 for source, name, width in [
     ('exec-b087160a-81dc-4acd-aa32-af23bfff5838.png', 'carved-plaque-v1.png', 1000),
     ('exec-55a993a7-e85b-4d6e-81ba-46bf8713014e.png', 'jade-frame-v1.png', 640),
+    ('exec-d2e1dbbc-5f93-4b35-a581-422d9405d44f.png', 'crimson-seal-v1.png', 900),
 ]:
     image = Image.open(SOURCE / source).convert('RGBA')
     image = image.crop(image.getchannel('A').getbbox())
@@ -14,3 +15,9 @@ for source, name, width in [
     target = ROOT / 'frontend/public/meowcha/assets/ui' / name
     image.save(target, optimize=True)
     print(name, image.size, target.stat().st_size)
+
+# Portrait scene is an authored recomposition, not a crop of the landscape plate.
+image = Image.open(SOURCE / 'exec-6dc7e913-080f-47ce-8d85-d87b2e65b9b1.png').convert('RGB')
+target = ROOT / 'frontend/public/meowcha/sprites/maps/bg_study_sanctuary_portrait.webp'
+image.save(target, quality=90, method=6)
+print(target.name, image.size, target.stat().st_size)

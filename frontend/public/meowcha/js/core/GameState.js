@@ -111,6 +111,7 @@
     }
 
     resetRunMetrics() {
+      this.learningMetricsVersion=2;this.learningAttempts=0;this.firstSuccesses=0;this.hintsUsed=0;this.replayCount=0;
       this.runId = (root.crypto && root.crypto.randomUUID) ? root.crypto.randomUUID() :
         'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
           const r = Math.floor(Math.random() * 16);
@@ -156,13 +157,15 @@
       const fields = ['runId', 'activeElapsedMs', 'correctKeystrokes', 'totalKeystrokes',
         'assistedKeystrokes', 'assistedWords', 'humanWords', 'humanWordCombo', 'assisted',
         'runFinished', 'baselineScore', 'baselineWords', 'maxCombo', 'typoCount', 'activeDeckId',
-        'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers'];
+        'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers',
+        'learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount'];
       return Object.fromEntries(fields.map(k => [k, this[k]]));
     }
 
     restoreRunMetrics(data) {
       this.resetRunMetrics();
       if (data && data.runId && !data.runFinished) {
+        this.learningMetricsVersion=data.learningMetricsVersion===2?2:1;
         for (const key of Object.keys(this.getRunMetrics())) {
           if (data[key] !== undefined) this[key] = data[key];
         }
@@ -179,6 +182,11 @@
       this.assisted = true;
       this.assistedKeystrokes += count;
       if (target) target.assistedKeystrokes = (target.assistedKeystrokes || 0) + count;
+    }
+
+    recordLearningOutcome(target,completed) {
+      this.learningAttempts++;
+      if(completed&&!target.hadTypo&&!target.hintsUsed&&!target.replayCount&&!target.assistedKeystrokes)this.firstSuccesses++;
     }
 
     triggerStun(durationMs = 160) {
@@ -381,7 +389,8 @@
           const target = engine.currentTarget || engine.asteroids.asteroids[0];
           if (target) {
             target.freezeTimer = Math.max(target.freezeTimer || 0, freeze);
-            if (engine.playWordAudio) engine.playWordAudio(target);
+            if (engine.replayCurrentAudio) engine.replayCurrentAudio();
+            else if (engine.playWordAudio) engine.playWordAudio(target);
           }
         }
         if (audioManager) audioManager.play("lightning");

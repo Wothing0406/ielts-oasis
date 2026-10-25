@@ -200,7 +200,10 @@
         realm_idx: state.realmIdx, active_ms: Math.round(state.activeElapsedMs),
         correct_keystrokes: state.correctKeystrokes, total_keystrokes: state.totalKeystrokes,
         assisted_keystrokes: state.assistedKeystrokes, assisted_words: state.assistedWords,
-        assisted: state.assisted, is_victory: state.hp > 0 };
+        assisted: state.assisted, is_victory: state.hp > 0,
+        metrics_version:state.learningMetricsVersion||1,learning_attempts:state.learningAttempts||0,
+        first_successes:state.firstSuccesses||0,hints_used:state.hintsUsed||0,
+        replay_count:state.replayCount||0,max_combo:state.maxCombo||0 };
       if (!payload.words_slain) return false;
       const pending = this.getPendingRuns();
       pending[payload.run_id] = { payload, game_mode: state.gameMode, deck_id: state.activeDeckId };
@@ -566,6 +569,16 @@
             }
           }
           return null;
+        }
+        // The active mode may be empty after switching modes; retain another valid journey.
+        if(slot.modes){
+          const order=[slot.activeMode,'DIRECT','CLOZE','AUDIO'].filter((m,i,a)=>m&&a.indexOf(m)===i);
+          for(const name of order){
+            const candidate=slot.modes[name];
+            if(candidate&&candidate.isOccupied&&candidate.hp>0&&(candidate.score>0||candidate.realmIdx>0||candidate.words>0)){
+              return Object.assign({},slot,candidate,{activeMode:name,mode:name});
+            }
+          }
         }
         if (slot.isOccupied && (slot.hp > 0) && (slot.score > 0 || slot.realmIdx > 0 || slot.words > 0)) {
           return slot;

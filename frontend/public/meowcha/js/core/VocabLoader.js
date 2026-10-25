@@ -8,7 +8,7 @@
   const PENDING = {};
   let localOxfordPromise;
   const loadLocalOxford = () => {
-    if (!localOxfordPromise) localOxfordPromise = fetch('./data/oxford_5000.json?v=14.1').then(r => {
+    if (!localOxfordPromise) localOxfordPromise = fetch('./data/oxford_5000.json?v=15.0').then(r => {
       if (!r.ok) throw new Error('Local Oxford unavailable');
       return r.json().then(data => { if(root.Meowcha.registerLearningLexicon) root.Meowcha.registerLearningLexicon(data); return data; });
     }).catch(err => { localOxfordPromise = null; throw err; });

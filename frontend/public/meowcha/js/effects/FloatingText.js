@@ -12,9 +12,11 @@
     }
     addInSituBurst(x,y,item) {
       // Only one readable reward at a time; previous words remain in the learning altar.
-      this.bursts=[{x,y,word:item.word,ipa:item.ipa||'',meaning:item.meaning||'',
-        points:item.points||0,life:2.6,maxLife:2.6}];
+      const duration=({DIRECT:2,CLOZE:2.8,AUDIO:3.6}[item.gameMode]||2.6)+(item.readingBonus||0);
+      this.bursts=[{x,y,word:item.word,ipa:item.ipa||'',type:item.type||'',meaning:item.meaning||'',
+        points:item.points||0,life:duration,maxLife:duration}];
     }
+    hasBlockingReward(){return this.bursts.some(b=>b.life>0);}
     addExpOrb(x,y,targetX,targetY,points=100) {
       this.expOrbs.push({x,y,startX:x,startY:y,targetX,targetY,points,t:0});
     }
@@ -64,7 +66,7 @@
       ctx.font = "12px 'Be Vietnam Pro',sans-serif";
       const M = root.Meowcha;
       const meaningLines = M.wrapLearningText ? M.wrapLearningText(ctx, burst.meaning, width * .75) : this.wrap(ctx, burst.meaning, width * .75);
-      const textHeight = 15 + meaningLines.length * 16 + ipaLines.length * 17 + wordLines.length * 20;
+      const textHeight = 15 + (burst.type?16:0) + meaningLines.length * 16 + ipaLines.length * 17 + wordLines.length * 20;
       const height = Math.max(145, (textHeight + 16) / .58);
       const half = height / 2;
       return { width, height, ipaLines, wordLines, meaningLines, textHeight,
@@ -97,6 +99,7 @@
         ctx.fillStyle='#37665C'; ctx.font="14px 'Be Vietnam Pro',sans-serif";
         for (const line of ipaLines) { ctx.fillText(line,x,textY); textY += 17; }
         ctx.fillStyle='#614734'; ctx.font="12px 'Be Vietnam Pro',sans-serif";
+        if(b.type){ctx.fillText(b.type,x,textY);textY+=16;}
         for(const line of meaningLines) { ctx.fillText(line,x,textY+2); textY+=16; }
         ctx.fillStyle='#597C62'; ctx.font="bold 11px 'Be Vietnam Pro',sans-serif";
         ctx.fillText('+'+b.points+' Tu Vi',x,textY+3);
@@ -113,10 +116,12 @@
     drawSideSpeechBubble(ctx,x,y,text) {
       if(!text) return;
       ctx.save(); ctx.font="italic 12px 'Be Vietnam Pro',sans-serif";
-      const width=Math.min(ctx.canvas.width-24,ctx.measureText(text).width+32);
-      this.paper(ctx,x,y-18,width+16,66);
+      const width=Math.min(ctx.canvas.width-24,340,ctx.measureText(text).width+48);
+      const lines=this.wrap(ctx,text,width*.76),height=Math.max(66,(lines.length*16+12)/.58);
+      x=Math.max(width/2+8,Math.min(ctx.canvas.width-width/2-8,x));
+      this.paper(ctx,x,y-18,width,height);
       ctx.fillStyle='#20332D'; ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(this.fit(ctx,text,width*.78),x,y-18);ctx.restore();
+      lines.forEach((line,index)=>ctx.fillText(line,x,y-18+(index-(lines.length-1)/2)*16));ctx.restore();
     }
   }
   root.Meowcha=root.Meowcha||{};root.Meowcha.FloatingText=FloatingText;

@@ -13,10 +13,11 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['data/MeaningCorrections.js', 'core/LearningText.js', 'core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/UIManager.js']) {
+  for (const file of ['data/MeaningCorrections.js', 'core/LearningText.js', 'core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/DesignSystem.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
+  vm.runInContext(fs.readFileSync(path.join(base,'js/ui/LeaderboardHalls.js'),'utf8'),sandbox);
   const state = new M.GameState(); state.currentScene = 'BATTLE';
   const save = new M.SaveSystem();
   const noop = new Proxy({}, { get: () => () => {} });
@@ -113,6 +114,21 @@ test('realm setup describes actual progression and local review scheduling', () 
  assert.ok(!setup.includes('C2 Master')); assert.ok(!setup.includes('x2 Tu Vi'));
  for(const threshold of ['2.000 TU VI • 15 TỪ','6.000 TU VI • 40 TỪ','14.000 TU VI • 85 TỪ','30.000 TU VI • 150 TỪ'])assert.ok(setup.includes(threshold));
  assert.ok(setup.includes('ngày ôn'));
+});
+
+test('touching the skill button reaches the live typing engine and respects cooldown without fake keys',()=>{
+ const r=runtime(),button={dataset:{slot:'1',skill:'NASCENT_SOUL_FREEZE'}};
+ const bar={style:{},dataset:{},innerHTML:'',querySelectorAll:()=>[button]};
+ r.sandbox.document.getElementById=id=>id==='battleActiveSkillsBar'?bar:null;
+ r.state.realmIdx=3;r.state.gameMode='AUDIO';r.state.skillLevels.NASCENT_SOUL_FREEZE=1;
+ const target=word('CAT');r.asteroids.asteroids.push(target);r.engine.currentTarget=target;
+ r.M.app={gameState:r.state,typing:r.engine,canvas:r.canvas};
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,audio:{play(){}}});
+ ui.updateActiveSkillsHUD();button.onclick({preventDefault(){},stopPropagation(){}});
+ assert.equal(target.freezeTimer,4);assert.ok(r.state.skillCooldowns.NASCENT_SOUL_FREEZE>0);
+ assert.equal(r.state.correctKeystrokes,0);assert.equal(target.typedLen,0);
+ assert.equal(r.state.replayCount,1);
+ target.freezeTimer=1;button.onclick({preventDefault(){},stopPropagation(){}});assert.equal(target.freezeTimer,1);
 });
 
 test('new critical talent rewards score without auto-completing another word',()=>{
@@ -548,13 +564,14 @@ test('leaderboard failure is distinct from empty results and retry can recover',
  const retry={},archive={},attributes={};let rendered=0,mode={value:'DIRECT'};
  const list={innerHTML:'',setAttribute:(k,v)=>attributes[k]=v,querySelector:id=>id==='#boardRetry'?retry:archive};
  r.sandbox.document.getElementById=()=>list;
- const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,modalPantheon:{querySelector:id=>id==='#boardMode'?mode:{checked:false}},
+ r.M.applyDesignSystem=()=>{};
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,boardHall:'DIRECT',modalPantheon:{querySelector:()=>({checked:false})},
  renderPantheonLeaderboard(){rendered++;}});
  r.sandbox.fetch=async()=>({ok:false,status:503});
  await ui.loadLeaderboardFromAPI();assert.match(list.innerHTML,/Chưa tải được/);assert.equal(typeof retry.onclick,'function');
  r.sandbox.fetch=async()=>({ok:true,json:async()=>({success:true,data:[]})});
  await retry.onclick();assert.match(list.innerHTML,/Chưa có trận/);assert.equal(attributes['aria-busy'],'false');
- assert.equal(typeof archive.onclick,'function');assert.equal(rendered,2);
+ assert.equal(rendered,4);
 });
 
 test('pause preserves wall-clock animation deadlines and freezes practice and cooldown time',()=>{
@@ -601,17 +618,17 @@ test('narrow meteor cards wrap full clues below the HUD without clipped letters'
  const target={word:'INCOMPREHENSIBLE',isCloze:true,meaning:'khó hiểu, không thể hiểu được; một nghĩa dài để kiểm tra xuống dòng',x:20,y:-80};
  const box=manager.cardLayout(ctx,target);
  assert.ok(box.safeX-box.paperW/2>=0);assert.ok(box.safeX+box.paperW/2<=320);
- assert.ok(box.cardY-box.paperH/2>=76);assert.ok(box.detailLines.length>1);
+ assert.equal(box.cardY,target.y);assert.ok(box.detailLines.length>1);
  assert.equal(box.detailLines.join(' '),target.meaning);assert.ok(box.cols<=16);
 });
 
-test('new meteors share the visible clue position and keep a fair typing window on short screens',()=>{
+test('new meteors enter from above with a fair readable typing window on short screens',()=>{
  const r=runtime();r.M.battleLayout={hudBottom:80,bottomThreshold:500};
  const desktop=new r.M.AsteroidManager().spawn({word:'SINGLE',meaning:'đơn lẻ'},1280);
  r.M.battleLayout={hudBottom:80,bottomThreshold:240};
  const mobile=new r.M.AsteroidManager().spawn({word:'SINGLE',meaning:'đơn lẻ'},320);
- assert.equal(desktop.y,160);assert.equal(mobile.y,160);
- const deskTime=(500-desktop.y)/desktop.vy,phoneTime=(240-mobile.y)/mobile.vy;
+ assert.ok(desktop.y<0);assert.ok(mobile.y<0);assert.equal(desktop.vx,0);assert.equal(mobile.vx,0);
+ const deskTime=(500-desktop.entryTargetY)/desktop.vy,phoneTime=(240-mobile.entryTargetY)/mobile.vy;
  assert.ok(Math.abs(deskTime-phoneTime)<.01);
 });
 

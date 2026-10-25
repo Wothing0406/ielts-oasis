@@ -66,6 +66,44 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(len(data), 1); self.assertEqual(data[0]['wpm'], 3)
         self.assertEqual(data[0]['accuracy'], 75)
 
+    def test_learning_metrics_are_validated_persisted_once_and_old_runs_stay_unknown(self):
+        run=self.start('AUDIO')
+        payload=self.payload(run,metrics_version=2,learning_attempts=4,first_successes=2,replay_count=1,max_combo=3)
+        for _ in range(2):
+            response=self.client.post('/api/meowcha/runs/complete',json=payload)
+            self.assertEqual(response.status_code,200,response.text)
+            self.assertEqual(response.json()['data']['first_success_rate'],50)
+        self.assertEqual(self.db.query(MeowchaBattleLog).count(),1)
+        self.assertEqual(self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start(),metrics_version=2,learning_attempts=1,first_successes=2)).status_code,422)
+        old=self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start('CLOZE'))).json()['data']
+        self.assertIsNone(old['first_success_rate']);self.assertIsNone(old['max_combo'])
+
+    def test_halls_rank_by_mode_metric_refresh_owners_and_include_self_outside_limit(self):
+        for i in range(28):
+            owner=User(username='hall-'+str(i),discord_id='hall-'+str(i));self.db.add(owner);self.db.flush()
+            for mode in ['DIRECT','CLOZE','AUDIO']:
+                # Deliberately reverse score/WPM and learning rank between halls.
+                accuracy=50+i if mode=='CLOZE' else 99-i if mode=='AUDIO' else 90
+                result=dict(player_name='old name',score=1000-i,realm_idx=0,realm='Luyện Khí Kỳ',words_slain=3,
+                    accuracy=accuracy,wpm=10+i,max_combo=3,first_success_rate=75,hints_used=0,replay_count=i)
+                self.db.add(MeowchaRun(run_id=str(uuid4()),user_id=owner.id,game_mode=mode,deck_id='oxford_5000',assisted=False,
+                    completed_at=datetime.utcnow(),score=1000-i,result=result))
+        self.db.commit()
+        self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start(),metrics_version=2,learning_attempts=3,first_successes=3,max_combo=3))
+        direct=self.client.get('/api/meowcha/halls?hall=DIRECT&limit=3').json()
+        cloze=self.client.get('/api/meowcha/halls?hall=CLOZE').json()
+        audio=self.client.get('/api/meowcha/halls?hall=AUDIO').json()
+        self.assertEqual(direct['data'][0]['player_name'],'hall-27')
+        self.assertEqual(cloze['data'][0]['player_name'],'hall-27')
+        self.assertEqual(audio['data'][0]['player_name'],'hall-0')
+        self.assertEqual(direct['meta']['self']['rank'],29)
+        overall=self.client.get('/api/meowcha/halls?hall=OVERALL').json()
+        self.assertTrue(all(0<=r['dao_hanh']<=300 for r in overall['data']))
+        self.assertIn('strongest_mode',overall['data'][0]);self.assertIsNotNone(overall['meta']['self'])
+        self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&assisted=true').json()['data'],[])
+        self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&deck_id=reading_academic').json()['data'],[])
+        self.assertEqual(self.client.get('/api/meowcha/halls?hall=INVALID').status_code,422)
+
     def test_names_never_select_owner_and_foreign_runs_are_rejected(self):
         run_id = self.start()
         self.app.dependency_overrides[get_meowcha_user_from_token] = lambda: self.other

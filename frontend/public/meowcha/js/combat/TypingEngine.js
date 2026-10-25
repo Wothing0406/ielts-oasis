@@ -149,7 +149,8 @@
         if (this.mistakeStreak >= 2 && this.currentTarget && this.saveSystem && !this.currentTarget.isBoss) {
           this.saveSystem.recordWeaknessWord(this.currentTarget);
         }
-        if (this.state.passiveModifiers && this.state.passiveModifiers.mindHint && this.mistakeStreak >= 2 && this.currentTarget) {
+        if (this.state.gameMode==='CLOZE'&&this.state.passiveModifiers && this.state.passiveModifiers.mindHint && this.mistakeStreak >= 2 && this.currentTarget) {
+          if(!this.currentTarget.hintsUsed){this.currentTarget.hintsUsed=1;this.state.hintsUsed++;this.state.assisted=true;}
           const nextChar = this.currentTarget.word[this.currentTarget.typedLen] || '';
           if (nextChar && this.floatingText) {
             this.floatingText.add(this.currentTarget.x, this.currentTarget.y - 32, `[ 慧 ] ${nextChar}`, "#9CB7D4", canvas.width <= 768 ? 14 : 16);
@@ -361,6 +362,7 @@
     handleWordSlain(target, canvas, assisted = false) {
       if (!target || !this.asteroids.asteroids.includes(target)) return;
       if (assisted) this.state.markAssistance(target, Math.max(0, target.word.length - target.typedLen));
+      if(this.state.recordLearningOutcome)this.state.recordLearningOutcome(target,true);
       if (target.assistedKeystrokes) this.state.assistedWords++;
       else { this.state.humanWords++; this.state.humanWordCombo = target.hadTypo ? 0 : this.state.humanWordCombo + 1; }
       if (!target.assistedKeystrokes && this.saveSystem && this.saveSystem.recordReviewResult) {
@@ -372,6 +374,7 @@
         this.playWordAudio(target);
         this.state.wordsSlain++;
         this.state.combo++;
+        this.state.maxCombo=Math.max(this.state.maxCombo||0,this.state.combo);
         target.currentShieldIdx++;
         const isMob = canvas.width <= 768 || (canvas.height > canvas.width);
 
@@ -383,6 +386,7 @@
           target.meaning = nextShield.meaning;
           target.example = nextShield.example;
           target.hadTypo = false;
+          target.hintsUsed=0;target.replayCount=0;
           target.assistedKeystrokes = 0;
           target.typedLen = 0;
           this.currentTarget = null;
@@ -539,7 +543,9 @@
       this.state.speedMultiplier = Math.min(1.35, 1.0 + waveBonus + streakBonus);
 
       // 4. HIỆN VÒNG BÁT QUÁI + TỪ VỰNG + PHIÊN ÂM IPA NGAY TẠI TÂM NỔ (IN-SITU BURST)
-      this.floatingText.addInSituBurst(target.x, target.y, { ...target, points: gainedScore });
+      const readingBonus=Math.max(0,((this.state.passiveModifiers||{}).meaningDisplayDuration||3200)-3200)/1000;
+      this.floatingText.addInSituBurst(target.x, target.y, { ...target, points: gainedScore,gameMode:this.state.gameMode,readingBonus });
+      this.showCompletedWord(target);
 
       // 5. HẠT TU VI (+EXP) BAY THEO QUỸ ĐẠO HÚT VỀ MIÊU KIẾM TÔN
       this.floatingText.addExpOrb(target.x, target.y, catX, catY, gainedScore);
@@ -563,22 +569,6 @@
       const idx = this.asteroids.asteroids.indexOf(target);
       if (idx !== -1) {
         this.asteroids.asteroids.splice(idx, 1);
-      }
-
-      // Cập nhật thông tin từ vừa trảm xong lên đàn tế kiếm để người chơi kịp đọc giải nghĩa & phiên âm IPA
-      const meaningEl = document.getElementById("swordTargetMeaning");
-      if (meaningEl) {
-        const modePrefix = this.state.gameMode === "CLOZE" ? "[ 悟 • ĐÃ NGỘ ĐẠO ]" : "[ 斩 • ĐÃ TRẢM ]";
-        meaningEl.textContent = `${modePrefix} ${target.word}: ${target.meaning || target.definition || ""} (${target.ipa || ""})`;
-        if (this.lastSlainDisplayTimer) clearTimeout(this.lastSlainDisplayTimer);
-        const meaningDur = (this.state.passiveModifiers && this.state.passiveModifiers.meaningDisplayDuration) || 3200;
-        this.lastSlainDisplayTimer = setTimeout(() => {
-          this.lastSlainDisplayTimer = null;
-          if (!this.currentTarget) {
-            const mEl = document.getElementById("swordTargetMeaning");
-            if (mEl) mEl.innerText = "";
-          }
-        }, meaningDur);
       }
 
       this.currentTarget = null;
@@ -638,6 +628,7 @@
       const activeList = (this.asteroids && this.asteroids.asteroids) || [];
       const target = this.currentTarget || (activeList.length > 0 ? activeList[0] : null);
       if (target) {
+        if(this.state.gameMode==='AUDIO'){target.replayCount=(target.replayCount||0)+1;this.state.replayCount++;}
         this.playWordAudio(target);
         if (this.audio) this.audio.play("type");
         const altarSub = document.getElementById("swordTargetMeaning");
@@ -647,6 +638,19 @@
         return true;
       }
       return false;
+    }
+
+    showCompletedWord(target) {
+      this.lastCompletedWord={...target};
+      const panel=document.getElementById('lastLearnedWord');if(!panel)return;
+      const altar=document.getElementById('swordIntentBox');if(altar)altar.classList.add('is-reviewing');
+      const esc=root.Meowcha.ui.escape;
+      panel.hidden=false;panel.open=true;
+      panel.innerHTML='<summary><span>Từ vừa học: '+esc(target.word)+'</span> <span class="learned-ipa">'+esc(target.ipa||'Chưa có IPA')+'</span></summary>'+
+        '<div class="learned-details"><span class="learned-type">'+esc(target.type||'')+'</span><span>'+esc(target.meaning||'')+'</span>'+
+        '<button type="button" class="mc-utility learned-replay">Nghe lại từ vừa học</button></div>';
+      panel.querySelector('button').onclick=()=>this.playWordAudio(this.lastCompletedWord);
+      if(root.Meowcha.applyDesignSystem)root.Meowcha.applyDesignSystem(panel);
     }
 
     updateSwordAltarUI(target) {

@@ -570,6 +570,17 @@ def delete_save_slot(
 # =========================================================================
 # 3. BẢNG PHONG THẦN / LEADERBOARD (/api/meowcha/leaderboard)
 # =========================================================================
+@router.get('/halls')
+def get_halls(hall: str=Query('OVERALL',pattern='^(OVERALL|DIRECT|CLOZE|AUDIO)$'),
+    assisted: bool=Query(False),deck_id: str=Query('oxford_5000',max_length=40),
+    limit: int=Query(25,ge=1,le=50),user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    from meowcha_halls import build_hall
+    board=build_hall(db,hall,assisted,deck_id,limit,user.id if user else None)
+    return api_response(board['rows'],meta={'hall':hall,'assisted':assisted,'deck_id':deck_id,
+        'self':board['self'],'total_players':board['total_players'],'verification':'plausibility_checked',
+        'formula_version':1,'competitive':False})
+
+
 @router.get("/leaderboard", response_model=Dict[str, Any])
 def get_leaderboard(
     limit: int = Query(10, ge=1, le=50),

@@ -1,0 +1,371 @@
+/* MEOW-CHA UI kit: one material/typography hierarchy for every flow.
+   Legacy gameplay positioning remains in layout.css; visual rules live here. */
+:root {
+ --game-bg-deep:#182C2B; --game-wood-dark:#38281F; --game-wood-warm:#6C3D27;
+ --game-parchment:#F5E8C8; --game-parchment-dark:#E4D1A0;
+ --game-jade:#315C4B; --game-jade-light:#D4E5C7;
+ --game-gold:#B7914F; --game-gold-highlight:#FFE7AC; --game-crimson:#902C31;
+ --game-ink:#244B3D; --game-ink-muted:#634D37; --game-light:#FFF1CE;
+ --border-thin:1px; --border-major:26px; --panel-radius:0;
+ --panel-padding:clamp(12px,2vw,22px); --shadow-soft:0 3px 8px #112B2430;
+ --shadow-ceremonial:0 12px 32px #10282380;
+ --font-title:'Be Vietnam Pro',Arial,sans-serif; --font-body:'Be Vietnam Pro',Arial,sans-serif;
+ --type-hero:clamp(19px,2.3vw,26px); --type-title:clamp(16px,1.8vw,21px);
+ --type-button:clamp(13px,1.5vw,17px); --type-value:clamp(17px,2vw,23px);
+ --type-body:14px; --type-label:12px; --type-helper:12px;
+ --mc-frame:url('../assets/ui/jade-frame-v1.png'); --mc-plaque:url('../assets/ui/carved-plaque-v1.png');
+ --mc-sword:url('../assets/ui/sword-command-v1.png'); --mc-paper-art:url('../assets/ui/ivory-scroll-v1.png');
+ --mc-seal:url('../assets/ui/crimson-seal-v1.png');
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) { font-family:var(--font-body)!important; color:var(--game-light); overflow-anchor:none; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) *, :is(#gameAppWrapper,.meowcha-modal-overlay) *::before, :is(#gameAppWrapper,.meowcha-modal-overlay) *::after { box-sizing:border-box; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(h1,h2,h3,button,.perk-name,.setup-card-name,.realm-step-name,.pill-val,.stat-val,.modal-title,.modal-title-xianxia,.medallion-label) { font-family:var(--font-title)!important; text-shadow:none!important; letter-spacing:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(p,.perk-desc,.setup-card-sub,.vocab-meaning-text,.slot-body,.board-note) { font:400 var(--type-body)/1.55 var(--font-body)!important; white-space:normal; overflow-wrap:anywhere; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) button { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) button:focus-visible { outline:2px solid var(--game-gold-highlight)!important;outline-offset:3px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) button:disabled { cursor:default;opacity:.6; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [hidden] { display:none!important; }
+/* Four panel archetypes. Inner text is never positioned against ornamental edges. */
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-panel] { border-radius:var(--panel-radius)!important;box-shadow:var(--shadow-soft)!important;clip-path:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-panel='ceremonial'] {
+ display:block!important;
+ border:var(--border-major) solid transparent!important;border-image:var(--mc-frame) 32% / var(--border-major) / 0 stretch!important;
+ background:var(--game-jade)!important;background-clip:padding-box!important;color:var(--game-light)!important;
+ padding:var(--panel-padding)!important;max-width:96vw!important;max-height:94dvh!important;min-width:0!important;
+ overflow:auto!important;overscroll-behavior:contain;scrollbar-color:var(--game-gold) var(--game-jade);box-shadow:var(--shadow-ceremonial)!important;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-panel='parchment'] { background:var(--game-parchment)!important;color:var(--game-ink)!important;border:1px solid var(--game-gold)!important;padding:var(--panel-padding)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-panel='jade'] { background:var(--game-jade-light)!important;color:var(--game-ink)!important;border:1px solid var(--game-gold)!important;padding:12px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-panel='wood'] { background:var(--game-wood-dark)!important;color:var(--game-light)!important;border:1px solid var(--game-gold)!important;padding:12px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.modal-brass-corner,.xianxia-corner,.modal-corner-ornament,.silk-ribbon-tail,.ribbon-tail-l,.ribbon-tail-r,.hanging-xianxia-lantern,.sword-cta-hilt,.sword-cta-tip,.sword-cta-glow,.sword-token-hilt,.sword-token-tip,.sword-token-glow,.hud-talisman-decoration,.modal-header .seal-glyph-gold,.modal-header .seal-glyph-red) { display:none!important; }
+/* Titles share the quiet central area of one authored wood plaque. */
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.modal-header,.modal-silk-banner,.battle-setup-banner,.altar-ribbon-banner,.profile-header-banner) {
+ position:relative!important;background:transparent var(--mc-plaque) center/100% 100% no-repeat!important;
+ width:100%!important;min-width:0!important;min-height:84px!important;height:auto!important;margin:0 0 16px!important;
+ padding:20px 12%!important;border:0!important;box-shadow:none!important;border-radius:0!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.modal-title,.modal-title-xianxia,.silk-banner-title,.ribbon-text,.profile-main-realm) {
+ display:block!important;
+ background:none!important;border:0!important;box-shadow:none!important;color:var(--game-light)!important;
+ font:800 var(--type-title)/1.4 var(--font-title)!important;text-align:center!important;white-space:normal!important;
+ margin:0!important;padding:0!important;min-width:0!important;width:100%!important;overflow-wrap:anywhere;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.banner-silk-wrap,.silk-title-box) { display:contents!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-sub-band { color:var(--game-light)!important;font-size:12px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-talisman-tag { display:none; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.seal-glyph-gold,.seal-glyph-red,.confirm-seal-glyph) { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.srs-title,.srs-notice-title,.srs-notice-desc,.jade-slab-label,.jade-slab-value,.setup-journey-info *) { color:var(--game-ink)!important;text-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .setup-section-header { display:flex!important;flex-wrap:wrap!important;gap:6px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .setup-sec-sub { flex-basis:100%;font-size:13px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.confirm-title,.confirm-msg) { color:var(--game-light)!important;text-shadow:none!important;line-height:1.5!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .confirm-cinnabar-seal { color:var(--game-gold-highlight)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .confirm-actions-row { display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;width:100%!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .confirm-actions-row button { width:100%!important;max-width:100%!important;flex:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .confirm-actions-row .btn-confirm-accept { min-height:104px!important;padding:16px 20px 30px 29%!important;font-size:13px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .confirm-actions-row .btn-confirm-cancel { min-height:64px!important;padding:18px 12%!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .setup-card-check-stamp { opacity:1!important; }
+/* Action hierarchy: hero sword / wood or jade secondary / utility chip / red seal. */
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action] { border-radius:0!important;box-shadow:none!important;line-height:1.4!important;white-space:normal!important;min-width:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action]:not(:focus-visible) { outline:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action]::before,:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action]::after { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action='hero'] {
+ background:transparent var(--mc-sword) center/100% 100% no-repeat!important;border:0!important;
+ width:min(100%,580px)!important;height:auto!important;min-height:0!important;aspect-ratio:1080/244;
+ padding:0 9% 0 31%!important;color:var(--game-light)!important;display:flex!important;flex-direction:column!important;
+ justify-content:center!important;align-items:center!important;gap:3px!important;font-weight:800!important;font-size:var(--type-hero)!important;filter:drop-shadow(var(--shadow-soft));
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.sword-cta-content,.sword-token-content) { display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:0!important;width:100%!important;height:auto!important;min-height:0!important;flex:none!important;transform:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.sword-cta-main,.sword-token-main) { font:800 clamp(12px,1.65vw,21px)/1.3 var(--font-title)!important;color:var(--game-light)!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;max-width:100%!important;text-align:center!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.sword-cta-sub,.sword-token-sub) { font:500 12px/1.35 var(--font-body)!important;color:var(--game-light)!important;white-space:normal!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action='secondary'], :is(#gameAppWrapper,.meowcha-modal-overlay) .sword-talisman-cta.change-mode {
+ background:transparent var(--mc-plaque) center/100% 100% no-repeat!important;border:0!important;
+ padding:18px 26px!important;min-height:64px!important;height:auto!important;aspect-ratio:auto!important;
+ color:var(--game-light)!important;font:700 var(--type-button)/1.4 var(--font-body)!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) .sword-talisman-cta.change-mode { width:88%!important;margin:auto!important;min-height:88px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .change-mode .sword-cta-main { font-size:18px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action='utility'] {
+ min-width:38px!important;min-height:38px!important;padding:6px 9px!important;
+ background:var(--game-jade)!important;color:var(--game-light)!important;border:1px solid var(--game-gold)!important;
+ font:600 12px/1.35 var(--font-body)!important;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action='danger'] {
+ background:transparent var(--mc-seal) center/100% 100% no-repeat!important;color:var(--game-light)!important;
+ border:0!important;min-height:54px!important;padding:12px 20px 12px 25%!important;
+ font:700 12px/1.4 var(--font-body)!important;max-width:360px!important;box-shadow:none!important;padding-left:clamp(48px,14vw,84px)!important;
+}
+:is(#gameAppWrapper,.meowcha-modal-overlay) .sword-talisman-restart { width:min(70%,320px)!important;height:94px!important;margin:0 auto!important;padding:10px 18px 28px 90px!important;display:flex;align-items:center;justify-content:center; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .sword-talisman-restart svg { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .btn-slot-del { width:44px!important;max-width:44px!important;padding:6px!important;min-height:44px!important;background-color:var(--game-crimson)!important;background-size:160px 60px!important;background-position:left center!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .btn-slot-del svg { stroke:var(--game-light)!important; }
+/* Lifecycle controls keep their original visibility, including buttons without saves. */
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action][style*="display: none"],
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action][style*="display:none"] { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .btn-modal-close { position:absolute!important;top:-8px!important;right:-8px!important;z-index:5; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action] .seal-glyph { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .hotkey-badge { font:600 10px/1 var(--font-body)!important;min-width:24px;padding:3px 5px;background:var(--game-wood-dark);border:1px solid var(--game-gold);color:var(--game-light); }
+:is(#gameAppWrapper,.meowcha-modal-overlay) #btnResumeGame { position:relative;font-size:clamp(12px,2vw,20px)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) #btnResumeGame .hotkey-badge { position:absolute;right:16%;bottom:3%; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) #btnResumeGame .pixel-icon { display:none!important; }
+/* Stat relics: one parchment group, each number is an unboxed icon/label/value. */
+.pixel-icon { display:inline-block!important;width:var(--icon-size,36px)!important;height:var(--icon-size,36px)!important;flex-shrink:0;background:url('../assets/ui/cultivation-icons-v1.png') no-repeat;background-size:400% 200%!important;image-rendering:pixelated;filter:none!important;animation:none!important;vertical-align:middle; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.mc-stat,.stat-pill,.profile-stat-row) { display:flex!important;align-items:center!important;gap:9px!important;min-width:0!important;min-height:58px!important;padding:6px 8px!important;background:transparent!important;border:0!important;border-image:none!important;border-radius:0!important;box-shadow:none!important;outline:0!important;color:var(--game-ink)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.mc-stat-icon,.pill-icon) { flex:none;display:flex!important;align-items:center!important;justify-content:center!important;width:36px!important;height:36px!important;border:0!important;background:none!important;box-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.mc-stat-copy,.pill-text-wrap) { margin:0;min-width:0;display:flex!important;flex-direction:column!important;gap:2px!important;align-items:flex-start!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.mc-stat dt,.pill-label,.stat-lbl) { margin:0!important;color:var(--game-ink-muted)!important;font:500 var(--type-label)/1.4 var(--font-body)!important;white-space:normal!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.mc-stat dd,.pill-val,.stat-val) { margin:0!important;color:var(--game-ink)!important;font:800 var(--type-value)/1.3 var(--font-body)!important;overflow-wrap:anywhere; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.pill-hp-track,.profile-stat-row .stat-seal) { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.compact-stat-pills,.mc-stat-list,.mc-results) { display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px 14px!important;margin:0!important;width:100%!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .compact-stat-pills { width:84%!important;margin:0 auto!important;padding:10px 12px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-summary-title { color:var(--game-ink)!important;font:800 15px/1.4 var(--font-body)!important;margin:0 0 9px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-assistance-note { color:var(--game-ink-muted)!important;font-size:12px!important;margin:10px 0 0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .stat-val { font-size:15px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .stat-lbl { flex:1; }
+/* Lobby and compact navigation. */
+#gameAppWrapper { overflow:clip!important;background:var(--game-bg-deep)!important; }
+#gameAppWrapper #lobbyView { overflow-y:auto!important;justify-content:safe center!important; }
+#gameAppWrapper .cultivation-tea-station { gap:8px!important;flex-shrink:0!important;padding-bottom:18px!important; }
+#gameAppWrapper .floating-stone-pavilion { height:135px!important;min-height:0!important;margin:0!important; }
+#gameAppWrapper .lobby-cta-sword-area { width:min(96vw,580px)!important;max-width:580px!important;gap:6px!important; }
+#gameAppWrapper .lobby-top-actions { display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px!important; }
+#gameAppWrapper .windchime-medallion { width:100%!important;min-width:0!important;padding:0!important;animation:none!important; }
+#gameAppWrapper .medallion-disc { background:none!important;border:0!important;box-shadow:none!important;overflow:visible!important; }
+#gameAppWrapper .medallion-label { display:flex!important;align-items:center;justify-content:center;width:100%!important;min-height:30px;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere;font:600 10px/1.3 var(--font-body)!important;padding:3px!important;background:var(--game-wood-dark)!important;color:var(--game-light)!important;border-color:var(--game-gold)!important; }
+#gameAppWrapper #lobbyUserAvatar,:is(#gameAppWrapper,.meowcha-modal-overlay) :is(#profileModalAvatar,.user-row-avatar,.podium-avatar,#pantheonSelfAvatar) { object-fit:cover!important;image-rendering:auto!important; }
+/* Menus share the same reading order and wrapping rules. */
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box { width:min(94vw,600px)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-btn-stack { max-width:100%!important;gap:8px!important;margin:12px 0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-lore-quote { text-align:center;color:var(--game-light)!important;margin:0 0 12px!important;font-size:13px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box { --border-major:20px;--panel-padding:12px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .modal-header { min-height:60px!important;margin-bottom:8px!important;padding:14px 12%!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .pause-btn-stack { margin:8px 0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box #btnResumeGame { max-width:460px!important;outline:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box #btnQuitToLobby { min-height:48px!important;padding:12px 24px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box #typingPracticeStats { padding:10px!important;margin-top:8px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat { min-height:44px!important;padding:3px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat dd { font-size:18px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat-list { gap:2px 10px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.setup-mode-card,.realm-step-card,.perk-card,.monolith-card) { border:1px solid var(--game-gold)!important;border-radius:0!important;box-shadow:none!important;padding:14px!important;min-width:0!important;background:var(--game-parchment)!important;color:var(--game-ink)!important;clip-path:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.setup-mode-card.active-mode,.realm-step-card.active) { background:var(--game-jade-light)!important;outline:2px solid var(--game-gold)!important;outline-offset:-4px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.setup-card-name,.realm-step-name,.monolith-title,.perk-name) { color:var(--game-ink)!important;font:800 17px/1.4 var(--font-body)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.setup-card-sub,.realm-step-vocab,.monolith-sub,.monolith-level,.perk-desc) { color:var(--game-ink-muted)!important;white-space:normal!important;overflow:visible!important;line-height:1.5!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.perk-icon-wrapper,.setup-card-icon-art,.skill-icon-wrap) { border:0!important;background:none!important;box-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-icon-wrapper .pixel-icon { --icon-size:56px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.perk-stat-change,.perk-rarity-pill,.perk-path-pill,.perk-kind-pill,.realm-step-badge,.setup-card-check-stamp,.vocab-type-badge,.slot-badge) { background:var(--game-jade-light)!important;border-color:var(--game-gold)!important;color:var(--game-ink)!important;text-shadow:none!important;box-shadow:none!important;font-size:12px!important;white-space:normal!important;line-height:1.4!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .talents-grid { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;align-items:stretch!important;max-height:none!important;overflow:visible!important;margin-top:10px!important;padding:0!important;flex:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card { display:flex!important;flex-direction:column!important;gap:8px!important;min-height:0!important;overflow:visible!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .xianxia-breakthrough-box { display:block!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .xianxia-breakthrough-box > p { margin:8px 0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .boss-review-note { background:var(--game-parchment);color:var(--game-ink);padding:10px;font-size:12px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card::before,:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card::after { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-icon-wrapper { filter:none!important;animation:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card-top-badges { display:flex;flex-wrap:wrap;gap:4px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-name { min-height:0!important;margin:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-desc { flex:1;min-height:0!important;font-size:13px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .perk-mobile-details { display:none; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .btn-linh-ngo { width:100%!important;min-height:60px!important;font-size:13px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .setup-dual-btns-wrap { display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important;width:min(100%,500px)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.setup-card-icon-art .pixel-icon,.skill-icon-wrap .pixel-icon) { --icon-size:38px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.vocab-meaning-text,.slot-empty-desc,.slot-realm,.slot-stats,.slot-title,.slot-date) { color:var(--game-ink)!important;text-shadow:none!important;white-space:normal!important;overflow:visible!important;-webkit-line-clamp:unset!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.vocab-word-title,.vocab-ipa-text) { color:var(--game-ink)!important;text-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .vocab-ipa-text { font-family:var(--font-body)!important;font-size:14px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .board-filters { display:flex;flex-wrap:wrap;gap:10px;align-items:center; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .board-note { flex-basis:100%;color:var(--game-ink-muted)!important;font-size:12px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) select,:is(#gameAppWrapper,.meowcha-modal-overlay) input { max-width:100%;min-height:38px;background:var(--game-parchment)!important;color:var(--game-ink)!important;border:1px solid var(--game-gold)!important;padding:6px 8px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) #pantheonRankList { flex:0 0 auto!important;min-height:90px!important;height:auto!important;max-height:none!important;overflow-x:auto!important;justify-content:flex-start!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pantheon-row { flex:none!important;min-height:64px!important;height:auto!important;padding:8px!important;background:var(--game-parchment)!important;color:var(--game-ink)!important;border:0!important;border-bottom:1px solid var(--game-gold)!important;box-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .pantheon-row :is(.name-text,.realm-col,.score-col,.words-col,.wpm-col,.seal-rank-badge) { color:var(--game-ink)!important;text-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .podium-card { background:var(--game-jade)!important;border:1px solid var(--game-gold)!important;border-radius:0!important;box-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .board-message { color:var(--game-light)!important;line-height:1.5;padding:18px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .certificate-actions-bar { display:flex!important;gap:10px!important;align-items:stretch!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .certificate-preview-wrap { background:var(--game-parchment)!important;border:0!important;border-radius:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .cert-save-hint { color:var(--game-ink-muted)!important;font-size:12px!important;line-height:1.5!important;padding:6px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .certificate-actions-bar button { flex:1!important;width:auto!important;padding:14px 20px!important;font-size:12px!important;min-width:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-body-layout { gap:14px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stats-panel { min-width:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-card-box { width:min(94vw,780px)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-body-layout { display:grid!important;grid-template-columns:120px minmax(0,1fr)!important;gap:14px!important;background:none!important;border:0!important;border-radius:0!important;padding:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stats-panel { display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px!important;gap:8px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row { display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;gap:3px 8px!important;text-align:left!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .mc-stat-icon { grid-row:1/3;width:30px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .stat-val { grid-column:2;font-size:15px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-cat-stage { background:transparent!important;box-shadow:none!important;border-color:var(--game-gold)!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-cat-img { filter:none!important;border-radius:50%; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-aura-halo { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-cat-stage { min-width:0!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .mc-utility-bar { display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .mc-audio-switch { display:flex;align-items:center;gap:12px;min-height:48px;line-height:1.5; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .mc-audio-switch input { width:22px;min-height:22px;height:22px;padding:0; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .mc-audio-channels { margin:16px 0;padding:12px;background:var(--game-parchment);color:var(--game-ink); }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .mc-game-over { width:min(94vw,620px)!important; }
+/* Battle HUD and readable learning parchment. */
+#gameAppWrapper .sect-scroll-hud { top:6px!important;left:50%!important;transform:translateX(-50%)!important;width:min(96vw,980px)!important;max-width:96vw!important;min-height:66px!important;background:none!important;border:0!important;box-shadow:none!important;display:flex!important;gap:8px!important;justify-content:space-between!important; }
+#gameAppWrapper .sect-hud-left-dock { flex:0 1 320px!important;min-width:0!important;max-width:none!important; }
+#gameAppWrapper .sect-hud-right-dock { flex:0 1 390px!important;min-width:0!important;max-width:none!important;align-items:stretch!important; }
+#gameAppWrapper .sect-stats-inline { position:static!important;width:100%!important;max-width:100%!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:4px 8px!important; }
+#gameAppWrapper #swordIntentBox { bottom:calc(var(--mc-keyboard-height,0px) + 8px)!important;width:min(94vw,640px)!important;height:auto!important;min-height:132px!important;max-height:none!important;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important; }
+#gameAppWrapper #swordIntentBox :is(.altar-ribbon-banner,.altar-guardian,.parchment-roller) { display:none!important; }
+#gameAppWrapper #swordIntentBox .altar-parchment-scroll { width:100%!important;height:auto!important;min-height:132px!important;padding:26px 10%!important;background:transparent var(--mc-paper-art) center/100% 100% no-repeat!important;border:0!important;box-shadow:none!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important; }
+#gameAppWrapper #swordIntentBox .parchment-body { width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;padding:0!important;gap:5px!important;flex:none!important;overflow:visible!important; }
+#gameAppWrapper #swordIntentText { display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:1px!important;font:800 19px/1.35 var(--font-body)!important;color:var(--game-ink)!important;text-shadow:none!important;letter-spacing:1px!important;white-space:normal!important;overflow-wrap:anywhere!important;min-height:26px!important;height:auto!important;flex:none!important;padding:0!important; }
+#gameAppWrapper #swordIntentText span { white-space:normal!important; }
+#gameAppWrapper #swordTargetMeaning { font:500 13px/1.5 var(--font-body)!important;color:var(--game-ink-muted)!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;text-align:center!important;text-overflow:clip!important; }
+#gameAppWrapper .altar-gauge-track { height:3px!important;flex:none!important;background:var(--game-parchment-dark)!important; }
+#gameAppWrapper #swordTargetGauge { background:var(--game-jade)!important;box-shadow:none!important; }
+#gameAppWrapper #altarDialogueWrap { display:none!important; }
+#gameAppWrapper #battleActiveSkillsBar { position:absolute!important;transform:none!important;left:auto!important;right:8px!important;top:auto!important;bottom:calc(var(--mc-keyboard-height,0px) + 148px)!important;gap:6px!important;z-index:50;max-width:calc(100% - 16px); }
+#gameAppWrapper #swordIntentBox #battleActiveSkillsBar { position:static!important;inset:auto!important;transform:none!important;width:100%!important;max-width:100%!important;justify-content:center!important;margin:0 0 4px!important;flex:none!important; }
+#gameAppWrapper #swordIntentBox #battleActiveSkillsBar[style*="display: none"] { display:none!important; }
+#gameAppWrapper .sect-hp-container { min-width:0!important;max-width:100%!important;flex-wrap:wrap!important;gap:4px!important; }
+#gameAppWrapper .hp-mini-track { min-width:24px!important;max-width:100%!important;flex:1 1 40px!important;width:auto!important; }
+#gameAppWrapper #hudHpText { white-space:nowrap!important;font-size:12px!important; }
+#gameAppWrapper .active-skill-btn { width:62px!important;min-height:68px!important;padding:5px!important;background:var(--game-parchment)!important;color:var(--game-ink)!important;border-color:var(--game-gold)!important; }
+#gameAppWrapper :is(.skill-name-label,.skill-hotkey-badge,.skill-level-badge) { color:var(--game-ink)!important;background:transparent!important;text-shadow:none!important;font-size:10px!important; }
+#gameAppWrapper .skill-cooldown-overlay { background:var(--game-jade)!important;color:var(--game-light)!important;opacity:.85; }
+#gameAppWrapper .cd-num { color:var(--game-light)!important;text-shadow:none!important; }
+#gameAppWrapper .skill-cooldown-progress { width:90%;height:3px;accent-color:var(--game-jade); }
+.platform-pc :is(#virtualKeyboardContainer,#btnToggleVirtualKeyboard,#floatingKbRestoreBtn) { display:none!important; }
+#gameAppWrapper .meowcha-virtual-keyboard { background:var(--game-jade)!important;border-color:var(--game-gold)!important;box-shadow:none!important; }
+#gameAppWrapper .kb-key { min-height:37px!important;background:var(--game-jade)!important;color:var(--game-light)!important;border-color:var(--game-gold)!important;box-shadow:0 2px 0 var(--game-wood-dark)!important;text-shadow:none!important; }
+#gameAppWrapper .kb-seal-header { color:var(--game-light)!important;background:var(--game-wood-dark)!important; }
+#meowchaStatusBar { position:fixed!important;z-index:2147483000!important;top:12px!important;max-width:min(90vw,650px)!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere;pointer-events:none!important;background:var(--game-parchment)!important;color:var(--game-ink)!important;border:1px solid var(--game-gold)!important;text-shadow:none!important;box-shadow:var(--shadow-soft)!important;font:600 13px/1.5 var(--font-body)!important; }
+#certificateShareFallback { display:block;width:100%;min-height:44px; }
+/* Phong Thần điện: tabs remain visible while the ceremonial panel scrolls. */
+#modalPantheon { --hall-accent:#D7BA70; }
+#modalPantheon .modal-content-box { width:min(96vw,1020px)!important; }
+#modalPantheon[data-hall='DIRECT'] { --hall-accent:#A7DFC1; }
+#modalPantheon[data-hall='CLOZE'] { --hall-accent:#F4C77A; }
+#modalPantheon[data-hall='AUDIO'] { --hall-accent:#BCDBF6; }
+#modalPantheon .hall-navigation { position:sticky;top:-12px;z-index:8;background:var(--game-jade);padding:8px 0;border-bottom:1px solid var(--hall-accent); }
+#modalPantheon .hall-tabs { display:flex;gap:5px;overflow-x:auto;scrollbar-width:thin; }
+#modalPantheon .hall-tabs button { flex:1;flex-shrink:0;min-width:88px;min-height:44px;padding:8px 12px;background:transparent var(--mc-plaque) center/100% 100% no-repeat;border:0;color:var(--game-light);font:700 12px/1.4 var(--font-body); }
+#modalPantheon .hall-tabs button[aria-selected='true'] { color:var(--hall-accent);outline:1px solid var(--hall-accent);outline-offset:-5px;filter:drop-shadow(0 1px 3px #E5D7AC40); }
+#modalPantheon .hall-assistance { display:flex;gap:7px;align-items:center;font-size:11px;min-height:32px;margin-top:3px; }
+#modalPantheon .hall-assistance input { min-height:18px;width:18px;height:18px;margin:0; }
+#modalPantheon .hall-assistance span { color:var(--game-light);opacity:.85; }
+#modalPantheon .hall-description { font-size:12px!important;line-height:1.5!important;margin:10px 0!important;color:var(--game-light); }
+#modalPantheon .pantheon-top-podium { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important;margin:8px 0 12px!important;padding:0!important;min-height:0!important;height:auto!important; }
+#modalPantheon .podium-card { padding:10px 5px!important;transform:none!important;width:auto!important;min-width:0!important;flex:none!important; }
+#modalPantheon .podium-card { height:auto!important;min-height:170px!important;overflow:visible!important; }
+#modalPantheon .podium-crown { font-size:10px!important;color:var(--hall-accent)!important;white-space:normal!important;line-height:1.4;min-height:28px; }
+#modalPantheon .podium-crown span { white-space:normal!important;overflow:visible!important;text-overflow:clip!important; }
+#modalPantheon :is(.podium-name,.podium-score,.podium-realm) { color:var(--game-light)!important;white-space:normal!important;overflow-wrap:anywhere;text-shadow:none!important;line-height:1.5!important; }
+#modalPantheon .podium-score { color:var(--hall-accent)!important;font-size:13px!important; }
+#modalPantheon .podium-avatar-wrap { width:48px!important;height:48px!important;background:transparent!important;border-color:var(--hall-accent)!important;box-shadow:none!important; }
+#modalPantheon .pantheon-list-wrapper { overflow:visible!important;min-height:0!important;max-height:none!important;flex:none!important; }
+#modalPantheon #pantheonRankList { overflow:visible!important;width:100%!important; }
+#modalPantheon #pantheonRankList.has-hall-rows { min-width:680px!important; }
+#modalPantheon :is(.pantheon-table-header,.pantheon-row) { display:grid!important;grid-template-columns:42px minmax(130px,1.6fr) minmax(100px,1.2fr) repeat(calc(var(--hall-cols,7) - 3),minmax(74px,1fr))!important;align-items:center!important;gap:8px!important;min-width:680px!important;height:auto!important; }
+#modalPantheon .pantheon-table-header { background:var(--game-wood-dark)!important;color:var(--game-light)!important;margin:0!important;min-height:44px!important;padding:8px!important;line-height:1.4!important; }
+#modalPantheon .pantheon-table-header > span { display:block!important; }
+#modalPantheon .pantheon-row span { white-space:normal!important;overflow-wrap:anywhere;min-width:0;line-height:1.5;font-size:12px; }
+#modalPantheon .pantheon-row { border-radius:0!important;margin:0!important;border-bottom:1px solid var(--game-gold)!important; }
+#modalPantheon .hall-player { display:flex;gap:7px;align-items:center; }
+#modalPantheon .pantheon-footer-bar { background:var(--game-parchment)!important;color:var(--game-ink)!important;border:1px solid var(--game-gold)!important;border-radius:0!important;box-shadow:none!important;min-height:80px!important;padding:12px!important;margin-top:12px!important; }
+#modalPantheon .pantheon-player-badge { display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;text-align:left!important;width:100%!important; }
+#modalPantheon .user-badge-meta { flex:1;min-width:0; }
+#modalPantheon .player-badge-stats { display:block!important;text-transform:none!important; }
+#modalPantheon :is(.player-badge-name,.player-badge-stats) { color:var(--game-ink)!important;white-space:normal!important;text-shadow:none!important;line-height:1.6!important;font-size:12px!important; }
+#modalPantheon .pantheon-auto-badge { display:none!important; }
+/* Independent, persistent learning record. The next target never replaces its text. */
+#gameAppWrapper #swordIntentBox { display:flex!important;flex-direction:column!important; }
+#gameAppWrapper #lastLearnedWord { width:100%;padding:8px 12px;background:var(--game-parchment);border:1px solid var(--game-gold);color:var(--game-ink);font:500 12px/1.5 var(--font-body); }
+#lastLearnedWord summary { cursor:pointer;min-height:28px; }
+#lastLearnedWord .learned-ipa { display:block;margin:2px 0;font-weight:700; }
+#lastLearnedWord .learned-details { display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;margin-top:5px; }
+#lastLearnedWord .learned-type { color:var(--game-ink-muted); }
+#lastLearnedWord .learned-replay { margin-left:auto; }
+#gameAppWrapper #swordIntentBox.is-reviewing { min-height:0!important; }
+#gameAppWrapper #swordIntentBox.is-reviewing :is(.altar-parchment-scroll,#battleActiveSkillsBar) { display:none!important; }
+@media(max-width:700px) {
+ :root { --border-major:18px;--panel-padding:12px;--type-title:16px;--type-hero:17px;--type-value:18px;--type-body:13px; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .xianxia-breakthrough-box { --border-major:12px;--panel-padding:8px;width:98vw!important;max-width:98vw!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .talents-grid { grid-template-columns:repeat(3,minmax(86px,1fr))!important;gap:5px!important;overflow-x:auto!important;align-items:stretch!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card { padding:8px 5px!important;display:flex!important;gap:6px!important;outline:0!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-card-top-badges { margin:0!important;justify-content:center!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card :is(.perk-path-pill,.perk-kind-pill) { display:none!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-rarity-pill { font-size:8px!important;padding:2px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-name { font-size:12px!important;line-height:1.5!important;min-height:54px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-stat-change { font-size:10px!important;min-height:42px; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-desc { display:none!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .perk-mobile-details { display:block;font-size:11px;line-height:1.5;flex:1; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-mobile-details summary { min-height:32px;padding:6px 0;cursor:pointer; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-mobile-details p { font-size:11px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-card .btn-linh-ngo { min-height:44px!important;padding:10px 8px!important;font-size:11px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-stat-change { margin:0!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-icon-wrapper { margin:0!important;height:auto!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .perk-icon-wrapper .pixel-icon { --icon-size:34px; }
+ #modalPantheon .pantheon-list-wrapper { overflow-x:auto!important; }
+ #modalPantheon .hall-tabs button { min-width:90px; }
+ #modalPantheon .podium-crown { font-size:9px!important; }
+ #modalPantheon .podium-score { font-size:11px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .setup-modes-grid { display:grid!important;grid-template-columns:1fr!important;gap:10px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .medallion-body-plate { display:grid!important;grid-template-columns:42px 1fr!important;align-items:center!important;gap:8px!important;width:100%!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .setup-card-icon-art { margin:0!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .setup-card-name { font-size:15px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .setup-card-sub { font-size:12px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .setup-card-check-stamp { position:absolute;right:0;top:0; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .realm-step-card { padding:8px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .realm-step-name { font-size:13px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .certificate-actions-bar { flex-direction:column!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .certificate-actions-bar button { width:100%!important;flex:none!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .profile-body-layout { display:flex!important;flex-direction:column!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .profile-cat-stage { height:110px!important;width:100%!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stats-panel { width:100%!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .compact-stat-pills { width:94%!important;padding:8px!important;gap:4px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) :is(.modal-header,.modal-silk-banner,.battle-setup-banner,.altar-ribbon-banner) { min-height:76px!important;padding:18px 11%!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) [data-ui-action='hero'] { font-size:13px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .sword-talisman-restart { width:78%!important;height:82px!important;padding-left:70px!important;font-size:11px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .hotkey-badge { display:none!important; }
+ #gameAppWrapper .medallion-label { font-size:9px!important; }
+ #gameAppWrapper .windchime-medallion .pixel-icon { --icon-size:26px; }
+ #gameAppWrapper .lobby-top-actions { gap:4px!important; }
+ #gameAppWrapper #swordIntentBox,#gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:124px!important; }
+ #gameAppWrapper #swordIntentBox .altar-parchment-scroll { padding:24px 10%!important; }
+ #gameAppWrapper #swordIntentText { font-size:17px!important; }
+ #gameAppWrapper #swordTargetMeaning { font-size:12px!important; }
+ #gameAppWrapper #battleActiveSkillsBar { bottom:calc(var(--mc-keyboard-height,0px) + 138px)!important; }
+ #gameAppWrapper .active-skill-btn { width:50px!important;min-height:60px!important; }
+}
+@media(max-height:650px) {
+ #gameAppWrapper #lobbyView { justify-content:flex-start!important; }
+}
+@media(max-width:380px) {
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat-list { grid-template-columns:1fr!important;gap:3px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat { display:grid!important;grid-template-columns:26px minmax(0,1fr) auto!important;min-height:32px!important;gap:6px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat-copy { display:contents!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat-icon { width:26px!important;height:26px!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat-icon .pixel-icon { --icon-size:26px; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat :is(dt,dd) { font-size:12px!important;overflow-wrap:normal!important;word-break:normal!important; }
+ :is(#gameAppWrapper,.meowcha-modal-overlay) .pause-modal-box .mc-stat dd { white-space:nowrap!important;font-size:15px!important; }
+}
+@media(max-width:600px) and (max-height:650px) and (orientation:portrait) {
+ .keyboard-visible #gameAppWrapper #swordIntentBox,.keyboard-visible #gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:106px!important; }
+ .keyboard-visible #gameAppWrapper #swordIntentBox .altar-parchment-scroll { padding:15px 10%!important; }
+ .keyboard-visible #gameAppWrapper #swordTargetMeaning { font-size:11px!important; }
+ .keyboard-visible #gameAppWrapper #virtualKeyboardContainer { padding:3px!important; }
+ .keyboard-visible #gameAppWrapper #virtualKeyboardContainer .kb-key { height:28px!important;min-height:28px!important;max-height:28px!important;font-size:14px!important; }
+ .keyboard-visible #gameAppWrapper .kb-seal-header { min-height:20px!important;padding:2px!important; }
+ .keyboard-visible #gameAppWrapper .meowcha-virtual-keyboard { gap:3px!important; }
+ .keyboard-visible #gameAppWrapper .sect-scroll-hud { min-height:62px!important;gap:3px!important; }
+ .keyboard-visible #gameAppWrapper .active-skill-btn { width:44px!important;min-height:44px!important;height:44px!important; }
+ .keyboard-visible #gameAppWrapper .active-skill-btn :is(.skill-name-label,.skill-level-badge,.skill-hotkey-badge) { display:none!important; }
+ .keyboard-visible #gameAppWrapper .active-skill-btn .pixel-icon { --icon-size:24px; }
+ .keyboard-visible #gameAppWrapper :is(.sect-hud-left-dock,.sect-hud-right-dock) { padding:5px!important;gap:2px!important; }
+ .keyboard-visible #gameAppWrapper .sect-row-title { flex-direction:row!important; }
+ .keyboard-visible #gameAppWrapper #hudRealm { display:none!important; }
+ .keyboard-visible #gameAppWrapper :is(.hud-btn,.hud-talisman-btn) { min-height:28px!important;min-width:28px!important; }
+ .keyboard-visible #gameAppWrapper #battleActiveSkillsBar { bottom:calc(var(--mc-keyboard-height,0px) + 112px)!important; }
+}
+@media(max-height:500px) and (orientation:landscape) {
+ #gameAppWrapper #swordIntentBox { width:54vw!important; }
+ #gameAppWrapper #swordIntentBox,#gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:106px!important; }
+ #gameAppWrapper #swordIntentBox .altar-parchment-scroll { padding:18px 10%!important; }
+ #gameAppWrapper #swordTargetMeaning { font-size:11px!important; }
+ .keyboard-visible #gameAppWrapper #swordIntentBox { left:26vw!important;width:48vw!important;bottom:8px!important; }
+}
+@media(prefers-reduced-motion:reduce) {
+ :is(#gameAppWrapper,.meowcha-modal-overlay) * { animation:none!important;transition:none!important; }
+}

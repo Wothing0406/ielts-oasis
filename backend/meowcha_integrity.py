@@ -64,9 +64,17 @@ class RunComplete(BaseModel):
     assisted_words: int = Field(0, ge=0, le=100_000)
     assisted: bool = False
     is_victory: bool = False
+    metrics_version: int=Field(1,ge=1,le=2)
+    learning_attempts: int=Field(0,ge=0,le=100_000)
+    first_successes: int=Field(0,ge=0,le=100_000)
+    hints_used: int=Field(0,ge=0,le=1_000_000)
+    replay_count: int=Field(0,ge=0,le=1_000_000)
+    max_combo: int=Field(0,ge=0,le=100_000)
 
     @model_validator(mode='after')
     def check_counts(self):
+        if self.metrics_version==2 and (self.first_successes>self.learning_attempts or self.first_successes>self.words_slain or self.max_combo>self.words_slain or self.learning_attempts<self.words_slain):
+            raise ValueError('Inconsistent learning counters')
         if self.correct_keystrokes > self.total_keystrokes or self.assisted_words > self.words_slain:
             raise ValueError('Inconsistent typing counters')
         if self.correct_keystrokes * 12000 / self.active_ms > 300:
@@ -160,7 +168,7 @@ def complete_run(db, user, payload):
     max_realm = max(i for i, (score, words) in enumerate(THRESHOLDS)
                     if payload.score >= score and payload.words_slain >= words)
     realm_idx = min(payload.realm_idx, max_realm)
-    assisted = bool(run.resumed or payload.assisted or payload.assisted_keystrokes or payload.assisted_words)
+    assisted = bool(run.resumed or payload.assisted or payload.assisted_keystrokes or payload.assisted_words or payload.hints_used)
     result = {
         'run_id': run.run_id, 'user_id': user.id,
         'player_name': getattr(user, 'full_name', None) or user.username or 'Tiên Hữu',
@@ -170,6 +178,14 @@ def complete_run(db, user, payload):
         'wpm': round(payload.correct_keystrokes * 12000 / payload.active_ms),
         'game_mode': run.game_mode, 'deck_id': run.deck_id, 'assisted': assisted,
         'verification': 'plausibility_checked', 'duplicate': False,
+        'human_words':payload.words_slain-payload.assisted_words,'assisted_words':payload.assisted_words,
+        'metrics_version':payload.metrics_version,
+        'max_combo':payload.max_combo if payload.metrics_version==2 else None,
+        'learning_attempts':payload.learning_attempts if payload.metrics_version==2 else None,
+        'first_successes':payload.first_successes if payload.metrics_version==2 else None,
+        'first_success_rate':round(payload.first_successes*100/payload.learning_attempts,1) if payload.metrics_version==2 and payload.learning_attempts else None,
+        'hints_used':payload.hints_used if payload.metrics_version==2 else None,
+        'replay_count':payload.replay_count if payload.metrics_version==2 else None,
         'avatar_url': user.avatar_url if (user.avatar_url or '').startswith('https://') else '',
     }
     profile = db.query(MeowchaUserProfile).filter(MeowchaUserProfile.user_id == user.id).first()

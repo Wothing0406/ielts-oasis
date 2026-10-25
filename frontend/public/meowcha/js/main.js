@@ -15,8 +15,12 @@
       // Khởi tạo Asset Loader theo cấu trúc thư mục phân tầng chuẩn (characters/, asteroids/, maps/)
       this.assets = {
         ivory_scroll: { src:'./assets/ui/ivory-scroll-v1.png', img:new Image(), loaded:false },
+        ui_plaque: { src:'./assets/ui/carved-plaque-v1.png', img:new Image(), loaded:false },
+        ui_frame: { src:'./assets/ui/jade-frame-v1.png', img:new Image(), loaded:false },
+        ui_icons: { src:'./assets/ui/cultivation-icons-v1.png', img:new Image(), loaded:false },
         cultivation_dais: { src: './assets/ui/cultivation-dais-v1.png', img: new Image(), loaded: false },
         bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: new Image(), loaded: false },
+        bg_portrait: { src: "./sprites/maps/bg_study_sanctuary_portrait.webp", img: new Image(), loaded: false },
         cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: new Image(), loaded: false },
         cat_weak_attack: { src: "./sprites/characters/realm0_qi_refining/poses/attack.png", img: new Image(), loaded: false },
         cat_golden_core: { src: "./sprites/characters/realm2_golden_core/poses/idle.png", img: new Image(), loaded: false },
@@ -131,6 +135,7 @@
       this.gameState = new M.GameState();
       this.audio = new M.AudioManager();
       this.saveSystem = new M.SaveSystem();
+      this.gameState.highScore=this.saveSystem.getCertificateRecord(this.gameState).score;
       this.animator = M.SpriteAnimator ? new M.SpriteAnimator(this.assets) : null;
       this.particles = new M.ParticleEngine();
       this.realmVFX = new M.RealmVFX(this.assets);
@@ -154,6 +159,7 @@
 
     init() {
       if (M.installPixelArt) M.installPixelArt();
+      if (M.installDesignSystem) M.installDesignSystem();
       this.loadAllAssets();
       this.initCanvasSize();
       this.unityBridge.init();
@@ -223,25 +229,7 @@
         const currentSlot = (this.gameState && this.gameState.activeSlotId) || this.saveSystem.getActiveSlotId() || 1;
         this.saveSystem.saveGame(currentSlot, this.gameState);
 
-        // Hiển thị chữ Ngộ Đạo trực tiếp trên chiến trường (trên đỉnh đầu mèo, rõ ràng và không che khuất góc nhìn)
-        if (this.floatingText && slainWord && (slainWord.meaning || slainWord.ipa)) {
-          const catTargetY = (this.canvas ? this.canvas.height : 600) * 0.72;
-          const meaningText = slainWord.meaning ? `[ 悟 ] ${slainWord.meaning}` : `[ 悟 ] ${slainWord.ipa || ''}`;
-          this.floatingText.add(
-            (this.canvas ? this.canvas.width : 400) / 2,
-            catTargetY - 45,
-            meaningText,
-            "#34D399",
-            20
-          );
-        }
-
-        // Kiểm tra điều kiện đột phá
-        const triggered = this.breakthrough.checkProgress(this.asteroids);
-        if (!triggered) {
-          // Lên lịch sinh từ tiếp theo
-          setTimeout(() => this.spawnWord(), 600);
-        }
+        // The loop advances only after the learning reward has finished.
       };
 
       // Callback hiển thị bảng thiên phú đột phá
@@ -348,6 +336,8 @@
       this.floatingText.clear();
       this.recentWordHistory = [];
       this.spawnTimer = 0;
+      const learned=document.getElementById('lastLearnedWord');if(learned){learned.hidden=true;learned.innerHTML='';}
+      const altar=document.getElementById('swordIntentBox');if(altar)altar.classList.remove('is-reviewing');
       this.gameOverModalShown = false;
       if (this.typing) {
         this.typing.pendingAutoKill = false;
@@ -405,6 +395,9 @@
       }
 
       this.purgeAllBattleState();
+      // Purge prepares future runs; keep the defeat gate closed for this one.
+      this.gameOverModalShown=true;
+      this.gameState.isPaused=true;
       if (this.unityBridge) {
         this.unityBridge.triggerDefeated();
       }
@@ -501,7 +494,7 @@
 
       // Tự động mở khóa âm thanh và phát khúc Cổ Cầm thiền định ngay khi tương tác ở sảnh
       const unlockAudioAndStartBGM = (event) => {
-        if (event && event.target && event.target.closest && event.target.closest('#btnToggleSound, #btnToggleSoundLobby')) return;
+        if (event && event.target && event.target.closest && event.target.closest('#btnToggleSound, #btnToggleSoundLobby, #modalAudioSettings')) return;
         if (this.audio) {
           this.audio.init();
           this.audio.unlockAudioContext();
@@ -587,7 +580,7 @@
         const curMode = (this.gameState && this.gameState.gameMode) || "DIRECT";
         if (this.gameState && (this.gameState.isGameOver || this.gameState.hp <= 0)) {
           if (this.saveSystem) this.saveSystem.resetActiveSave(activeSlot, curMode);
-          if (this.gameState) this.gameState.reset();
+          if (this.gameState) { this.gameState.reset(); this.gameState.gameMode=curMode; }
         } else if (this.saveSystem && this.gameState) {
           this.saveSystem.saveGame(activeSlot, this.gameState);
         }
@@ -671,11 +664,17 @@
     }
 
     spawnWord() {
+      if(this.floatingText&&this.floatingText.hasBlockingReward&&this.floatingText.hasBlockingReward())return;
       if (this.gameState.currentScene !== "BATTLE" || this.gameState.isGameOver || this.gameState.isPaused || this.gameState.catState === "BREAKTHROUGH") return;
       if (this.breakthrough && this.breakthrough.isBossEncounterActive) return;
       // QUY CHUẨN ĐỘ KIẾP: TUYỆT ĐỐI CHỈ RƠI 1 QUẢ DUY NHẤT TẠI MỘT THỜI ĐIỂM!
       // Không bao giờ rơi chồng chéo 2-3 quả. Trảm xong quả này thì quả mới mới xuất hiện!
       if (this.asteroids.count >= 1) return;
+      // Recheck saved thresholds too: leaving during the reward must not lose a boss gate.
+      if(this.breakthrough.checkProgress(this.asteroids))return;
+      const learned=document.getElementById('lastLearnedWord');if(learned)learned.open=false;
+      const altar=document.getElementById('swordIntentBox');if(altar)altar.classList.remove('is-reviewing');
+      if(this.canvas.getBoundingClientRect&&M.refreshBattleLayout)M.refreshBattleLayout(this.canvas);
 
       const rIdx = Math.max(0, this.gameState.realmIdx || 0);
       const realmDecks = M.REALM_DECKS || {};
@@ -830,6 +829,7 @@
         targetDeckIdx,
         chosenType
       );
+      if(ast){this.typing.currentTarget=ast;this.typing.updateSwordAltarUI(ast);}
 
       if (ast && this.typing.pendingAutoKill) {
         this.typing.pendingAutoKill = false;
@@ -840,7 +840,7 @@
       // Trong chế độ Thính Lôi Biện Âm (AUDIO): Phát âm từ vựng ngay khi ma thạch xuất hiện!
       if (ast && ast.isAudio && this.typing) {
         setTimeout(() => {
-          if (this.typing) this.typing.playWordAudio(ast);
+          if (this.typing&&this.asteroids.asteroids.includes(ast)&&!this.gameState.isGameOver&&this.gameState.currentScene==='BATTLE') this.typing.playWordAudio(ast);
         }, 150);
       }
     }
@@ -901,7 +901,7 @@
 
       // Cập nhật 10s thiên kiếp sấm sét liên tục
       if (this.typing) {
-        this.typing.updateHazard(dt, this.canvas);
+        if(!this.floatingText.hasBlockingReward())this.typing.updateHazard(dt, this.canvas);
       }
 
       // NẾU HẾT MÁU DO SÉT ĐÁNH / THIÊN KIẾP / THIÊN THẠCH: LẬP TỨC TRIGGER GAME OVER & XÓA SAVE
@@ -928,6 +928,7 @@
         ? (this.gameState.activeSkillEffects.windSwordSlow || 0.4) : 0;
       this.asteroids.update(dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
+        this.gameState.recordLearningOutcome(missedAst,false);
         if (this.saveSystem && !missedAst.isBoss) {
           this.saveSystem.recordWeaknessWord(missedAst);
         }
@@ -988,7 +989,8 @@
       }
 
       // Cập nhật thanh HUD
-      this.ui.updateHUD();
+      this.hudElapsed=(this.hudElapsed||0)+dt;
+      if(this.hudElapsed>=.1){this.ui.updateHUD();this.hudElapsed=0;}
 
       // HUD luôn sắc nét, vững chãi, hai dock trái phải không che khuất ma thạch rơi chính giữa trời
       const hudEl = document.querySelector(".sect-scroll-hud");
@@ -1017,27 +1019,13 @@
         ctx.translate(sx, sy);
       }
 
-      // 2. Nền trà viện thiền tịnh (Aspect-cover tràn viền vô cực kèm overscan 80px chống hở mép khi rung chấn)
-      const overscan = 80;
+      // The portrait plate keeps the complete temple and terrace on narrow screens.
+      const overscan = 6;
       if (this.assets.bg.loaded) {
-        const img = this.assets.bg.img;
-        const targetW = w + overscan * 2;
-        const targetH = h + overscan * 2;
-        const imgRatio = img.width / img.height;
-        const canvasRatio = targetW / targetH;
-        let renderW, renderH, offsetX, offsetY;
-        if (canvasRatio > imgRatio) {
-          renderW = targetW;
-          renderH = targetW / imgRatio;
-          offsetX = -overscan;
-          offsetY = -overscan + (targetH - renderH) / 2;
-        } else {
-          renderH = targetH;
-          renderW = targetH * imgRatio;
-          offsetX = -overscan + (targetW - renderW) / 2;
-          offsetY = -overscan;
-        }
-        ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
+        const portrait=w/h<.85&&this.assets.bg_portrait.loaded;
+        const img=(portrait?this.assets.bg_portrait:this.assets.bg).img;
+        const f=M.getSceneFrame(img.width,img.height,w,h,portrait);
+        ctx.drawImage(img,f.sx,f.sy,f.sw,f.sh,f.dx,f.dy,f.dw,f.dh);
       } else {
         ctx.fillStyle = "#1E120A";
         ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
@@ -1046,7 +1034,7 @@
       // Lớp phủ bóng mờ viền màn hình (Vignette)
       const grad = ctx.createRadialGradient(w / 2, h / 2, 100, w / 2, h / 2, Math.max(w, h) / 1.4);
       grad.addColorStop(0, "rgba(0, 0, 0, 0.0)");
-      grad.addColorStop(1, "rgba(10, 5, 2, 0.72)");
+      grad.addColorStop(1, "rgba(10, 25, 22, 0.32)");
       ctx.fillStyle = grad;
       ctx.fillRect(-overscan, -overscan, w + overscan * 2, h + overscan * 2);
 

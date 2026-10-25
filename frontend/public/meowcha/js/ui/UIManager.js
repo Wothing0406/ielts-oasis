@@ -384,70 +384,16 @@
       }
 
       // Nút Trọng Sinh Trận Mới (Game Over -> Chơi lại ngay lập tức sạch sẽ từ Luyện Khí sơ kỳ)
-      const btnRebirth = document.getElementById("btnRebirth");
-      const handleRebirthFromGameOver = (e) => {
-        if (e) {
-          try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
-        }
-        try {
-          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
-          const curMode = (this.state && this.state.gameMode) || "DIRECT";
-          if (this.saveSystem && typeof this.saveSystem.resetActiveSave === "function") {
-            this.saveSystem.resetActiveSave(curSlotId, curMode);
-          }
-          if (this.state && typeof this.state.resetForNewMode === "function") {
-            this.state.resetForNewMode(curMode);
-          }
-        } catch (err) {
-          console.warn("[GameOver Rebirth]", err);
-        } finally {
-          this.hideGameOverModal();
-          if (this.audio) {
-            try { this.audio.silenceAll(); this.audio.play("chime"); } catch (_) {}
-          }
-          if (this.onRestartBattle) {
-            this.onRestartBattle();
-          } else if (this.onStartBattle) {
-            this.onStartBattle();
-          }
-        }
-      };
-
-      if (btnRebirth) {
-        btnRebirth.onclick = handleRebirthFromGameOver;
-        btnRebirth.addEventListener("pointerup", handleRebirthFromGameOver, { passive: false });
-      }
-
-      // Nút Quy Về Tiên Sảnh (Game Over -> Trở về sảnh với trạng thái sạch đã tẩy tủy)
-      const btnReturnLobbyGameOver = document.getElementById("btnReturnLobbyGameOver");
-      const handleReturnLobbyFromGameOver = (e) => {
-        if (e) {
-          try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
-        }
-        try {
-          const curSlotId = (this.state && this.state.activeSlotId) || (this.saveSystem && this.saveSystem.getActiveSlotId()) || 1;
-          const curMode = (this.state && this.state.gameMode) || "DIRECT";
-          if (this.saveSystem && typeof this.saveSystem.resetActiveSave === "function") {
-            this.saveSystem.resetActiveSave(curSlotId, curMode);
-          }
-          if (this.state && typeof this.state.reset === "function") {
-            this.state.reset();
-          }
-        } catch (err) {
-          console.warn("[GameOver ReturnLobby]", err);
-        } finally {
-          this.hideGameOverModal();
-          if (this.audio) {
-            try { this.audio.silenceAll(); this.audio.play("chime"); } catch (_) {}
-          }
-          if (this.onReturnLobby) this.onReturnLobby();
-        }
-      };
-
-      if (btnReturnLobbyGameOver) {
-        btnReturnLobbyGameOver.onclick = handleReturnLobbyFromGameOver;
-        btnReturnLobbyGameOver.addEventListener("pointerup", handleReturnLobbyFromGameOver, { passive: false });
-      }
+      const btnRebirth=document.getElementById('btnRebirth');
+      const btnReturnLobbyGameOver=document.getElementById('btnReturnLobbyGameOver');
+      if(btnRebirth)btnRebirth.onclick=event=>{event.preventDefault();this.finishGameOver(true);};
+      if(btnReturnLobbyGameOver)btnReturnLobbyGameOver.onclick=event=>{event.preventDefault();this.finishGameOver(false);};
+      const audioOpen=document.getElementById('btnAudioSettings'),audioClose=document.getElementById('btnCloseAudioSettings');
+      if(audioOpen)audioOpen.onclick=()=>this.showAudioSettings();
+      if(audioClose)audioClose.onclick=()=>{document.getElementById('modalAudioSettings').style.display='none';};
+      const soundSwitch=document.getElementById('audioMasterEnabled'),recover=document.getElementById('btnAudioRecover');
+      if(soundSwitch)soundSwitch.onchange=()=>{if(soundSwitch.checked)this.audio.enableSound();else if(this.audio.soundEnabled)this.audio.toggleSound();this.updateAudioSettings();};
+      if(recover)recover.onclick=()=>{this.audio.enableSound();this.updateAudioSettings();this.showStatus('Đã khôi phục nhạc và hiệu ứng. Phát âm tiếp tục khi vào trận.');};
 
       const btnToggleSound = document.getElementById('btnToggleSound');
       const btnToggleSoundLobby = document.getElementById('btnToggleSoundLobby');
@@ -472,6 +418,7 @@
       if (btnToggleSound) btnToggleSound.onclick = toggle;
       this.audio.onStatusChange = () => {
         updateSoundUI();
+        this.updateAudioSettings();
         if (this.audio.lastError) this.showStatus(this.audio.lastError, 6000);
       };
       updateSoundUI();
@@ -917,8 +864,10 @@
         topNameLabel.innerText = user.name.length > 9 ? user.name.slice(0, 8) + "…" : user.name;
       }
 
-      this.updateMonolithLocks();
-      this.updateLobbyButtons();
+      if(this.state.currentScene==='LOBBY'){
+        this.updateMonolithLocks();
+        this.updateLobbyButtons();
+      }
     }
 
     updateLobbyButtons() {
@@ -1192,12 +1141,18 @@
 
     showTalentModal(talents, targetRealm, onSelect) {
       if (!this.modalBreakthrough) return;
+      let choiceMade=false;
+      const selectChoice=talent=>{
+        if(choiceMade)return;
+        choiceMade=true;
+        this.hideTalentModal();
+        if(onSelect)onSelect(talent);
+      };
       const cardsContainer = document.getElementById("breakthroughTalentsList");
       const titleEl = document.getElementById("breakthroughRealmTitle");
 
       if (titleEl) {
-        titleEl.innerText = targetRealm ? `✦ CƠ DUYÊN NGỘ ĐẠO: ${(targetRealm.name || "").toUpperCase()} ✦` : "✦ CƠ DUYÊN NGỘ ĐẠO ✦";
-        if (targetRealm && targetRealm.color) titleEl.style.color = targetRealm.color;
+        titleEl.innerText = targetRealm ? `Cơ duyên ngộ đạo • ${targetRealm.name || ''}` : 'Cơ duyên ngộ đạo';
       }
 
       if (cardsContainer) {
@@ -1205,7 +1160,8 @@
         const oldReview = this.modalBreakthrough.querySelector('.boss-review-note');
         if (oldReview) oldReview.remove();
         if (this.state.lastBossReview) {
-          const review = document.createElement('div'); review.className = 'practice-summary boss-review-note';
+          const review = document.createElement('details'); review.className = 'practice-summary boss-review-note';
+          const caption=document.createElement('summary');caption.textContent='Ôn lại ba từ gần nghĩa';review.appendChild(caption);
           const note = document.createElement('p'); note.textContent = 'Từ gần nghĩa theo ngữ cảnh; không phải lúc nào cũng thay thế được cho nhau.';
           review.appendChild(note);
           for (const item of this.state.lastBossReview) {
@@ -1244,30 +1200,29 @@
             <div class="perk-name" style="color: ${rarityCol};">${talent.name}</div>
             ${talent.statChange ? `<div class="perk-stat-change">${talent.statChange}</div>` : ""}
             <div class="perk-desc">${talent.desc}</div>
-            <button class="btn-linh-ngo" type="button">
-              LĨNH NGỘ [ Phím ${idx + 1} ]
+            <details class="perk-mobile-details"><summary>Chi tiết</summary><p>${escapeHTML(talent.desc)}</p></details>
+            <button class="btn-linh-ngo" type="button" aria-label="Lĩnh ngộ ${escapeHTML(talent.name)}">
+              Lĩnh ngộ <span class="hotkey-badge">${idx + 1}</span>
             </button>
           `;
 
-          card.onclick = () => {
-            this.hideTalentModal();
-            if (onSelect) onSelect(talent);
-          };
+          card.onclick = () => selectChoice(talent);
 
           cardsContainer.appendChild(card);
         });
       }
 
       this.modalBreakthrough.style.display = "flex";
+      if(root.Meowcha.applyDesignSystem)root.Meowcha.applyDesignSystem(this.modalBreakthrough);
 
       // Hỗ trợ phím tắt 1, 2, 3
       if (this._talentKeyHandler) window.removeEventListener('keydown', this._talentKeyHandler);
       const keyHandler = (e) => {
+        if(e.ctrlKey||e.altKey||e.metaKey||e.repeat||e.isComposing)return;
         const keyNum = parseInt(e.key, 10);
         if (keyNum >= 1 && keyNum <= talents.length) {
           window.removeEventListener("keydown", keyHandler);
-          this.hideTalentModal();
-          if (onSelect) onSelect(talents[keyNum - 1]);
+          selectChoice(talents[keyNum - 1]);
         }
       };
       this._talentKeyHandler = keyHandler;
@@ -1307,6 +1262,7 @@
 
       if (activeSlots.length === 0) {
         container.innerHTML = "";
+        container.style.display='none';
         return;
       }
 
@@ -1345,8 +1301,9 @@
             e.preventDefault();
             e.stopPropagation();
             const slot = parseInt(btn.dataset.slot, 10);
-            if (window.__meowchaGame && window.__meowchaGame.typing) {
-              window.__meowchaGame.typing.activateSkillBySlot(slot, window.__meowchaGame.canvas);
+            const app=root.Meowcha.app;
+            if (app&&app.typing&&app.gameState===this.state) {
+              app.typing.activateSkillBySlot(slot,app.canvas);
             } else if (this.state && this.state.activateSkill) {
               const skillId = btn.dataset.skill;
               this.state.activateSkill(skillId, null, this.audio);
@@ -1377,9 +1334,10 @@
         ['Thời Gian', Math.floor(seconds/60) + 'p ' + seconds%60 + 's'],
         ['Hỗ Trợ', (s.assistedWords || 0) + ' từ · ' + (s.assistedKeystrokes || 0) + ' phím']
       ];
-      summary.innerHTML = '<h3 class="pause-summary-title">TRẬN NÀY</h3><dl class="pause-stats-grid">' +
-        stats.map(([label,value])=>'<div class="pause-stat"><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('') +
-        '</dl><p class="pause-assistance-note">Tiến trình được giữ khi tạm nghỉ. Trở về tiên môn sẽ lưu đạo quả vào ngọc giản hiện tại.</p>';
+      const kinds=['accuracy','speed','combo','words','time','assistance'];
+      summary.innerHTML = '<h3 class="pause-summary-title">Chiến tích trận này</h3><div class="mc-stat-list">' +
+        stats.map(([label,value],i)=>root.Meowcha.ui.stat(kinds[i],label,value)).join('') +
+        '</div><p class="pause-assistance-note">Tiến trình được giữ khi tạm nghỉ. Trở về tiên môn sẽ lưu đạo quả vào ngọc giản hiện tại.</p>';
     }
 
     getPracticeSummary() {
@@ -1510,237 +1468,96 @@
     }
 
     generateCertificateCanvas() {
-      const c = document.createElement("canvas");
-      c.width = 1200;
-      c.height = 630;
-      const ctx = c.getContext("2d");
-      if (!ctx) return "";
-
-      const record = this.saveSystem.getCertificateRecord(this.state);
-      const s = record;
-      const known = !!record.metricsKnown;
-      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
-
-      const user = this.getLoggedInUser();
-      const userName = (user && user.name && user.name.trim()) ? user.name.trim() : "Tiểu Miêu Kiếm Sĩ";
-      
-      const personalBest = Number(record.score || 0);
-      const certRealmIdx = Math.min(4, Math.max(0, s.realmIdx || 0));
-      const realmData = realms[certRealmIdx] || realms[0] || { title: "Tiểu Miêu Kiếm Đồng", name: "Luyện Khí Kỳ", color: "#FFE49A" };
-      const rIdx = certRealmIdx;
-
-      const modeNames = {
-        CLOZE: 'Ngộ Đạo Thông Linh (Điền Khuyết)',
-        DIRECT: 'Trực Diện Trảm Ma (Gõ Phản Xạ)',
-        AUDIO: 'Thính Lôi Biện Âm (Nghe Chính Tả)'
-      };
-      const curMode = s.gameMode || "DIRECT";
-      const modeLabel = modeNames[curMode] || curMode;
-
-      // 1. NỀN SƠN MÀI GỖ TỬ ĐÀN & CHU SA HOÀNG HÔN (PREMIUM XIANXIA SILK)
-      const grad = ctx.createRadialGradient(600, 315, 60, 600, 315, 680);
-      grad.addColorStop(0, "#281711");
-      grad.addColorStop(0.55, "#1C0E0A");
-      grad.addColorStop(1, "#100D12");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 1200, 630);
-
-      // Vân linh khí hoàng kim & ngọc bích lấp lánh có kiểm soát
-      for (let i = 0; i < 42; i++) {
-        const sx = Math.sin(i * 88) * 560 + 600;
-        const sy = Math.cos(i * 66) * 270 + 315;
-        const sr = (i % 3) + 1.2;
-        ctx.fillStyle = i % 2 === 0 ? "rgba(212, 168, 73, 0.35)" : "rgba(39, 104, 93, 0.3)";
-        ctx.beginPath();
-        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-        ctx.fill();
+      const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
+      const ctx=canvas.getContext('2d');if(!ctx)return '';
+      const record=this.saveSystem.getCertificateRecord(this.state),known=!!record.metricsKnown;
+      const realm=(root.Meowcha.CULTIVATION_REALMS||[])[Math.min(4,Math.max(0,record.realmIdx||0))]||{name:'Luyện Khí Kỳ'};
+      const user=this.getLoggedInUser(),name=user&&user.name?user.name.trim():'Tiểu Miêu Kiếm Sĩ';
+      const colors={paper:'#F5E8C8',ink:'#244B3D',muted:'#634D37',jade:'#315C4B',gold:'#B7914F',light:'#FFF1CE'};
+      const asset=key=>this.assets&&this.assets[key]&&this.assets[key].loaded?this.assets[key].img:null;
+      ctx.fillStyle=colors.paper;ctx.fillRect(0,0,1200,630);
+      const frame=asset('ui_frame');
+      if(frame){
+        // Nine-slice preserves the carved corners at the certificate's wide aspect.
+        const sx=[0,frame.width*.32,frame.width*.68,frame.width],sy=[0,frame.height*.32,frame.height*.68,frame.height];
+        const dx=[0,34,1166,1200],dy=[0,34,596,630];
+        for(let row=0;row<3;row++)for(let col=0;col<3;col++){
+          if(row===1&&col===1)continue;
+          ctx.drawImage(frame,sx[col],sy[row],sx[col+1]-sx[col],sy[row+1]-sy[row],dx[col],dy[row],dx[col+1]-dx[col],dy[row+1]-dy[row]);
+        }
       }
-
-      // 2. VIỀN KÉP HOÀNG KIM & CHU SA CỔ PHONG
-      // Khung ngoài nạm chỉ vàng kim cổ
-      ctx.strokeStyle = "#D4A849";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(26, 26, 1148, 578);
-
-      // Khung trong đỏ chu sa sơn mài
-      ctx.strokeStyle = "rgba(118, 29, 32, 0.85)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(36, 36, 1128, 558);
-
-      // Khung chỉ vàng phụ mảnh mai
-      ctx.strokeStyle = "rgba(255, 228, 154, 0.35)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(42, 42, 1116, 546);
-
-      // 4 PHÙ TRIỆN BÁT QUÁI TẠI 4 GÓC (KHẮC HOÀNG KIM)
-      ctx.fillStyle = "#FFE49A";
-      ctx.font = "800 17px 'Cinzel', serif";
-      ctx.fillText("[ 乾 ]", 52, 66);
-      ctx.fillText("[ 坤 ]", 1112, 66);
-      ctx.fillText("[ 坎 ]", 52, 576);
-      ctx.fillText("[ 离 ]", 1112, 576);
-
-      // 3. TIÊU ĐỀ CHỨNG ĐẠO KIM ĐỒ
-      ctx.textAlign = "center";
-      ctx.font = "800 14px 'Cinzel', sans-serif";
-      ctx.fillStyle = "#D4A849";
-      ctx.letterSpacing = "2px";
-      ctx.fillText("✦ MEOW-CHA TRÀ ĐẠO • TIÊN HIỆP IELTS OASIS ✦", 600, 78);
-
-      ctx.font = "900 38px 'Cinzel', serif";
-      ctx.fillStyle = "#FFE49A";
-      ctx.shadowColor = "rgba(212, 168, 73, 0.6)";
-      ctx.shadowBlur = 16;
-      ctx.fillText("CHỨNG ĐẠO KIM ĐỒ", 600, 126);
-      ctx.shadowBlur = 0;
-
-      // 4. KHỐI BÊN TRÁI: ĐẠO QUẢ MIÊU TIÊN NGỰ KIẾM (REAL CHARACTER SPRITE)
-      const cx = 250, cy = 350;
-      ctx.save();
-
-      // Vòng Ngũ Sắc Linh Vòng
-      ctx.strokeStyle = "rgba(212, 168, 73, 0.75)";
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = "#D4A849";
-      ctx.shadowBlur = 18;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 125, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(39, 104, 93, 0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 136, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // Bệ Mây Ngũ Sắc Tọa Thiền
-      ctx.fillStyle = "rgba(39, 104, 93, 0.35)";
-      ctx.strokeStyle = "#34D399";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + 96, 92, 20, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Vẽ sprite nhân vật thực tế
-      const catAsset = (this.assets && (this.assets[`char_r${rIdx}_idle`]?.img))
-        || document.getElementById("lobbyCatImg");
-
-      if (catAsset && catAsset.naturalWidth > 0) {
-        ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        ctx.shadowColor = "#D4A849";
-        ctx.shadowBlur = 16;
-        ctx.drawImage(catAsset, cx - 100, cy - 100, 200, 200);
-        ctx.restore();
-      } else {
-        // Fallback ngọc bài tu sĩ silhouette
-        ctx.fillStyle = "rgba(212, 168, 73, 0.2)";
-        ctx.strokeStyle = "#D4A849";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 70, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.font = "800 28px 'Cinzel', serif";
-        ctx.fillStyle = "#FFE49A";
-        ctx.textAlign = "center";
-        ctx.fillText("仙", cx, cy + 10);
-      }
-
-      ctx.restore();
-
-      // 5. KHỐI BÊN PHẢI: BẢNG CHIẾN TÍCH TU CHÂN & VINH DANH TIÊN HỮU
-      ctx.textAlign = "left";
-
-      // TÊN TIÊN HỮU / ĐẠO HIỆU
-      ctx.font = "900 28px 'Cinzel', serif";
-      ctx.fillStyle = "#FFE49A";
-      ctx.shadowColor = "rgba(212, 168, 73, 0.7)";
-      ctx.shadowBlur = 8;
-      ctx.fillText(`TIÊN HỮU: ${userName.toUpperCase()}`, 470, 198, 620);
-      ctx.shadowBlur = 0;
-
-      // CẢNH GIỚI & PHÁP MÔN
-      ctx.font = "700 16px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#FEF3C7";
-      ctx.fillText(known ? `CẢNH GIỚI VÁN KỶ LỤC: ${realmData.name.toUpperCase()}` : 'KỶ LỤC ĐÃ LƯU • CHƯA CÓ THỐNG KÊ VÁN CŨ', 470, 230, 620);
-
-      ctx.font = "600 13px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#D4A849";
-      ctx.fillText(known ? `PHÁP MÔN TU LUYỆN: ${modeLabel}` : 'Điểm kỷ lục được giữ riêng với điểm ván hiện tại.', 470, 254);
-
-      // Lưới thông số (Stats grid: 4 ô) theo bảng màu Tiên Hiệp chuẩn
-      const stats = [
-        { label: "KỶ LỤC TU VI", val: `${personalBest.toLocaleString()} TU VI`, color: "#FFE49A" },
-        { label: "ĐỘ CHÍNH XÁC TỰ GÕ", val: known && s.accuracy != null ? `${s.accuracy}%` : "Chưa lưu", color: "#34D399" },
-        { label: "TỪ TỰ GÕ / TỪ HỖ TRỢ", val: known && s.humanWords != null ? `${s.humanWords} / ${s.assistedWords || 0}` : "Chưa lưu", color: "#FEF08A" },
-        { label: "TỐC ĐỘ TỰ GÕ (WPM)", val: known && s.wpm != null ? `${Math.round(s.wpm)} TỪ/PHÚT` : "Chưa lưu", color: "#F87171" }
+      ctx.strokeStyle=colors.gold;ctx.lineWidth=1;ctx.strokeRect(49,49,1102,532);
+      const plaque=asset('ui_plaque');if(plaque)ctx.drawImage(plaque,280,35,640,110);
+      ctx.textAlign='center';ctx.fillStyle=plaque?colors.light:colors.ink;ctx.font='800 30px "Be Vietnam Pro", Arial';
+      ctx.fillText('Chứng Đạo Kim Đồ',600,98);
+      ctx.fillStyle=colors.muted;ctx.font='500 13px "Be Vietnam Pro", Arial';ctx.fillText('MEOW-CHA Trà Đạo • Tiên Hiệp IELTS Oasis',600,156);
+      const portrait=asset('char_r'+Math.min(4,Math.max(0,record.realmIdx||0))+'_idle');
+      const dais=asset('cultivation_dais');ctx.imageSmoothingEnabled=false;
+      if(dais)ctx.drawImage(dais,100,400,280,125);
+      if(portrait)ctx.drawImage(portrait,120,220,240,240);
+      ctx.imageSmoothingEnabled=true;ctx.fillStyle=colors.ink;ctx.font='800 20px "Be Vietnam Pro", Arial';
+      ctx.fillText(realm.name,240,553,300);
+      ctx.textAlign='left';let nameSize=25;
+      while(nameSize>16){ctx.font='800 '+nameSize+'px "Be Vietnam Pro", Arial';if(ctx.measureText('Tiên hữu: '+name).width<=640)break;nameSize--;}
+      ctx.fillText('Tiên hữu: '+name,445,211,640);
+      ctx.font='500 14px "Be Vietnam Pro", Arial';ctx.fillStyle=colors.muted;
+      const mode={DIRECT:'Trực Diện Trảm Ma',CLOZE:'Ngộ Đạo Thông Linh',AUDIO:'Thính Lôi Biện Âm'}[record.gameMode]||'Ván lưu trữ';
+      ctx.fillText(known?'Pháp môn: '+mode:'Kỷ lục cũ • Chưa lưu số đo ván đấu',445,240,640);
+      const stats=[
+        ['Kỷ lục Tu Vi',Number(record.score||0).toLocaleString('vi-VN'),5],
+        ['Độ chính xác tự gõ',known&&record.accuracy!=null?record.accuracy+'%':'Chưa lưu',1],
+        ['Từ tự gõ / hỗ trợ',known&&record.humanWords!=null?record.humanWords+' / '+(record.assistedWords||0):'Chưa lưu',6],
+        ['Tốc độ tự gõ',known&&record.wpm!=null?Math.round(record.wpm)+' WPM':'Chưa lưu',2]
       ];
-
-      stats.forEach((st, idx) => {
-        const col = idx % 2;
-        const row = Math.floor(idx / 2);
-        const bx = 470 + col * 320;
-        const by = 280 + row * 85;
-
-        // Thẻ gỗ tử đàn nẹp viền chỉ vàng
-        ctx.fillStyle = "#1E110A";
-        ctx.strokeStyle = "rgba(212, 168, 73, 0.45)";
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(bx, by, 305, 72, 6);
-        else ctx.rect(bx, by, 305, 72);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.font = "700 11.5px 'Be Vietnam Pro', sans-serif";
-        ctx.fillStyle = "#CBB799";
-        ctx.fillText(st.label, bx + 16, by + 27);
-
-        ctx.font = "900 22px 'Cinzel', serif";
-        ctx.fillStyle = st.color;
-        ctx.fillText(st.val, bx + 16, by + 56, 273);
+      const icons=asset('ui_icons');
+      stats.forEach(([label,value,index],i)=>{
+        const x=445+(i%2)*330,y=280+Math.floor(i/2)*100;
+        if(icons){const iw=icons.width/4,ih=icons.height/2;ctx.drawImage(icons,(index%4)*iw,Math.floor(index/4)*ih,iw,ih,x,y+6,44,44);}
+        ctx.font='500 13px "Be Vietnam Pro", Arial';ctx.fillStyle=colors.muted;ctx.fillText(label,x+54,y+22);
+        ctx.font='800 24px "Be Vietnam Pro", Arial';ctx.fillStyle=colors.ink;ctx.fillText(value,x+54,y+56,265);
       });
+      ctx.fillStyle=colors.jade;ctx.font='500 13px "Be Vietnam Pro", Arial';
+      ctx.fillText('Bền bỉ dưỡng khí • Mỗi ngày một bước tiến gần Tiên Đạo.',445,502,640);
+      ctx.fillStyle=colors.muted;ctx.font='500 12px "Be Vietnam Pro", Arial';ctx.fillText('ieltsoasis.site/games/meowcha',445,553);
+      try{return canvas.toDataURL('image/png');}catch(error){console.warn('[Certificate] export failed',error);return '';}
+    }
 
-      // Khẩu quyết tiên gia
-      ctx.font = "italic 13.5px 'Be Vietnam Pro', sans-serif";
-      ctx.fillStyle = "#E6D5B8";
-      ctx.fillText("“Vạn kiếm quy tâm • Bền bỉ dưỡng khí • Mỗi ngày một bước tiến gần Tiên Đạo.”", 470, 484);
+    finishGameOver(restart) {
+      if(!this.modalGameOver||this.modalGameOver.style.display==='none')return false;
+      this.hideGameOverModal();
+      if(this.audio)this.audio.play('chime');
+      const callback=restart?(this.onRestartBattle||this.onStartBattle):this.onReturnLobby;
+      if(callback)callback();
+      return true;
+    }
 
-      // DẤU TRIỆN CHU SA TIÊN TÔNG (KHÔNG BỊ CHỒNG CHÉO)
-      const sealX = 470, sealY = 512, sealW = 280, sealH = 44;
-      ctx.fillStyle = "rgba(118, 29, 32, 0.6)";
-      ctx.strokeStyle = "#D4A849";
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(sealX, sealY, sealW, sealH, 4);
-      else ctx.rect(sealX, sealY, sealW, sealH);
-      ctx.fill();
-      ctx.stroke();
+    showAudioSettings() {
+      const modal=document.getElementById('modalAudioSettings');
+      if(!modal)return;
+      modal.style.display='flex';
+      this.updateAudioSettings();
+    }
 
-      ctx.textAlign = "center";
-      ctx.font = "800 13px 'Cinzel', serif";
-      ctx.fillStyle = "#FFE49A";
-      ctx.fillText("✦ THƯỢNG PHẨM ĐẠO QUẢ • CHỨNG ĐẠO ✦", sealX + sealW / 2, sealY + 27);
-
-      // Link trang web
-      ctx.textAlign = "right";
-      ctx.font = "600 12px 'Cinzel', sans-serif";
-      ctx.fillStyle = "#D4A849";
-      ctx.fillText("ieltsoasis.site/games/meowcha", 1115, 540);
-
-      try {
-        return c.toDataURL("image/png");
-      } catch (exportErr) {
-        console.warn("[Certificate] toDataURL error:", exportErr);
-        return "";
-      }
+    updateAudioSettings() {
+      const modal=document.getElementById('modalAudioSettings');
+      if(!modal||modal.style.display==='none')return;
+      const enabled=document.getElementById('audioMasterEnabled');
+      if(enabled)enabled.checked=this.audio.soundEnabled;
+      const status=this.audio.getStatus();
+      const message=document.getElementById('audioSettingsStatus');
+      if(message)message.textContent=!status.enabled?'Đang tắt nhạc, hiệu ứng và phát âm.':
+        status.lastError||'Âm thanh đang bật. Giọng đọc tạm nghỉ khi Định Tâm và tiếp tục cùng trận đấu.';
     }
 
     showGameOverModal() {
       if (!this.modalGameOver) return;
+      const results=document.getElementById('gameOverStats');
+      if(results&&root.Meowcha.ui)results.innerHTML=[
+        ['cultivation','Tu vi ván này',this.state.score.toLocaleString(),'gameOverFinalScore'],
+        ['cultivation','Kỷ lục',Math.max(this.state.highScore||0,this.state.score||0).toLocaleString(),'gameOverHighScore'],
+        ['words','Từ đã trảm',this.state.wordsSlain,'gameOverFinalWords'],
+        ['speed','Kiếm tốc',Math.round(this.state.wpm||0)+' WPM','gameOverFinalWpm']
+      ].map(args=>root.Meowcha.ui.stat(...args)).join('');
       const finalScoreEl = document.getElementById("gameOverFinalScore");
       const finalHighScoreEl = document.getElementById("gameOverHighScore");
       const finalWordsEl = document.getElementById("gameOverFinalWords");
@@ -1750,12 +1567,13 @@
       const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
       const realmData = realms[this.state.realmIdx] || realms[0];
 
-      const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+      const bestScore = this.saveSystem.getCertificateRecord(this.state).score;
       if (finalScoreEl) finalScoreEl.innerText = this.state.score.toLocaleString();
       if (finalHighScoreEl) finalHighScoreEl.innerText = bestScore.toLocaleString();
       if (finalWordsEl) finalWordsEl.innerText = this.state.wordsSlain;
       if (finalRealmEl) finalRealmEl.innerText = realmData ? realmData.title : "Luyện Khí Kỳ";
       if (finalWpmEl)   finalWpmEl.innerText   = Math.round(this.state.wpm || 0);
+      if (finalWpmEl) finalWpmEl.innerText += ' WPM';
 
       this.modalGameOver.style.display = "flex";
       let summary = this.modalGameOver.querySelector('.practice-summary');
@@ -1764,9 +1582,6 @@
         this.modalGameOver.querySelector('.modal-content-box').appendChild(summary);
       }
       summary.textContent = this.getPracticeSummary();
-
-      // Tự động truyền chiến tích của user login lên Bảng Phong Thần
-      this.autoSubmitScoreToPantheon();
 
       // Trigger entrance animation
       const box = this.modalGameOver.querySelector(".modal-content-box");
@@ -2095,233 +1910,7 @@
       return this.saveSystem.submitRun(captured);
     }
 
-    showPantheonModal() {
-      if (!this.modalPantheon) return;
-      if (!this.modalPantheon.querySelector('.board-filters')) {
-        const filters = document.createElement('div'); filters.className = 'board-filters';
-        filters.innerHTML = `<label>Pháp môn <select id="boardMode"><option value="DIRECT">Trực Diện Trảm Ma</option><option value="CLOZE">Ngộ Đạo Thông Linh</option><option value="AUDIO">Thính Lôi Biện Âm</option><option value="LEGACY">Lưu trữ bảng cũ</option></select></label><label><input type="checkbox" id="boardAssisted" /> Có hỗ trợ</label><span class="board-note">Ba pháp môn được lưu riêng. Thành tích cũ giữ trong Bảng lưu trữ.</span>`;
-        const list = document.getElementById('pantheonRankList'); list.parentNode.insertBefore(filters, list);
-        filters.querySelector('#boardMode').onchange = () => this.loadLeaderboardFromAPI();
-        filters.querySelector('#boardAssisted').onchange = () => this.loadLeaderboardFromAPI();
-      }
-      this.modalPantheon.querySelector('#boardMode').value = this.state.gameMode;
-      this.modalPantheon.querySelector('#boardAssisted').checked = !!this.state.assisted;
-      this.modalPantheon.style.display = "flex";
-      this.updatePantheonSelfStats();
-      this.loadLeaderboardFromAPI();
-    }
-
-    hidePantheonModal() {
-      if (this.modalPantheon) this.modalPantheon.style.display = "none";
-    }
-
-    updatePantheonSelfStats() {
-      const user = this.getLoggedInUser();
-      const selfAvatarEl = document.getElementById("pantheonSelfAvatar");
-      const selfNameEl = document.getElementById("pantheonSelfName");
-      this.setUserAvatar(selfAvatarEl, user.avatar);
-      if (selfNameEl) selfNameEl.innerText = user.name;
-
-      if (this.pantheonPlayerSelfStats) {
-        const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
-        const realmData = realms[this.state.realmIdx] || realms[0];
-        const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-        this.pantheonPlayerSelfStats.innerText = `Kỷ Lục Phong Thần: ${bestScore.toLocaleString()} Tu Vi • Hiện tại: ${this.state.score.toLocaleString()} Tu Vi • ${this.state.wordsSlain} từ • ${realmData.title} • Kiếm Tốc: ${Math.round(this.state.wpm || 0)} TỪ/PHÚT (WPM)`;
-      }
-    }
-
-    async loadLeaderboardFromAPI() {
-      const list = document.getElementById("pantheonRankList");
-      if (!list) return;
-      const request = (this.boardRequest || 0) + 1;
-      this.boardRequest = request;
-      const mode = this.modalPantheon.querySelector('#boardMode')?.value || this.state.gameMode;
-      list.setAttribute('aria-busy', 'true');
-      list.innerHTML = '<div class="board-message" role="status">Đang thỉnh Bảng Phong Thần…</div>';
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-      try {
-        const response = await fetch('/api/meowcha/leaderboard?' + new URLSearchParams({
-          limit:'25', game_mode:mode,
-          assisted:String(!!this.modalPantheon.querySelector('#boardAssisted')?.checked),
-          deck_id:this.state.activeDeckId
-        }), {signal:controller.signal});
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        const result = await response.json();
-        if (!result.success || !Array.isArray(result.data)) throw new Error('Invalid leaderboard');
-        if (this.boardRequest !== request) return;
-        this.renderPantheonLeaderboard(result.data);
-        if (!result.data.length && mode !== 'LEGACY') {
-          list.innerHTML = '<div class="board-message" role="status">Chưa có trận hoàn tất ở pháp môn này. Thành tích trước đây vẫn ở Bảng lưu trữ.</div><button class="btn-xianxia-seal" id="boardOpenArchive">XEM BẢNG LƯU TRỮ</button>';
-          list.querySelector('#boardOpenArchive').onclick = () => {
-            this.modalPantheon.querySelector('#boardMode').value = 'LEGACY';
-            this.loadLeaderboardFromAPI();
-          };
-        }
-      } catch (error) {
-        if (this.boardRequest !== request) return;
-        this.renderPantheonLeaderboard([]);
-        list.innerHTML = '<div class="board-message" role="alert">Chưa tải được Bảng Phong Thần. Kiểm tra kết nối rồi thử lại.</div><button class="btn-xianxia-seal" id="boardRetry">THỈNH BẢNG LẠI</button>';
-        list.querySelector('#boardRetry').onclick = () => this.loadLeaderboardFromAPI();
-      } finally {
-        clearTimeout(timer);
-        if (this.boardRequest === request) list.setAttribute('aria-busy','false');
-      }
-    }
-
-    renderPantheonLeaderboard(data) {
-      const listContainer = document.getElementById("pantheonRankList");
-      if (!listContainer) return;
-
-      // Mỗi user chỉ có mặt trên 1 Top duy nhất (lấy điểm cao nhất)
-      const seenNames = new Set();
-      const uniqueData = [];
-      for (const item of (data || [])) {
-        const key = String(item.user_id || item.run_id || item.id || item.player_name || '');
-        if (key && !seenNames.has(key)) {
-          seenNames.add(key);
-          uniqueData.push(item);
-        }
-      }
-      data = uniqueData;
-
-      // Tự động đồng bộ High Score 2 CHIỀU giữa Bảng Phong Thần và GameState
-      const user = this.getLoggedInUser();
-      const userNameLower = (user.name || "").trim().toLowerCase();
-      const myBestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
-
-      if (userNameLower) {
-        const myRankEntry = data.find(item => {
-          const pName = (item.player_name || "").trim().toLowerCase();
-          return user.id && String(item.user_id) === String(user.id);
-        });
-
-        if (myRankEntry && typeof myRankEntry.score === 'number') {
-          if (myRankEntry.score > (this.state.highScore || 0)) {
-            // Kỷ lục trên Tiên Giới cao hơn thiết bị hiện tại -> Cập nhật vào máy
-            this.state.highScore = myRankEntry.score;
-            try {
-              this._safeSet("meowcha_high_score", String(this.state.highScore));
-            } catch (e) {}
-            this.updatePantheonSelfStats();
-            if (typeof this.updateLobbyStats === "function") this.updateLobbyStats(); else this.updateHUD();
-          }
-        }
-
-        // Tái sắp xếp Bảng Phong Thần theo điểm số giảm dần
-        data.sort((a, b) => (b.score || 0) - (a.score || 0));
-        this.updatePantheonSelfStats();
-      }
-
-      const getAvatarByRealm = (realmName, score) => {
-        const avatars = [
-          "./sprites/characters/realm0_qi_refining/poses/idle.png",
-          "./sprites/characters/realm1_foundation/poses/idle.png",
-          "./sprites/characters/realm2_golden_core/poses/idle.png",
-          "./sprites/characters/realm3_nascent_soul/poses/idle.png",
-          "./sprites/characters/realm4_tribulation/poses/idle.png"
-        ];
-        if (!realmName) return avatars[0];
-        const rLower = String(realmName).toLowerCase();
-        if (rLower.includes("thái thượng") || rLower.includes("độ kiếp") || score >= 5000) return avatars[4];
-        if (rLower.includes("nguyên anh") || score >= 3000) return avatars[3];
-        if (rLower.includes("kim đan") || score >= 1800) return avatars[2];
-        if (rLower.includes("trúc cơ") || score >= 800) return avatars[1];
-        return avatars[0];
-      };
-
-      // Cập nhật từng vị trí bục vinh danh Podium (Top 1, 2, 3)
-      const updatePodiumSlot = (rankIdx, itemData, defaultTitle) => {
-        const nameEl = document.getElementById(`podiumName${rankIdx}`);
-        const scoreEl = document.getElementById(`podiumScore${rankIdx}`);
-        const realmEl = document.getElementById(`podiumRealm${rankIdx}`);
-        const avatarEl = document.getElementById(`podiumAvatar${rankIdx}`);
-        const placeholderEl = document.getElementById(`podiumPlaceholder${rankIdx}`);
-
-        if (itemData) {
-          if (nameEl) nameEl.innerText = itemData.player_name || defaultTitle;
-          if (scoreEl) scoreEl.innerText = `${(itemData.score || 0).toLocaleString()} Tu Vi`;
-          if (realmEl) realmEl.innerText = itemData.realm || "Luyện Khí Kỳ";
-          if (avatarEl) {
-            this.setUserAvatar(avatarEl, itemData.avatar_url);
-            avatarEl.style.display = "block";
-          }
-          if (placeholderEl) placeholderEl.style.display = "none";
-        } else {
-          if (nameEl) nameEl.innerText = defaultTitle;
-          if (scoreEl) scoreEl.innerText = "--- Tu Vi";
-          if (realmEl) realmEl.innerText = "Luyện Khí Kỳ";
-          if (avatarEl) avatarEl.style.display = "none";
-          if (placeholderEl) placeholderEl.style.display = "block";
-        }
-      };
-
-      // Render Top 1, Top 2, Top 3
-      updatePodiumSlot(1, data[0], "Chưa có Chí Tôn");
-      updatePodiumSlot(2, data[1], "Đang chờ vị thứ");
-      updatePodiumSlot(3, data[2], "Đang chờ vị thứ");
-
-      if (data.length === 0) {
-        listContainer.innerHTML = `
-          <div style="text-align: center; padding: 36px 15px; color: #FEF3C7;">
-            <div class="empty-pantheon-icon" style="margin-bottom: 10px;">
-              <img src="./assets/svg/pagoda.svg" style="width: 48px; height: 48px; filter: drop-shadow(0 0 12px #D4A849);" alt="" />
-            </div>
-            <div style="font-family: var(--font-xianxia-title); font-size: 15px; font-weight: 800; color: #FFE49A; letter-spacing: 1px;">Tiên Giới Thanh Tịnh • Bảng Vàng Đang Đợi Bậc Chí Tôn</div>
-            <div style="font-size: 12.5px; color: #E6D5B8; margin-top: 6px; line-height: 1.5;">Chưa có Tiên Hữu nào ghi danh chiến tích.<br/>Đạo hữu hãy xuất kiếm diệt ma thạch — điểm số sẽ tự động vinh danh trên Bảng Phong Thần!</div>
-          </div>
-        `;
-        return;
-      }
-
-      listContainer.innerHTML = data.map((item, idx) => {
-        let rowClass = "";
-        let badgeHtml = `<span class="seal-rank-badge rank-other">[ #${idx + 1} ]</span>`;
-        if (idx === 0) {
-          rowClass = "gold";
-          badgeHtml = `
-            <span class="seal-rank-badge rank-gold" title="Chí Tôn Kim Giáp">
-              <img src="./assets/svg/dragon-shield.svg" class="badge-mini-svg" alt="" />
-              #1
-            </span>
-          `;
-        } else if (idx === 1) {
-          rowClass = "silver";
-          badgeHtml = `
-            <span class="seal-rank-badge rank-silver" title="Bạch Ngân Tiên Quân">
-              <img src="./assets/svg/winged-sword.svg" class="badge-mini-svg" alt="" />
-              #2
-            </span>
-          `;
-        } else if (idx === 2) {
-          rowClass = "bronze";
-          badgeHtml = `
-            <span class="seal-rank-badge rank-bronze" title="Thanh Đồng Tiên Khách">
-              <img src="./assets/svg/cauldron.svg" class="badge-mini-svg" alt="" />
-              #3
-            </span>
-          `;
-        }
-
-        const avatarSrc = safeAvatar(item.avatar_url)
-          ? safeAvatar(item.avatar_url)
-          : DEFAULT_AVATAR;
-
-        return `
-          <div class="pantheon-row ${rowClass}">
-            <span class="rank-col">${badgeHtml}</span>
-            <span class="name-col" title="${escapeHTML(item.player_name)}">
-              <img src="${escapeHTML(avatarSrc)}" class="user-row-avatar" alt="Avatar" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';" />
-              <span class="name-text">${escapeHTML(item.player_name || 'Vô Danh Tiên Khách')}</span>
-            </span>
-            <span class="realm-col">${escapeHTML(item.realm || 'Luyện Khí Kỳ')}</span>
-            <span class="score-col">${(item.score || 0).toLocaleString()} Tu Vi</span>
-            <span class="words-col">${item.words_slain || 0} từ</span>
-            <span class="wpm-col">${item.wpm || 0}</span>
-          </div>
-        `;
-      }).join("");
-    }
+    // Phong Thần halls are implemented in ui/LeaderboardHalls.js.
 
     async submitScoreToPantheon() {
       this.showStatus('Thành tích được ghi một lần khi kết thúc trận hoặc trùng tu từ đầu.');
@@ -2353,7 +1942,7 @@
 
       const highScoreEl = document.getElementById("profileModalHighScore");
       if (highScoreEl) {
-        const bestScore = Math.max(this.state.highScore || 0, this.state.score || 0);
+        const bestScore = this.saveSystem.getCertificateRecord(this.state).score;
         highScoreEl.innerText = `${bestScore.toLocaleString()} Tu Vi`;
       }
 
@@ -2361,7 +1950,7 @@
       if (wordsEl) wordsEl.innerText = `${this.state.wordsSlain} từ`;
 
       const accEl = document.getElementById("profileModalAccuracy");
-      if (accEl) accEl.innerText = `${this.state.accuracy || 100}%`;
+      if (accEl) accEl.innerText = `${this.state.accuracy ?? 100}%`;
 
       const wpmEl = document.getElementById("profileModalWpm");
       if (wpmEl) wpmEl.innerText = `${this.state.wpm || 0} WPM`;
@@ -2372,6 +1961,10 @@
       const talentsEl = document.getElementById("profileModalTalentsList");
       if (talentsEl) {
         const activeT = [];
+        for(const [id,level] of Object.entries(this.state.skillLevels||{})){
+          const skill=(root.Meowcha.BREAKTHROUGH_SKILLS||{})[id];
+          if(skill&&level>0)activeT.push(`${skill.name} • Cấp ${level}`);
+        }
         if (this.state.talents.hpBonus > 0) activeT.push(`Khí Huyết +${this.state.talents.hpBonus}`);
         if (this.state.talents.slowFactor < 1.0) activeT.push(`Linh Vực Giảm Tốc`);
         if (this.state.talents.critChance > 0) activeT.push(`Bạo Kích +${Math.round(this.state.talents.critChance * 100)}%`);
