@@ -26,7 +26,9 @@ Nguồn: [01-cozy-pixel-art-audio.md](01-cozy-pixel-art-audio.md).
 - [x] Kiểm tra bố cục 320×568, 390×844, 844×390, 768×1024 và desktop
   1280×720; HUD/kỹ năng không chồng bàn phím, không tràn ngang. Kiểm tra
   pause/resume, bật/tắt tiếng, nghe lại cảm ứng và về sảnh.
-- [ ] Đẩy Git/backup và cập nhật máy chủ.
+- [x] Đẩy nhánh game và backup `codex/backup-meowcha-cozy-20261025`;
+  cập nhật Linux, build lại web và nạp lại backend. Kiểm tra HTTP 200 cho
+  trang game, HTML engine, CSS/audio script, hai PNG và leaderboard.
 
 SVG chức năng và một số họa tiết khung cũ vẫn còn. Không tuyên bố đã thay toàn bộ
 SVG, hay toàn bộ game đã trở thành một bộ mỹ thuật pixel mới.
@@ -53,8 +55,14 @@ Nguồn: [02-breakthrough-cultivation-skills.md](02-breakthrough-cultivation-ski
   khi nạp save; tương thích dữ liệu cũ.
 - [x] Trình duyệt hiển thị ba lựa chọn; chọn Kim Đan, tải lại vẫn giữ cấp I;
   nút hồi 8 HP, khóa và hiện progress/hồi chiêu 35 giây.
+- [x] HUD giữ tối đa ba kỹ năng theo tiến trình, dùng chung thứ tự trang bị
+  với phím 1–2–3; kỹ năng mới thay slot của kỹ năng cũ nhất khi đủ ba slot.
 
 ## Kiểm chứng và giới hạn
+
+Kết quả cuối: 37/37 kiểm thử engine/audio, 10/10 kiểm thử API, build thành công.
+Web và backend trên Linux báo healthy sau cập nhật. Có backup commit trước
+deploy và Docker image trước deploy để khôi phục nếu cần.
 
 - `npm run test:meowcha`: kiểm thử engine và audio mock; không thay thế nghe thực tế.
 - `python -m unittest discover -s backend/tests -p test_meowcha_integrity.py -v`:

@@ -289,6 +289,12 @@
       return { absorbed: false, currentHp: this.hp };
     }
 
+    getActiveSkillSlots() {
+      const defs = root.Meowcha.BREAKTHROUGH_SKILLS || {};
+      return ['WIND_SWORD_DOMAIN', 'GOLDEN_CORE_REGEN', 'NASCENT_SOUL_FREEZE', 'TEN_THOUSAND_SWORDS']
+        .filter(id => this.isSkillUnlocked(id) && defs[id] && this.realmIdx >= defs[id].minRealm).slice(-3);
+    }
+
     getSkillLevel(skillId) {
       return (this.skillLevels && this.skillLevels[skillId]) || 0;
     }

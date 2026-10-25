@@ -216,13 +216,7 @@
     }
 
     activateSkillBySlot(slotNum, canvas) {
-      const slotMap = {
-        1: "WIND_SWORD_DOMAIN",
-        2: "GOLDEN_CORE_REGEN",
-        3: "NASCENT_SOUL_FREEZE",
-        4: "TEN_THOUSAND_SWORDS"
-      };
-      const skillId = slotMap[slotNum];
+      const skillId = this.state.getActiveSkillSlots()[slotNum - 1];
       if (!skillId) return false;
       const success = this.state.activateSkill(skillId, this, this.audio);
       if (success && this.floatingText) {

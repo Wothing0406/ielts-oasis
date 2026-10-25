@@ -1293,10 +1293,8 @@
         { slot: 4, id: "TEN_THOUSAND_SWORDS", defaultName: "Vạn Kiếm", icon: "broadsword" }
       ];
 
-      const activeSlots = slotList.filter(s => {
-        if (unlocked.includes(s.id) || (levels[s.id] && levels[s.id] > 0)) return true;
-        return false;
-      }).slice(-3);
+      const equipped = this.state.getActiveSkillSlots();
+      const activeSlots = equipped.map((id, i) => ({ ...slotList.find(s => s.id === id), slot: i + 1 }));
 
       if (activeSlots.length === 0) {
         container.innerHTML = "";

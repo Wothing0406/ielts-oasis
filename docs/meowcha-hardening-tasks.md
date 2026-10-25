@@ -37,7 +37,7 @@ Theo dõi riêng trong [docs/prompts/meowcha/README.md](prompts/meowcha/README.m
 Bản trước đã dùng lại một số asset và bổ sung SVG; nhận định cũ “100% vector
 placeholders replaced” không chính xác và được thay bằng phạm vi thực tế dưới đây.
 
-- 35/35 ca kiểm thử engine/audio đạt. Bao gồm context gián đoạn, mute, hàng đợi
+- 37/37 ca kiểm thử engine/audio đạt. Bao gồm context gián đoạn, mute, hàng đợi
   20 voice, cơ duyên hết cấp, kỹ năng thật, bạo kích Tu Vi và thống kê tự gõ.
 - 10/10 ca kiểm thử API dữ liệu đạt với cơ sở dữ liệu thử nghiệm.
 - Next.js build thành công, có cảnh báo sẵn có ngoài phạm vi thay đổi.

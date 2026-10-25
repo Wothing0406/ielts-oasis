@@ -28,6 +28,26 @@ function runtime() {
 }
 const word = (text = 'CAT') => ({ word: text, typedLen: 0, x: 100, y: 100, radius: 30, meaning: 'test', coreColor: '#fff' });
 
+test('three equipped skill slots share the HUD and hotkeys 1, 2, 3',()=>{
+ const r=runtime();r.state.realmIdx=4;
+ r.state.unlockedSkills=['WIND_SWORD_DOMAIN','GOLDEN_CORE_REGEN','NASCENT_SOUL_FREEZE','TEN_THOUSAND_SWORDS'];
+ r.state.skillLevels=Object.fromEntries(r.state.unlockedSkills.map(id=>[id,1]));
+ assert.deepEqual(Array.from(r.state.getActiveSkillSlots()),['GOLDEN_CORE_REGEN','NASCENT_SOUL_FREEZE','TEN_THOUSAND_SWORDS']);
+ r.state.hp=20;r.engine.processKey('1',r.canvas);assert.equal(r.state.hp,28);
+ const target=word('STUDY');r.asteroids.asteroids.push(target);
+ r.engine.processKey('2',r.canvas);assert.equal(target.freezeTimer,4);
+ r.state.combo=10;r.engine.isCloudHazard=true;r.engine.processKey('3',r.canvas);
+ assert.equal(r.engine.isCloudHazard,false);assert.equal(target.typedLen,0);
+});
+
+test('realm setup describes actual progression and local review scheduling', () => {
+ const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
+ const setup=html.slice(html.indexOf('id="setupRealmsTrack"'),html.indexOf('id="setupJourneyDetail"'));
+ assert.ok(!setup.includes('C2 Master')); assert.ok(!setup.includes('x2 Tu Vi'));
+ for(const threshold of ['2.000 TU VI • 15 TỪ','6.000 TU VI • 40 TỪ','14.000 TU VI • 85 TỪ','30.000 TU VI • 150 TỪ'])assert.ok(setup.includes(threshold));
+ assert.ok(setup.includes('ngày ôn'));
+});
+
 test('new critical talent rewards score without auto-completing another word',()=>{
  const r=runtime();let choice;
  for(let i=0;i<200&&!choice;i++)choice=r.M.generateBreakthroughChoices(r.state,{id:1}).find(c=>c.id==='CRIT_STRIKE');
@@ -299,8 +319,10 @@ test('breakthrough choices provide 4 paths with anti-collision and realm signatu
 test('active skills activate through engine, respect cooldowns, and trigger effects', () => {
   const r = runtime();
   r.state.realmIdx = 4;
-  r.state.unlockedSkills = ['WIND_SWORD_DOMAIN', 'GOLDEN_CORE_REGEN', 'NASCENT_SOUL_FREEZE', 'TEN_THOUSAND_SWORDS'];
+  r.state.unlockedSkills = ['WIND_SWORD_DOMAIN', 'GOLDEN_CORE_REGEN'];
   r.state.skillLevels = { WIND_SWORD_DOMAIN: 1, GOLDEN_CORE_REGEN: 1, NASCENT_SOUL_FREEZE: 1, TEN_THOUSAND_SWORDS: 1 };
+  delete r.state.skillLevels.NASCENT_SOUL_FREEZE;
+  delete r.state.skillLevels.TEN_THOUSAND_SWORDS;
   r.state.hp = 20;
 
   // Key '2' triggers Kim Đan Hồi Nguyên (active heal 8 HP)
@@ -315,12 +337,13 @@ test('active skills activate through engine, respect cooldowns, and trigger effe
   assert.ok(r.state.activeSkillEffects.windSwordTimer > 0);
 
   // Ultimate requires combo >= 10
+  r.state.unlockedSkills.push('TEN_THOUSAND_SWORDS'); r.state.skillLevels.TEN_THOUSAND_SWORDS=1;
   r.state.combo = 5;
   assert.equal(r.state.canActivateSkill('TEN_THOUSAND_SWORDS'), false);
   r.state.combo = 10;
   assert.equal(r.state.canActivateSkill('TEN_THOUSAND_SWORDS'), true);
   r.engine.isLightningHazard = true;
-  r.engine.processKey('4', r.canvas);
+  r.engine.processKey('3', r.canvas);
   assert.equal(r.engine.isLightningHazard, false);
 });
 
