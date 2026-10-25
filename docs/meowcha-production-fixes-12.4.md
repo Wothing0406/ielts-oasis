@@ -43,6 +43,10 @@ Nhánh: `game/meowcha-cultivation`. Ngày: 25/10/2026.
 
 ## Giới hạn xác minh
 
+Kiểm tra ảnh production ở 1280px phát hiện nhãn âm thanh dài lấn nút cạnh bên.
+Thanh ngọc bội dùng sáu cột đều nhau, nhãn xuống dòng trong từng nút; bỏ dao động
+ở cụm này để giữ khoảng cách bấm và tránh chữ đè nhau.
+
 Tên miền public được kiểm tra trực tiếp ở đường dẫn engine. Trang Next.js public
 có bước xác minh Cloudflare; không vô hiệu hóa hoặc vượt qua bước xác minh đó.
 Điều hướng cha/con được kiểm tra bằng fixture cùng chính sách iframe và build
