@@ -31,6 +31,11 @@
  padding:8px!important; box-shadow:none!important; color:#244E3C!important;
 }
 :is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row { border-width:9px!important; border-image-width:9px!important; padding:5px 8px!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .stat-seal { display:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row .stat-val { font-size:12px!important; white-space:nowrap!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .slot-empty-desc { color:#614734!important; text-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) .slot-badge { color:#244E3C!important; background:#D3DFB6!important; border-color:#6D926A!important; box-shadow:none!important; }
+:is(#gameAppWrapper,.meowcha-modal-overlay) :is(.slot-badge-active,.slot-badge-selected) { color:#FFF1CC!important; background:#315944!important; }
 :is(#gameAppWrapper,.meowcha-modal-overlay) .profile-stat-row :is(.stat-lbl,.stat-val) { color:#244E3C!important; text-shadow:none!important; }
 :is(#gameAppWrapper,.meowcha-modal-overlay) .save-slot-card :is(.slot-title,.slot-date,.slot-realm,.slot-stats,.slot-realm strong,.slot-stats b,.slot-empty-text) { color:#244E3C!important; text-shadow:none!important; }
 :is(#gameAppWrapper,.meowcha-modal-overlay) :is(.btn-slot-load,.btn-slot-save,.btn-slot-new,.btn-confirm-accept,.btn-confirm-cancel) { background:transparent var(--mc-plaque) center/100% 100% no-repeat!important; color:#FFF1CC!important; border:0!important; min-height:48px!important; padding:12px 12%!important; box-shadow:none!important; }
