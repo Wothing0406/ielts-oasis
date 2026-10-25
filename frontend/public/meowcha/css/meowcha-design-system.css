@@ -417,6 +417,15 @@ body[data-session]:not([data-session='ready']) #gameAppWrapper { visibility:hidd
  .keyboard-visible #gameAppWrapper #battleActiveSkillsBar { bottom:calc(var(--mc-keyboard-height,0px) + 112px)!important; }
 }
 @media(max-height:500px) and (orientation:landscape) {
+ #gameAppWrapper #lobbyView { padding:8px 12px!important;justify-content:flex-start!important; }
+ #gameAppWrapper .cultivation-tea-station { display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)!important;grid-template-rows:auto 1fr!important;align-items:center!important;width:100%!important;max-width:100%!important;gap:0 16px!important;padding:0!important;margin:0!important;transform:none!important; }
+ #gameAppWrapper .cultivation-tea-station > .hanging-jade-title-plaque { grid-column:1;grid-row:1;width:100%!important;max-width:100%!important;margin:0!important; }
+ #gameAppWrapper .cultivation-tea-station .cat-name-gold { font-size:14px!important; }
+ #gameAppWrapper .cultivation-tea-station .plaque-quote-silk { white-space:normal!important;font-size:10px!important; }
+ #gameAppWrapper .cultivation-tea-station > .floating-stone-pavilion { grid-column:1;grid-row:2;height:110px!important; }
+ #gameAppWrapper .cultivation-tea-station > .lobby-cta-sword-area { grid-column:2;grid-row:1/3;width:100%!important;padding:5px 8px!important;border-width:10px!important;border-image-width:10px!important; }
+ #gameAppWrapper .lobby-cta-sword-area .stat-pill { min-height:36px!important; }
+ #gameAppWrapper .lobby-cta-sword-area .pill-val { font-size:17px!important; }
  #gameAppWrapper #swordIntentBox { width:54vw!important; }
  #gameAppWrapper #swordIntentBox,#gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:106px!important; }
  #gameAppWrapper #swordIntentBox .altar-parchment-scroll { padding:18px 10%!important; }
