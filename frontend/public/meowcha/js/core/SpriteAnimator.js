@@ -60,7 +60,7 @@
     DEFEATED: {
       key: "defeated",
       fps: 6,
-      loop: true,
+      loop: false,
       frames: 4,
       frameW: 360,
       frameH: 360,
@@ -74,6 +74,10 @@
       this.currentState = "IDLE";
       this.frameIndex = 0;
       this.frameTimer = 0;
+      this.motionTime = 0;
+      this.clipElapsed = 0;
+      this.observedAnimationId = -1;
+      this.pendingRepeat = false;
       this.activeVFXClips = []; // Các hiệu ứng chém / nổ multi-frame đang phát trên chiến trường
     }
 
@@ -99,6 +103,8 @@
         this.currentRealmIdx = Math.min(4, Math.max(0, realmIdx || 0));
         this.frameIndex = 0;
         this.frameTimer = 0;
+        this.clipElapsed = 0;
+        this.pendingRepeat = false;
       }
     }
 
@@ -106,6 +112,7 @@
      * Cập nhật bộ đếm frame của nhân vật và các hiệu ứng VFX động
      */
     update(dt = 0.016, gameState) {
+      dt=Math.max(0,Math.min(.1,Number(dt)||0));this.motionTime+=dt;
       const targetState = (gameState && gameState.catState) || "IDLE";
       const targetRealm = Math.min(
         4,
@@ -119,8 +126,19 @@
         this.setState(targetState, targetRealm, true);
       }
 
+      const animationId=gameState?.catAnimationId||0;
+      if(animationId!==this.observedAnimationId){
+        if(targetState==='WEAK_ATTACK')this.pendingRepeat=this.clipElapsed>0;
+        else if(targetState==='HURT'||targetState==='ULTIMATE_BLAST')this.setState(targetState,targetRealm,true);
+        this.observedAnimationId=animationId;
+      }
+
       const cfg = STATE_CLIP_CONFIG[this.currentState] || STATE_CLIP_CONFIG.IDLE;
+      const sheet=this.assets[`char_r${targetRealm}_${cfg.key}_sheet`];
+      const frames=sheet?.loaded&&sheet.img?.naturalWidth>=cfg.frameW?Math.max(1,Math.floor(sheet.img.naturalWidth/cfg.frameW)):cfg.frames;
       const frameDuration = 1.0 / (cfg.fps || 8);
+      const finished=this.frameIndex>=frames-1;
+      this.clipElapsed+=dt;
       this.frameTimer += dt;
 
       if (this.frameTimer >= frameDuration) {
@@ -128,9 +146,10 @@
         this.frameTimer -= steps * frameDuration;
 
         if (cfg.loop) {
-          this.frameIndex = (this.frameIndex + steps) % cfg.frames;
+          this.frameIndex = (this.frameIndex + steps) % frames;
         } else {
-          this.frameIndex = Math.min(cfg.frames - 1, this.frameIndex + steps);
+          this.frameIndex = Math.min(frames - 1, this.frameIndex + steps);
+          if(finished&&this.pendingRepeat){this.frameIndex=0;this.frameTimer=0;this.clipElapsed=0;this.pendingRepeat=false;}
         }
       }
 

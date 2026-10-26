@@ -44,11 +44,12 @@
       const BASE_X = layout.catX || canvas.width / 2;
       const BASE_Y = layout.catY;
       const visibleSize = layout.characterSize || (isMobile ? 64 : 100);
+      const reduced=!!root.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       // Measured opaque idle bounds in the registered 360px sheets. Realm 1
       // occupies far more of its canvas than realm 0; equal canvases are not equal heroes.
       const bounds=[[64,154,296,325],[25,47,335,327],[73,110,288,330],[48,110,313,330],[83,113,278,330]][Math.min(4,Math.max(0,gameState.realmIdx))];
       const renderSize=visibleSize*360/(bounds[3]-bounds[1]);
-      const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
+      const floatOffset = reduced?0:Math.sin(this.time * 2.8) * 4;
       let drawX = BASE_X - (bounds[0]+bounds[2])/720*renderSize;
       let drawY = BASE_Y - bounds[3]/360*renderSize + floatOffset;
 
@@ -116,20 +117,14 @@
       let attackTilt = 0;
 
       if (catState === "WEAK_ATTACK") {
-        const prog =
-          gameState.catStateTimer > 0
-            ? Math.max(
-                0,
-                Math.min(
-                  1,
-                  (gameState.catStateTimer - performance.now()) / 180,
-                ),
-              )
-            : 0;
+        // Clip time, not the repeatedly extended input deadline, drives the strike.
+        const progress=this.animator?Math.min(1,(this.animator.clipElapsed||0)*18/4):
+          Math.max(0,Math.min(1,1-(gameState.catStateTimer-performance.now())/260));
+        const prog=1-progress;
         const strikeWave = Math.sin(prog * Math.PI);
-        attackOffsetY = -strikeWave * (isMobile ? 18 : 28);
-        attackScaleX = 1.0 - strikeWave * 0.12;
-        attackScaleY = 1.0 + strikeWave * 0.22;
+        attackOffsetY = -strikeWave * visibleSize*.12;
+        attackScaleX = 1.0 - strikeWave * 0.06;
+        attackScaleY = 1.0 + strikeWave * 0.09;
         attackTilt = strikeWave * (realmIdx % 2 === 0 ? 0.11 : -0.11);
 
         // ============================================================
@@ -359,8 +354,8 @@
       }
 
       // Nhịp thở tĩnh tọa khi IDLE
-      const breathScaleY = 1.0 + Math.sin(this.time * 3.2) * 0.02;
-      const breathScaleX = 1.0 - Math.sin(this.time * 3.2) * 0.015;
+      const breathScaleY = reduced?1:1.0 + Math.sin(this.time * 3.2) * 0.025;
+      const breathScaleX = reduced?1:1.0 - Math.sin(this.time * 3.2) * 0.018;
 
       ctx.save();
       ctx.translate(BASE_X, BASE_Y + attackOffsetY);
@@ -382,7 +377,9 @@
               : "drop-shadow(0 0 12px rgba(245, 158, 11, 0.75))";
       }
 
-      if (animFrame && animFrame.isSheet) {
+      if(root.Meowcha.drawActorFrame){
+        root.Meowcha.drawActorFrame(ctx,animFrame||{img:sprite,sw:360,sh:360},{x:drawX,y:drawY,size:renderSize,realm:realmIdx,time:this.animator?.motionTime||this.time,state:catState,reduced:!!root.matchMedia?.('(prefers-reduced-motion: reduce)').matches});
+      } else if (animFrame && animFrame.isSheet) {
         ctx.drawImage(
           sprite,
           animFrame.sx,

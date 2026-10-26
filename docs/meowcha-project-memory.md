@@ -1,5 +1,20 @@
 # MEOW-CHA — bộ nhớ dự án
 
+## Baseline mới nhất — 19.0 (26/10/2026)
+
+- Lobby nhẹ 18 thay quyết định console nâu chung ở đợt 16; xem
+  `meowcha-lobby-release-18.md`. Battle/mobile 17 ở `meowcha-battle-readability-17.md`.
+- Sửa nhân vật đứng cứng: `meowcha-animation-release-19.md` và prompt 19.
+  ActorMotion.js dùng cutout trên artwork gốc, không phải video/clip vẽ mới.
+  Lobby canvas chạy cùng đồng hồ SpriteAnimator; giữ poster đến khi vẽ được.
+- Chỉ tick Cat/SpriteAnimator một lần trong gameLoop, cả LOBBY. BATTLE pause
+  giữ đồng hồ; game-over phát DEFEATED rồi giữ frame cuối. Gõ nhanh dùng clipElapsed,
+  không deadline catStateTimer để tính biên độ; gộp tối đa một repeat.
+- Số frame theo chiều rộng sheet đã load; metadata phải khớp ảnh. Tách vùng đầu
+  riêng, không cắt ngang kiếm/halo của cảnh cao. Giữ opaque bounds và vị trí chân.
+- 96 Node + 22 API đạt; năm cảnh giới gõ đủ 19 phím/lượt, mobile mô phỏng320,
+  pause/resume và GIF browser thật được kiểm chứng. Chưa điện thoại vật lý.
+
 ## Phạm vi và đường chạy thật
 
 - Nhánh game: `game/meowcha-cultivation`; không đưa thay đổi game sang nhánh vocab.

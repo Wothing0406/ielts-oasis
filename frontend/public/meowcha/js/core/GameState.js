@@ -256,6 +256,7 @@
     }
 
     setCatState(state, durationMs = 0) {
+      this.catAnimationId=(this.catAnimationId||0)+1;
       this.catState = state;
       this.catStateTimer = durationMs > 0 ? performance.now() + durationMs : 0;
       if (state === "HURT") {

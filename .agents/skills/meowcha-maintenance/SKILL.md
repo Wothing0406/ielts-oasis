@@ -138,3 +138,14 @@ was shown. Refuse a changed revision or full recovery storage; never silently
 prefer a score or timestamp. Recovery may contain cloud or local data, so label
 it neutrally as a safety copy. The attached full website redesign is stored as
 a separate reference and is not evidence that all website screens were changed.
+For actor motion 19 read docs/meowcha-animation-release-19.md. The lobby must
+advance the same visual clock as battle; only tick Cat/SpriteAnimator once per
+render loop. Battle pause freezes it, defeat plays once and holds its last frame.
+ActorMotion is code-driven cutout motion on existing PNGs, not newly generated
+video. Preserve original opaque bounds, feet and high-realm halo/floating swords;
+cut only the head region, never a horizontal slice across the whole artwork.
+Use clipElapsed for attack motion: extending the input deadline must not pin the
+pose during fast typing. Coalesce at most one repeat; actual loaded sheet width
+bounds frame count. Keep metadata consistent, and retain the lobby poster until
+the animated canvas can draw. Verify all five realms, rapid real input, pause,
+small touch layout and a browser-captured animation, with honest source limits.

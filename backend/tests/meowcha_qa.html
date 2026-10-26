@@ -6,7 +6,7 @@
 <script>
 const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
 function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
-setInterval(()=>{const g=app();if(!g)return;const M=frame.contentWindow.Meowcha,k=frame.contentDocument.getElementById('virtualKeyboardContainer');status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),layout:M.battleLayout,device:M.Device.info,keyboard:{hidden:k.hidden,display:frame.contentWindow.getComputedStyle(k).display},meteor:g.asteroids.asteroids.map(a=>({y:a.y,seconds:a.remainingSeconds,entry:a.entering})),cue:g.gameState.combatCue,soundProbe,session:{owner:M.Session?.owner,blocked:M.Session?.blocked,runId:g.gameState.runId,paused:g.gameState.isPaused},mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns});},250);
+setInterval(()=>{const g=app();if(!g)return;const M=frame.contentWindow.Meowcha,k=frame.contentDocument.getElementById('virtualKeyboardContainer');status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),layout:M.battleLayout,actor:{state:g.animator.currentState,frame:g.animator.frameIndex,time:g.animator.motionTime,clip:g.animator.clipElapsed,sequence:g.gameState.catAnimationId||0},device:M.Device.info,keyboard:{hidden:k.hidden,display:frame.contentWindow.getComputedStyle(k).display},meteor:g.asteroids.asteroids.map(a=>({y:a.y,seconds:a.remainingSeconds,entry:a.entering})),cue:g.gameState.combatCue,soundProbe,session:{owner:M.Session?.owner,blocked:M.Session?.blocked,runId:g.gameState.runId,paused:g.gameState.isPaused},mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns});},250);
 document.getElementById('qaSize').onchange=event=>{
  const [width,height]=event.target.value.split(',').map(Number);
  frame.style.width=width+'px';frame.style.height=height+'px';
@@ -99,6 +99,16 @@ extraButton('qaLobby','Sảnh có tiến trình QA',async()=>{
  g.saveSystem.cloudRevisions[1]=current.data?.[1]?.revision||'';g.saveSystem.getSlot(1).cloudConflict=false;
  g.gameState.resetForNewMode('DIRECT');Object.assign(g.gameState,{activeSlotId:1,score:2317,realmIdx:1,hp:37,maxHp:50,humanWords:8,wordsSlain:8,correctKeystrokes:40,totalKeystrokes:50,activeElapsedMs:60000,wpm:8});
  g.returnToLobby();await g.saveSystem.flushCloudSaves();g.ui.updateHUD();result='Sảnh QA: 2317 Tu Vi, 37/50 HP, 8 WPM';
+});
+extraButton('qaActorAttack','Hoạt ảnh gõ nhanh QA',async()=>{
+ document.getElementById('tools').style.display='none';
+ result='Đang thử gõ nhanh';
+ const g=app();g.gameState.resetForNewMode('DIRECT');g.startBattle();g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.gameState.hp=g.gameState.maxHp=200;g.asteroids.clear();g.ui.updateHUD();
+ const target=g.asteroids.spawn({word:'INCOMPREHENSIBILITY',meaning:'tính khó hiểu',ipa:'/ˌɪnkɒmprɪˌhensəˈbɪləti/'},g.canvas.width,g.gameState.realmIdx,1,0,'ice');
+ target.entering=false;target.typingSeconds=target.remainingSeconds=120;target.y=160;g.typing.currentTarget=target;
+ for(const c of target.word){g.typing.processKey(c,g.canvas);await new Promise(resolve=>setTimeout(resolve,80));}
+ result='Gõ nhanh thực qua TypingEngine: '+g.gameState.correctKeystrokes+' phím';
+ document.getElementById('tools').style.display='block';
 });
 const meteorSelect=document.createElement('select');meteorSelect.id='qaMeteorType';meteorSelect.setAttribute('aria-label','Loại thiên thạch');
 meteorSelect.innerHTML='<option value="ice">Băng</option><option value="fire">Hỏa</option><option value="void">Hư không</option><option value="thunder">Huyết lôi</option>';document.getElementById('tools').insertBefore(meteorSelect,status);

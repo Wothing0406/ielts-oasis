@@ -120,5 +120,7 @@ Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
 - [17 — Chiến trường dễ đọc, mobile gọn, rào và SFX](17-battle-layout-mobile-sfx.md).
 - [18 — Lobby nhẹ và đối chiếu bản lưu](18-lightweight-lobby.md).
   [Nghiệm thu đợt 18](../../meowcha-lobby-release-18.md).
+- [19 — Chuyển động năm cảnh giới, sảnh và trận](19-character-motion.md).
+  [Nghiệm thu đợt 19](../../meowcha-animation-release-19.md).
 - [Brief toàn website Matcha](../matcha-website-design-system-reference.md) là
   tham chiếu riêng, chưa phải redesign đã hoàn thành.

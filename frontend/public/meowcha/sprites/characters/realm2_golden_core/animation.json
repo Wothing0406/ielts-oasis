@@ -13,32 +13,32 @@
   "sheets": {
     "idle": {
       "file": "./sheets/idle_sheet.png",
-      "frames": 4,
+      "frames": 6,
       "fps": 8,
       "loop": true
     },
     "attack": {
       "file": "./sheets/attack_sheet.png",
       "frames": 4,
-      "fps": 8,
+      "fps": 18,
       "loop": false
     },
     "ultimate": {
       "file": "./sheets/ultimate_sheet.png",
-      "frames": 4,
-      "fps": 8,
-      "loop": true
+      "frames": 6,
+      "fps": 14,
+      "loop": false
     },
     "hurt": {
       "file": "./sheets/hurt_sheet.png",
       "frames": 4,
-      "fps": 8,
+      "fps": 14,
       "loop": false
     },
     "defeated": {
       "file": "./sheets/defeated_sheet.png",
       "frames": 4,
-      "fps": 8,
+      "fps": 6,
       "loop": false
     }
   },
@@ -94,5 +94,12 @@
       "fps": 16,
       "loop": false
     }
+  },
+  "runtimeMotion": {
+    "renderer": "ActorMotion.js",
+    "art_source": "existing raster sprites",
+    "motion_source": "runtime cutout rig; not generated video",
+    "idle": "independent head nod, breathing and eyelids",
+    "rapid_input": "bounded one-shot repeat; no input delay"
   }
 }

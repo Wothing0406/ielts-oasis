@@ -409,6 +409,7 @@
       // Purge prepares future runs; keep the defeat gate closed for this one.
       this.gameOverModalShown=true;
       this.gameState.isPaused=true;
+      this.gameState.setCatState('DEFEATED');
       if (this.unityBridge) {
         this.unityBridge.triggerDefeated();
       }
@@ -867,6 +868,12 @@
           this.particles.update();
         }
 
+        // Presentation advances in the lobby too; pause still freezes the battle actor.
+        if(this.gameState.currentScene==='LOBBY'||!this.gameState.isPaused||this.gameState.isGameOver){
+          this.cat.update(dt,this.gameState);
+          if(this.animator)this.animator.update(dt,this.gameState.currentScene==='LOBBY'?{catState:'IDLE',realmIdx:this.gameState.realmIdx}:this.gameState);
+        }
+
         this.draw();
       } catch (loopErr) {
         console.error("[Meowcha GameLoop Exception Prevented Freeze]", loopErr);
@@ -921,8 +928,6 @@
         this.particles.createHitSparks(this.canvas.width / 2, catTargetY, "#FDE047", 10);
         this.audio.play("type");
       });
-      if (this.animator) this.animator.update(dt, this.gameState);
-      this.cat.update(dt, this.gameState);
       if (this.gameState.updateSkills) this.gameState.updateSkills(dt);
 
       // Cập nhật ma thạch & kiểm tra chạm đáy (Trên mobile chạm ngay trên bệ đài của Miêu Tôn)
@@ -1075,6 +1080,7 @@
         // Combat instructions use the fixed boundary status, not a balloon over the hero's face.
       }
 
+      if(this.gameState.currentScene==='LOBBY'&&M.drawLobbyActors)M.drawLobbyActors(this);
       ctx.restore();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
     }

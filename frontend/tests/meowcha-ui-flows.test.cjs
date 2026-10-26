@@ -241,3 +241,43 @@ test('rotation with an overfull header or transient zero viewport cannot create 
   r.M.drawDefenseBarrier(ctx,dims,{loaded:true,img:{}});assert.ok(draws<=32);
  }
 });
+
+test('the real render loop advances lobby actors, freezes battle actors while paused and resumes once per tick',()=>{
+ const r=setup();let actor=0,clips=0,physics=0;
+ const app={lastFrameTime:0,isLoopRunning:false,gameState:r.state,particles:{spawnQiMote(){},update(){}},canvas:{width:1280,height:720},cat:{update(){actor++;}},animator:{update(){clips++;}},draw(){},update(){physics++;}};
+ r.state.currentScene='LOBBY';r.M.App.prototype.gameLoop.call(app,100);r.M.App.prototype.gameLoop.call(app,200);
+ assert.equal(actor,2);assert.equal(clips,2);assert.equal(physics,0);
+ r.state.currentScene='BATTLE';r.state.isPaused=true;r.M.App.prototype.gameLoop.call(app,300);
+ assert.equal(actor,2);assert.equal(clips,2);
+ r.state.isPaused=false;r.M.App.prototype.gameLoop.call(app,400);
+ assert.equal(actor,3);assert.equal(clips,3);assert.equal(physics,1);
+});
+
+test('all realms select changing real frames, bound one-shots to actual sheets and animate during rapid input',()=>{
+ const r=setup();vm.runInContext(fs.readFileSync(path.join(base,'js/core/SpriteAnimator.js'),'utf8'),r.box);
+ for(let realm=0;realm<5;realm++){
+  const assets={};for(const key of ['idle','attack','hurt','defeated','ultimate'])assets[`char_r${realm}_${key}_sheet`]={loaded:true,img:{naturalWidth:360*(key==='idle'?4:key==='ultimate'?6:4),naturalHeight:360}};
+  const actor=new r.M.SpriteAnimator(assets),state={realmIdx:realm,catState:'IDLE',catAnimationId:0};
+  const seen=new Set();for(let i=0;i<12;i++){actor.update(.1,state);seen.add(actor.getCharacterFrame(realm,'IDLE').sx);}
+  assert.equal(seen.size,4);assert.ok(actor.frameIndex<4);
+  state.catState='WEAK_ATTACK';const strikes=new Set();
+  for(let i=0;i<24;i++){state.catAnimationId++;actor.update(.05,state);strikes.add(actor.frameIndex);}
+  assert.ok(strikes.size>=3,'fast input must not pin frame zero or the last frame');
+  state.catState='HURT';state.catAnimationId++;for(let i=0;i<8;i++)actor.update(.1,state);
+  assert.equal(actor.frameIndex,3);
+  state.catState='DEFEATED';state.catAnimationId++;for(let i=0;i<20;i++)actor.update(.1,state);
+  assert.equal(actor.frameIndex,3);assert.equal(actor.getCharacterFrame(realm,'DEFEATED').frameIndex,3);
+ }
+});
+
+test('shared cutout motion changes head and body at game size, while reduced motion preserves a still pose',()=>{
+ const r=setup();vm.runInContext(fs.readFileSync(path.join(base,'js/core/ActorMotion.js'),'utf8'),r.box);
+ for(let realm=0;realm<5;realm++){
+  const before=r.M.actorMotion(0,realm),after=r.M.actorMotion(1,realm);
+  assert.notEqual(before.nod,after.nod);assert.notEqual(before.bob,after.bob);
+  const still=r.M.actorMotion(4,realm,true);assert.equal(still.bob,0);assert.equal(still.nod,0);assert.equal(still.blink,0);assert.equal(still.breath,1);
+  let draws=0;const ctx=new Proxy({drawImage(){draws++;}},{get:(o,k)=>k in o?o[k]:()=>{}});
+  r.M.drawActorFrame(ctx,{img:{},sx:0,sy:0,sw:360,sh:360,isSheet:true},{x:0,y:0,size:180,realm,time:1,state:'IDLE'});
+  assert.equal(draws,2);
+ }
+});

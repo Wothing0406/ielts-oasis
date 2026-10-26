@@ -513,6 +513,7 @@ html:is(.platform-mobile,.platform-tablet):not(.keyboard-visible) #gameAppWrappe
 #lobbyView #lobbyCatTitle { margin:0;padding:0;font:800 22px/1.3 var(--font-body);color:var(--game-light);text-shadow:0 2px 2px #20332d!important; }
 #lobbyView #lobbyLevelTag { font:600 12px/1.4 var(--font-body);color:var(--game-light);background:var(--game-jade);padding:3px 12px;border:1px solid var(--game-gold); }
 .lobby-stage { position:relative;width:320px;max-width:100%;height:180px;flex:none;pointer-events:none; }
+#lobbyActorCanvas { position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;image-rendering:pixelated; }
 .lobby-cultivation-dais { position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:220px;height:auto;image-rendering:pixelated; }
 .lobby-stage .lobby-portrait { position:absolute;width:calc(var(--lobby-hero-height) * var(--lobby-sprite-ratio,2.105));height:auto;max-width:none;left:calc(50% - var(--lobby-hero-height) * var(--lobby-sprite-center,1.053));bottom:calc(24px - var(--lobby-hero-height) * var(--lobby-sprite-gap,.205));image-rendering:pixelated;filter:drop-shadow(0 3px 3px #20332d88); }
 .lobby-stage .lobby-companion { position:absolute;left:calc(50% + 72px);bottom:25px;width:62px;height:84px;object-fit:contain;image-rendering:pixelated; }
