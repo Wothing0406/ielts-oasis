@@ -29,12 +29,12 @@ Hoàng Kim Trảm Tiên, Cửu Thiên Thần Lôi, Thái Sơ Vô Cực Kiếm.
 - [x] Test mới đi qua main.update/AsteroidManager/GameState thật: có thuẫn giữ
   HP50, thuẫn1→0; hỏa12 giảm50% mất6, thông báo−6; không giảm mất12; không lặp
   sát thương ở update sau. Test geometry kiểm tra rào không cắt idle hero.
-- [x] Browser PC1280 và touch mô phỏng320×568. Kim Đan băng: HP200→188; có một
+- [x] Browser PC1280 và touch mô phỏng320×568,390×844,844×390. Kim Đan băng: HP200→188; có một
   thuẫn: HP200 giữ nguyên, cue còn0. Không dùng tài khoản production giả.
 - [x] Cả năm cảnh đổi tên/icon đúng file; icon tải thật. DOM outline0px,
   shadow none, border-image none; panel trái kết thúc490, phải bắt đầu790,
   hero ở640. Ảnh game cuối cho thấy rào và panel không che nhân vật.
-- [ ] Production build, push/backup và đối chiếu Linux/public.
+- [x] Production build, push/backup và đối chiếu Linux/public.
 
 Minh chứng ignored ở `artifacts/meowcha-qa/20.0/`: `battle-desktop-final.png`,
 `battle-mobile-final.png`, `hero-clear.png`, `impact-status.json`,
@@ -43,6 +43,13 @@ chưa chứng nhận thiết bị iOS/Android vật lý hoặc hoàn tất toàn
 
 ## Triển khai
 
-Baseline83bda42. Linux đã giữ backup Git/Docker trước20 và năm runtime MP3 tại
-`/home/quang/meowcha-backups/20.0-20261026`. Counts trước: vocab4981, legacy5,
-runs12, battle logs3, snapshots2. Cập nhật kết quả sau triển khai ở đây.
+Code d683fe3 đã push đúng game/meowcha-cultivation, Linux fast-forward, Docker
+build web đạt, web/backend healthy. HTTP trang cha và tám static file200; SHA256
+khớp checkout, HTML chỉ tham chiếu20.0. Browser public thấy scripts20.0, tên pháp
+bảo và thông báo rào mới; auth gate vẫn giữ, chưa chơi OAuth thật production.
+
+Baseline83bda42. GitHub/Linux giữ codex/backup-meowcha-before-20-20261026,
+Docker web/backend giữ tag before-meowcha-20-20261026. Backup hoàn tất:
+codex/backup-meowcha-complete-20-20261026. Log build/counts và năm runtime MP3 tại
+`/home/quang/meowcha-backups/20.0-20261026`. Đã cmp counts trước/sau: vocab4981,
+legacy5,runs12,battle logs3,snapshots2 đều khớp; năm MP3 khớp SHA256 với backup.
