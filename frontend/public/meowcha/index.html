@@ -1,17 +1,7 @@
 <!doctype html>
 <html lang="vi">
   <head>
-  <script>
-    (function() {
-      try {
-        var ua = navigator.userAgent || "";
-        var isMobile = Boolean((navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua));
-        var isTablet = /iPad|Tablet|PlayBook|Silk|Kindle/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        var cls = (isMobile && !isTablet) ? "platform-mobile" : (isTablet ? "platform-tablet" : "platform-pc");
-        document.documentElement.className += " " + cls;
-      } catch(e) {}
-    })();
-  </script>
+    <script src="./js/core/DeviceDetector.js?v=17.0"></script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -25,28 +15,6 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <!-- Immediate Multi-Factor Platform Recognition (PC vs Mobile Native) -->
-    <script>
-      (function() {
-        try {
-          var nav = navigator || {};
-          var ua = nav.userAgent || '';
-          var platform = nav.platform || '';
-          var maxTouch = nav.maxTouchPoints || 0;
-          var isMobileUA = Boolean(
-            (nav.userAgentData && nav.userAgentData.mobile) ||
-            /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua)
-          );
-          var isIPad = /iPad/i.test(ua) || (platform === 'MacIntel' && maxTouch > 1);
-          var isTabletUA = isIPad || /Tablet|PlayBook|Silk|Kindle/i.test(ua);
-          var hasHover = false;
-          try { hasHover = window.matchMedia && window.matchMedia('(hover: hover)').matches; } catch(e){}
-          var isDesktop = (!isMobileUA && !isTabletUA) || (hasHover && !isMobileUA);
-          var rootClass = isDesktop ? 'platform-pc' : 'platform-mobile';
-          document.documentElement.classList.add(rootClass);
-        } catch (_) {}
-      })();
-    </script>
     <!-- Google Fonts: Be Vietnam Pro (Chuẩn Tiếng Việt không lỗi dấu) & Cinzel (Cổ Tự Latin) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,12 +24,12 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=16.0" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=16.0" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=16.0" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=16.0" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=16.0" />
-    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=16.0" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=17.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=17.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=17.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=17.0" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=17.0" />
+    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=17.0" />
   </head>
   <body data-session="checking">
     <div id="gameAppWrapper">
@@ -711,6 +679,7 @@
       <!-- 2. CHIẾN TRƯỜNG ĐỘ KIẾP (IN-GAME BATTLE VIEW) -->
       <!-- ========================================================= -->
       <div id="battleView">
+        <div id="battleDefenseLine" aria-label="Ranh giới phòng thủ"><span id="battleFeedback" role="status">KẾT GIỚI • BẢO VỆ TIÊN MÔN</span></div>
         <!-- BẢNG NGỌC GIẢN TÔNG MÔN CỔ PHONG (TÁCH 2 GÓC TRÁI - PHẢI, KHOẢNG TRỜI CHÍNH GIỮA HOÀN TOÀN THÔNG THOÁNG) -->
         <div class="sect-scroll-hud">
           <!-- GÓC TRÁI: CẤP BẬC, DANH HIỆU & MỆNH ĐAN (LEFT DOCK) -->
@@ -827,8 +796,8 @@
         </div>
 
         <!-- BÁT QUÁI KIẾM TRẬN • ĐÀI XUẤT KIẾM TRẢM MA (CENTRAL SWORD ALTAR HUD) -->
+        <div id="battleCommandDock">
         <div class="sword-altar-hud" id="swordIntentBox">
-          <div class="battle-active-skills-bar" id="battleActiveSkillsBar"></div>
 
           <!-- Dải Lụa Đỏ Tiêu Đề Cổ Phong Viền Vàng Uốn Lượn -->
           <div class="altar-ribbon-banner" id="swordAltarRibbon">
@@ -867,6 +836,7 @@
                 <span class="altar-idle-msg">✦ NHÌN MA THẠCH RƠI • GÕ CHỮ TRẢM MA ✦</span>
               </div>
               <div class="altar-meaning-display" id="swordTargetMeaning"></div>
+              <span id="battleTypingProgress" aria-label="Tiến độ gõ">0/0</span>
               <div class="altar-gauge-track">
                 <div class="altar-gauge-fill" id="swordTargetGauge" style="width: 0%"></div>
               </div>
@@ -878,7 +848,12 @@
             </div>
           </div>
 
-          <details id="lastLearnedWord" class="last-learned-word" hidden></details>
+          <div id="battleReviewDock">
+            <div class="battle-dock-caption">TU LUYỆN TRẬN NÀY</div>
+            <div id="battleProgressSummary">0 từ • Chính xác 100%</div>
+            <div class="battle-active-skills-bar" id="battleActiveSkillsBar"></div>
+            <details id="lastLearnedWord" class="last-learned-word" hidden></details>
+          </div>
           <!-- Hữu Hộ Pháp: Bộ Đếm Phù Văn + Lưỡng Nghi Trận + Bảo Phù Bạch Long -->
           <div class="altar-guardian right">
             <span class="altar-counter" id="swordTargetCounter">0/0</span>
@@ -898,7 +873,8 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path></svg>
         <span>[ ⌨ Hiện Bàn Phím ▲ ]</span>
       </button>
-      <div id="virtualKeyboardContainer"></div>
+      <div id="virtualKeyboardContainer" hidden></div>
+      </div>
       </div>
 
       <!-- Thanh Trạng Thái Phù Văn Duy Nhất (đặt ngoài battleView để hiển thị đồng bộ cả ở Sảnh và Trong Trận) -->
@@ -1907,51 +1883,52 @@
             <label>Âm môi trường <input aria-label="Âm môi trường" data-audio-volume="ambience" type="range" min="0" max="100"><output data-audio-output="ambience"></output></label>
           </div>
           <p id="audioSettingsStatus" role="status"></p>
+          <button id="btnAudioTest" class="mc-utility" type="button">Nghe thử hiệu ứng gõ • nổ • mây • choáng</button>
           <button id="btnAudioRecover" class="btn-xianxia-seal" type="button">Khôi phục âm thanh</button>
         </div>
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/core/Release.js?v=16.0"></script>
-    <script src="./js/core/Session.js?v=16.0"></script>
-    <script src="./js/data/RealmsData.js?v=16.0"></script>
-    <script src="./js/data/AudioAssets.js?v=16.0"></script>
-    <script src="./js/data/MeaningCorrections.js?v=16.0"></script>
-    <script src="./js/core/LearningText.js?v=16.0"></script>
-    <script src="./js/data/WordDecks.js?v=16.0"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=16.0"></script>
-    <script src="./js/data/TalentsData.js?v=16.0"></script>
-    <script src="./js/data/SpeechesData.js?v=16.0"></script>
+    <script src="./js/core/Release.js?v=17.0"></script>
+    <script src="./js/core/Session.js?v=17.0"></script>
+    <script src="./js/data/RealmsData.js?v=17.0"></script>
+    <script src="./js/data/AudioAssets.js?v=17.0"></script>
+    <script src="./js/data/MeaningCorrections.js?v=17.0"></script>
+    <script src="./js/core/LearningText.js?v=17.0"></script>
+    <script src="./js/data/WordDecks.js?v=17.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=17.0"></script>
+    <script src="./js/data/TalentsData.js?v=17.0"></script>
+    <script src="./js/data/SpeechesData.js?v=17.0"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=16.0"></script>
-    <script src="./js/ui/DesignSystem.js?v=16.0"></script>
-    <script src="./js/core/AudioManager.js?v=16.0"></script>
-    <script src="./js/core/SaveSystem.js?v=16.0"></script>
-    <script src="./js/core/GameState.js?v=16.0"></script>
-    <script src="./js/core/BattleLayout.js?v=16.0"></script>
-    <script src="./js/core/SpriteAnimator.js?v=16.0"></script>
+    <script src="./js/ui/ArtIcons.js?v=17.0"></script>
+    <script src="./js/ui/DesignSystem.js?v=17.0"></script>
+    <script src="./js/core/AudioManager.js?v=17.0"></script>
+    <script src="./js/core/SaveSystem.js?v=17.0"></script>
+    <script src="./js/core/GameState.js?v=17.0"></script>
+    <script src="./js/core/BattleLayout.js?v=17.0"></script>
+    <script src="./js/core/CombatFeedback.js?v=17.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=17.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=16.0"></script>
-    <script src="./js/effects/RealmVFX.js?v=16.0"></script>
-    <script src="./js/effects/FloatingText.js?v=16.0"></script>
+    <script src="./js/effects/ParticleEngine.js?v=17.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=17.0"></script>
+    <script src="./js/effects/FloatingText.js?v=17.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=16.0"></script>
-    <script src="./js/entities/AsteroidManager.js?v=16.0"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=16.0"></script>
+    <script src="./js/entities/CatCultivator.js?v=17.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=17.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=17.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=16.0"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=16.0"></script>
+    <script src="./js/combat/TypingEngine.js?v=17.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=17.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=16.0"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=16.0"></script>
-    <script src="./js/ui/UnityBridge.js?v=16.0"></script>
-    <script src="./js/core/VocabLoader.js?v=16.0"></script>
-    <script src="./js/ui/UIManager.js?v=16.0"></script>
-    <script src="./js/ui/LeaderboardHalls.js?v=16.0"></script>
-    <script src="./js/ui/MasteryProfile.js?v=16.0"></script>
+    <script src="./js/ui/IPAToast.js?v=17.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=17.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=17.0"></script>
+    <script src="./js/core/VocabLoader.js?v=17.0"></script>
+    <script src="./js/ui/UIManager.js?v=17.0"></script>
+    <script src="./js/ui/LeaderboardHalls.js?v=17.0"></script>
+    <script src="./js/ui/MasteryProfile.js?v=17.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/core/DeviceDetector.js?v=16.0"></script>
-    <script src="./js/main.js?v=16.0"></script>
+    <script src="./js/main.js?v=17.0"></script>
   </body>
 </html>

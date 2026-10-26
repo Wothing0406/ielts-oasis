@@ -252,7 +252,6 @@ html.keyboard-visible #gameAppWrapper #swordIntentBox { bottom: calc(var(--mc-ke
   #gameAppWrapper .kb-key { height: 30px !important; min-height: 30px !important; }
   #gameAppWrapper .kb-row-actions .kb-key { height: 28px !important; min-height: 28px !important; }
   #gameAppWrapper .parchment-body { min-height: 36px !important; padding: 2px 10px !important; }
-  html.scene-battle.keyboard-visible #gameCanvas { width: 52vw !important; }
   html.scene-battle.keyboard-visible #gameAppWrapper #virtualKeyboardContainer {
     width: 47vw !important; max-width: none !important; left: auto !important; right: 5px !important;
     bottom: 8px !important; transform: none !important;

@@ -43,10 +43,14 @@
         : { catY: (canvas.height || 600) * 0.75, bottomThreshold: (canvas.height || 600) * 0.72 };
       const BASE_X = layout.catX || canvas.width / 2;
       const BASE_Y = layout.catY;
-      const renderSize = layout.characterSize || (isMobile ? 125 : 180);
+      const visibleSize = layout.characterSize || (isMobile ? 64 : 100);
+      // Measured opaque idle bounds in the registered 360px sheets. Realm 1
+      // occupies far more of its canvas than realm 0; equal canvases are not equal heroes.
+      const bounds=[[64,154,296,325],[25,47,335,327],[73,110,288,330],[48,110,313,330],[83,113,278,330]][Math.min(4,Math.max(0,gameState.realmIdx))];
+      const renderSize=visibleSize*360/(bounds[3]-bounds[1]);
       const floatOffset = Math.sin(this.time * 2.8) * 4; // Miêu Tôn luôn bồng bềnh lơ lửng
-      let drawX = BASE_X - renderSize / 2;
-      let drawY = BASE_Y - renderSize + floatOffset;
+      let drawX = BASE_X - (bounds[0]+bounds[2])/720*renderSize;
+      let drawY = BASE_Y - bounds[3]/360*renderSize + floatOffset;
 
       const realmIdx = Math.min(4, Math.max(0, gameState.realmIdx));
       const catState = gameState.catState;
@@ -59,34 +63,40 @@
       if (!sprite) return;
 
       ctx.save();
+      if(layout.defenseY){
+        ctx.beginPath();ctx.rect(Math.max(0,BASE_X-visibleSize*.9),layout.defenseY+12,visibleSize*1.8,canvas.height-(layout.keyboardBelow||0)-layout.defenseY-14);ctx.clip();
+      }
       const t = this.time * 2.5;
 
       // Authored pixel-art dais shared by the lobby and battlefield.
       const dais = this.assets.cultivation_dais;
       if (dais && dais.loaded) {
-        const width = isMobile ? 150 : 190;
+        const width = visibleSize*1.5;
         ctx.drawImage(dais.img, BASE_X - width / 2, BASE_Y - 12, width, width * 763 / 2062);
       }
 
       // 2. PHÁP TƯỚNG & NỀN ĐÀI RIÊNG BIỆT CHO TỪNG CẢNH GIỚI (VẼ PHÍA SAU MÈO)
+      ctx.save();ctx.translate(BASE_X,BASE_Y);ctx.scale(visibleSize/150,visibleSize/150);ctx.translate(-BASE_X,-BASE_Y);
+      const auraY=BASE_Y-150;
       if (realmIdx === 0) {
         this.realmVFX.drawRealm0(ctx, BASE_X, BASE_Y, catState);
       } else if (realmIdx === 1) {
         this.realmVFX.drawRealm1(ctx, BASE_X, BASE_Y, catState);
       } else if (realmIdx === 2) {
-        this.realmVFX.drawRealm2(ctx, BASE_X, BASE_Y, drawY, catState);
+        this.realmVFX.drawRealm2(ctx, BASE_X, BASE_Y, auraY, catState);
       } else if (realmIdx === 3) {
-        this.realmVFX.drawRealm3(ctx, BASE_X, BASE_Y, drawY, catState);
+        this.realmVFX.drawRealm3(ctx, BASE_X, BASE_Y, auraY, catState);
       } else if (realmIdx >= 4) {
-        this.realmVFX.drawRealm4(ctx, BASE_X, BASE_Y, drawY, catState);
+        this.realmVFX.drawRealm4(ctx, BASE_X, BASE_Y, auraY, catState);
       }
+      ctx.restore();
 
       // 3. NGUYÊN ANH HỘ ĐẠO (CHIBI COMPANION CHO CẢNH GIỚI 3 - NGUYÊN ANH KỲ)
       if (realmIdx === 3 && this.assets?.chibi_companion?.loaded) {
         ctx.save();
-        const chibiSize = isMobile ? 54 : 74;
-        const chibiX = BASE_X - (isMobile ? 58 : 86) + Math.cos(t * 1.4) * 5;
-        const chibiY = drawY + (isMobile ? 8 : 14) + Math.sin(t * 2.2) * 7;
+        const chibiSize = visibleSize*.4;
+        const chibiX = BASE_X - visibleSize*.55 + Math.cos(t * 1.4) * 3;
+        const chibiY = BASE_Y-visibleSize*.6 + Math.sin(t * 2.2) * 4;
         ctx.shadowColor = gameState.chibiAttackFlash > 0 ? "#FDE047" : "#C084FC";
         ctx.shadowBlur = gameState.chibiAttackFlash > 0 ? 28 : 16;
         ctx.drawImage(
@@ -418,7 +428,7 @@
       if (gameState.isStunned || gameState.catState === "HURT") {
         ctx.save();
         const headX = BASE_X;
-        const headY = drawY + renderSize * 0.25;
+        const headY = BASE_Y-visibleSize*.85;
         const stunRot = this.time * 6.5;
         const stunRad = isMobile ? 28 : 40;
         for (let s = 0; s < 4; s++) {

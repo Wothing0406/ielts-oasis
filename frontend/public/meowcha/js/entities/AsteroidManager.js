@@ -14,7 +14,7 @@
 
     spawnBoss(bossConfig, canvasWidth) {
       if (!bossConfig) return null;
-      const cW = canvasWidth || this.canvasWidth || 800;
+      const cW = root.Meowcha.battleLayout?.fieldWidth || canvasWidth || this.canvasWidth || 800;
       const isMobile = cW <= 600;
       const firstShield = bossConfig.shields[0];
       const word = firstShield.word.toUpperCase();
@@ -127,7 +127,6 @@
       let runeColor = "#E0F2FE";
       let trailColors = ["#38BDF8", "#7DD3FC", "#BAE6FD", "#FFFFFF", "#0284C7"];
       let baseDamage = 8;
-      let typeSpeedMultiplier = 1.0;
 
       if (asteroidType === "fire") {
         coreColor = "#F97316";
@@ -135,15 +134,12 @@
         runeColor = "#FEF08A";
         trailColors = ["#F97316", "#EF4444", "#FEF08A", "#991B1B", "#292524"];
         baseDamage = 12;
-        typeSpeedMultiplier = 1.05;
       } else if (asteroidType === "void") {
         coreColor = "#A855F7";
         glowColor = "#7E22CE";
         runeColor = "#F3E8FF";
         trailColors = ["#A855F7", "#C084FC", "#E9D5FF", "#581C87", "#1E1B4B"];
         baseDamage = 16;
-        // Thiên thạch đen rơi êm dịu, tăng dần từ từ theo yêu cầu người chơi
-        typeSpeedMultiplier = 0.82;
       } else if (asteroidType === "thunder" || asteroidType === "chaos") {
         asteroidType = "thunder";
         coreColor = "#FDE047";
@@ -151,7 +147,6 @@
         runeColor = "#FFFBEB";
         trailColors = ["#FDE047", "#F59E0B", "#DC2626", "#991B1B", "#18181B"];
         baseDamage = 22;
-        typeSpeedMultiplier = 0.90;
       }
 
       const totalDamage = explicitDamage || (baseDamage + rIdx * 2);
@@ -187,22 +182,19 @@
           maxX = Math.min(canvasWidth - safeMargin, canvasWidth * 0.72);
         }
       }
-      const spawnX = isMobile ? canvasWidth / 2 : minX + Math.random() * (maxX - minX);
-
-      const realms = (root && root.Meowcha && root.Meowcha.CULTIVATION_REALMS) || [];
-      const realmData = realms[realmIdx] || { speedMult: 1.0 };
-      // Tốc độ tăng dần ổn định từ sơ cơ đến siêu khó ở các cảnh giới cao
-      const realmSpeedBase = [0.22, 0.26, 0.31, 0.38, 0.48];
-      let baseSpeed = (realmSpeedBase[Math.min(4, realmIdx)] || 0.22) * (realmData.speedMult || 1.0) * slowFactor * typeSpeedMultiplier;
-
-      // Rơi thẳng từ đỉnh trời xuống (-3° đến +3°)
       const field = (root.Meowcha && root.Meowcha.battleLayout) || {};
-      const entryTargetY=Math.max((field.hudBottom||76)+28,Math.min((field.hudBottom||76)+70,(field.bottomThreshold||canvasWidth)-36));
+      const fieldWidth=field.fieldWidth||canvasWidth;
+      const spawnX=fieldWidth<800?fieldWidth/2:minX+Math.random()*(maxX-minX);
+      const entryTargetY=(field.hudBottom||76)+48;
       // The word card, rock, projectile and reward must share the same visible position.
       const spawnY = -baseRadius-80;
-      // Keep the typing window comparable when the keyboard reduces travel distance.
-      const fieldScale = field.bottomThreshold ? Math.max(.015, Math.min(1.5, (field.bottomThreshold-entryTargetY) / 420)) : 1;
-      const vy = baseSpeed * fieldScale;
+      const appState=this.gameState||root.Meowcha.app?.gameState;
+      const mode=appState?.gameMode||'DIRECT';
+      // One budget in seconds, independent of pixel distance and stacked realm multipliers.
+      const introduction=rIdx===0?6*Math.max(0,1-(appState?.wordsSlain||0)/12):0;
+      const typingSeconds=([18,17,15,13.5,12][Math.min(4,rIdx)]+introduction+
+        Math.min(10,Math.max(0,word.length-4)*.9)+(mode==='AUDIO'?4:mode==='CLOZE'?3:0))/Math.max(.4,Math.min(1,slowFactor));
+      const vy=Math.max(20,(field.bottomThreshold||600)-entryTargetY)/(typingSeconds*60);
       const vx = 0;
       const fallAngle = Math.PI/2;
 
@@ -234,7 +226,6 @@
       }
 
       const M = root.Meowcha || {};
-      const appState = this.gameState || (M.app && M.app.gameState) || null;
       const curMode = (appState && appState.gameMode) || "DIRECT";
 
       const asteroid = {
@@ -257,6 +248,7 @@
         y: spawnY,
         entering:true,
         entryTargetY,
+        entryProgress:0,typingSeconds,remainingSeconds:typingSeconds,layoutThreshold:field.bottomThreshold||null,
         vx: vx,
         vy: vy,
         fallAngle: fallAngle,
@@ -285,11 +277,16 @@
     update(dt = 0.016, bottomThreshold, onBottomHit, canvasWidth, isLightningHazard = false, domainSlow = 0) {
       this.time += dt;
       this.isLightningHazard = isLightningHazard;
-      const cWidth = canvasWidth || this.canvasWidth || (typeof window !== "undefined" ? window.innerWidth : 800);
+      const cWidth = root.Meowcha.battleLayout?.fieldWidth || canvasWidth || this.canvasWidth || (typeof window !== "undefined" ? window.innerWidth : 800);
 
       for (let i = this.asteroids.length - 1; i >= 0; i--) {
         const ast = this.asteroids[i];
         if (!ast) continue;
+        if(!ast.isBoss&&Number.isFinite(ast.remainingSeconds)&&ast.layoutThreshold!=null&&ast.layoutThreshold!==bottomThreshold){
+          const start=(root.Meowcha.battleLayout?.hudBottom||76)+48;
+          if(!ast.entering)ast.y=start+(bottomThreshold-start)*(1-ast.remainingSeconds/ast.typingSeconds);
+        }
+        ast.layoutThreshold=bottomThreshold;
         ast.trail = ast.trail || [];
         let statusSpeedMult = 1.0;
         if (domainSlow > 0) { statusSpeedMult *= Math.max(0.2, 1.0 - domainSlow); }
@@ -312,13 +309,21 @@
         }
 
         ast.vx=0;
-        // Khi bị sấm đánh (thiên kiếp sét): Ma thạch bị lôi đình thúc đẩy, tốc độ rơi tăng vọt (+45%) tạo áp lực thử thách
-        const gravMult = isLightningHazard ? 1.45 : 1.0;
-        if(ast.entering&&ast.y<ast.entryTargetY){
-          ast.y=Math.min(ast.entryTargetY,ast.y+320*dt*statusSpeedMult);
-          ast.entering=ast.y<ast.entryTargetY;
-        }else {ast.entering=false;ast.y += ast.vy * 60 * dt * gravMult * statusSpeedMult;}
-        ast.vy += dt * 0.002; // Gia tốc vi mô cực êm
+        // A small, bounded hazard increase; never compound realm/score multipliers.
+        const gravMult = isLightningHazard ? 1.1 : 1;
+        if(ast.y<bottomThreshold){
+          if(ast.entering){
+            ast.entryTargetY=(root.Meowcha.battleLayout?.hudBottom||76)+48;
+            ast.entryProgress=Math.min(1,(ast.entryProgress||0)+dt*statusSpeedMult/1.8);
+            const progress=1-Math.pow(1-ast.entryProgress,2);
+            ast.y=-ast.radius-80+(ast.entryTargetY+ast.radius+80)*progress;
+            ast.entering=ast.entryProgress<1;
+          }else if(Number.isFinite(ast.remainingSeconds)){
+            ast.remainingSeconds=Math.max(0,ast.remainingSeconds-dt*gravMult*statusSpeedMult);
+            const start=(root.Meowcha.battleLayout?.hudBottom||76)+48;
+            ast.y=start+(bottomThreshold-start)*(1-ast.remainingSeconds/ast.typingSeconds);
+          }else ast.y+=ast.vy*60*dt*gravMult*statusSpeedMult;
+        }
         // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
         ast.fallAngle = Math.PI/2;
         ast.rot=SPRITE_ROTATION[ast.asteroidType]||0;
@@ -364,7 +369,7 @@
     }
 
     cardLayout(ctx, ast) {
-      const M=root.Meowcha, width=ctx.canvas.width, small=width<600;
+      const M=root.Meowcha, width=M.battleLayout?.fieldWidth||ctx.canvas.width, small=width<600;
       const cols=Math.min(small?14:18,ast.word.length), rows=Math.ceil(ast.word.length/cols), fontSize=small?16:18;
       const paperW=Math.min(width-24,Math.max(small?210:240,cols*(small?12:14)+48));
       const safeX=Math.max(paperW/2+8,Math.min(width-paperW/2-8,ast.x));
@@ -373,7 +378,8 @@
         ast.isAudio?'Nghe và gõ • Tab nghe lại':ast.isCloze?
         ((ast.type?ast.type+' • ':'')+(ast.meaning||'Nhớ từ qua nghĩa')):
         ((ast.ipa&&ast.ipa!=='/.../'?ast.ipa+' • ':'')+(ast.typedLen||0)+' / '+ast.word.length);
-      const detailLines=M.wrapLearningText?M.wrapLearningText(ctx,detail,paperW*.77):[detail];
+      const time=Number.isFinite(ast.remainingSeconds)?' • '+Math.ceil(ast.remainingSeconds)+'s':'';
+      const detailLines=M.wrapLearningText?M.wrapLearningText(ctx,detail+time,paperW*.77):[detail+time];
       const paperH=36+rows*(fontSize+2)+detailLines.length*15;
       const battle=M.getBattleLayout?M.getBattleLayout(ctx.canvas):{};
       const top=(battle.hudBottom||76)+6, bottom=Math.max(top+paperH,battle.bottomThreshold||ctx.canvas.height-160);
@@ -384,10 +390,10 @@
       for (const ast of this.asteroids) {
         ctx.save();
         ctx.imageSmoothingEnabled=false; ctx.shadowBlur=0;
-        const width=ctx.canvas.width, small=width<600;
+        const width=root.Meowcha.battleLayout?.fieldWidth||ctx.canvas.width, small=width<600;
         const x=ast.x, y=ast.y;
         const field=root.Meowcha.getBattleLayout?root.Meowcha.getBattleLayout(ctx.canvas):{};
-        ctx.beginPath();ctx.rect(0,(field.hudBottom||76)+6,width,ctx.canvas.height);ctx.clip();
+        ctx.beginPath();ctx.rect(0,(field.hudBottom||76)+6,width,(field.defenseY||ctx.canvas.height)-(field.hudBottom||76)-8);ctx.clip();
         const rock=this.assets['prop_asteroid_'+(ast.asteroidType||'void')];
         const size=ast.isBoss?(small?104:128):(small?78:104);
         for(const p of ast.trail||[]) {
@@ -414,6 +420,11 @@
         }
         ctx.font="12px 'Be Vietnam Pro',sans-serif";ctx.fillStyle='#614734';
         detailLines.forEach((line,i)=>ctx.fillText(line,safeX,glyphY+rows*(fontSize+2)+i*16));
+        if(Number.isFinite(ast.remainingSeconds)){
+          const left=safeX-paperW*.32,barY=cardY+paperH*.36;
+          ctx.fillStyle='#CABB93';ctx.fillRect(left,barY,paperW*.64,3);
+          ctx.fillStyle=ast.remainingSeconds<5?'#B85645':'#397A61';ctx.fillRect(left,barY,paperW*.64*ast.remainingSeconds/ast.typingSeconds,3);
+        }
         if(ast.freezeTimer>0) {
           ctx.fillStyle='#9CB7D4';for(let i=0;i<4;i++)ctx.fillRect(x-size/2+i*size/3,y-size/2,4,6);
         }

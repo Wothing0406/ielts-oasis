@@ -7538,10 +7538,10 @@ body.platform-pc #virtualKeyboardContainer {
   display: none !important;
 }
 
-/* Chỉ hiện trên PC khi người dùng chủ động mở */
+/* PC stays hidden even if an old restore control left this class behind. */
 html.platform-pc #virtualKeyboardContainer.user-force-opened,
 body.platform-pc #virtualKeyboardContainer.user-force-opened {
-  display: flex !important;
+  display: none !important;
 }
 
 html.platform-pc #floatingKbRestoreBtn,

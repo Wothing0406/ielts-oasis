@@ -83,6 +83,11 @@
           const buffer=await context.decodeAudioData(await response.arrayBuffer());
           if(this.ctx!==context)return;
           this.buffers[key]=buffer;
+          if(key!=='music'&&buffer.getChannelData){
+            const samples=buffer.getChannelData(0);let peak=0;
+            for(let i=0;i<samples.length;i++)peak=Math.max(peak,Math.abs(samples[i]));
+            (this.sampleGains||(this.sampleGains={}))[key]=Math.min(3,.8/Math.max(.01,peak));
+          }
           if(key==='music'&&this.musicRequested&&this.soundEnabled){this._stopMusicNodes();this._startDroneAndMelody();}
         }catch(_){this.sampleFailures++;root.Meowcha.report?.('asset_load_failed');}
         finally{clearTimeout(timer);}
@@ -91,7 +96,8 @@
     _sample(type,delay=0,volume=.45,channel=this.sfx){
       if(!this.buffers[type]||!this.ctx||!this.soundEnabled)return false;
       if(this.sampleSources.size>=12){const oldest=this.sampleSources.values().next().value;try{oldest.stop();}catch(_){}this.sampleSources.delete(oldest);}
-      const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=this.buffers[type];gain.gain.value=volume;
+      const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=this.buffers[type];gain.gain.value=volume*(this.sampleGains?.[type]||1);
+      if(source.playbackRate)source.playbackRate.value=({type_correct:1.7,wrong_key:.75,cloud_enter:.55,stun:.7,stun_end:1.5})[type]||1;
       source.connect(gain);gain.connect(channel);this.sampleSources.add(source);
       source.onended=()=>{source.disconnect();gain.disconnect();this.sampleSources.delete(source);};
       source.start(this.ctx.currentTime+delay);return true;
@@ -187,7 +193,11 @@
       type = aliases[type] || type;
       this.stats.sfxPlayed++;
       this.eventCounts[type] = (this.eventCounts[type] || 0) + 1;
-      if(this._sample(type,delay,type==='meteor_impact'?.5:type==='breakthrough'?.3:.35))return;
+      const sampleVolume={type_correct:.5,wrong_key:.6,meteor_impact:.65,meteor_crack:.5,cloud_enter:.48,stun:.4,stun_end:.3,breakthrough:.3};
+      if(this._sample(type,delay,sampleVolume[type]??.35)){
+        if(type==='cloud_enter')this._noise('cloud',.6,.16,650,delay);
+        return;
+      }
       const textures = {
         wrong_key:[.08,.11,450], sword_launch:[.1,.06,2300], sword_hit:[.075,.055,1800],
         word_slash:[.15,.14,2100], meteor_crack:[.22,.22,1200], meteor_impact:[.36,.25,350],
@@ -201,7 +211,8 @@
         meteor_impact:[85,.28,.18,'sine',35],shield_hit:[1200,.15,.1,'sine',650],
         shield_break:[1750,.2,.1,'sine',480],player_hurt:[180,.18,.09,'triangle',95],
         word_complete:[1320,.25,.08,'sine',1760],pause:[440,.12,.06,'sine',330],
-        resume:[330,.12,.06,'sine',660]
+        resume:[330,.12,.06,'sine',660],cloud_enter:[140,.6,.2,'triangle',55],
+        cloud_clear:[660,.25,.1,'sine',1100],stun:[280,.4,.18,'triangle',70],stun_end:[660,.18,.1,'sine',1320]
       };
       if (semantic[type]) {
         const [f,d,v,w,e] = semantic[type];this._tone(f,d,v,w,this.sfx,delay,e);return;

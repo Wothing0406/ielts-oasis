@@ -399,6 +399,16 @@
       const soundSwitch=document.getElementById('audioMasterEnabled'),recover=document.getElementById('btnAudioRecover');
       if(soundSwitch)soundSwitch.onchange=()=>{if(soundSwitch.checked)this.audio.enableSound();else if(this.audio.soundEnabled)this.audio.toggleSound();this.updateAudioSettings();};
       if(recover)recover.onclick=()=>{this.audio.enableSound();this.updateAudioSettings();this.showStatus('Đã khôi phục nhạc và hiệu ứng. Phát âm tiếp tục khi vào trận.');};
+      const testAudio=document.getElementById('btnAudioTest');
+      if(testAudio)testAudio.onclick=()=>{
+        this.audio.enableSound();
+        if(this.audio.volumes.master===0||this.audio.volumes.sfx===0){this.showStatus('Âm thanh tổng hoặc Hiệu ứng đang ở 0%. Hãy tăng thanh âm lượng để nghe thử.');return;}
+        const sequence=this._audioTest=(this._audioTest||0)+1;
+        [['Gõ đúng','type_correct'],['Gõ sai','wrong_key'],['Ma thạch nổ','meteor_crack'],['Ma vân tụ khí','cloud_enter'],['Choáng','stun'],['Định thần','stun_end']].forEach(([label,event],i)=>setTimeout(()=>{
+          if(sequence!==this._audioTest||document.getElementById('modalAudioSettings').style.display==='none'||!this.audio.soundEnabled)return;
+          this.audio.play(event);this.showStatus('Nghe thử: '+label,700);
+        },i*750));
+      };
 
       const btnToggleSound = document.getElementById('btnToggleSound');
       const btnToggleSoundLobby = document.getElementById('btnToggleSoundLobby');
@@ -802,6 +812,8 @@
       // Điểm Tu Vi & Từ đã trảm
       if (this.hudScore) this.hudScore.innerText = s.score.toLocaleString();
       if (this.hudWords) this.hudWords.innerText = s.wordsSlain;
+      const progress=document.getElementById('battleProgressSummary');
+      if(progress)progress.textContent=(s.humanWords||0)+' từ • Chính xác '+s.accuracy+'%';
 
       // Danh hiệu Cảnh Giới & Cấp Độ
       if (this.hudLevelBadge) {
@@ -1290,6 +1302,8 @@
       ];
 
       const equipped = this.state.getActiveSkillSlots();
+      const command=document.getElementById('battleCommandDock');
+      if(command)command.classList.toggle('has-active-skills',equipped.length>0);
       const activeSlots = equipped.map((id, i) => ({ ...slotList.find(s => s.id === id), slot: i + 1 }));
 
       if (activeSlots.length === 0) {
@@ -1345,7 +1359,11 @@
       }
     }
 
-    togglePause() { this.setPause(!this.state.isPaused); }
+    togglePause() {
+      const record=document.getElementById('lastLearnedWord');
+      if(record?.open){record.open=false;return;}
+      this.setPause(!this.state.isPaused);
+    }
 
     setPause(paused) {
       if (this.state.setPaused) this.state.setPaused(paused);

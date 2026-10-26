@@ -1,0 +1,7 @@
+Use case: stylized-concept
+Asset type: transparent game-ready 2D foreground fence / defense boundary, one prop module.
+Primary request: an unmistakable physical jade-and-antique-gold xianxia balustrade for a cute pixel cultivation typing game. It separates the meteor sky from the small cat cultivator's protected platform.
+Composition: very wide and short horizontal railing, 4:1 canvas. Straight-on side view, orthographic, one continuous fence, no landscape or characters. Two carved jade stone pillars and connected thick double rails, solid readable silhouette. Pillars occupy about 75% of canvas height, the railing extends to both edges at the same elevation so copies can sit side by side. Tight framing with only a small transparent margin.
+Style: polished commercial 2D pixel fantasy prop, clear stepped edges, sculpted stone, restrained hand-painted pixel shading; match a cute Chinese immortal temple game.
+Materials and palette: warm celadon and deep jade stone, antique brass-gold caps and carved cloud/lotus ornaments, small ivory highlights and dark green contact shadows. Soft jade ward energy in the gaps, subtle and transparent, never a solid neon screen.
+Constraints: genuine transparent alpha background. No text, no letters, no UI, no screenshot, no character, no roof, no floor, no backdrop, no shadow rectangle, no painted checkerboard. The fence must remain visibly physical at 48–56px display height; avoid thin hairline rails or oversized filigree.

@@ -103,3 +103,25 @@ CC0 samples with credits/hashes and explicit procedural fallback. Recheck serial
 voices, mute, ducking and closed-context recovery; never claim physical-device QA
 from a viewport. frontend/meowcha-release.json is the release source; prebuild
 syncs all static asset versions. Keep test preview controls off production.
+
+For battle release 17 read docs/meowcha-battle-readability-17.md. The accepted
+layout keeps the hero centered; PC splits current progress left and practice /
+skills / review right. Touch UI uses one 34px progress strip joined to the keys,
+with skills and a compact review control in the keyboard utility row. Avoid
+large duplicate word/meaning/stat panels on phones. Review opens over the keys,
+pauses the run and restores its previous pause state; it must not cover the hero.
+DeviceDetector is the only platform initializer. VirtualKeyboard.show rejects
+PC, hidden is authoritative, and CSS also rejects a stale user-force-opened class.
+A hardware key is not a virtual pointer event. Check the real rendered keyboard,
+not only shouldShowVirtualKeyboard().
+BattleLayout owns the sky, defense threshold, centered hero and command dock.
+Keep character height stable by measured opaque sprite bounds, not sheet canvas
+size. The authored transparent jade-defense-barrier-v1.png is drawn before the
+hero with its base on the hero ground plane. Preserve remaining meteor seconds
+when the viewport changes. Use one readable seconds budget, not stacked realm,
+score and combo multipliers. Mist and warnings must stay behind learning text.
+CombatFeedback owns short visual / supported vibration cues; honor reduced
+motion. Stun does not fabricate errors or speed penalties. Audio has distinct
+cloud_enter/cloud_clear and stun/stun_end events, normalized sample peaks with
+a bounded gain, and a user-facing sound audition. Verify actual signal output,
+mute and voice independence; browser RMS is not proof of physical phone haptics.

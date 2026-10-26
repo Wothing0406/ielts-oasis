@@ -6,7 +6,7 @@
 <script>
 const frame=document.getElementById('game'),status=document.getElementById('status');let result='Chưa chạy';let running=false,step=0;
 function app(){return frame.contentWindow.Meowcha&&frame.contentWindow.Meowcha.app;}
-setInterval(()=>{const g=app();if(!g)return;status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),session:{owner:frame.contentWindow.Meowcha.Session?.owner,blocked:frame.contentWindow.Meowcha.Session?.blocked,runId:g.gameState.runId,paused:g.gameState.isPaused},mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns,voices:frame.contentWindow.speechSynthesis?frame.contentWindow.speechSynthesis.getVoices().length:0});},250);
+setInterval(()=>{const g=app();if(!g)return;const M=frame.contentWindow.Meowcha,k=frame.contentDocument.getElementById('virtualKeyboardContainer');status.textContent=JSON.stringify({result,step,realm:g.gameState.realmIdx,audio:g.audio.getStatus(),layout:M.battleLayout,device:M.Device.info,keyboard:{hidden:k.hidden,display:frame.contentWindow.getComputedStyle(k).display},meteor:g.asteroids.asteroids.map(a=>({y:a.y,seconds:a.remainingSeconds,entry:a.entering})),cue:g.gameState.combatCue,soundProbe,session:{owner:M.Session?.owner,blocked:M.Session?.blocked,runId:g.gameState.runId,paused:g.gameState.isPaused},mode:g.gameState.gameMode,hp:g.gameState.hp,keys:g.gameState.correctKeystrokes,words:g.gameState.humanWords,skills:g.gameState.skillLevels,cooldowns:g.gameState.skillCooldowns});},250);
 document.getElementById('qaSize').onchange=event=>{
  const [width,height]=event.target.value.split(',').map(Number);
  frame.style.width=width+'px';frame.style.height=height+'px';
@@ -32,7 +32,7 @@ document.getElementById('qaWrong').onclick=()=>{const g=app();g.gameState.isPaus
 document.getElementById('qaShield').onclick=()=>{const g=app();g.gameState.shieldCharges=1;g.gameState.talents.shieldCharges=1;result='Một khiên cho va chạm thử';};
 document.getElementById('qaImpact').onclick=()=>{const g=app();g.gameState.isPaused=false;
  if(!g.asteroids.asteroids.length)g.asteroids.spawn({word:'JADE',meaning:'ngọc'},g.canvas.width,0,.01,0,'ice');
- g.asteroids.asteroids[0].y=frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold+1;g.update(.016);result='Va chạm đáy qua main.update';};
+ const target=g.asteroids.asteroids[0];target.entering=false;target.remainingSeconds=0;target.layoutThreshold=frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold;target.y=target.layoutThreshold+1;g.update(.016);result='Va chạm đáy qua main.update';};
 document.getElementById('qaPause').onclick=()=>{app().ui.setPause(true);result='Định Tâm thật qua UI';};
 document.getElementById('qaVoices').onclick=async()=>{
  const g=app();if(!g||!g.typing||running)return;running=true;step=0;
@@ -62,6 +62,24 @@ document.getElementById('qaBurst').onclick=()=>{
 document.getElementById('qaMobile').onclick=()=>{const g=app(),D=frame.contentWindow.Meowcha.Device;if(!g)return;
  D.info.isDesktop=false;D.info.isMobile=true;D.info.isTablet=false;D.info.isTouchDevice=true;D.applyDOMClasses();D.setUserPrefKeyboard(true);g.vKeyboard.show();g.initCanvasSize();result='Mô phỏng layout cảm ứng (không phải thiết bị thật)';};
 function extraButton(id,label,fn){const button=document.createElement('button');button.id=id;button.textContent=label;button.onclick=fn;document.getElementById('tools').insertBefore(button,status);}
+let soundProbe={};
+extraButton('qaPC','PC • thử force-open cũ',()=>{
+ const g=app(),M=frame.contentWindow.Meowcha,D=M.Device;D.info=D.detect();D.applyDOMClasses();D.userPrefKeyboard=true;
+ frame.contentDocument.getElementById('virtualKeyboardContainer').classList.add('user-force-opened');g.vKeyboard.show();g.initCanvasSize();result='PC force-open: '+D.info.type;
+});
+extraButton('qaRealmView','Cảnh giới đã chọn',()=>{const g=app();g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.gameState.isPaused=true;g.ui.updateHUD();g.initCanvasSize();result='Khung nhân vật cảnh '+g.gameState.realmIdx;});
+extraButton('qaRun','Chạy trận kiểm tra',()=>{const g=app();g.gameState.isPaused=false;g.audio.enableSound();result='Trận chạy thật, có thể gõ hoặc chạm phím';});
+extraButton('qaCloud','Ma vân qua 3 phím sai',()=>{const g=app();g.gameState.isPaused=false;g.typing.isCloudHazard=false;g.typing.isLightningHazard=false;g.typing.mistakeStreak=0;g.gameState.talents.typoImmune=false;
+ for(let i=0;i<3;i++)g.typing.processKey('Z',g.canvas);g.update(.12);g.gameState.isPaused=true;result='3 phím sai, cloud_enter, mây sau thẻ';});
+extraButton('qaStun','Choáng thật',()=>{const g=app();g.gameState.triggerStun(600);g.update(.05);g.gameState.isPaused=true;result='Choáng qua GameState, không bịa typo';});
+extraButton('qaSoundProbe','Đo đầu ra từng SFX',async()=>{
+ const g=app(),a=g.audio;g.gameState.isPaused=true;a.enableSound();await a.sampleLoading;
+ const original={...a.volumes};a.setVolume('bgm',0);a.setVolume('ambience',0);a.setVolume('voice',0);soundProbe={};
+ for(const event of ['type_correct','wrong_key','meteor_crack','cloud_enter','stun','stun_end']){
+  a.play(event);let peak=0;for(let i=0;i<16;i++){await new Promise(resolve=>setTimeout(resolve,20));peak=Math.max(peak,a.getStatus().outputRms||0);}soundProbe[event]=peak;
+ }
+ for(const [key,value] of Object.entries(original))a.setVolume(key,value);result='SFX riêng: RMS từng sự kiện, mix QA đã phục hồi';
+});
 for(const [phase,label] of [['expired','Phiên hết hạn QA'],['A','Đăng nhập lại A QA'],['B','Đổi tài khoản B QA']])extraButton('qaSession-'+phase,label,async()=>{
  await fetch('/preview/session/'+phase,{method:'POST'});await frame.contentWindow.Meowcha.Session.authorize();result='Phiên QA: '+phase;
 });
@@ -83,12 +101,12 @@ extraButton('qaMeteor','Sinh ma thạch đã chọn',()=>{
  const g=app(),M=frame.contentWindow.Meowcha;g.gameState.resetForNewMode(modeSelect.value);g.startBattle();g.gameState.realmIdx=Number(document.getElementById('qaRealm').value);g.gameState.hp=g.gameState.maxHp=200;
  g.asteroids.clear();const type=meteorSelect.value;
  const words={ice:['JADE','/dʒeɪd/','ngọc bích'],fire:['COURAGE','/ˈkʌrɪdʒ/','lòng can đảm'],void:['SERENITY','/səˈrenəti/','sự thanh thản'],thunder:['INCOMPREHENSIBLE','/ˌɪnkɒmprɪˈhensəbl/','không thể hiểu được']},item=words[type];
- const target=g.asteroids.spawn({word:item[0],ipa:item[1],meaning:item[2],type:'noun'},g.canvas.width,g.gameState.realmIdx,.01,0,type);
+ const target=g.asteroids.spawn({word:item[0],ipa:item[1],meaning:item[2],type:'noun'},g.canvas.width,g.gameState.realmIdx,1,0,type);
  g.typing.currentTarget=target;g.typing.updateSwordAltarUI(target);g.gameState.isPaused=true;
  result='Ma thạch '+target.asteroidType+', sát thương '+target.damage+', cảnh '+g.gameState.realmIdx;
 });
-extraButton('qaEnter','Cho đá vào tầm nhìn',()=>{const g=app();g.asteroids.update(1,frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold,()=>{},g.canvas.width);result='Đá đi vào bằng update, giữ x cố định';});
-extraButton('qaComplete','Gõ trọn từ hiện tại',()=>{const g=app(),target=g.asteroids.asteroids[0];if(!target)return;g.gameState.isPaused=false;g.typing.currentTarget=target;for(const c of target.word)g.typing.processKey(c,g.canvas);g.floatingText.update(.3);g.gameState.isPaused=true;result='Hoàn tất '+target.word+' qua TypingEngine, chặn sinh: '+g.floatingText.hasBlockingReward();});
+extraButton('qaEnter','Cho đá vào tầm nhìn',()=>{const g=app();g.asteroids.update(1.8,frame.contentWindow.Meowcha.getBattleLayout(g.canvas).bottomThreshold,()=>{},g.canvas.width);result='Đá đi vào bằng update, giữ x cố định';});
+extraButton('qaComplete','Gõ trọn từ hiện tại',()=>{const g=app(),target=g.asteroids.asteroids[0];if(!target)return;g.gameState.isPaused=false;g.typing.currentTarget=target;for(const c of target.word.slice(target.typedLen||0))g.typing.processKey(c,g.canvas);g.floatingText.update(.3);g.ui.updateHUD();g.gameState.isPaused=true;result='Hoàn tất '+target.word+' qua TypingEngine, chặn sinh: '+g.floatingText.hasBlockingReward();});
 extraButton('qaBoss','Vào boss đột phá',()=>{
  const g=app(),M=frame.contentWindow.Meowcha,index=Math.min(3,Number(document.getElementById('qaRealm').value));
  g.gameState.resetForNewMode('DIRECT');g.startBattle();g.gameState.realmIdx=index;g.gameState.hp=g.gameState.maxHp=200;

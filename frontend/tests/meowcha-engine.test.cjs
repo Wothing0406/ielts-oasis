@@ -182,6 +182,11 @@ test('desktop touch screens never open virtual keyboard; phones and iPads can',(
   vm.runInContext(fs.readFileSync(path.join(base,'js/core/DeviceDetector.js'),'utf8'),box);
   const D=box.Meowcha.Device;assert.equal(D.info.isDesktop,spec.desktop);
   D.setUserPrefKeyboard(true);assert.equal(D.shouldShowVirtualKeyboard(),!spec.desktop);
+  vm.runInContext(fs.readFileSync(path.join(base,'js/ui/VirtualKeyboard.js'),'utf8'),box);
+  const keyboard=Object.assign(Object.create(box.Meowcha.VirtualKeyboard.prototype),{container});
+  if(spec.desktop)D.userPrefKeyboard=true;
+  keyboard.show();assert.equal(container.hidden,spec.desktop);
+  keyboard.hide();assert.equal(container.hidden,true);
  }
 });
 

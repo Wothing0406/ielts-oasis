@@ -11,6 +11,22 @@
 
 ## Quyết định đã chốt
 
+- Battle 17: xem [nghiệm thu bố cục/âm](meowcha-battle-readability-17.md).
+  Nhân vật giữa, cùng chiều cao nhìn thấy ở năm cảnh. PC tiến độ trái,
+  kỹ năng/ôn phải; mobile chỉ một hàng 34px nối với bàn phím. Kỹ năng/ÔN ở hàng
+  tiện ích, ÔN phủ phím và pause đúng ván; không dựng hai panel lớn trên mobile.
+- `BattleLayout` là nguồn chung cho hero, rào raster, vùng rơi và va chạm.
+  `jade-defense-barrier-v1.png` vẽ trong canvas trước hero, chân cùng nền.
+  Canvas toàn viewport kể cả ngang; chỉ field ngang dùng 52%, không thu canvas
+  thêm lần nữa. Geometry không âm trong lúc resize; vòng tile luôn có giới hạn.
+- Ngân sách gõ theo giây, JADE nhập môn DIRECT 24s/AUDIO 28s; entry 1.8s riêng.
+  Không nhân chồng cảnh/điểm/combo; xoay máy giữ giây. PC luôn chặn keyboard kể
+  cả force-open cũ, DeviceDetector là nơi duy nhất khởi tạo platform.
+- Âm mây/giải mây/choáng/hồi tỉnh riêng, peak sample cân tối đa 3× và giữ volume
+  tài khoản. CombatFeedback quản lý rung hình và vibration khi được hỗ trợ;
+  tôn trọng reduced-motion. Browser RMS có tín hiệu không chứng minh rung máy
+  iOS/Android thật. Choáng không tạo lỗi gõ hoặc tăng tốc giả.
+
 - Cute pixel tu tiên, kiếm tu có cá tính. CTA chiến đấu dùng hình kiếm có chất liệu;
   nút điều hướng dùng mộc bài, trùng tu dùng ấn đỏ. Thông tin học tập dùng giấy ngà,
   ngọc bích, vàng cổ, ít nền đen và ít glow. Đối chiếu screenshot ở kích thước thật.

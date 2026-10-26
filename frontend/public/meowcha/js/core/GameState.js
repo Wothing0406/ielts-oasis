@@ -199,10 +199,8 @@
       this.stunTimer = performance.now() + durationMs;
       this.screenShake = 3 + this.realmIdx * 2;
       this.screenFlash = 0.12; // Chớp lóe nhẹ cảnh báo tâm ma
-      this.typoCount++;
-      // Thiên thạch rơi nhanh nhẹ nhàng theo cảnh giới (+2% ở Luyện Khí, tối đa +10%)
-      const speedInc = 0.02 * (this.realmIdx + 1);
-      this.speedMultiplier = Math.min(1.7, this.speedMultiplier + speedInc);
+        // Stun is a combat state, not a fabricated typo or hidden speed penalty.
+        root.Meowcha.combatFeedback?.(this,'stun');
       this.setCatState("HURT", durationMs);
       this.notify("stun");
       return true;

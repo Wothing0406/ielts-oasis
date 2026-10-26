@@ -40,6 +40,14 @@ test('semantic input, collision and shield cues are distinct',()=>{
  a.play('hurt');assert.equal(a.eventCounts.player_hurt,2);
 });
 
+test('cloud, stun and recovery each emit an audible cue while respecting mute',()=>{
+ const r=audioRuntime(),a=r.manager;a.init();const tones=[];a._tone=(...args)=>tones.push(args);
+ for(const event of ['cloud_enter','cloud_clear','stun','stun_end'])a.play(event);
+ assert.equal(tones.length,4);assert.ok(tones.every(args=>args[2]>0));
+ assert.equal(new Set(tones.map(args=>args[0]+':'+args[1])).size,4);
+ a.toggleSound();a.play('stun');assert.equal(tones.length,4);
+});
+
 test('completion voice waits for the slash and mute cancels pending pronunciation',()=>{
  const r=audioRuntime(),a=r.manager;a.playWordCompletion({word:'JADE',audio_url:'/jade.mp3'});
  assert.equal(a.getStatus().voiceActive,false);

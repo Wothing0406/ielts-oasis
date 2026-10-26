@@ -59,7 +59,9 @@
       return lines.length ? lines : [''];
     }
     getBurstLayout(ctx, burst) {
-      const width = Math.min(ctx.canvas.width - 24, ctx.canvas.width < 600 ? 246 : 292);
+      const field=root.Meowcha.battleLayout||{};
+      const fieldWidth=field.fieldWidth||ctx.canvas.width;
+      const width = Math.min(fieldWidth - 24, fieldWidth < 600 ? 246 : 292);
       ctx.font = "13px 'Be Vietnam Pro',sans-serif";
       const ipaLines = this.wrap(ctx, burst.ipa && burst.ipa !== '/.../' ? burst.ipa : 'Chưa có phiên âm trong bộ từ này', width * .76);
       ctx.font = "800 18px 'Be Vietnam Pro',sans-serif";
@@ -71,13 +73,13 @@
       const height = Math.max(112, (textHeight + 18) / .80);
       const half = height / 2,top=(M.battleLayout?.hudBottom||76)+8;
       return { width, height, ipaLines, wordLines, meaningLines, textHeight,
-        x:Math.max(width/2 + 8, Math.min(ctx.canvas.width - width/2 - 8, burst.x)),
-        y:Math.max(half + top, Math.min(ctx.canvas.height - half - 104, burst.y)) };
+        x:Math.max(width/2 + 8, Math.min(fieldWidth - width/2 - 8, burst.x)),
+        y:Math.max(half + top, Math.min((field.defenseY||ctx.canvas.height-104) - half - 8, burst.y)) };
     }
     draw(ctx) {
       ctx.save(); ctx.shadowBlur=0; ctx.textAlign='center'; ctx.textBaseline='middle';
       const w=ctx.canvas.width, h=ctx.canvas.height, small=w<600;
-      if(this.celestialBanner) {
+      if(this.celestialBanner && !this.bursts.length && !['cloud','lightning'].includes(this.celestialBanner.type)) {
         const b=this.celestialBanner, width=Math.min(w-20,590), height=small?100:90;
         const x=w/2, y=small?134:114;
         ctx.globalAlpha=Math.min(1,b.life/.35,(b.maxLife-b.life)*5);

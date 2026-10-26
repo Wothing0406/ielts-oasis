@@ -1,0 +1,18 @@
+{
+  "art_source": "host_image",
+  "route": "built-in image_gen",
+  "model": "not exposed by tool",
+  "file": "jade-defense-barrier-v1.png",
+  "size": [
+    2172,
+    724
+  ],
+  "mode": "RGBA",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "sha256": "c38e001d8293822cf83ae11c2f3d0ee81d0ead72ef89ad9995f57ec55d8c0220",
+  "prompt": "docs/prompts/meowcha/defense-barrier-art-v1.txt",
+  "processing": "original generated PNG copied unchanged"
+}

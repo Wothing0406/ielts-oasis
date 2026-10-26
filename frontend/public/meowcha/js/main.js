@@ -19,6 +19,7 @@
         ui_frame: { src:'./assets/ui/jade-frame-v1.png', img:new Image(), loaded:false },
         ui_icons: { src:'./assets/ui/cultivation-icons-v1.png', img:new Image(), loaded:false },
         cultivation_dais: { src: './assets/ui/cultivation-dais-v1.png', img: new Image(), loaded: false },
+        defense_barrier: {src:'./assets/ui/jade-defense-barrier-v1.png',img:new Image(),loaded:false},
         bg: { src: "./sprites/maps/bg_study_sanctuary.jpg", img: new Image(), loaded: false },
         bg_portrait: { src: "./sprites/maps/bg_study_sanctuary_portrait.webp", img: new Image(), loaded: false },
         cat_idle: { src: "./sprites/characters/realm0_qi_refining/poses/idle.png", img: new Image(), loaded: false },
@@ -181,8 +182,8 @@
       }
       if (M.Device && M.Device.info.isDesktop && document.getElementById('btnToggleVirtualKeyboard')) document.getElementById('btnToggleVirtualKeyboard').hidden = true;
       if (typeof ResizeObserver !== 'undefined') {
-        this.layoutObserver = new ResizeObserver(() => { if (typeof M.refreshBattleLayout === 'function') if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas); });
-        [kbContainer, document.querySelector('.sect-scroll-hud'), document.getElementById('swordIntentBox')]
+        this.layoutObserver = new ResizeObserver(() => { if (typeof M.refreshBattleLayout === 'function') M.refreshBattleLayout(this.canvas); });
+        [kbContainer, document.querySelector('.sect-scroll-hud'), document.getElementById('swordIntentBox'),document.getElementById('battleCommandDock')]
           .filter(Boolean).forEach(el => this.layoutObserver.observe(el));
       }
       const keyboardToggle = document.getElementById('btnToggleVirtualKeyboard');
@@ -207,7 +208,7 @@
       // Khi người dùng bấm phím cứng thực tế -> Tự động ẩn bàn phím ảo nếu đang vô tình bật trên PC
       if (root.Meowcha && root.Meowcha.Device) {
         root.Meowcha.Device.onPhysicalKeyboardUsed = () => {
-          if (root.Meowcha.Device.info.isDesktop && root.Meowcha.Device.userPrefKeyboard !== true && this.vKeyboard) {
+          if (root.Meowcha.Device.info.isDesktop && this.vKeyboard) {
             this.vKeyboard.hide();
           }
         };
@@ -273,6 +274,8 @@
 
       // Lắng nghe thay đổi HP và Game Over để lập tức xử lý và lưu chuẩn xác
       this.gameState.addListener((changeKey) => {
+        if(changeKey==='stun')this.audio.play('stun');
+        if(changeKey==='stunEnd'){this.audio.play('stun_end');M.combatFeedback?.(this.gameState,'recover');}
         if (changeKey === 'score') this.saveSystem.rememberPersonalBest(this.gameState);
         if (changeKey === "gameOver" || (changeKey === "hp" && this.gameState.hp <= 0)) {
           this.handleGameOver();
@@ -340,7 +343,8 @@
       this.floatingText.clear();
       this.recentWordHistory = [];
       this.spawnTimer = 0;
-      const learned=document.getElementById('lastLearnedWord');if(learned){learned.hidden=true;learned.innerHTML='';}
+      const learned=document.getElementById('lastLearnedWord');if(learned){learned.hidden=true;learned.open=false;learned.innerHTML='';}
+      if(this.typing)this.typing.reviewPause=null;
       const altar=document.getElementById('swordIntentBox');if(altar)altar.classList.remove('is-reviewing');
       this.gameOverModalShown = false;
       if (this.typing) {
@@ -575,6 +579,7 @@
         this.vKeyboard.hide();
       }
 
+      if(M.refreshBattleLayout)M.refreshBattleLayout(this.canvas);
       this.gameState.setSpeech(`Sẵn sàng nghênh chiến ma thạch!`, 1600);
 
       // Sinh từ vựng đầu tiên
@@ -687,20 +692,7 @@
       const rIdx = Math.max(0, this.gameState.realmIdx || 0);
       const realmDecks = M.REALM_DECKS || {};
 
-      let effectiveSpeedMult = 1.0;
-
-      // TĂNG DẦN TỐC ĐỘ RƠI & ĐỘ KHÓ ỔN ĐỊNH THEO CẢNH GIỚI VÀ TIẾN TRÌNH TU VI ĐẾN SIÊU KHÓ
-      const scoreSpeedBonus = Math.min(0.55, (this.gameState.score / 4000) * 0.08);
-      const slainBonus = Math.min(0.25, this.gameState.wordsSlain * 0.003);
-      // Bậc tốc độ tăng dần ổn định từ sơ cơ đến siêu khó ở các cảnh giới cao
-      const realmSpeedMultipliers = [1.0, 1.15, 1.35, 1.65, 2.05];
-      const realmBaseMult = realmSpeedMultipliers[Math.min(4, rIdx)] || 1.0;
-      effectiveSpeedMult = realmBaseMult * (1.0 + scoreSpeedBonus + slainBonus);
-
-      // KHI BỊ SẤM ĐÁNH (THIÊN KIẾP SẤM SÉT): Tăng tốc độ sinh ma thạch (+25%) và rơi cực nhanh để tăng độ khó
-      if (this.typing && this.typing.isLightningHazard) {
-        effectiveSpeedMult *= 1.25;
-      }
+      // AsteroidManager owns one readable time budget; talents only extend it.
 
       // =========================================================================
       // TIẾN TRÌNH MA THẠCH THEO CẢNH GIỚI (PROGRESSION POOL):
@@ -833,7 +825,7 @@
         wordItem,
         this.canvas.width,
         rIdx,
-        (this.gameState.talents.slowFactor || 1.0) * (this.gameState.speedMultiplier || 1.0) * effectiveSpeedMult,
+        this.gameState.talents.slowFactor || 1.0,
         targetDeckIdx,
         chosenType
       );
@@ -884,6 +876,7 @@
 
     update(dt) {
       this.gameState.calculateWPM();
+      M.updateCombatFeedback?.(this.gameState,dt);
       const DPlatform = root.Meowcha && root.Meowcha.Device;
       const isMobile = DPlatform ? DPlatform.info.isMobile : (this.canvas.width <= 768);
       const catTargetY = (typeof M.getBattleLayout === 'function') ? M.getBattleLayout(this.canvas).catY : (this.canvas ? this.canvas.height * 0.72 : 450);
@@ -909,7 +902,7 @@
 
       // Cập nhật 10s thiên kiếp sấm sét liên tục
       if (this.typing) {
-        if(!this.floatingText.hasBlockingReward())this.typing.updateHazard(dt, this.canvas);
+        if(!this.floatingText.hasBlockingReward()&&!this.gameState.isStunned)this.typing.updateHazard(dt, this.canvas);
       }
 
       // NẾU HẾT MÁU DO SÉT ĐÁNH / THIÊN KIẾP / THIÊN THẠCH: LẬP TỨC TRIGGER GAME OVER & XÓA SAVE
@@ -934,8 +927,9 @@
       const isLightningHazardNow = !!(this.typing && this.typing.isLightningHazard);
       const domainSlow = (this.gameState.activeSkillEffects && this.gameState.activeSkillEffects.windSwordTimer > 0)
         ? (this.gameState.activeSkillEffects.windSwordSlow || 0.4) : 0;
-      this.asteroids.update(dt, bottomThreshold, (missedAst) => {
+      this.asteroids.update(this.gameState.isStunned?0:dt, bottomThreshold, (missedAst) => {
         if (!missedAst || missedAst.isBoss) return;
+        const impactY=M.getBattleLayout(this.canvas).defenseY||bottomThreshold;
         this.gameState.recordLearningOutcome(missedAst,false);
         if (this.saveSystem && !missedAst.isBoss) {
           this.saveSystem.recordWeaknessWord(missedAst);
@@ -946,20 +940,23 @@
 
         const res = this.gameState.takeDamage(damage);
         if (res.absorbed) {
+          M.combatFeedback?.(this.gameState,'shield');
           this.audio.play("shield_hit");
           if (!res.remainingShields) this.audio.play("shield_break", 0.09);
-          this.particles.createShieldShards(missedAst.x, bottomThreshold, "#EAB308", 18);
-          this.floatingText.add(missedAst.x, bottomThreshold - 30, "[ 盾 ] LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
+          this.particles.createShieldShards(missedAst.x, impactY, "#EAB308", 18);
+          this.floatingText.add(missedAst.x, impactY - 30, "[ 盾 ] LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
         } else {
+          M.combatFeedback?.(this.gameState,'impact');
+          if(!this.gameState.isGameOver)this.gameState.triggerStun(420);
           this.audio.play("meteor_impact");
           this.audio.play("meteor_crack", 0.05);
           this.audio.play("player_hurt", 0.12);
-          if (this.animator) this.animator.spawnVFXClip(`char_r${this.gameState.realmIdx}_hit_sheet`, missedAst.x, bottomThreshold, {frames:4,frameW:256,fps:20,size:110,color:missedAst.coreColor});
+          if (this.animator) this.animator.spawnVFXClip(`char_r${this.gameState.realmIdx}_hit_sheet`, missedAst.x, impactY, {frames:4,frameW:256,fps:20,size:110,color:missedAst.coreColor});
           if (this.unityBridge) {
             this.unityBridge.triggerHurt();
           }
-          this.particles.createExplosion(missedAst.x, bottomThreshold, missedAst.coreColor || "#EF4444", 24);
-          this.floatingText.add(missedAst.x, bottomThreshold - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
+          this.particles.createExplosion(missedAst.x, impactY, missedAst.coreColor || "#EF4444", 24);
+          this.floatingText.add(missedAst.x, impactY - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
 
           const hurtQuotes = (root.Meowcha && root.Meowcha.HURT_SPEECHES) || [];
           if (hurtQuotes.length > 0) {
@@ -993,7 +990,7 @@
 
       // Rung màn hình suy giảm cực nhanh (Screen Shake decay nhanh 45x dt)
       if (this.gameState.screenShake > 0) {
-        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 45);
+        this.gameState.screenShake = Math.max(0, this.gameState.screenShake - dt * 12);
       }
 
       // Cập nhật thanh HUD
@@ -1020,7 +1017,7 @@
       ctx.save();
 
       // Hiệu ứng rung màn hình êm dịu (tối đa 4.5px, làm tròn pixel)
-      if (this.gameState.screenShake > 0) {
+      if (this.gameState.screenShake > 0 && !M.prefersReducedMotion?.()) {
         const shakeMag = Math.min(4.5, this.gameState.screenShake);
         const sx = Math.round((Math.random() - 0.5) * shakeMag);
         const sy = Math.round((Math.random() - 0.5) * shakeMag);
@@ -1050,16 +1047,14 @@
       this.realmVFX.drawRetroPixelVignette(ctx, w, h);
 
       if (this.gameState.currentScene === "BATTLE") {
+        // Clouds remain visible behind learning text, never painted over a word.
+        if(this.realmVFX?.isPunishCloud)this.realmVFX.drawMysticClouds(ctx,w,h,true);
         // 3. Vẽ Phi Kiếm
         this.projectiles.draw(ctx);
 
         // 4. Vẽ Ma Thạch & Cổ Phù Từ Vựng
         this.asteroids.draw(ctx, this.gameState.screenFlash);
-
-        // 4.1 MÂY QUẤY RỐI TẦM NHÌN (Chỉ kích hoạt khi bị phạt Ma Vân Tụ Khí)
-        if (this.realmVFX && this.realmVFX.isPunishCloud) {
-          this.realmVFX.drawMysticClouds(ctx, w, h, true);
-        }
+        if(M.drawDefenseBarrier)M.drawDefenseBarrier(ctx,this.canvas,this.assets.defense_barrier);
 
         // 5. Vẽ Hạt hiệu ứng & VFX Clips
         this.particles.draw(ctx);
@@ -1074,16 +1069,7 @@
         // 8. TIA SÉT THIÊN KIẾP & CHỚP SÁNG MÀN HÌNH
         this.realmVFX.drawLightning(ctx, w, h, this.gameState.screenFlash);
 
-        // 9. Bong bóng thoại Mèo Tôn (Neo sát trên đầu Mèo Tôn, tự động ẩn khi thiên thạch rơi gần để không che khuất)
-        if (this.gameState.speechText && performance.now() < this.gameState.speechTimer && !(M.battleLayout && M.battleLayout.tight)) {
-          const isMob = w <= 768 || (h > w);
-          const catY = (this.cat && typeof this.cat.y === "number") ? this.cat.y : (isMob ? (h - 252) : (h - 200));
-          const hasAsteroidNearCat = this.asteroids && this.asteroids.asteroids.some(a => a && Math.abs(a.y - catY) < 180);
-          if (!hasAsteroidNearCat) {
-            const speechY = Math.round(catY - 68);
-            this.floatingText.drawSideSpeechBubble(ctx, w / 2, speechY, this.gameState.speechText);
-          }
-        }
+        // Combat instructions use the fixed boundary status, not a balloon over the hero's face.
       }
 
       ctx.restore();

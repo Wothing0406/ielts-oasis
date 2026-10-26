@@ -31,12 +31,12 @@
       headerBar.innerHTML = `
         <span class="kb-seal-title">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="vertical-align: -1px; margin-right: 4px;"><polygon points="8,1 15,8 8,15 1,8" fill="#78350F" stroke="#F3C644" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#2DE28D"/></svg>
-          TRẬN PHÁP PHÙ THẠCH BÀN
+          PHÙ PHÍM
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="vertical-align: -1px; margin-left: 4px;"><polygon points="8,1 15,8 8,15 1,8" fill="#78350F" stroke="#F3C644" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#2DE28D"/></svg>
         </span>
         <span class="kb-stun-badge" id="kbStunBadge">TÂM MA NHIỄU LOẠN</span>
         <button class="kb-minimize-btn" id="btnMinimizeKeyboard" type="button" title="Thu gọn bàn phím ảo">
-          <span>[ Ẩn Bàn Phím ▼ ]</span>
+          <span>Ẩn phím ▼</span>
         </button>
       `;
 
@@ -182,11 +182,13 @@
     }
 
     show() {
-      if (this.container) this.container.style.display = "flex";
+      const D=root.Meowcha?.Device;
+      if(!D||D.info.isDesktop||!D.shouldShowVirtualKeyboard()){this.hide();return;}
+      if (this.container) {this.container.hidden=false;this.container.style.display = "flex";}
     }
 
     hide() {
-      if (this.container) this.container.style.display = "none";
+      if (this.container) {this.container.hidden=true;this.container.classList.remove('user-force-opened');this.container.style.display = "none";}
     }
   }
 

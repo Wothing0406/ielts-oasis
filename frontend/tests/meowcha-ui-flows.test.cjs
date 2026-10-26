@@ -155,3 +155,89 @@ test('game over remains latched through the real purge, submits and sounds once,
  assert.deepEqual(calls,{submitted:1,reset:1,shown:1,silenced:1});assert.equal(r.state.isPaused,true);
  app.purgeAllBattleState();r.state.resetForNewMode('DIRECT');r.state.score=100;app.handleGameOver();assert.equal(calls.shown,2);
 });
+
+test('defense geometry keeps the hero below the field and ignores growth of skills and review panels',()=>{
+ const {M}=setup();
+ for(const [width,height,keyboardHeight] of [[1920,1080,0],[1280,720,0],[390,844,286],[320,568,246],[844,390,270]]){
+  const input={width,height,keyboardHeight,hudBottom:80,touch:keyboardHeight>0};
+  const first=M.computeBattleLayout({...input,controlsHeight:40}),expanded=M.computeBattleLayout({...input,controlsHeight:1000});
+  assert.equal(first.catY,expanded.catY);assert.equal(first.defenseY,expanded.defenseY);
+  assert.equal(first.catX,first.fieldWidth/2);
+  assert.ok(first.catY-first.characterSize>first.defenseY+24);
+  assert.ok(first.bottomThreshold<first.defenseY);assert.ok(first.bottomThreshold>first.hudBottom+80);
+  assert.ok(first.controlsLeft+first.controlsWidth<first.fieldWidth);
+ }
+});
+
+test('registered sprites render at equal visible heights across all five realms below the defense boundary',()=>{
+ const r=setup();vm.runInContext(fs.readFileSync(path.join(base,'js/entities/CatCultivator.js'),'utf8'),r.box);
+ const rawBounds=[[64,154,296,325],[25,47,335,327],[73,110,288,330],[48,110,313,330],[83,113,278,330]];
+ for(const [width,height,keyboardHeight] of [[1280,720,0],[320,568,168]]){
+  r.M.battleLayout=r.M.computeBattleLayout({width,height,keyboardHeight});
+  for(let realm=0;realm<5;realm++){
+   const draws=[],ctx=new Proxy({drawImage:(...args)=>draws.push(args)},{get:(o,k)=>k in o?o[k]:()=>{}});
+   r.state.realmIdx=realm;r.state.catState='IDLE';
+   const cat=new r.M.CatCultivator({},r.noop,{getCharacterFrame:()=>({img:{},isSheet:true,sx:0,sy:0,sw:360,sh:360})});
+   cat.draw(ctx,{width,height},r.state,null);
+   const [,,,,,x,y,w,h]=draws[0],b=rawBounds[realm],visibleHeight=(b[3]-b[1])/360*h;
+   assert.ok(Math.abs(visibleHeight-r.M.battleLayout.characterSize)<.01);
+   assert.ok(y+b[1]/360*h>r.M.battleLayout.defenseY);
+  }
+ }
+});
+
+test('first words have a calm timed window on small and large fields; long and listening words get more time',()=>{
+ const r=setup();
+ for(const bottomThreshold of [240,700]){
+  r.M.battleLayout={hudBottom:80,bottomThreshold};
+  const manager=new r.M.AsteroidManager();manager.gameState=r.state;
+  r.state.wordsSlain=0;r.state.gameMode='DIRECT';const a=manager.spawn({word:'JADE'},320,0,1);
+  assert.equal(a.typingSeconds,24);let hits=0;
+  for(let i=0;i<250;i++)manager.update(.1,bottomThreshold,()=>hits++);
+  assert.equal(hits,0);for(let i=0;i<20;i++)manager.update(.1,bottomThreshold,()=>hits++);
+  assert.equal(hits,1);
+  manager.clear();r.state.gameMode='AUDIO';const heard=manager.spawn({word:'INCOMPREHENSIBLE'},320,0,1);
+  assert.ok(heard.typingSeconds>30);
+ }
+});
+
+test('stun blocks physical and virtual typing equally without fabricated errors; cues respect reduced motion',()=>{
+ const r=setup();vm.runInContext(fs.readFileSync(path.join(base,'js/core/CombatFeedback.js'),'utf8'),r.box);
+ const ast=r.manager.spawn({word:'JADE'},1280);r.typing.currentTarget=ast;
+ r.state.triggerStun(420);assert.equal(r.state.typoCount,0);assert.equal(r.state.speedMultiplier,1);
+ r.typing.processKey('J',{width:1280,height:720});assert.equal(r.state.totalKeystrokes,0);
+ r.state.stunTimer=0;r.state.updateStun();r.typing.processKey('J',{width:1280,height:720});assert.equal(r.state.correctKeystrokes,1);
+ r.state.screenShake=0;r.box.matchMedia=()=>({matches:true});r.M.combatFeedback(r.state,'impact');
+ assert.equal(r.state.screenShake,0);assert.match(r.state.combatCue.label,/kết giới/);
+});
+
+test('rotating a viewport preserves remaining typing time instead of immediately hitting a closer boundary',()=>{
+ const r=setup();r.M.battleLayout={hudBottom:80,bottomThreshold:600};
+ const ast=r.manager.spawn({word:'JADE'},1280);ast.entering=false;
+ r.manager.update(12,600,()=>assert.fail('too early'));
+ const remaining=ast.remainingSeconds;assert.ok(ast.y>200);
+ r.M.battleLayout={hudBottom:80,bottomThreshold:200};r.manager.update(.1,200,()=>assert.fail('resize caused a miss'));
+ assert.ok(ast.y<200);assert.ok(Math.abs(ast.remainingSeconds-(remaining-.1))<.001);
+});
+
+test('opening last-word review pauses the run, replays without typing and restores the previous pause state',()=>{
+ const r=setup(),panel={open:false,querySelector:()=>({})};
+ r.M.applyDesignSystem=()=>{};
+ r.box.document.getElementById=id=>id==='lastLearnedWord'?panel:null;
+ r.typing.showCompletedWord({word:'JADE',ipa:'/dʒeɪd/',meaning:'ngọc bích'});
+ panel.open=true;panel.ontoggle();assert.equal(r.state.isPaused,true);
+ const keys=r.state.correctKeystrokes;r.typing.processKey('J',{width:320,height:568});assert.equal(r.state.correctKeystrokes,keys);
+ panel.open=false;panel.ontoggle();assert.equal(r.state.isPaused,false);
+ r.state.setPaused(true);panel.open=true;panel.ontoggle();panel.open=false;panel.ontoggle();assert.equal(r.state.isPaused,true);
+});
+
+test('rotation with an overfull header or transient zero viewport cannot create an unbounded fence draw',()=>{
+ const r=setup();
+ vm.runInContext(fs.readFileSync(path.join(base,'js/core/BattleLayout.js'),'utf8'),r.box);
+ for(const dims of [{width:844,height:390,hudBottom:380,keyboardHeight:240,touch:true},{width:320,height:0,hudBottom:100,keyboardHeight:220,touch:true}]){
+  r.M.battleLayout=r.M.computeBattleLayout(dims);
+  assert.ok(r.M.battleLayout.catY>=r.M.battleLayout.defenseY);
+  let draws=0;const ctx={save(){},restore(){},beginPath(){},rect(){},clip(){},drawImage(){draws++;}};
+  r.M.drawDefenseBarrier(ctx,dims,{loaded:true,img:{}});assert.ok(draws<=32);
+ }
+});

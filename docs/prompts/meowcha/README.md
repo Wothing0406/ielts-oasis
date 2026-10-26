@@ -117,3 +117,4 @@ Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
 - [15 — Bốn Phong Thần điện, ngọc bài và thành tích riêng](15-three-mode-halls.md).
 - [16 — Đối chiếu toàn bộ plan, UI liền cụm, tỉ lệ ma thạch](16-cohesive-ui-size-audit.md).
   [Kiểm tra phần còn thiếu và nghiệm thu](../../meowcha-plan-audit-16.md).
+- [17 — Chiến trường dễ đọc, mobile gọn, rào và SFX](17-battle-layout-mobile-sfx.md).

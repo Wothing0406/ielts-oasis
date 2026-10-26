@@ -32,6 +32,7 @@
       if (this.state.currentScene !== 'BATTLE' || this.state.isGameOver || this.state.isPaused || this.state.catState === "BREAKTHROUGH") return;
       if (char === 'Tab') { this.replayCurrentAudio(); return; }
       if (char === 'Backspace') {
+        root.Meowcha.combatFeedback?.(this.state,'backspace');
         this.state.setSpeech('Chữ đúng đã xuất kiếm, không xóa. Chữ sai không được ghi vào từ.', 1800);
         return;
       }
@@ -45,12 +46,14 @@
         return;
       }
       if (['1', '2', '3', '4'].includes(char)) {
+        if(this.state.isStunned)return;
         this.activateSkillBySlot(parseInt(char, 10), canvas);
         return;
       }
 
       const upper = (char || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").replace(/Đ/g, "D").toUpperCase();
       if (!/^[A-Z]$/.test(upper)) return;
+      if(this.state.isStunned)return;
 
       const activeList = this.asteroids.asteroids;
       if (activeList.length === 0) return;
@@ -138,6 +141,7 @@
         if (missedTarget) missedTarget.hadTypo = true;
         this.state.typoCount++;
         this.audio.play("wrong_key");
+        root.Meowcha.combatFeedback?.(this.state,'wrong');
         if (missedTarget) missedTarget.typoFlash = 0.18;
         this.state.humanWordCombo = 0;
         // Immunity prevents punishment, but never hides a learning mistake.
@@ -174,7 +178,8 @@
             this.cloudMistakeCount = 0;
             this.cloudPurifiedCount = 0;
             this.state.screenShake = 3.5;
-            this.audio.play("hurt");
+            this.audio.play("cloud_enter");
+            root.Meowcha.combatFeedback?.(this.state,'cloud');
 
             const canvasW = (canvas && canvas.width) || (typeof window !== "undefined" ? window.innerWidth : 800);
             this.floatingText.addCelestialEdict(
@@ -486,7 +491,7 @@
       // Ordinary kills burst at the meteor; reserve the large character ultimate for active skills.
       this.state.setCatState("WEAK_ATTACK", 280);
 
-      this.state.screenShake = 1.5;
+      root.Meowcha.combatFeedback?.(this.state,'complete');
 
       // 2.1 XỬ LÝ HÓA GIẢI MÂY MÙ (Giai đoạn 1)
       if (this.isCloudHazard && !this.isLightningHazard) {
@@ -499,6 +504,7 @@
           if (this.realmVFX) {
             this.realmVFX.clearClouds();
           }
+          this.audio.play('cloud_clear');root.Meowcha.combatFeedback?.(this.state,'clear');
           this.floatingText.add(catX, catY - 80, "[ 净 ] MA VÂN TIÊU TÁN", "#38BDF8", isMobile ? 14 : 16);
         }
       }
@@ -538,11 +544,6 @@
       const scoreCrit = !assisted && this.state.talents.critMode === 'score' && Math.random() < (this.state.talents.critChance || 0);
       const basePoints = target.word.length * 15 * (scoreCrit ? 2 : 1);
       const gainedScore = this.state.addScore(basePoints);
-
-      // Càng trảm nhiều từ hoặc giữ chuỗi combo cao, tốc độ ma thạch rơi càng dồn dập (nhẹ nhàng, mượt mà)
-      const streakBonus = this.state.combo > 3 ? (this.state.combo - 3) * 0.01 : 0;
-      const waveBonus = Math.min(0.2, this.state.wordsSlain * 0.003);
-      this.state.speedMultiplier = Math.min(1.35, 1.0 + waveBonus + streakBonus);
 
       // 4. HIỆN VÒNG BÁT QUÁI + TỪ VỰNG + PHIÊN ÂM IPA NGAY TẠI TÂM NỔ (IN-SITU BURST)
       const readingBonus=Math.max(0,((this.state.passiveModifiers||{}).meaningDisplayDuration||3200)-3200)/1000;
@@ -601,6 +602,7 @@
       this.cloudPurifiedCount = 0;
       this.cloudMistakeCount = 0;
       this.mistakeStreak = 0;
+      this.audio.play('cloud_enter');root.Meowcha.combatFeedback?.(this.state,'cloud');
 
       const safeCanvasW = canvasW || 800;
       // Chiếu Chỉ Ma Vân rơi từ đỉnh trời xuống
@@ -647,11 +649,20 @@
       const panel=document.getElementById('lastLearnedWord');if(!panel)return;
       const altar=document.getElementById('swordIntentBox');if(altar)altar.classList.add('is-reviewing');
       const esc=root.Meowcha.ui.escape;
-      panel.hidden=false;panel.open=true;
+      panel.hidden=false;panel.open=false;
       panel.innerHTML='<summary><span>Từ vừa học: '+esc(target.word)+'</span> <span class="learned-ipa">'+esc(target.ipa||'Chưa có IPA')+'</span></summary>'+
         '<div class="learned-details"><span class="learned-type">'+esc(target.type||'')+'</span><span>'+esc(target.meaning||'')+'</span>'+
         '<button type="button" class="mc-utility learned-replay">Nghe lại từ vừa học</button></div>';
       panel.querySelector('button').onclick=()=>this.playWordAudio(this.lastCompletedWord);
+      panel.ontoggle=()=>{
+        if(panel.open&&!this.reviewPause){
+          this.reviewPause={runId:this.state.runId,paused:this.state.isPaused};
+          this.state.setPaused(true);
+        }else if(!panel.open&&this.reviewPause){
+          const previous=this.reviewPause;this.reviewPause=null;
+          if(previous.runId===this.state.runId&&this.state.currentScene==='BATTLE'&&!root.Meowcha.Session?.blocked)this.state.setPaused(previous.paused);
+        }
+      };
       if(root.Meowcha.applyDesignSystem)root.Meowcha.applyDesignSystem(panel);
     }
 
@@ -662,6 +673,8 @@
       const counterEl = document.getElementById("swordTargetCounter");
       const plaqueEl = document.getElementById("swordAltarModeLabel");
       const curMode = (this.state && this.state.gameMode) || "DIRECT";
+      const progress=document.getElementById('battleTypingProgress');
+      if(progress)progress.textContent=target?(target.typedLen||0)+'/'+target.word.length:'—';
 
       const plaqueTitles = {
         DIRECT: "TRỰC DIỆN TRẢM MA • THẦN TỐC XUẤT KIẾM",

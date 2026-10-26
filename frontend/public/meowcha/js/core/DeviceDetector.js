@@ -1,7 +1,7 @@
 /**
  * DeviceDetector.js - Hệ Thống Nhận Diện Thiết Bị & Nền Tảng Chuyên Nghiệp (Multi-Factor Detection)
  * Tuyệt đối không đoán mò dựa trên độ rộng màn hình hoặc 'ontouchstart' đơn thuần.
- * Phân định chính xác 100%:
+ * Nhận diện bằng OS, UA và khả năng trỏ; API và CSS cùng kiểm soát hiển thị.
  *  - PC / Laptop (kể cả có màn hình cảm ứng như Surface, ThinkPad Touch, Dell XPS) -> DESKTOP, KHÔNG BAO GIỜ TỰ HIỆN PHÍM ẢO!
  *  - Điện thoại (iPhone, Android Phone) -> MOBILE, Tối ưu giao diện Native Mobile dọc 9:16.
  *  - Máy tính bảng (iPad, Android Tablet) -> TABLET.
@@ -47,10 +47,12 @@
       // 4. Nhận diện hệ điều hành máy tính (PC / Laptop / Mac / Linux)
       // Laptop có màn hình cảm ứng (Windows Touch, Surface, ThinkPad Touch) VẪN CÓ CHUỘT / PHÍM CỨNG VÀ HOVER!
       // -> Đây là DESKTOP ĐÍCH THỰC, KHÔNG PHẢI ĐIỆN THOẠI!
-      const isDesktopOS = /Windows NT|Macintosh|X11|Linux x86_64/i.test(ua) && !isMobileUA && !isTabletUA;
+      const isDesktopOS = /Windows NT|Macintosh|X11|Linux x86_64/i.test(ua) && !/Android|iPhone|iPod|Windows Phone/i.test(ua) && !isTabletUA;
 
       let type = "DESKTOP";
-      if (isMobileUA && !isTabletUA) {
+      if(isDesktopOS){
+        type='DESKTOP';
+      }else if (isMobileUA && !isTabletUA) {
         type = "MOBILE";
       } else if (isTabletUA) {
         type = "TABLET";
@@ -103,6 +105,8 @@
         window.addEventListener("keydown", (e) => {
           if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
             this.info.hasPhysicalKeyboard = true;
+            // Physical input does not pass through the game's virtual buttons.
+            if(!this.info.isDesktop&&!document.getElementById('lastLearnedWord')?.open)this.setUserPrefKeyboard(false);
             if (this.onPhysicalKeyboardUsed) {
               this.onPhysicalKeyboardUsed();
             }
@@ -128,8 +132,10 @@
     setUserPrefKeyboard(show) {
       show = Boolean(show) && !this.info.isDesktop;
       this.userPrefKeyboard = show;
+      if(!show&&!this.info.isDesktop){const record=document.getElementById('lastLearnedWord');if(record)record.open=false;}
       const container = document.getElementById("virtualKeyboardContainer");
       if (container) {
+        container.hidden=!show;
         if (show) {
           container.classList.add("user-force-opened");
           container.style.display = "flex";
