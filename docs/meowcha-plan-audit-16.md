@@ -35,7 +35,7 @@ diện thành cụm có liên kết, thu nhỏ thiên thạch/thẻ nổ, xử l
 - [x] Lỗi vận hành an toàn, một nguồn version phát hành.
 - [x] Cloud CAS, báo xung đột, đối chiếu/khôi phục có bản sao; chống lệch giờ và
   hai lần lưu cùng một giây MySQL. Không thay schema hay xóa dữ liệu cũ.
-- [ ] Kiểm thử logic/API/build, ảnh PC/mobile, backup, deploy, kiểm tra bản thật.
+- [x] Kiểm thử logic/API/build, ảnh PC/mobile, backup, deploy, kiểm tra bản thật.
 
 Không thể chứng minh iOS/Android vật lý hoặc OAuth người dùng thật chỉ bằng
 fixture. Phân biệt kiểm thử tự động, quan sát trình duyệt và kiểm thử thiết bị.

@@ -43,6 +43,9 @@ Yêu cầu mới lưu thành [brief 16](prompts/meowcha/16-cohesive-ui-size-audi
 - Trình duyệt fixture: PC 1280, mobile 390/320, ngang 844; ba thẻ talent ngang,
   chọn một thẻ, về sảnh, IPA AUDIO sau trảm có keyboard. Chuyển ba điện đổi người
   top, cột và self thật; Tổng Đạo có rating/điều kiện mới.
+- Phát hiện và sửa sảnh ngang 844×390 đẩy console dưới màn hình: nhân vật/biển
+  bên trái, console bên phải; ảnh cuối xác nhận đủ HP/WPM/chơi/đổi mode/trùng tu
+  nằm trong viewport. Không dùng padding của header tuyệt đối cho header trong flow.
 - Âm thanh trình duyệt: 15 event buffer tải, 0 sample lỗi, có sample music và RMS
   khác 0. Stress 20 từ qua TypingEngine có 20 word_slash/crack/complete, tổng 21
   voice hoàn tất (gồm lời phát lúc vào), 0 thất bại; đóng context rồi hồi phục vẫn
@@ -71,8 +74,28 @@ chống gian lận hoàn chỉnh. Không vượt Cloudflare hay tạo điểm gi
 
 ## Triển khai
 
-Đang chuẩn bị push/deploy 16.0. Backup trước đã có tại Linux:
-`codex/backup-meowcha-before-16-20261026`, Docker tag
-`before-meowcha-16-20261026`, thư mục `/home/quang/meowcha-backups/16.0-20261026`.
-Baseline: 4.981 từ, 5 legacy leaderboard, 11 runs, 3 battle logs, 1 snapshot;
-giữ năm runtime MP3 untracked. Cập nhật phần này sau kiểm tra bản thật.
+Đã push nhánh `game/meowcha-cultivation`: code `1a8cf83`, chỉnh ngang thấp
+`df6d1c9`. Linux đã fast-forward đúng nhánh, build Docker web thành công, restart
+backend và thay web. Hai dịch vụ healthy. CSS tĩnh dùng public volume nên bản
+chỉnh ngang đã được đối chiếu ngay trên HTTP sau pull; không cần build lại React.
+
+Backup trước: `codex/backup-meowcha-before-16-20261026` tại `a03aca1`, đã có trên
+GitHub và Linux; Docker image tags `before-meowcha-16-20261026` cho web/backend.
+Backup hoàn tất: `codex/backup-meowcha-complete-16-20261026`.
+Log build và số đếm ở `/home/quang/meowcha-backups/16.0-20261026`.
+
+Trước/sau đều: 4.981 từ, 5 legacy leaderboard, 11 runs, 3 battle logs, 1 snapshot;
+giữ đủ năm runtime MP3 untracked. Không sửa/xóa bảng hoặc dữ liệu người chơi.
+13 file OGG khớp SHA256. Trang cha, engine HTML, CSS, Session.js, Release.js và
+nhạc OGG trả 200 nội bộ; toàn bộ JS HTML version 16.0. Session/profile/save khi
+không đăng nhập trả 401 đúng thiết kế. Bốn halls trả 200: Tổng Đạo 0 (chưa đủ ba
+mode), DIRECT 1, CLOZE/AUDIO 0; `/leaderboard?game_mode=LEGACY` trả 5 hàng.
+`/halls?hall=LEGACY` không phải endpoint archive và trả 422 đúng validation;
+`/health` không tồn tại, dùng trạng thái healthcheck Compose thực tế.
+
+Trình duyệt public mở `https://ieltsoasis.site/games/meowcha` bình thường: cổng
+đăng nhập chính, returnTo nội bộ, 0 game iframe trước auth. Đường HTML trực tiếp
+cũng khóa khi chưa xác nhận; JS version 16.0, không console error. Ảnh:
+`production-parent-16.png`, `production-direct-16.png`. Không vượt Cloudflare.
+Mỹ thuật sau đăng nhập được kiểm chứng ở engine/Next với danh tính QA riêng;
+không mượn ảnh fixture để nhận là đã đăng nhập OAuth thật trên production.
