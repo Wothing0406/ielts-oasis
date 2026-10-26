@@ -37,6 +37,18 @@ test('a second account cannot put the first account legacy high score on its cer
  assert.equal(otherSave.getCertificateRecord(otherState).score,0);
 });
 
+test('lobby actions change from resume and mode plaque back to the primary sword after reset',()=>{
+ const r=runtime(),main={},sub={},continueSub={},start={style:{},dataset:{},classList:{toggle(){}},querySelector:()=>main},resume={style:{}},restart={style:{}};
+ const nodes={btnStartBattle:start,btnContinueBattle:resume,btnRestartGame:restart,startBattleSub:sub,continueBattleSub:continueSub};
+ r.sandbox.document.getElementById=id=>nodes[id]||null;
+ const ui={state:r.state,saveSystem:r.save,updateSaveSyncNotice(){}};
+ r.state.score=100;r.save.saveGame(1,r.state);r.M.UIManager.prototype.updateLobbyButtons.call(ui);
+ assert.equal(start.dataset.uiAction,'secondary');assert.equal(resume.hidden,false);assert.match(continueSub.innerText,/100/);
+ r.save.resetActiveSave(1,'DIRECT');r.M.UIManager.prototype.updateLobbyButtons.call(ui);
+ assert.equal(start.dataset.uiAction,'hero');assert.equal(resume.hidden,true);assert.equal(restart.style.display,'none');
+ assert.equal(main.innerText,'VÀO TRẬN ĐỘ KIẾP');
+});
+
 test('perfect typing streak records the peak, excludes a typo under immunity and survives save without inventing old history',()=>{
  const r=runtime();r.state.talents.typoImmune=true;
  const complete=(typo=false)=>{const target=word();r.asteroids.asteroids.push(target);r.engine.currentTarget=target;
@@ -330,6 +342,40 @@ test('full local storage aborts cloud reconciliation before replacing the origin
   r.sandbox.fetch=async()=>({ok:true,json:async()=>({data:{1:{revision:'b',snapshot:{score:999}}}})});
   const put=r.localStorage.setItem;r.localStorage.setItem=(key,value)=>{if(key===r.save.recoveryKey)throw new Error('full');put(key,value);};
   await assert.rejects(r.save.useCloudSnapshot(1),/full/);assert.equal(r.save.getSlot(1).score,123);
+});
+
+test('choosing local progress archives the server copy and writes only the compared revision',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_user',JSON.stringify({id:r.save.owner}));r.save.hasSession=()=>true;
+ r.state.score=100;r.save.saveGame(1,r.state);r.save.getSlot(1).cloudConflict=true;
+ let posts=0;r.sandbox.fetch=async(url,options={})=>{
+  if(options.method==='POST'){posts++;const sent=JSON.parse(options.body);assert.equal(sent.expected_revision,'remote-b');assert.equal(sent.snapshot.score,100);
+   return {ok:true,json:async()=>({data:{revision:'chosen-local'}})};}
+  return {ok:true,json:async()=>({data:{1:{revision:'remote-b',snapshot:{score:900,activeMode:'DIRECT'}}}})};
+ };
+ await r.save.useLocalSnapshot(1,'remote-b');
+ assert.equal(posts,1);assert.equal(r.save.getSlot(1).score,100);assert.equal(r.save.getRecovery(1).score,900);
+ assert.equal(r.save.getSlot(1).cloudConflict,false);assert.equal(r.save.getSlot(1).cloudDirty,false);
+ assert.equal(r.save.cloudRevisions[1],'chosen-local');assert.equal(r.save._pendingSlots.has(1),false);
+});
+
+test('a server change after comparison prevents either choice from silently replacing a save',async()=>{
+ const r=runtime();r.save.hasSession=()=>true;r.state.score=100;r.save.saveGame(1,r.state);r.save.getSlot(1).cloudConflict=true;
+ let posts=0;r.sandbox.fetch=async(url,options={})=>{if(options.method==='POST')posts++;return {ok:true,json:async()=>({data:{1:{revision:'newer',snapshot:{score:900}}}})};};
+ await assert.rejects(r.save.useLocalSnapshot(1,'compared'),/vừa đổi/);
+ await assert.rejects(r.save.useCloudSnapshot(1,'compared'),/vừa đổi/);
+ assert.equal(posts,0);assert.equal(r.save.getSlot(1).score,100);assert.equal(r.save.getSlot(1).cloudConflict,true);
+});
+
+test('failed explicit local selection retains the conflict and both copies, including storage exhaustion',async()=>{
+ const r=runtime();r.save.hasSession=()=>true;r.state.score=100;r.save.saveGame(1,r.state);r.save.getSlot(1).cloudConflict=true;
+ let posts=0;r.sandbox.fetch=async(url,options={})=>{
+  if(options.method==='POST'){posts++;return {ok:false,status:409};}
+  return {ok:true,json:async()=>({data:{1:{revision:'b',snapshot:{score:900}}}})};
+ };
+ await assert.rejects(r.save.useLocalSnapshot(1,'b'),/Hai bản vẫn/);
+ assert.equal(r.save.getSlot(1).score,100);assert.equal(r.save.getRecovery(1).score,900);assert.equal(r.save.getSlot(1).cloudConflict,true);
+ const put=r.localStorage.setItem;r.localStorage.setItem=(key,value)=>{if(key===r.save.recoveryKey)throw new Error('full');put(key,value);};
+ await assert.rejects(r.save.useLocalSnapshot(1,'b'),/full/);assert.equal(posts,1);
 });
 
 test('failed run completion stays in a durable outbox and retries the same id', async () => {

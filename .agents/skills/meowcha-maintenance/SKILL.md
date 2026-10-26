@@ -86,7 +86,7 @@ and skill controls while the independent reward record is open.
 
 For release 16.0 consult docs/meowcha-plan-audit-16.md and meowcha-release-16.0.md.
 A shared material palette is not enough: group lobby commands/stats into one
-console, attach modal headers/actions, keep the battle HUD/altar joined, and
+console (historical; lobby 18 supersedes this), attach modal headers/actions, keep the battle HUD/altar joined, and
 review meteor/reward scale on 320px with the keyboard. Preserve complete IPA.
 Website session authority gates both parent and direct engine boot. Session.js
 owns expiry, same-owner recovery and account-switch reload; use UI.setPause,
@@ -125,3 +125,16 @@ motion. Stun does not fabricate errors or speed penalties. Audio has distinct
 cloud_enter/cloud_clear and stun/stun_end events, normalized sample peaks with
 a bounded gain, and a user-facing sound audition. Verify actual signal output,
 mute and voice independence; browser RMS is not proof of physical phone haptics.
+
+For lobby 18 read docs/meowcha-lobby-release-18.md. The latest user decision
+supersedes the shared brown lobby console: hero and scene are the focal point,
+status chips sit outside lobby-actions, sword CTA is 420px on PC, mode uses its
+own wood plaque, and restart is a small red seal. Keep action semantics updated
+when progress changes; a fresh start must regain the primary sword. Use compact
+jade navigation and short visible labels with full accessible names on phones.
+Save conflicts use a persistent lobby comparison action. Present both snapshots,
+choose a whole slot, archive the displaced copy first and use the revision that
+was shown. Refuse a changed revision or full recovery storage; never silently
+prefer a score or timestamp. Recovery may contain cloud or local data, so label
+it neutrally as a safety copy. The attached full website redesign is stored as
+a separate reference and is not evidence that all website screens were changed.

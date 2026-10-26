@@ -223,7 +223,10 @@
         () => this.restartBattle(),
         this.assets
       );
-      this.saveSystem.onSyncIssue=message=>this.ui.showStatus(message,8000);
+      this.saveSystem.onSyncIssue=()=>{
+        this.ui.updateSaveSyncNotice();
+        if(this.gameState.currentScene==='BATTLE')this.ui.showStatus('Bản máy được giữ. Về sảnh → Đối chiếu để chọn bản đồng bộ.',5000);
+      };
 
       // Kết nối callback khi trảm từ hoàn tất
       this.typing.onWordCompleted = (slainWord) => {

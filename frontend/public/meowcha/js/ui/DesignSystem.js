@@ -52,7 +52,7 @@
       for(const record of records)for(const node of record.addedNodes) {
         if(node.nodeType!==1)continue;
         const scope=node.parentElement||node;
-        if(scope.closest('.meowcha-modal-overlay,.lobby-cta-sword-area,.lobby-top-actions,.battle-active-skills-bar'))scopes.add(scope);
+        if(scope.closest('.meowcha-modal-overlay,.lobby-actions,.lobby-top-actions,.battle-active-skills-bar'))scopes.add(scope);
       }
       for(const scope of scopes)M.applyDesignSystem(scope);
     });

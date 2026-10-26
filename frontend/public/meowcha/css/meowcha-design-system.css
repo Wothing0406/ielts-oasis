@@ -132,23 +132,6 @@ body[data-session]:not([data-session='ready']) #gameAppWrapper { visibility:hidd
 #gameAppWrapper #lobbyView { overflow-y:auto!important;justify-content:safe center!important; }
 #gameAppWrapper .cultivation-tea-station { gap:8px!important;flex-shrink:0!important;padding-bottom:18px!important; }
 #gameAppWrapper .floating-stone-pavilion { height:135px!important;min-height:0!important;margin:0!important; }
-#gameAppWrapper .lobby-cta-sword-area {
- width:min(94vw,570px)!important;max-width:570px!important;display:grid!important;
- grid-template-columns:minmax(0,1fr) minmax(110px,.62fr)!important;gap:0 8px!important;
- padding:10px 16px 14px!important;border:14px solid transparent!important;
- border-image:var(--mc-frame) 32% / 14px / 0 stretch!important;
- background:var(--game-wood-dark)!important;background-clip:padding-box!important;
- box-shadow:var(--shadow-ceremonial)!important;
-}
-#gameAppWrapper .lobby-cta-sword-area > .compact-stat-pills { grid-column:1/-1;grid-row:1;width:100%!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--game-gold)!important;padding:2px 0 8px!important;margin:0 0 3px!important; }
-#gameAppWrapper .lobby-cta-sword-area .stat-pill :is(.pill-label,.pill-val) { color:var(--game-light)!important; }
-#gameAppWrapper .lobby-cta-sword-area .stat-pill { min-height:48px!important;padding:0 6px!important; }
-#gameAppWrapper .lobby-cta-sword-area .pill-mini-track { display:none!important; }
-#gameAppWrapper .lobby-cta-sword-area > [data-ui-action='hero'] { grid-column:1/-1;width:100%!important;margin:0!important; }
-#gameAppWrapper .lobby-cta-sword-area > .change-mode { grid-column:1;width:100%!important;min-height:52px!important;padding:8px 14px!important;margin:0!important;background:none!important;border-right:1px solid var(--game-gold)!important;font-size:13px!important; }
-#gameAppWrapper .lobby-cta-sword-area .change-mode .sword-cta-main { font-size:14px!important; }
-#gameAppWrapper .lobby-cta-sword-area .change-mode .sword-cta-sub { font-size:11px!important; }
-#gameAppWrapper .lobby-cta-sword-area > .sword-talisman-restart { grid-column:2;width:100%!important;height:58px!important;min-height:58px!important;margin:0!important;padding:10px 7px 15px 28%!important;font-size:10px!important; }
 #gameAppWrapper .lobby-top-actions { display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px!important; }
 #gameAppWrapper .windchime-medallion { width:100%!important;min-width:0!important;padding:0!important;animation:none!important; }
 #gameAppWrapper .lobby-top-actions { background:var(--game-wood-dark)!important;border-bottom:1px solid var(--game-gold)!important;padding:6px!important;gap:0!important; }
@@ -379,8 +362,6 @@ body[data-session]:not([data-session='ready']) #gameAppWrapper { visibility:hidd
  :is(#gameAppWrapper,.meowcha-modal-overlay) .btn-modal-close { min-width:44px!important;min-height:44px!important; }
  #gameAppWrapper #swordIntentBox { width:94vw!important;min-height:0!important; }
  #gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:96px!important;padding:16px 10%!important; }
- #gameAppWrapper .lobby-cta-sword-area { padding:6px 7px 8px!important;border-width:10px!important;border-image-width:10px!important; }
- #gameAppWrapper .lobby-cta-sword-area .pill-val { font-size:17px!important; }
  #gameAppWrapper #swordIntentText { font-size:17px!important; }
  #gameAppWrapper #swordTargetMeaning { font-size:12px!important; }
  #gameAppWrapper #battleActiveSkillsBar { bottom:calc(var(--mc-keyboard-height,0px) + 138px)!important; }
@@ -423,9 +404,6 @@ body[data-session]:not([data-session='ready']) #gameAppWrapper { visibility:hidd
  #gameAppWrapper .cultivation-tea-station .cat-name-gold { font-size:14px!important; }
  #gameAppWrapper .cultivation-tea-station .plaque-quote-silk { white-space:normal!important;font-size:10px!important; }
  #gameAppWrapper .cultivation-tea-station > .floating-stone-pavilion { grid-column:1;grid-row:2;height:110px!important; }
- #gameAppWrapper .cultivation-tea-station > .lobby-cta-sword-area { grid-column:2;grid-row:1/3;width:100%!important;padding:5px 8px!important;border-width:10px!important;border-image-width:10px!important; }
- #gameAppWrapper .lobby-cta-sword-area .stat-pill { min-height:36px!important; }
- #gameAppWrapper .lobby-cta-sword-area .pill-val { font-size:17px!important; }
  #gameAppWrapper #swordIntentBox { width:54vw!important; }
  #gameAppWrapper #swordIntentBox,#gameAppWrapper #swordIntentBox .altar-parchment-scroll { min-height:106px!important; }
  #gameAppWrapper #swordIntentBox .altar-parchment-scroll { padding:18px 10%!important; }
@@ -512,4 +490,94 @@ html:is(.platform-mobile,.platform-tablet):not(.keyboard-visible) #gameAppWrappe
 }
 @media(max-width:600px) and (max-height:650px) {
  #battleFeedback { font-size:10px; }
+}
+/* Lobby 18: open scene, compact relics; no shared brown action panel. */
+#gameAppWrapper #lobbyView { background:rgba(16,43,37,.14)!important;backdrop-filter:none!important;padding:84px 12px 20px!important;gap:12px!important; }
+#gameAppWrapper #lobbyView .lobby-top-bar { position:absolute!important;top:10px!important;left:50%!important;transform:translateX(-50%)!important;width:min(1100px,calc(100% - 24px))!important;min-height:48px!important;padding:2px 8px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;background:rgba(32,70,60,.86)!important;border:0!important;border-bottom:1px solid var(--game-gold)!important;box-shadow:none!important; }
+#gameAppWrapper #lobbyView .lobby-top-left { display:flex!important;align-items:center!important;gap:12px!important;flex:none!important; }
+#gameAppWrapper #lobbyView .lobby-brand-badge { padding:0!important;border:0!important;background:none!important;box-shadow:none!important;gap:6px!important; }
+#gameAppWrapper #lobbyView .brand-name { font:800 15px/1.3 var(--font-body)!important;color:var(--game-light)!important;letter-spacing:0!important; }
+#gameAppWrapper #lobbyView :is(.brand-sub,.windchime-knot-top,.windchime-tassel-bottom) { display:none!important; }
+#gameAppWrapper #lobbyView .tea-leaf-insignia { width:24px!important;height:24px!important; }
+#gameAppWrapper #lobbyView .btn-back-to-games { min-height:44px!important;padding:4px!important;background:none!important;border:0!important;box-shadow:none!important;font:600 12px/1.4 var(--font-body)!important;color:var(--game-light)!important; }
+#gameAppWrapper #lobbyView .btn-back-to-games svg { width:18px!important; }
+#gameAppWrapper #lobbyView .lobby-top-actions { display:flex!important;align-items:center!important;gap:4px!important;padding:0!important;background:none!important;border:0!important; }
+#gameAppWrapper #lobbyView .windchime-medallion { width:auto!important;min-width:70px!important;min-height:44px!important;height:44px!important;display:flex!important;flex-direction:row!important;gap:4px!important;padding:2px 5px!important;border:0!important;background:none!important;box-shadow:none!important;animation:none!important; }
+#gameAppWrapper #lobbyView .windchime-medallion::before,#gameAppWrapper #lobbyView .windchime-medallion::after { display:none!important; }
+#gameAppWrapper #lobbyView .medallion-disc { width:26px!important;height:26px!important;min-width:26px!important;margin:0!important;background:none!important; }
+#gameAppWrapper #lobbyView .medallion-disc .pixel-icon { --icon-size:24px; }
+#gameAppWrapper #lobbyView .medallion-label { width:auto!important;min-height:0!important;padding:0!important;white-space:nowrap!important;font:600 10px/1.3 var(--font-body)!important; }
+#gameAppWrapper #lobbyView #lobbyUserAvatar { width:30px!important;height:30px!important;border:1px solid var(--game-gold)!important;border-radius:50%!important; }
+#gameAppWrapper #lobbyView .lobby-composition { --lobby-hero-height:124px;display:flex;flex-direction:column;align-items:center;gap:12px;width:min(100%,700px);flex:none;margin:0 auto;padding:0;background:none;border:0; }
+.lobby-cultivator-name { display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center; }
+#lobbyView #lobbyCatTitle { margin:0;padding:0;font:800 22px/1.3 var(--font-body);color:var(--game-light);text-shadow:0 2px 2px #20332d!important; }
+#lobbyView #lobbyLevelTag { font:600 12px/1.4 var(--font-body);color:var(--game-light);background:var(--game-jade);padding:3px 12px;border:1px solid var(--game-gold); }
+.lobby-stage { position:relative;width:320px;max-width:100%;height:180px;flex:none;pointer-events:none; }
+.lobby-cultivation-dais { position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:220px;height:auto;image-rendering:pixelated; }
+.lobby-stage .lobby-portrait { position:absolute;width:calc(var(--lobby-hero-height) * var(--lobby-sprite-ratio,2.105));height:auto;max-width:none;left:calc(50% - var(--lobby-hero-height) * var(--lobby-sprite-center,1.053));bottom:calc(24px - var(--lobby-hero-height) * var(--lobby-sprite-gap,.205));image-rendering:pixelated;filter:drop-shadow(0 3px 3px #20332d88); }
+.lobby-stage .lobby-companion { position:absolute;left:calc(50% + 72px);bottom:25px;width:62px;height:84px;object-fit:contain;image-rendering:pixelated; }
+#gameAppWrapper #lobbyView .lobby-status-hud { display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:auto;max-width:100%; }
+#gameAppWrapper #lobbyView .lobby-status-hud .stat-pill { flex:none!important;background:var(--game-parchment)!important;border:1px solid var(--game-gold)!important;padding:4px 10px!important;min-height:44px!important;gap:6px!important; }
+#gameAppWrapper #lobbyView .lobby-status-hud .pill-icon { width:28px!important;height:28px!important; }
+#gameAppWrapper #lobbyView .lobby-status-hud .pixel-icon { --icon-size:28px; }
+#gameAppWrapper #lobbyView .lobby-status-hud .pill-text-wrap { flex-direction:row!important;align-items:center!important;gap:6px!important; }
+#gameAppWrapper #lobbyView .lobby-status-hud .pill-label { font-size:11px!important;letter-spacing:0!important;white-space:nowrap!important; }
+#gameAppWrapper #lobbyView .lobby-status-hud .pill-val { font-size:15px!important;white-space:nowrap; }
+#gameAppWrapper #lobbyView .pill-mini-track { display:none!important; }
+#gameAppWrapper #lobbyView .lobby-actions { display:grid;grid-template-columns:minmax(0,1fr) 76px;justify-items:center;align-items:center;gap:8px;width:min(100%,420px);padding:0;border:0;background:none;box-shadow:none; }
+#gameAppWrapper #lobbyView .lobby-actions > [data-ui-action='hero'] { grid-column:1/-1;width:100%!important;max-width:420px!important;margin:0!important;padding:0 8% 0 27%!important; }
+#gameAppWrapper #lobbyView .lobby-actions .sword-cta-main { font-size:18px!important; }
+#gameAppWrapper #lobbyView .lobby-actions .sword-cta-sub { font-size:11px!important; }
+#gameAppWrapper #lobbyView .lobby-actions > .change-mode { grid-column:1;min-height:58px!important;height:58px!important;width:100%!important;margin:0!important;padding:8px 12%!important;background:transparent var(--mc-plaque) center/100% 180% no-repeat!important; }
+#gameAppWrapper #lobbyView .lobby-actions > .change-mode .sword-cta-main { font-size:13px!important; }
+#gameAppWrapper #lobbyView .lobby-actions > .sword-talisman-restart { grid-column:2;width:76px!important;max-width:76px!important;height:48px!important;min-height:48px!important;padding:6px!important;margin:0!important;background:var(--game-crimson)!important;border:1px solid var(--game-gold)!important;font:800 11px/1.4 var(--font-body)!important;box-shadow:inset 0 0 0 3px var(--game-crimson),inset 0 0 0 4px var(--game-gold)!important; }
+#lobbySyncNotice { display:flex;align-items:center;gap:12px;max-width:min(100%,380px);padding:6px 10px;background:var(--game-parchment);color:var(--game-ink);border:1px solid var(--game-gold);font:500 11px/1.4 var(--font-body); }
+#lobbySyncNotice > span { flex:1;min-width:0; }
+#lobbySyncNotice strong,#lobbySyncDetail { display:block; }
+#lobbySyncNotice button { min-height:44px;flex:none; }
+#meowchaStatusBar { top:auto!important;bottom:12px!important;left:50%!important;right:auto!important;transform:translate(-50%,12px)!important;width:max-content!important;max-width:min(calc(100vw - 24px),380px)!important;padding:10px 14px!important;letter-spacing:0!important; }
+#meowchaStatusBar.show { transform:translate(-50%,0)!important; }
+.slot-comparison { padding:8px 0;display:grid;gap:8px;border-top:1px solid var(--game-gold); }
+.slot-comparison p { margin:0; }
+.slot-comparison button { min-height:44px; }
+@media(max-width:700px) {
+ #gameAppWrapper #lobbyView { padding-top:112px!important;gap:8px!important; }
+ #gameAppWrapper #lobbyView .lobby-top-bar { flex-wrap:wrap!important;gap:0!important;padding:0 6px!important;top:6px!important; }
+ #gameAppWrapper #lobbyView .lobby-top-left { width:100%!important;justify-content:space-between!important;min-height:36px!important; }
+ #gameAppWrapper #lobbyView .lobby-top-actions { width:100%!important;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:0!important; }
+ #gameAppWrapper #lobbyView .windchime-medallion { width:100%!important;min-width:0!important;flex-direction:column!important;justify-content:center!important;gap:1px!important;padding:1px!important;height:48px!important; }
+ #gameAppWrapper #lobbyView .medallion-disc { width:22px!important;height:22px!important;min-width:22px!important; }
+ #gameAppWrapper #lobbyView .medallion-disc .pixel-icon { --icon-size:22px; }
+ #gameAppWrapper #lobbyView .medallion-label { font-size:9px!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important; }
+ #gameAppWrapper #lobbyView #lobbyUserAvatar { width:26px!important;height:26px!important; }
+ #gameAppWrapper #lobbyView .lobby-composition { --lobby-hero-height:104px;gap:8px; }
+ #lobbyView #lobbyCatTitle { font-size:18px; }
+ .lobby-stage { height:148px; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .stat-pill { padding:3px 6px!important;gap:3px!important; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .pill-icon { width:24px!important;height:24px!important; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .pixel-icon { --icon-size:24px; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .pill-text-wrap { gap:4px!important; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .pill-val { font-size:13px!important; }
+ #gameAppWrapper #lobbyView .lobby-status-hud .pill-label { font-size:10px!important; }
+ #gameAppWrapper #lobbyView .lobby-actions { width:min(calc(100vw - 32px),380px);grid-template-columns:minmax(0,1fr) 68px; }
+ #gameAppWrapper #lobbyView .lobby-actions .sword-cta-main { font-size:14px!important; }
+ #gameAppWrapper #lobbyView .lobby-actions .sword-cta-sub { font-size:10px!important; }
+ #gameAppWrapper #lobbyView .lobby-actions > .sword-talisman-restart { width:68px!important; }
+ #gameAppWrapper #lobbyView .lobby-actions > .change-mode { min-height:52px!important;height:52px!important; }
+}
+@media(max-width:380px) {
+ #gameAppWrapper #lobbyView .medallion-label { font-size:8px!important; }
+}
+@media(max-height:500px) and (orientation:landscape) {
+ #gameAppWrapper #lobbyView { padding-top:72px!important; }
+ #gameAppWrapper #lobbyView .lobby-top-bar { flex-wrap:nowrap!important; }
+ #gameAppWrapper #lobbyView .lobby-top-left { width:auto!important; }
+ #gameAppWrapper #lobbyView .lobby-top-actions { width:auto!important;display:flex!important; }
+ #gameAppWrapper #lobbyView .windchime-medallion { min-width:48px!important; }
+ #gameAppWrapper #lobbyView .lobby-composition { --lobby-hero-height:104px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:auto auto;gap:8px 20px;max-width:740px; }
+ .lobby-cultivator-name { grid-column:1;grid-row:1; }
+ .lobby-stage { grid-column:1;grid-row:2;height:154px; }
+ #gameAppWrapper #lobbyView .lobby-status-hud { grid-column:2;grid-row:1; }
+ #gameAppWrapper #lobbyView .lobby-actions { grid-column:2;grid-row:2;width:100%; }
+ #lobbySyncNotice { position:absolute;bottom:4px;right:8px; }
 }

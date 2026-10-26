@@ -214,6 +214,9 @@
         };
       }
 
+      const resolveSave=document.getElementById('btnResolveSaveConflict');
+      if(resolveSave)resolveSave.onclick=()=>this.showSavesModal();
+
       // Nút Chơi Tiếp (Continue theo đúng Pháp Môn đang chọn)
       const btnContinue = document.getElementById("btnContinueBattle");
       if (btnContinue) {
@@ -421,7 +424,7 @@
           button.title = active ? 'Âm thanh đang bật • Bấm để tắt' : 'Âm thanh đang tắt hoặc bị ngắt • Bấm để bật';
         }
         const label = btnToggleSoundLobby && btnToggleSoundLobby.querySelector('.medallion-label');
-        if (label) label.textContent = active ? 'ÂM THANH: BẬT' : 'BẬT ÂM THANH';
+        if (label) label.textContent = active ? 'Âm bật' : 'Âm tắt';
       };
       const toggle = () => {
         const active = this.audio.soundEnabled && this.audio.ctx && this.audio.ctx.state === 'running' && this.audio.zenMusicPlaying;
@@ -863,6 +866,10 @@
         ];
         const rIdx = Math.max(0, Math.min(4, parseInt(s.realmIdx, 10) || 0));
         const targetSrc = avatars[rIdx] || avatars[0];
+        const bounds=[[64,154,296,325],[25,47,335,327],[73,110,288,330],[48,110,313,330],[83,113,278,330]][rIdx];
+        const stage=lobbyCatImg.closest('.lobby-stage');
+        if(stage){const height=bounds[3]-bounds[1];stage.style.setProperty('--lobby-sprite-ratio',360/height);stage.style.setProperty('--lobby-sprite-center',(bounds[0]+bounds[2])/2/height);stage.style.setProperty('--lobby-sprite-gap',(360-bounds[3])/height);}
+        lobbyCatImg.alt=realmData.title;
         lobbyCatImg.referrerPolicy = "no-referrer";
         lobbyCatImg.onerror = () => {
           lobbyCatImg.onerror = null;
@@ -888,6 +895,7 @@
     }
 
     updateLobbyButtons() {
+      this.updateSaveSyncNotice();
       const btnStart = document.getElementById("btnStartBattle");
       const btnContinue = document.getElementById("btnContinueBattle");
       const btnRestart = document.getElementById("btnRestartGame");
@@ -899,7 +907,7 @@
       const modeData = this.saveSystem && this.saveSystem.getSlotModeData && this.saveSystem.getSlotModeData(curSlotId, curMode);
 
       const hasModeProgress = Boolean(modeData && modeData.isOccupied && modeData.hp > 0 && (modeData.score > 0 || modeData.realmIdx > 0 || modeData.words > 0));
-      if (btnStart) btnStart.classList.toggle("change-mode", hasModeProgress);
+      if (btnStart) {btnStart.classList.toggle("change-mode", hasModeProgress);btnStart.dataset.uiAction=hasModeProgress?'secondary':'hero';}
 
       const modeLabels = {
         DIRECT: "Trực Diện Trảm Ma",
@@ -944,6 +952,15 @@
           }
         }
       }
+    }
+
+    updateSaveSyncNotice(){
+      const notice=document.getElementById('lobbySyncNotice');if(!notice)return;
+      const ids=[1,2,3].filter(id=>this.saveSystem.getSlot(id).cloudConflict);
+      notice.hidden=!ids.length;
+      const detail=document.getElementById('lobbySyncDetail');
+      const text='Ngọc Giản '+ids.join(', ')+' • Bản trên máy vẫn được giữ.';
+      if(detail&&detail.textContent!==text)detail.textContent=text;
     }
 
     showScene(scene) {
@@ -1070,20 +1087,48 @@
         if(slot.cloudConflict){
           const notice=document.createElement('p');notice.className='slot-conflict-note';
           notice.textContent='Có bản máy chủ khác • Bản trên máy này vẫn được giữ.';card.appendChild(notice);
+          if(!inBattle){
+            const compare=document.createElement('button');compare.type='button';compare.className='mc-utility';compare.textContent='Đối chiếu hai bản';
+            const comparison=document.createElement('div');comparison.className='slot-comparison';comparison.hidden=true;
+            compare.onclick=async()=>{
+              comparison.hidden=false;comparison.textContent='Đang tải bản máy chủ…';compare.disabled=true;
+              try{
+                const remote=await this.saveSystem.readCloudSlot(i);
+                comparison.textContent='';
+                for(const [label,snapshot] of [['Máy này',this.saveSystem.getSlot(i)],['Máy chủ',remote.snapshot]]){
+                  const p=document.createElement('p');p.textContent=label+': '+this.describeSaveSnapshot(snapshot);comparison.appendChild(p);
+                }
+                for(const [label,cloud] of [['Chọn bản máy này',false],['Chọn bản máy chủ',true]]){
+                  const choose=document.createElement('button');choose.type='button';choose.className='mc-utility';choose.textContent=label;
+                  choose.onclick=()=>this.showConfirm(label+'?',
+                    'Bản còn lại được giữ trong Bản sao an toàn. Cả ba pháp môn thuộc ngọc giản này sẽ chuyển theo bản được chọn.',async()=>{
+                      try{
+                        if(cloud)await this.saveSystem.useCloudSnapshot(i,remote.revision);
+                        else await this.saveSystem.useLocalSnapshot(i,remote.revision);
+                        this.applyReconciledSlot(i);this.showStatus('Đã chọn bản lưu và giữ bản còn lại trong Bản sao an toàn.');
+                      }catch(error){this.showStatus(error.message||'Chưa chọn được. Hai bản vẫn được giữ.');compare.disabled=false;}
+                    },'ĐỂ SAU','CHỌN BẢN NÀY');
+                  comparison.appendChild(choose);
+                }
+              }catch(error){comparison.textContent=error.message||'Chưa tải được. Hãy thử lại.';}
+              finally{compare.disabled=false;}
+            };
+            card.appendChild(compare);card.appendChild(comparison);
+          }
         }
-        if(!inBattle&&(slot.cloudConflict||this.saveSystem.getRecovery?.(i))){
+        if(!inBattle&&!slot.cloudConflict&&this.saveSystem.getRecovery?.(i)){
           const cloud=document.createElement('button');cloud.type='button';cloud.className='mc-utility';cloud.textContent='Đối chiếu • Dùng bản máy chủ';
           cloud.onclick=()=>this.showConfirm('Dùng đạo quả máy chủ?',
-            'Bản trên máy này sẽ được giữ trong Bản sao máy trước khi chuyển sang bản máy chủ.',async()=>{
-              try{await this.saveSystem.useCloudSnapshot(i);this.applyReconciledSlot(i);this.showStatus('Đã dùng bản máy chủ. Bản máy cũ còn trong Bản sao máy.');}
+            'Bản trên máy này sẽ được giữ trong Bản sao an toàn trước khi chuyển sang bản máy chủ.',async()=>{
+              try{await this.saveSystem.useCloudSnapshot(i);this.applyReconciledSlot(i);this.showStatus('Đã dùng bản máy chủ. Bản máy cũ còn trong Bản sao an toàn.');}
               catch(error){this.showStatus(error.message||'Chưa đối chiếu được. Hai bản vẫn được giữ.');}
             },'GIỮ BẢN MÁY','DÙNG MÁY CHỦ');
           card.appendChild(cloud);
           if(this.saveSystem.getRecovery(i)){
-            const restore=document.createElement('button');restore.type='button';restore.className='mc-utility';restore.textContent='Bản sao máy • Khôi phục';
-            restore.onclick=()=>this.showConfirm('Khôi phục bản sao máy?',
+            const restore=document.createElement('button');restore.type='button';restore.className='mc-utility';restore.textContent='Bản sao an toàn • Khôi phục';
+            restore.onclick=()=>this.showConfirm('Khôi phục bản sao an toàn?',
               'Bản đang dùng sẽ được sao lại. Bản sao được chọn sẽ thành tiến trình đang chơi và đồng bộ khi phiên bản máy chủ còn khớp.',()=>{
-                try{this.saveSystem.restoreRecovery(i);this.applyReconciledSlot(i);this.showStatus('Đã khôi phục bản sao trên máy.');}
+                try{this.saveSystem.restoreRecovery(i);this.applyReconciledSlot(i);this.showStatus('Đã khôi phục bản sao an toàn.');}
                 catch(_){this.showStatus('Chưa khôi phục được; các bản sao vẫn được giữ.');}
               },'GIỮ HIỆN TẠI','KHÔI PHỤC');
             card.appendChild(restore);
@@ -1181,6 +1226,15 @@
     applyReconciledSlot(slotId){
       this.state.loadFromSlot(this.saveSystem.getSlot(slotId));this.state.activeSlotId=slotId;
       this.saveSystem.setActiveSlotId(slotId);this.renderSaveSlotsUI();this.updateHUD();this.updateLobbyButtons();
+    }
+
+    describeSaveSnapshot(snapshot){
+      const labels={DIRECT:'Trực Diện',CLOZE:'Ngộ Đạo',AUDIO:'Thính Âm'};
+      const modes=snapshot.modes||{[snapshot.activeMode||'DIRECT']:snapshot};
+      const progress=Object.entries(labels).filter(([mode])=>modes[mode]?.isOccupied||modes[mode]?.score>0)
+        .map(([mode,label])=>label+' '+Math.max(0,Number(modes[mode].score)||0).toLocaleString('vi-VN')+' Tu Vi');
+      const date=Number(snapshot.updatedAt)>0?new Date(snapshot.updatedAt).toLocaleString('vi-VN'):'';
+      return (progress.join(' • ')||'Chưa có tiến trình')+(date?' • '+date:'');
     }
 
     showTalentModal(talents, targetRealm, onSelect) {

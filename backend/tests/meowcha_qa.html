@@ -94,6 +94,12 @@ extraButton('qaCloudConflict','Hai thiết bị QA',async()=>{
  g.saveSystem.saveGame(1,g.gameState);await g.saveSystem.flushCloudSaves();
  g.ui.showSavesModal();result='CAS: máy chủ +500, máy này +100. Đối chiếu giữ cả hai.';
 });
+extraButton('qaLobby','Sảnh có tiến trình QA',async()=>{
+ const g=app(),current=await fetch('/api/meowcha/save-snapshots').then(r=>r.json());
+ g.saveSystem.cloudRevisions[1]=current.data?.[1]?.revision||'';g.saveSystem.getSlot(1).cloudConflict=false;
+ g.gameState.resetForNewMode('DIRECT');Object.assign(g.gameState,{activeSlotId:1,score:2317,realmIdx:1,hp:37,maxHp:50,humanWords:8,wordsSlain:8,correctKeystrokes:40,totalKeystrokes:50,activeElapsedMs:60000,wpm:8});
+ g.returnToLobby();await g.saveSystem.flushCloudSaves();g.ui.updateHUD();result='Sảnh QA: 2317 Tu Vi, 37/50 HP, 8 WPM';
+});
 const meteorSelect=document.createElement('select');meteorSelect.id='qaMeteorType';meteorSelect.setAttribute('aria-label','Loại thiên thạch');
 meteorSelect.innerHTML='<option value="ice">Băng</option><option value="fire">Hỏa</option><option value="void">Hư không</option><option value="thunder">Huyết lôi</option>';document.getElementById('tools').insertBefore(meteorSelect,status);
 const modeSelect=document.createElement('select');modeSelect.id='qaMode';modeSelect.setAttribute('aria-label','Pháp môn kiểm thử');modeSelect.innerHTML='<option value="DIRECT">Trực Diện</option><option value="CLOZE">Ngộ Đạo</option><option value="AUDIO">Thính Âm</option>';document.getElementById('tools').insertBefore(modeSelect,status);

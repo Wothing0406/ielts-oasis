@@ -11,6 +11,18 @@
 
 ## Quyết định đã chốt
 
+- Lobby 18 thay quyết định console chung của 16: xem
+  [nghiệm thu lobby](meowcha-lobby-release-18.md). Nhân vật/nền là tâm điểm;
+  stats tách khỏi actions. Không bọc lại tất cả bằng panel nâu. Kiếm 420px PC,
+  mộc bài đổi mode, ấn Trùng Tu nhỏ. `.lobby-composition` / `.lobby-actions`
+  thay nhóm DOM cũ. Navbar jade nhẹ, mobile nhãn ngắn nhưng tên accessible đầy đủ.
+- Conflict save: chip Đối chiếu tại sảnh, bảng so sánh trước khi chọn; không tự
+  giải theo điểm/timestamp. Chọn một snapshot toàn slot bằng revision đã xem,
+  archive bản còn lại trước khi ghi; khi revision đổi/storage đầy thì dừng.
+  Bản sao có thể từ máy hoặc cloud nên gọi chung Bản sao an toàn.
+- Attachment thiết kế toàn website ở `docs/prompts/matcha-website-design-system-reference.md`;
+  việc lưu tham chiếu không có nghĩa mọi trang website đã được redesign.
+
 - Battle 17: xem [nghiệm thu bố cục/âm](meowcha-battle-readability-17.md).
   Nhân vật giữa, cùng chiều cao nhìn thấy ở năm cảnh. PC tiến độ trái,
   kỹ năng/ôn phải; mobile chỉ một hàng 34px nối với bàn phím. Kỹ năng/ÔN ở hàng

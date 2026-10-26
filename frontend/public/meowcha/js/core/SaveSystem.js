@@ -733,13 +733,36 @@
       // If storage is full, stop here instead of replacing the only recovery copy.
       this.storage.setItem(this.recoveryKey,JSON.stringify(history));
     }
-    async useCloudSnapshot(slotId){
+    async readCloudSlot(slotId){
       const response=await this.request('/api/meowcha/save-snapshots',{headers:this.getAuthHeaders()});
       if(!response.ok)throw new Error('Chưa tải được bản lưu máy chủ.');
       const remote=(await response.json()).data?.[slotId];if(!remote?.snapshot)throw new Error('Chưa có bản máy chủ tại ngọc giản này.');
+      return remote;
+    }
+    async useCloudSnapshot(slotId,expectedRevision){
+      const remote=await this.readCloudSlot(slotId);
+      if(expectedRevision!==undefined&&remote.revision!==expectedRevision)throw new Error('Bản máy chủ vừa đổi. Hãy đối chiếu lại trước khi chọn.');
       this.archiveRecovery(slotId,this.slots[slotId]);
       this.slots[slotId]=this.normalizeSlot({...remote.snapshot,cloudDirty:false,cloudConflict:false},slotId);
       this.cloudRevisions[slotId]=remote.revision||'';this._pendingSlots.delete(slotId);
+      this.storage.setItem(this.cloudRevisionKey,JSON.stringify(this.cloudRevisions));this.saveLocalSlots();
+    }
+    async useLocalSnapshot(slotId,expectedRevision){
+      const remote=await this.readCloudSlot(slotId);
+      if(!expectedRevision||remote.revision!==expectedRevision)throw new Error('Bản máy chủ vừa đổi. Hãy đối chiếu lại trước khi chọn.');
+      const local=JSON.parse(JSON.stringify(this.slots[slotId]));
+      // Archive the displaced server copy before the explicit, revision-checked replacement.
+      this.archiveRecovery(slotId,remote.snapshot);
+      const snapshot={...local,cloudDirty:false,cloudConflict:false};
+      const response=await this.request(`/api/meowcha/save-snapshots/${slotId}`,{
+        method:'POST',headers:this.getAuthHeaders(),body:JSON.stringify({snapshot,expected_revision:expectedRevision})
+      });
+      if(!response.ok)throw new Error(response.status===409?'Bản máy chủ vừa đổi. Hai bản vẫn được giữ; hãy đối chiếu lại.':'Chưa đồng bộ được. Bản trên máy và bản sao vẫn được giữ.');
+      const body=await response.json();
+      this.cloudRevisions[slotId]=body.data?.revision||remote.revision;
+      this.slots[slotId].cloudConflict=false;
+      if(this.slots[slotId].updatedAt===local.updatedAt){this.slots[slotId].cloudDirty=false;this._pendingSlots.delete(slotId);}
+      else this.scheduleCloudSave(slotId);
       this.storage.setItem(this.cloudRevisionKey,JSON.stringify(this.cloudRevisions));this.saveLocalSlots();
     }
     restoreRecovery(slotId){
