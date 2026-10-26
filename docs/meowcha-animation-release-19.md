@@ -41,7 +41,7 @@ Log ở `artifacts/meowcha-qa/19.0/doctor-utf8.json`. Không nhận là đã t�
 - [x] PC1280 và cảm ứng mô phỏng 320×568: nhân vật/companion đúng vùng, không
   đổi bố cục hoặc che bàn phím. Kim Đan giữ hào quang/kiếm bay sau tách head.
 - [x] GIF bản cuối gồm 32 ảnh chụp browser, 31/31 cặp khác nhau, dài 8.144s.
-- [ ] Push/backup và kiểm chứng triển khai Linux.
+- [x] Push/backup và kiểm chứng triển khai Linux.
 
 Minh chứng ignored ở `artifacts/meowcha-qa/19.0/`: `lobby-motion.gif`,
 `lobby-live-final.png`, `lobby-mobile-final.png`, `battle-mobile-final.png`,
@@ -55,7 +55,18 @@ lâu, OAuth production sau đăng nhập hoặc hoàn tất toàn bộ roadmap t
 
 ## Triển khai
 
-Đang chuẩn bị bản 19.0 trên `game/meowcha-cultivation`. Baseline trước sửa
-`5cff8c8`; backup Linux và Docker `before-meowcha-19-20261026` đã giữ trước thay.
-Số đếm trước: vocab4981, legacy5, runs12, battle logs3, snapshots2. Năm runtime
-MP3 có bản sao riêng. Cập nhật kết quả sau triển khai tại đây.
+Code `99946cb` đã push lên `game/meowcha-cultivation`, Linux fast-forward đúng
+nhánh, Docker build web đạt và thay container web. Web/backend running healthy;
+backend không đổi runtime. Baseline trước sửa `5cff8c8`; GitHub/Linux giữ
+`codex/backup-meowcha-before-19-20261026`, Docker web/backend giữ tag
+`before-meowcha-19-20261026`. Backup hoàn tất gồm code và báo cáo nằm tại
+`codex/backup-meowcha-complete-19-20261026`.
+
+HTTP nội bộ: trang cha, HTML, ActorMotion, SpriteAnimator, CatCultivator, Release,
+main và CSS đều 200; SHA256 bảy static file khớp checkout. Mọi asset URL trong
+HTML là19.0. Browser public xác nhận script ActorMotion19.0 và lobbyActorCanvas;
+trang cha/engine vẫn hiển thị cổng đăng nhập. Không giả đã chơi OAuth production.
+
+Đã so nguyên file counts trước/sau: vocab4981, legacy5, runs12, battle logs3,
+snapshots2 đều giữ nguyên. Năm runtime MP3 cũng khớp SHA256 với backup. Log build,
+counts và MP3 an toàn ở `/home/quang/meowcha-backups/19.0-20261026`.
