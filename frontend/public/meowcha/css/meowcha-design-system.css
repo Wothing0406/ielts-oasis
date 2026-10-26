@@ -548,7 +548,7 @@ html:is(.platform-mobile,.platform-tablet):not(.keyboard-visible) #gameAppWrappe
  #gameAppWrapper #lobbyView .windchime-medallion { width:100%!important;min-width:0!important;flex-direction:column!important;justify-content:center!important;gap:1px!important;padding:1px!important;height:48px!important; }
  #gameAppWrapper #lobbyView .medallion-disc { width:22px!important;height:22px!important;min-width:22px!important; }
  #gameAppWrapper #lobbyView .medallion-disc .pixel-icon { --icon-size:22px; }
- #gameAppWrapper #lobbyView .medallion-label { font-size:9px!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important; }
+ #gameAppWrapper #lobbyView .medallion-label { display:block!important;min-height:22px!important;font-size:9px!important;line-height:1.2!important;max-width:100%!important;white-space:normal!important;text-align:center;overflow:hidden!important;text-overflow:ellipsis!important; }
  #gameAppWrapper #lobbyView #lobbyUserAvatar { width:26px!important;height:26px!important; }
  #gameAppWrapper #lobbyView .lobby-composition { --lobby-hero-height:104px;gap:8px; }
  #lobbyView #lobbyCatTitle { font-size:18px; }
@@ -564,9 +564,6 @@ html:is(.platform-mobile,.platform-tablet):not(.keyboard-visible) #gameAppWrappe
  #gameAppWrapper #lobbyView .lobby-actions .sword-cta-sub { font-size:10px!important; }
  #gameAppWrapper #lobbyView .lobby-actions > .sword-talisman-restart { width:68px!important; }
  #gameAppWrapper #lobbyView .lobby-actions > .change-mode { min-height:52px!important;height:52px!important; }
-}
-@media(max-width:380px) {
- #gameAppWrapper #lobbyView .medallion-label { font-size:8px!important; }
 }
 @media(max-height:500px) and (orientation:landscape) {
  #gameAppWrapper #lobbyView { padding-top:72px!important; }
