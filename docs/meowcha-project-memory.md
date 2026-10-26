@@ -1,6 +1,18 @@
 # MEOW-CHA — bộ nhớ dự án
 
-## Baseline mới nhất — 19.0 (26/10/2026)
+## Baseline mới nhất — 20.0 (26/10/2026)
+
+- Rào không còn cùng nền chân hero: toàn rào nhỏ ở trên đầu, thanh ngang38%
+  asset trùng defenseY; tâm đá chạm ở defenseY−40 PC/−27 compact. Hero cách40px.
+  Xem `meowcha-defense-release-20.md`, prompt20.
+- Gỡ cả outline/box-shadow/border-image của container cũ. PC chừa272px giữa hai
+  panel; mobile vẫn progress34px+phím. Không kéo hero lên theo chiều cao panel.
+- Rào không miễn sát thương. Thuẫn phải được nhận trước và tiêu hao. takeDamage
+  trả damageTaken thực sau reduction; cue mây không được xóa HP receipt cùng đòn.
+- Pháp bảo năm cảnh vẫn là bộ hình/projectile/beam riêng. PC hiện tên/icon theo
+  cảnh; mobile không thêm panel. Chưa là hệ thống inventory/trang bị mới.
+
+## Hoạt ảnh 19.0
 
 - Lobby nhẹ 18 thay quyết định console nâu chung ở đợt 16; xem
   `meowcha-lobby-release-18.md`. Battle/mobile 17 ở `meowcha-battle-readability-17.md`.
@@ -43,7 +55,8 @@
   kỹ năng/ôn phải; mobile chỉ một hàng 34px nối với bàn phím. Kỹ năng/ÔN ở hàng
   tiện ích, ÔN phủ phím và pause đúng ván; không dựng hai panel lớn trên mobile.
 - `BattleLayout` là nguồn chung cho hero, rào raster, vùng rơi và va chạm.
-  `jade-defense-barrier-v1.png` vẽ trong canvas trước hero, chân cùng nền.
+  `jade-defense-barrier-v1.png` vẽ trong canvas trước hero; đợt20 đặt toàn rào
+  trên nhân vật thay cách cùng nền chân của đợt17.
   Canvas toàn viewport kể cả ngang; chỉ field ngang dùng 52%, không thu canvas
   thêm lần nữa. Geometry không âm trong lúc resize; vòng tile luôn có giới hạn.
 - Ngân sách gõ theo giây, JADE nhập môn DIRECT 24s/AUDIO 28s; entry 1.8s riêng.

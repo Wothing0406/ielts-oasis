@@ -312,7 +312,7 @@
         this.setCatState("DEFEATED");
         this.notify("gameOver");
       }
-      return { absorbed: false, currentHp: this.hp };
+      return { absorbed: false, currentHp: this.hp, damageTaken: effectiveAmount };
     }
 
     getActiveSkillSlots() {

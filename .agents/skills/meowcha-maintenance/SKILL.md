@@ -117,7 +117,8 @@ not only shouldShowVirtualKeyboard().
 BattleLayout owns the sky, defense threshold, centered hero and command dock.
 Keep character height stable by measured opaque sprite bounds, not sheet canvas
 size. The authored transparent jade-defense-barrier-v1.png is drawn before the
-hero with its base on the hero ground plane. Preserve remaining meteor seconds
+hero; release 20 supersedes the shared ground plane with the entire fence above
+the hero. Preserve remaining meteor seconds
 when the viewport changes. Use one readable seconds budget, not stacked realm,
 score and combo multipliers. Mist and warnings must stay behind learning text.
 CombatFeedback owns short visual / supported vibration cues; honor reduced
@@ -149,3 +150,14 @@ pose during fast typing. Coalesce at most one repeat; actual loaded sheet width
 bounds frame count. Keep metadata consistent, and retain the lobby poster until
 the animated canvas can draw. Verify all five realms, rapid real input, pause,
 small touch layout and a browser-captured animation, with honest source limits.
+
+For defense release 20 read docs/meowcha-defense-release-20.md. The 38% rail in
+the raster barrier aligns with defenseY; shrink the fence above the hero, rather
+than stretching it to the feet. The rock center threshold accounts for its
+rendered lower edge (40px PC, 27px compact). Keep a clear center lane and remove
+inherited outline, shadow and border-image, not only border. A visual fence does
+not grant immunity: only earned shield charges absorb damage. Show damageTaken
+after reductions, update HP immediately and prevent a cloud cue from erasing the
+same impact receipt. Preserve per-realm weapon/projectile/beam assets. PC shows
+a compact weapon label/icon; mobile keeps typing space. Do not re-add the removed
+aiming tether or invent an equipment/inventory system.

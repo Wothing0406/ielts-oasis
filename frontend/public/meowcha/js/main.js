@@ -949,12 +949,14 @@
         const res = this.gameState.takeDamage(damage);
         if (res.absorbed) {
           M.combatFeedback?.(this.gameState,'shield');
+          if(this.gameState.combatCue)Object.assign(this.gameState.combatCue,{label:`Linh thuẫn đỡ đòn • Còn ${res.remainingShields}`,remaining:1.6});
           this.audio.play("shield_hit");
           if (!res.remainingShields) this.audio.play("shield_break", 0.09);
           this.particles.createShieldShards(missedAst.x, impactY, "#EAB308", 18);
           this.floatingText.add(missedAst.x, impactY - 30, "[ 盾 ] LINH THUẪN CHẶN ĐÒN!", "#EAB308", 18);
         } else {
           M.combatFeedback?.(this.gameState,'impact');
+          const damageTaken=res.damageTaken??damage;
           if(!this.gameState.isGameOver)this.gameState.triggerStun(420);
           this.audio.play("meteor_impact");
           this.audio.play("meteor_crack", 0.05);
@@ -964,7 +966,7 @@
             this.unityBridge.triggerHurt();
           }
           this.particles.createExplosion(missedAst.x, impactY, missedAst.coreColor || "#EF4444", 24);
-          this.floatingText.add(missedAst.x, impactY - 30, `-${damage} HP ĐAN ĐIỀN`, "#EF4444", 22);
+          this.floatingText.add(missedAst.x, impactY - 30, `-${damageTaken} HP ĐAN ĐIỀN`, "#EF4444", 22);
 
           const hurtQuotes = (root.Meowcha && root.Meowcha.HURT_SPEECHES) || [];
           if (hurtQuotes.length > 0) {
@@ -979,8 +981,11 @@
           if (this.typing && !this.gameState.isGameOver) {
             this.typing.triggerDemonHazardFromFall(this.canvas.width / 2, catTargetY, isMobile, this.canvas.width);
           }
+          // Hazard cues must not erase the HP receipt for the same impact.
+          if(this.gameState.combatCue)Object.assign(this.gameState.combatCue,{type:'impact',label:`Kết giới trúng đòn • −${damageTaken} HP`,remaining:1.6});
         }
 
+        this.ui.updateHUD();
         if (this.gameState.isGameOver || this.gameState.hp <= 0) {
           this.handleGameOver();
         } else {

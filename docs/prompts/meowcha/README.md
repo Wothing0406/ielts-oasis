@@ -122,5 +122,7 @@ Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
   [Nghiệm thu đợt 18](../../meowcha-lobby-release-18.md).
 - [19 — Chuyển động năm cảnh giới, sảnh và trận](19-character-motion.md).
   [Nghiệm thu đợt 19](../../meowcha-animation-release-19.md).
+- [20 — Kết giới trên nhân vật, HP và pháp bảo](20-defense-hero-weapons.md).
+  [Nghiệm thu đợt 20](../../meowcha-defense-release-20.md).
 - [Brief toàn website Matcha](../matcha-website-design-system-reference.md) là
   tham chiếu riêng, chưa phải redesign đã hoàn thành.

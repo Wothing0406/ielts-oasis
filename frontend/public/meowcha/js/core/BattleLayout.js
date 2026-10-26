@@ -21,13 +21,15 @@
     // A fixed reserve prevents new skills or an expanded review from lifting the hero.
     const footer=touch&&keyboardHeight?122:compact?146:188;
     const heroFloor=Math.max(0,height-keyboardBelow-20);
-    const defenseY=Math.min(Math.max(hudBottom+124,height-keyboardBelow-footer),Math.max(0,heroFloor-characterSize-32));
+    const defenseY=Math.min(Math.max(hudBottom+124,height-keyboardBelow-footer),Math.max(0,heroFloor-characterSize-40));
     const catX=fieldWidth/2;
-    const catY=Math.min(heroFloor,defenseY+characterSize+32);
-    return {catX,catY,hudBottom,characterSize,tight:compact,fieldWidth,defenseY,
+    const catY=Math.min(heroFloor,defenseY+characterSize+40);
+    const barrierHeight=compact?44:56;
+    const heroLaneWidth=Math.min(fieldWidth,characterSize*2.4+32);
+    return {catX,catY,hudBottom,characterSize,tight:compact,fieldWidth,defenseY,barrierHeight,heroLaneWidth,
       controlsWidth,controlsLeft,keyboardBelow,landscape,
       attackX:catX+characterSize*.2,attackY:catY-characterSize*.6,
-      bottomThreshold:defenseY-40};
+      bottomThreshold:defenseY-(compact?27:40)};
   };
   M.refreshBattleLayout = function(canvas) {
     const fallback = { catY: canvas.height - 128, bottomThreshold: canvas.height - 130 };
@@ -54,6 +56,7 @@
     for(const [name,value] of Object.entries({
       'defense-y':M.battleLayout.defenseY,'field-width':M.battleLayout.fieldWidth,
       'controls-left':M.battleLayout.controlsLeft,'controls-width':M.battleLayout.controlsWidth,
+      'hero-lane':M.battleLayout.heroLaneWidth,
       'footer-bottom':M.battleLayout.keyboardBelow,'controls-limit':M.battleLayout.tight?140:160
     }))document.documentElement.style.setProperty('--mc-'+name,value+'px');
     return M.battleLayout;
@@ -62,11 +65,11 @@
   M.drawDefenseBarrier=function(ctx,canvas,asset){
     if(!asset?.loaded)return;
     const field=M.getBattleLayout(canvas);
-    // The opaque fence base and the hero's feet share the same world plane.
-    const height=(field.catY-field.defenseY+12)/.79,width=height*3;
+    // The authored top rail is at 38%. Keep the whole fence above the hero.
+    const height=field.barrierHeight||56,width=height*3;
     // A transient zero/overfull viewport during rotation must never create a negative tile step.
     if(!Number.isFinite(width)||width<=0||!Number.isFinite(field.fieldWidth)||field.fieldWidth<=0)return;
-    const top=field.defenseY-height*.07;
+    const top=field.defenseY-height*.38;
     ctx.save();ctx.imageSmoothingEnabled=false;
     ctx.beginPath();ctx.rect(0,0,field.fieldWidth,canvas.height);ctx.clip();
     const tiles=Math.min(32,Math.ceil(field.fieldWidth/width));

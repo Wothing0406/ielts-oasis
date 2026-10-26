@@ -166,7 +166,25 @@ test('defense geometry keeps the hero below the field and ignores growth of skil
   assert.ok(first.catY-first.characterSize>first.defenseY+24);
   assert.ok(first.bottomThreshold<first.defenseY);assert.ok(first.bottomThreshold>first.hudBottom+80);
   assert.ok(first.controlsLeft+first.controlsWidth<first.fieldWidth);
+  assert.ok(first.defenseY+first.barrierHeight*.62<first.catY-first.characterSize-4,'whole fence clears idle hero');
+  assert.equal(first.bottomThreshold+(first.tight?27:40),first.defenseY,'rock edge meets visible rail');
+  assert.ok(first.heroLaneWidth>=first.characterSize*2.4,'reserve the full high-realm silhouette');
  }
+});
+
+test('real meteor impacts reduce HP once, consume only earned shields and report reduced damage honestly',()=>{
+ const r=setup();vm.runInContext(fs.readFileSync(path.join(base,'js/core/CombatFeedback.js'),'utf8'),r.box);
+ r.box.document.querySelector=()=>null;
+ const messages=[],app=Object.assign(Object.create(r.M.App.prototype),{gameState:r.state,canvas:{width:1280,height:720},asteroids:r.manager,
+  typing:r.typing,particles:r.noop,realmVFX:r.noop,projectiles:r.noop,audio:r.noop,saveSystem:r.save,
+  floatingText:{update(){},hasBlockingReward:()=>false,add:(x,y,text)=>messages.push(text)},ui:{updateHUD(){}},spawnWord(){}});
+ function fall(){r.state.isStunned=false;r.state.stunTimer=0;r.manager.clear();const a=r.manager.spawn({word:'JADE'},1280,0,1,0,'fire');a.entering=false;a.y=601;
+  r.M.App.prototype.update.call(app,.016);assert.equal(r.manager.count,0);}
+ r.state.hp=50;r.state.shieldCharges=1;fall();assert.equal(r.state.hp,50);assert.equal(r.state.shieldCharges,0);
+ assert.match(r.state.combatCue.label,/Còn 0/);
+ r.state.passiveModifiers.damageReduction=.5;fall();assert.equal(r.state.hp,44);assert.match(messages.at(-1),/-6 HP/);
+ assert.match(r.state.combatCue.label,/−6 HP/);r.M.App.prototype.update.call(app,.016);assert.equal(r.state.hp,44);
+ r.state.passiveModifiers.damageReduction=0;fall();assert.equal(r.state.hp,32);
 });
 
 test('registered sprites render at equal visible heights across all five realms below the defense boundary',()=>{

@@ -19,7 +19,8 @@
  M.updateCombatFeedback=function(state,dt){
    const cue=state.combatCue;if(cue)cue.remaining=Math.max(0,cue.remaining-dt);
    const node=root.document?.getElementById('battleFeedback');if(!node)return;
-   const text=state.isStunned?'Choáng • đang định thần':cue?.remaining>0?cue.label:'KẾT GIỚI • BẢO VỆ TIÊN MÔN';
+   const ready=state.shieldCharges>0?`KẾT GIỚI • Linh thuẫn ×${state.shieldCharges}`:'KẾT GIỚI • Đá chạm sẽ mất HP';
+   const text=state.isStunned?'Choáng • đang định thần':cue?.remaining>0?cue.label:ready;
    if(node.textContent!==text)node.textContent=text;
    node.dataset.cue=state.isStunned?'stun':cue?.remaining>0?cue.type:'ready';
  };

@@ -803,6 +803,11 @@
       const realms = root.Meowcha.CULTIVATION_REALMS || [];
       const realmData = realms[s.realmIdx] || realms[0];
 
+      const weaponName=document.getElementById('battleWeaponName');
+      if(weaponName&&weaponName.textContent!==realmData.swordName)weaponName.textContent=realmData.swordName;
+      const weaponIcon=document.getElementById('battleWeaponIcon'),weapon=this.assets?.[`char_r${s.realmIdx}_sword`];
+      if(weaponIcon&&weapon?.src&&weaponIcon.getAttribute('src')!==weapon.src)weaponIcon.src=weapon.src;
+
       // Máu Đan Điền
       if (this.hudHpBar) {
         const pct = Math.max(0, Math.min(100, (s.hp / s.maxHp) * 100));
