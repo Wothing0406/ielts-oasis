@@ -14,7 +14,7 @@ không rõ. Cần sửa cả PC và mobile, không che chữ.
 - [x] Một ngân sách giây theo từ/mode/cảnh, không nhân tốc độ chồng; đếm giây rõ.
 - [x] Âm đúng/sai/nổ/mây/choáng riêng; rung hình có thời gian suy giảm rõ; rung máy tùy hỗ trợ.
 - [x] Mây ở sau thẻ chữ, choáng không bịa typo/phím; pause đóng băng mọi thời gian.
-- [ ] Test logic, browser PC/mobile/landscape/năm cảnh, build, backup/push/deploy.
+- [x] Test logic, browser PC/mobile/landscape/năm cảnh, build, backup/push/deploy.
 
 Không gọi mô phỏng viewport là kiểm thử điện thoại vật lý. PC dùng rung hình,
 vibration thiết bị chỉ có khi trình duyệt/phần cứng hỗ trợ.
@@ -75,3 +75,28 @@ Doctor art: UTF-8 đã đạt. Cảnh báo môi trường còn: `python.path` �
 `other python.exe on PATH: ~/AppData/Local/Microsoft/WindowsApps/python.exe`.
 Dùng đường Python311 cụ thể. Các API key tùy chọn/CLI Grok không có; route
 host_image vẫn hoạt động và đã tạo ảnh thật. Log ignored ở artifacts/meowcha-qa/17.0.
+
+## Phát hành 17.0 — 26/10/2026
+
+Code `bd11b9c` đã push `game/meowcha-cultivation`; Linux fast-forward đúng nhánh,
+Docker web build đạt và thay container thành công. Web và backend running healthy.
+Backend ứng dụng không đổi, không sửa schema hay reset dữ liệu. Sau triển khai
+vẫn 4.981 vocab, 5 legacy leaderboard, 11 runs, 3 logs, 1 snapshot như trước;
+đủ năm runtime MP3 untracked được giữ (thư mục có tổng 95 MP3).
+
+GitHub có `codex/backup-meowcha-before-17-20261026` tại `2e50702`; backup hoàn tất
+`codex/backup-meowcha-complete-17-20261026` gồm code và báo cáo này. Docker image
+trước thay đổi giữ tag `before-meowcha-17-20261026` cho web/backend. Log build,
+HTTP và trạng thái dịch vụ ở `/home/quang/meowcha-backups/17.0-20261026`.
+
+HTTP nội bộ trang cha, engine HTML, CSS, BattleLayout, CombatFeedback, Release và
+PNG rào đều 200; SHA256 PNG khớp provenance. Mọi script/CSS của HTML đều version
+17.0. Trình duyệt public cũng nhận script 17.0, trang cha và đường engine trực
+tiếp giữ cổng đăng nhập như thiết kế. Không vượt Cloudflare, không giả danh người
+chơi để tạo score hoặc thử OAuth thật. Ảnh production gate lưu riêng, không gọi
+ảnh game trong fixture là ảnh đã đăng nhập production.
+
+Giới hạn còn: cần nghe và thử vibration trên điện thoại iOS/Android vật lý;
+kiểm thử viewport và RMS chưa thay thế được phần này. Các giới hạn nghiệm thu
+dài hạn của release 16 vẫn áp dụng, gồm chơi dài đo RAM/audio và server replay
+chống gian lận hoàn chỉnh. Không kết luận toàn bộ roadmap đạt 100%.
