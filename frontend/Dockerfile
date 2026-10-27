@@ -45,6 +45,10 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# Windows checkouts can preserve owner-only modes on generated game files.
+# The production process runs as `nextjs`, so normalize all packaged assets.
+RUN chmod -R a+rX /app/public /app/.next && chmod a+r /app/package.json
+
 USER nextjs
 
 EXPOSE 3000
