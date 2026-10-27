@@ -65,6 +65,8 @@ services:
     volumes:
       - ./backend/static:/app/static
     command: python bot.py
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
