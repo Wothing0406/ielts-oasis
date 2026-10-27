@@ -104,7 +104,8 @@ class SeasonTests(unittest.TestCase):
         payload=RunComplete(**self.payload(row,score=8000,words_slain=20,correct_keystrokes=100,total_keystrokes=100))
         store_scores(self.db,row,prepare_result(row,self.user,payload,before),before);self.db.commit()
         self.assertTrue(seal_week(self.db,'2026-10-19',MONDAY))
-        payload=RunComplete(**self.payload(row,score=15000,words_slain=30,correct_keystrokes=150,total_keystrokes=150))
+        payload=RunComplete(**self.payload(row,score=15000,words_slain=30,active_ms=120000,
+            correct_keystrokes=150,total_keystrokes=150))
         store_scores(self.db,row,prepare_result(row,self.user,payload,MONDAY+timedelta(seconds=1)),MONDAY+timedelta(seconds=1));self.db.commit()
         with patch('meowcha_seasons.utc_now',return_value=MONDAY+timedelta(minutes=2)):
             weekly=self.client.get('/api/meowcha/halls?hall=DIRECT&scope=WEEKLY').json()
