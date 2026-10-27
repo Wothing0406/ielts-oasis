@@ -38,6 +38,24 @@ podium.
 
 ## Verification ledger
 
-Record final local tests, container tests, production route checks and the deployed
-commit here at deployment time. Browser viewport simulation is not physical-device
-testing, and unauthenticated route existence is not an authenticated user-flow test.
+Production deployment completed on 2026-10-27 (Asia/Bangkok):
+
+- Game/API implementation baseline: `55b031c`; backend runtime fix: `ed3ce49`;
+  packaged-static permission fix: `bc5856e`.
+- `npm run test:meowcha`: 108/108 passed.
+- Linux backend/API suite: 40/40 passed.
+- Production returned HTTP 200 for `/games/meowcha`, the versioned game HTML,
+  `Difficulty.js`, `WeeklyRace.js`, `LeaderboardHalls.js`, both version endpoints,
+  and both `scope=WEEKLY` and `scope=ALL_TIME` hall queries.
+- Weekly and lifetime production responses were not identical. At verification time
+  weekly returned one ranked player and lifetime returned two; the weekly row used
+  weekly Tu Vi while the lifetime row preserved total career Tu Vi.
+- The direct production engine loaded release 21.1 in the in-app browser and reached
+  the expected account session gate. The parent page's Cloudflare challenge prevents
+  an automated authenticated visual click-through, so authenticated lifecycle proof
+  comes from the Linux API suite and production 200 checkpoint/hall traffic.
+- Backend and web containers were healthy; the Discord worker was running with its
+  inappropriate inherited API healthcheck disabled. Runtime TTS storage was writable.
+
+Browser viewport simulation is not physical-device testing, and an unauthenticated
+route existence check is not by itself an authenticated user-flow test.
