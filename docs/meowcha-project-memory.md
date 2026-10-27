@@ -1,6 +1,24 @@
 # MEOW-CHA — bộ nhớ dự án
 
-## Baseline mới nhất — 20.0 (26/10/2026)
+## Baseline mới nhất — 21.0 (27/10/2026)
+
+- Phong Thần chính có đúng Tổng Đạo / Trực Diện / Ngộ Đạo / Thính Âm. Lịch sử
+  là view phụ; không khôi phục Lưu Trữ hoặc khối vinh danh vào flow chính.
+- Bảng tuần theo thứ Hai 00:00 Việt Nam và dùng phần Tu Vi tăng của một đoạn đã
+  chốt; bảng vĩnh viễn theo highest Tu Vi và highest realm. Career chỉ tăng,
+  legacy không rõ mode chỉ ở Tổng Đạo. Personal import chỉ là cosmetic lifetime,
+  không cộng weekly/credit/currency/learning.
+- Chiếu thư tuần trước hiện một lần/tài khoản/tuần ở lobby. Seen lưu server và
+  owner-scoped local marker. Top 10 title không đổi gameplay stats.
+- Discord DM mặc định opt-out; cần liên kết Discord và người dùng tự bật. Bot dùng
+  `/phongthan`, `/hangcuatoi`, `/duatop`, `/thongbaophongthan`; public channel chỉ
+  khi có env explicit. Outbox ưu tiên at-most-once, trạng thái ambiguous không retry.
+- Difficulty21: Tu Vi bão hòa + realm + rolling human WPM, adaptation ±10%, bonus
+  từ 3,5s, floor 7/8,5/9,5s. AUDIO initial voice giữ timer, replay không reset.
+- Xem `meowcha-weekly-race-21.md` và prompt21/21b. Plausibility checks chưa phải
+  server replay chống gian lận; không dùng bảng cho phần thưởng có giá trị.
+
+## Baseline trước — 20.0 (26/10/2026)
 
 - Rào không còn cùng nền chân hero: toàn rào nhỏ ở trên đầu, thanh ngang38%
   asset trùng defenseY; tâm đá chạm ở defenseY−40 PC/−27 compact. Hero cách40px.

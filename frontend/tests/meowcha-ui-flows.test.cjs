@@ -7,7 +7,7 @@ function setup(){
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)},
  document:{getElementById:()=>null,addEventListener(){}},addEventListener(){},setTimeout:(fn,ms)=>{if(ms===3500)timers.push(fn);return 1;},clearTimeout(){}};
  box.window=box;vm.createContext(box);
- for(const f of ['data/RealmsData.js','data/TalentsData.js','core/GameState.js','core/SaveSystem.js','core/BattleLayout.js','entities/AsteroidManager.js','combat/TypingEngine.js','combat/BreakthroughFlow.js','ui/ArtIcons.js','ui/DesignSystem.js','ui/UIManager.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
+ for(const f of ['data/RealmsData.js','data/TalentsData.js','core/GameState.js','core/SaveSystem.js','core/BattleLayout.js','core/Difficulty.js','entities/AsteroidManager.js','combat/TypingEngine.js','combat/BreakthroughFlow.js','ui/ArtIcons.js','ui/DesignSystem.js','ui/UIManager.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
  const M=box.Meowcha,state=new M.GameState();state.currentScene='BATTLE';
  for(const f of ['effects/FloatingText.js','main.js'])vm.runInContext(fs.readFileSync(path.join(base,'js',f),'utf8'),box);
  M.battleLayout={catX:600,catY:650,attackX:625,attackY:560,bottomThreshold:600};
@@ -210,13 +210,55 @@ test('first words have a calm timed window on small and large fields; long and l
   r.M.battleLayout={hudBottom:80,bottomThreshold};
   const manager=new r.M.AsteroidManager();manager.gameState=r.state;
   r.state.wordsSlain=0;r.state.gameMode='DIRECT';const a=manager.spawn({word:'JADE'},320,0,1);
-  assert.equal(a.typingSeconds,24);let hits=0;
-  for(let i=0;i<250;i++)manager.update(.1,bottomThreshold,()=>hits++);
+  assert.equal(a.typingSeconds,16.5);let hits=0;
+  for(let i=0;i<170;i++)manager.update(.1,bottomThreshold,()=>hits++);
   assert.equal(hits,0);for(let i=0;i<20;i++)manager.update(.1,bottomThreshold,()=>hits++);
   assert.equal(hits,1);
   manager.clear();r.state.gameMode='AUDIO';const heard=manager.spawn({word:'INCOMPREHENSIBLE'},320,0,1);
-  assert.ok(heard.typingSeconds>30);
+  assert.equal(heard.typingSeconds,22.5);
  }
+});
+
+test('84 score/WPM/mode combinations have smooth bounded budgets and reach the real collision plane on time',()=>{
+ const r=setup(),scores=[0,2500,7500,15000,30000,50000,100000],minima={DIRECT:7,CLOZE:8.5,AUDIO:9.5};
+ let cases=0;
+ for(const mode of Object.keys(minima))for(const wpm of [20,40,60,90]){
+  let previous=Infinity;
+  for(const score of scores){
+   const realm=score>=30000?4:score>=15000?3:score>=7500?2:score>=2500?1:0;
+   Object.assign(r.state,{score,realmIdx:realm,gameMode:mode,getRollingHumanWpm:()=>wpm});r.manager.clear();
+   const target=r.manager.spawn({word:'JADE'},1280,realm,1);const budget=target.typingSeconds;
+   assert.ok(budget>=minima[mode]);assert.ok(budget<=previous+.001);previous=budget;
+   let hits=0,elapsed=0;while(!hits&&elapsed<40){r.manager.update(.02,600,()=>hits++);elapsed+=.02;}
+   assert.equal(hits,1);assert.ok(Math.abs(elapsed-(budget+1.8))<.08,'measured time to bottom includes only entry plus budget');cases++;
+  }
+ }
+ assert.equal(cases,84);
+ const low=r.M.difficultyBudget({score:2500,realm:1}),high=r.M.difficultyBudget({score:30000,realm:4});
+ assert.ok(high.targetTime<low.targetTime*.75);
+ for(const score of scores){const a=r.M.difficultyBudget({score:score-.01,realm:2}),b=r.M.difficultyBudget({score:score+.01,realm:2});assert.ok(Math.abs(a.targetTime-b.targetTime)<.001);}
+ assert.equal(r.M.difficultyBudget({score:1000000,realm:4,humanWpm:90}).targetTime,7);
+ const short=r.M.difficultyBudget({score:100000,realm:4,word:'JADE'}),long=r.M.difficultyBudget({score:100000,realm:4,word:'A'.repeat(32)});
+ assert.equal(long.targetTime-short.targetTime,3.5);
+ assert.equal(r.M.wordFitsBudget({score:100000,realm:4,word:'A'.repeat(32),humanWpm:20}),false);
+ assert.equal(r.M.wordFitsBudget({score:30000,realm:3,word:'INCOMPREHENSIBILITY',humanWpm:20}),true);
+});
+
+test('only human completed words adapt difficulty and initial AUDIO holds the timer without replay resetting it',()=>{
+ const r=setup();r.state.activeElapsedMs=60000;
+ for(let i=0;i<3;i++)r.state.recordHumanWord({word:'JADE',humanStartedMs:57600,assistedKeystrokes:0});
+ assert.equal(r.state.getRollingHumanWpm(),20);
+ r.state.recordHumanWord({word:'A'.repeat(32),humanStartedMs:59999,assistedKeystrokes:1});assert.equal(r.state.getRollingHumanWpm(),20);
+ assert.equal(r.state.correctKeystrokes,0);
+ r.state.gameMode='AUDIO';const target=r.manager.spawn({word:'JADE'},1280),callbacks=[];
+ r.typing.currentTarget=target;r.typing.audio={play(){},playWord:item=>{if(item.onVoiceDone)callbacks.push(item.onVoiceDone);return true;}};
+ r.typing.playWordAudio(target);r.manager.update(5,600,()=>assert.fail('voice must finish first'));
+ const remaining=target.remainingSeconds,hold=target.voiceHoldRemaining;r.typing.replayCurrentAudio();
+ assert.equal(target.voiceHoldRemaining,hold);assert.equal(r.state.replayCount,1);
+ r.manager.update(5,600,()=>assert.fail('still listening'));assert.equal(target.remainingSeconds,remaining);
+ callbacks[0]();r.manager.update(.1,600,()=>{});assert.ok(target.remainingSeconds<remaining);
+ target.initialVoiceRequested=false;r.typing.playWordAudio(target);callbacks[0]();assert.equal(target.awaitingPronunciation,true);
+ callbacks[1]();assert.equal(target.awaitingPronunciation,false);
 });
 
 test('stun blocks physical and virtual typing equally without fabricated errors; cues respect reduced motion',()=>{

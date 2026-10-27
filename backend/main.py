@@ -212,6 +212,7 @@ async def backfill_vocabularies():
 @app.on_event("startup")
 async def startup_event():
     logger.info("FastAPI Server Starting...")
+    from meowcha_discord import MeowchaDiscordAnnouncement  # register optional channel dispatch metadata
     Base.metadata.create_all(bind=engine)
     logger.info("Database initialized.")
     try:
@@ -268,6 +269,17 @@ async def startup_event():
     # Start background enrichment
     asyncio.create_task(backfill_vocabularies())
     asyncio.create_task(cleanup_static_files_loop())
+    from meowcha_seasons import season_loop
+    app.state.meowcha_season_task=asyncio.create_task(season_loop())
+
+
+@app.on_event('shutdown')
+async def stop_meowcha_seasons():
+    task=getattr(app.state,'meowcha_season_task',None)
+    if task:
+        task.cancel()
+        try:await task
+        except asyncio.CancelledError:pass
 
 def detect_audio_mime_type(content: bytes, default_mime: str = "audio/webm") -> str:
     """Sniff real audio format by magic bytes to ensure Google Gemini API receives correct MIME on all platforms (iOS Safari, Android Chrome, Desktop)"""

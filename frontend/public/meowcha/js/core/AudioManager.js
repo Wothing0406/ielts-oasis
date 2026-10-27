@@ -24,8 +24,8 @@
     init() {
       if (this.ctx && this.ctx.state === 'closed') {
         const requested = this.musicRequested;
-        const pending=[...(this.voiceJob?[{word:this.voiceJob.word,url:this.voiceJob.url}]:[]),...this.voiceQueue];
-        this.stopVoice();this.voiceQueue=pending;
+        const pending=[...(this.voiceJob?[{word:this.voiceJob.word,url:this.voiceJob.url,listeners:this.voiceJob.listeners}]:[]),...this.voiceQueue];
+        this.stopVoice(false);this.voiceQueue=pending;
         this.voiceMediaSource=null;this.voiceMedia=null;
         this.stopZenGuqin(); this.musicRequested = requested; this.ctx = null; this.noiseBuffers = {};
       }
@@ -275,9 +275,12 @@
     playWord(target) {
       if (!this.soundEnabled || !target || !target.word) return false;
       const word = String(target.word).trim();
-      if (this.voiceJob && this.voiceJob.word === word && !this.voiceQueue.length) return true;
-      this.voiceQueue.push({ word, url: target.audio_url || '' });
-      if (this.voiceQueue.length > 24) this.voiceQueue.splice(0, this.voiceQueue.length - 24);
+      if (this.voiceJob && this.voiceJob.word === word && !this.voiceQueue.length) {
+        if(typeof target.onVoiceDone==='function')(this.voiceJob.listeners=this.voiceJob.listeners||[]).push(target.onVoiceDone);
+        return true;
+      }
+      this.voiceQueue.push({ word, url: target.audio_url || '',listeners:typeof target.onVoiceDone==='function'?[target.onVoiceDone]:[] });
+      if (this.voiceQueue.length > 24) this.voiceQueue.splice(0, this.voiceQueue.length - 24).forEach(job=>this._finishVoiceListeners(job,false));
       this._drainVoice(); return true;
     }
     _duckVoice(active) {
@@ -313,6 +316,7 @@
           this.lastError = 'Chưa phát được từ ' + job.word + '. Bấm nghe lại hoặc kiểm tra âm thanh thiết bị.';
           this.notifyStatus();
         }
+        this._finishVoiceListeners(job,ok);
         this.voiceJob = null; this.stats[ok ? 'voiceCompleted' : 'voiceFailed']++; this._duckVoice(false); this._drainVoice();
       };
       let fellBack = false;
@@ -373,9 +377,13 @@
       } else playMedia(job.url);
     }
 
-    stopVoice() {
+    _finishVoiceListeners(job,ok) {
+      for(const callback of (job?.listeners||[]).splice(0)){try{callback(ok);}catch(_){}}
+    }
+    stopVoice(notify=true) {
       for (const timer of this.completionTimers) clearTimeout(timer);
       this.completionTimers.clear();
+      if(notify){for(const job of this.voiceQueue)this._finishVoiceListeners(job,false);this._finishVoiceListeners(this.voiceJob,false);}
       this.voiceGeneration++; this.voiceQueue = [];
       if (this.voiceJob) {
         clearTimeout(this.voiceJob.timer);

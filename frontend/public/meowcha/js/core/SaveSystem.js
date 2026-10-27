@@ -169,8 +169,22 @@
         wpm:record.wpm ?? Math.round((record.correctKeystrokes || 0) * 12000 / elapsed), metricsKnown:true };
     }
 
+    async syncCareerRecord() {
+      const record=this.getStoredPersonalBest();
+      if(!this.hasSession()||!Number.isFinite(record.score)||record.score<=0||this._careerSyncedScore>=record.score)return false;
+      if(this._careerSync)return this._careerSync;
+      this._careerSync=(async()=>{
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);
+        try{const response=await this.request('/api/meowcha/career/personal-record',{method:'POST',headers:this.getAuthHeaders(),signal:controller.signal,
+          body:JSON.stringify({score:record.score,realm_idx:Number.isInteger(record.realmIdx)?record.realmIdx:0})});
+          if(response.ok){this._careerSyncedScore=record.score;return true;}return false;
+        }catch(_){return false;}finally{clearTimeout(timer);}
+      })().finally(()=>{this._careerSync=null;});return this._careerSync;
+    }
+
     async syncPersonalBest() {
       if (!this.hasSession() || typeof fetch === 'undefined') return;
+      await this.syncCareerRecord();
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
       try {
@@ -196,10 +210,9 @@
       return request;
     }
 
-    async submitRun(state) {
-      if (!this.hasSession() || !state.wordsSlain || !state.runId) return false;
+    captureRunPayload(state) {
       state.calculateWPM();
-      const payload = { run_id: state.runId, score: Math.max(0, state.score - (state.baselineScore || 0)),
+      return { run_id: state.runId, score: Math.max(0, state.score - (state.baselineScore || 0)),
         words_slain: Math.max(0, state.wordsSlain - (state.baselineWords || 0)),
         realm_idx: state.realmIdx, active_ms: Math.round(state.activeElapsedMs),
         correct_keystrokes: state.correctKeystrokes, total_keystrokes: state.totalKeystrokes,
@@ -208,7 +221,34 @@
         metrics_version:state.learningMetricsVersion||1,learning_attempts:state.learningAttempts||0,
         first_successes:state.firstSuccesses||0,hints_used:state.hintsUsed||0,
         replay_count:state.replayCount||0,max_combo:state.maxCombo||0,
-        max_perfect_streak:state.perfectMetricsKnown?state.maxPerfectStreak:null };
+        max_perfect_streak:state.perfectMetricsKnown?state.maxPerfectStreak:null,
+        difficulty_version:state.difficultyVersion||1,pressure_score:state.score||0,
+        rolling_human_wpm:state.getRollingHumanWpm?.()||40,minimum_target_seconds:state.minimumTargetSeconds||0 };
+    }
+
+    async submitCheckpoint(state) {
+      if(!this.hasSession()||state.runFinished||!state.runId||!state.wordsSlain||state.activeElapsedMs<1000)return false;
+      const payload=this.captureRunPayload(state),signature=JSON.stringify(payload);
+      if(!payload.words_slain)return false;
+      const start={runId:state.runId,gameMode:state.gameMode,activeDeckId:state.activeDeckId,activeElapsedMs:state.activeElapsedMs};
+      this._checkpointChains=this._checkpointChains||new Map();this._checkpointSignatures=this._checkpointSignatures||new Map();
+      const task=(this._checkpointChains.get(start.runId)||Promise.resolve()).then(async()=>{
+        if(this._checkpointSignatures.get(start.runId)===signature)return true;
+        if(!(await this.startRun(start)))return false;
+        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+        try{
+          const response=await this.request('/api/meowcha/runs/checkpoint',{method:'POST',headers:this.getAuthHeaders(),body:signature,signal:controller.signal});
+          if(!response.ok)return false;
+          const body=await response.json();this.lastCheckpoint=body.data;
+          this._checkpointSignatures.set(start.runId,signature);return true;
+        }catch(_){return false;}finally{clearTimeout(timer);}
+      });
+      this._checkpointChains.set(start.runId,task);return task;
+    }
+
+    async submitRun(state) {
+      if (!this.hasSession() || !state.wordsSlain || !state.runId) return false;
+      const payload = this.captureRunPayload(state);
       if (!payload.words_slain) return false;
       const pending = this.getPendingRuns();
       pending[payload.run_id] = { payload, game_mode: state.gameMode, deck_id: state.activeDeckId };
@@ -224,6 +264,7 @@
         this.storage.setItem(this.pendingRunsKey, JSON.stringify(remaining));
         // A snapshot captured by submitRun must never finish a later/new run.
         if (state.runId === payload.run_id) state.runFinished = true;
+        if(!root.Meowcha.Session||String(root.Meowcha.Session.owner)===String(this.owner))root.Meowcha.app?.ui?.refreshWeeklyRace?.();
         return true;
       } catch (err) { root.Meowcha.report?.('run_submit_failed');return false; }
     }

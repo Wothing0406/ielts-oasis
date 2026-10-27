@@ -7,6 +7,7 @@ import random
 import logging
 import hashlib
 import json
+from pydantic import BaseModel,Field
 
 from database import get_db
 from models import MeowchaVocab, MeowchaSave, MeowchaLeaderboard, MeowchaUserProfile, MeowchaBattleLog, User
@@ -23,6 +24,9 @@ from schemas import (
 from auth_routes import get_current_user
 from meowcha_integrity import (MeowchaRun, MeowchaSaveSnapshot, RunStart, RunComplete,
     SaveSnapshotPayload, start_run, complete_run, require_user)
+from meowcha_seasons import (MeowchaScoreRecord, MeowchaSeason, MeowchaHonor,
+    checkpoint_run, period_meta, board_key, utc_now)
+from meowcha_career import MeowchaCareer,career_records,remember_career
 
 from services.oxford_dataset_service import OxfordDatasetService
 from meowcha_learning import normalize_word
@@ -103,6 +107,23 @@ def get_save_snapshots(user=Depends(get_meowcha_user_from_token), db: Session = 
     return api_response(result)
 
 
+class PersonalCareerImport(BaseModel):
+    score: int=Field(ge=0,le=100_000_000)
+    realm_idx: int=Field(0,ge=0,le=4)
+
+
+@router.post('/career/personal-record')
+def import_personal_record(payload: PersonalCareerImport,user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    require_user(user)
+    db.query(User).filter(User.id==user.id).with_for_update().one()
+    from meowcha_integrity import THRESHOLDS
+    possible=max(i for i,(score,_) in enumerate(THRESHOLDS) if payload.score>=score)
+    # Unmeasured local records are career cosmetics only, never weekly points,
+    # per-mode results, learning counters, currency, or completed-run credits.
+    remember_career(db,user.id,payload.score,min(payload.realm_idx,possible),source='personal_import')
+    db.commit();return api_response(career_records(db,[user.id]).get(user.id))
+
+
 @router.get('/personal-best')
 def personal_best(user=Depends(get_meowcha_user_from_token), db: Session = Depends(get_db)):
     require_user(user)
@@ -110,8 +131,20 @@ def personal_best(user=Depends(get_meowcha_user_from_token), db: Session = Depen
         MeowchaRun.completed_at.isnot(None)).order_by(MeowchaRun.score.desc()).first()
     legacy = db.query(MeowchaLeaderboard).filter(MeowchaLeaderboard.user_id == user.id
         ).order_by(MeowchaLeaderboard.score.desc()).first()
-    if legacy and (not run or legacy.score > run.score):
-        return api_response({'score': legacy.score, 'metricsKnown': False, 'source': 'legacy'})
+    checkpoint=db.query(MeowchaScoreRecord).filter(MeowchaScoreRecord.user_id==user.id,
+        MeowchaScoreRecord.period=='ALL').order_by(MeowchaScoreRecord.score.desc()).first()
+    best_score=max(run.score if run else 0,checkpoint.score if checkpoint else 0)
+    career=career_records(db,[user.id]).get(user.id,{})
+    if career.get('highest_tuvi',0)>max(best_score,legacy.score if legacy else 0):
+        return api_response({'score':career['highest_tuvi'],'realmIdx':career['highest_realm_idx'],'metricsKnown':False,'source':career['score_source']})
+    if legacy and legacy.score>best_score:
+        return api_response({'score': legacy.score,'realmIdx':career.get('highest_realm_idx'), 'metricsKnown': False, 'source': 'legacy'})
+    if checkpoint and (not run or checkpoint.score>run.score):
+        result=checkpoint.snapshot
+        return api_response({'score':checkpoint.score,'runId':checkpoint.run_id,'gameMode':result['game_mode'],
+            'activeDeckId':result['deck_id'],'realmIdx':result.get('realm_idx'),
+            'accuracy':result.get('accuracy'),'wpm':result.get('wpm'),'humanWords':result.get('human_words'),
+            'assistedWords':result.get('assisted_words'),'metricsKnown':True,'source':'checkpoint'})
     if not run:
         return api_response({'score': 0, 'metricsKnown': False})
     result = run.result or {}
@@ -137,6 +170,8 @@ def put_save_snapshot(slot_id: int, payload: SaveSnapshotPayload,
         row = MeowchaSaveSnapshot(user_id=user.id, slot_id=slot_id)
         db.add(row)
     row.snapshot, row.updated_at = payload.snapshot, datetime.utcnow()
+    for mode in payload.snapshot.get('modes',{}).values():
+        remember_career(db,user.id,int(mode.get('highScore',0)),int(mode.get('realmIdx',0)),source='progress')
     db.commit()
     return api_response({'saved': True, 'slot_id': slot_id,'revision':snapshot_revision(row)})
 
@@ -586,15 +621,89 @@ def delete_save_slot(
 # =========================================================================
 # 3. BẢNG PHONG THẦN / LEADERBOARD (/api/meowcha/leaderboard)
 # =========================================================================
+@router.post('/runs/checkpoint')
+def checkpoint_score(payload: RunComplete, user=Depends(get_meowcha_user_from_token), db: Session=Depends(get_db)):
+    return api_response(checkpoint_run(db, user, payload))
+
+
+@router.get('/honors')
+def weekly_honors(user=Depends(get_meowcha_user_from_token), db: Session=Depends(get_db)):
+    require_user(user)
+    rows=db.query(MeowchaHonor).filter(MeowchaHonor.user_id==user.id).order_by(MeowchaHonor.week.desc()).limit(12).all()
+    return api_response([{'week':r.week,'placements':r.placements,'unread':r.read_at is None,
+        'created_at':r.created_at.isoformat()+'Z'} for r in rows],meta={'period':period_meta()})
+
+
+class RecapSeen(BaseModel):
+    season_id: str
+
+
+class RacePreference(BaseModel):
+    enabled: bool
+
+
+@router.get('/race-state')
+def get_race_state(hall: str=Query('OVERALL',pattern='^(OVERALL|DIRECT|CLOZE|AUDIO)$'),
+    deck_id: str=Query('oxford_5000',max_length=40),user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    from meowcha_race import race_view
+    require_user(user)
+    data=race_view(db,user.id,hall,deck_id);data['discord_linked']=str(user.discord_id or '').isdigit()
+    return api_response(data)
+
+
+@router.post('/recap/seen')
+def see_weekly_recap(payload: RecapSeen,user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    from meowcha_race import mark_recap_seen
+    require_user(user)
+    return api_response(mark_recap_seen(db,user.id,payload.season_id))
+
+
+@router.get('/season-history')
+def get_season_history(user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    from meowcha_race import history_view
+    require_user(user);return api_response(history_view(db,user.id))
+
+
+@router.post('/race-preference')
+def set_race_preference(payload: RacePreference,user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
+    from meowcha_seasons import MeowchaRacePreference
+    require_user(user)
+    if payload.enabled and not str(user.discord_id or '').isdigit():raise HTTPException(400,'Đăng nhập web bằng Discord để liên kết tài khoản trước.')
+    db.query(User).filter(User.id==user.id).with_for_update().one()
+    row=db.get(MeowchaRacePreference,user.id)
+    if not row:row=MeowchaRacePreference(user_id=user.id);db.add(row)
+    row.discord_enabled=payload.enabled;db.commit();return api_response({'enabled':payload.enabled})
+
+
+@router.post('/honors/{week}/read')
+def read_weekly_honor(week: str, user=Depends(get_meowcha_user_from_token), db: Session=Depends(get_db)):
+    require_user(user)
+    row=db.get(MeowchaHonor,(week,user.id))
+    if not row:raise HTTPException(404,'Không có vinh danh của tài khoản trong tuần này.')
+    if row.read_at is None:row.read_at=utc_now();db.commit()
+    return api_response({'week':week,'read':True})
+
+
 @router.get('/halls')
 def get_halls(hall: str=Query('OVERALL',pattern='^(OVERALL|DIRECT|CLOZE|AUDIO)$'),
     assisted: bool=Query(False),deck_id: str=Query('oxford_5000',max_length=40),
+    scope: str=Query('ALL_TIME',pattern='^(ALL_TIME|WEEKLY)$'),week: Optional[str]=Query(None,max_length=10),
     limit: int=Query(25,ge=1,le=50),user=Depends(get_meowcha_user_from_token),db: Session=Depends(get_db)):
     from meowcha_halls import build_hall
-    board=build_hall(db,hall,assisted,deck_id,limit,user.id if user else None)
+    period=period_meta(scope,week)
+    season=db.get(MeowchaSeason,period['week']) if scope=='WEEKLY' else None
+    if season:
+        rows=season.boards.get(board_key(hall,deck_id,assisted),[])
+        board={'rows':rows[:limit],'self':next((r for r in rows if user and r['user_id']==user.id),None),'total_players':len(rows)}
+    else:
+        board=build_hall(db,hall,assisted,deck_id,limit,user.id if user else None,scope,period['week'])
+    all_time=board if scope=='ALL_TIME' else build_hall(db,hall,assisted,deck_id,limit,user.id if user else None)
+    previous=db.get(MeowchaSeason,period['previous_week'])
     return api_response(board['rows'],meta={'hall':hall,'assisted':assisted,'deck_id':deck_id,
         'self':board['self'],'total_players':board['total_players'],'verification':'plausibility_checked',
-        'formula_version':2,'competitive':False})
+        'formula_version':2,'competitive':False,'ranking':'high_score','period':period,'sealed':bool(season),
+        'all_time_self':all_time['self'],'career':career_records(db,[user.id]).get(user.id) if user else None,
+        'previous_champions':previous.boards.get(board_key(hall,deck_id,assisted),[])[:3] if previous else []})
 
 
 @router.get("/leaderboard", response_model=Dict[str, Any])

@@ -802,6 +802,8 @@
       const s = this.state;
       const realms = root.Meowcha.CULTIVATION_REALMS || [];
       const realmData = realms[s.realmIdx] || realms[0];
+      const pressure=document.getElementById('hudDaoPressure');
+      if(pressure&&root.Meowcha.difficultyBudget){const d=root.Meowcha.difficultyBudget({score:s.score,realm:s.realmIdx});pressure.textContent='Đạo Áp: '+d.label;pressure.dataset.band=d.band;}
 
       const weaponName=document.getElementById('battleWeaponName');
       if(weaponName&&weaponName.textContent!==realmData.swordName)weaponName.textContent=realmData.swordName;

@@ -7,9 +7,9 @@ MODES=('DIRECT','CLOZE','AUDIO')
 
 def rank_key(item, mode):
     if mode=='DIRECT':
-        return (item.get('wpm') or 0,item.get('accuracy') or 0,item.get('max_combo') or 0,item.get('score') or 0)
-    return (item.get('accuracy') or 0,item.get('first_success_rate') if item.get('first_success_rate') is not None else -1,
-            -(item.get('hints_used' if mode=='CLOZE' else 'replay_count') or 0),item.get('score',0))
+        return (item.get('score') or 0,item.get('accuracy') or 0,item.get('max_combo') or 0,item.get('wpm') or 0)
+    return (item.get('score') or 0,item.get('accuracy') or 0,item.get('first_success_rate') if item.get('first_success_rate') is not None else -1,
+            -(item.get('hints_used' if mode=='CLOZE' else 'replay_count') or 0))
 
 def normalized(item,mode):
     if mode=='DIRECT':
@@ -23,15 +23,18 @@ def balanced_rating(progress):
     values=[progress.get(mode) or 0 for mode in MODES]
     return round(3*(.4*min(values)+.6*sum(values)/3),1)
 
-def build_hall(db, hall, assisted, deck_id, limit, user_id=None):
-    runs=db.query(MeowchaRun).filter(MeowchaRun.completed_at.isnot(None),
-        MeowchaRun.assisted==assisted,MeowchaRun.deck_id==deck_id)
-    if hall in MODES:
-        runs=runs.filter(MeowchaRun.game_mode==hall)
+def build_hall(db, hall, assisted, deck_id, limit, user_id=None, scope='ALL_TIME', week=None, now=None):
+    from meowcha_seasons import hall_records,RANK_TITLES,SPECIALTIES
+    from meowcha_career import career_records
     grouped=defaultdict(list)
-    for run in runs:
-        grouped[run.user_id].append({**(run.result or {}),'game_mode':run.game_mode,'score':run.score,
-                                     'run_id':run.run_id,'user_id':run.user_id})
+    for record in hall_records(db, assisted, deck_id, scope, week, now):
+        if hall in MODES and record['game_mode']!=hall:
+            continue
+        grouped[record['user_id']].append(record)
+    careers=career_records(db,None if hall=='OVERALL' and scope=='ALL_TIME' else list(grouped))
+    if hall=='OVERALL' and scope=='ALL_TIME' and not assisted:
+        for owner_id,career in careers.items():
+            if career['highest_tuvi']>0:grouped.setdefault(owner_id,[])
     owners={u.id:u for u in db.query(User).filter(User.id.in_(grouped)).all()} if grouped else {}
     rows=[]
     incomplete_self=None
@@ -44,26 +47,34 @@ def build_hall(db, hall, assisted, deck_id, limit, user_id=None):
                 value=normalized(record,record['game_mode'])
                 if value is not None and (record['game_mode'] not in best or value>best[record['game_mode']][0]):
                     best[record['game_mode']]=(value,record)
-            if not best:
-                continue
-            strongest=max(best,key=lambda mode:(best[mode][0],mode))
+            champion=max(records,key=lambda r:(r['score'],r['run_id']),default={'score':0,'game_mode':None,'run_id':None})
+            career=careers.get(owner_id,{})
+            lifetime=career.get('highest_tuvi',0) if scope=='ALL_TIME' and not assisted else 0
+            strongest=champion['game_mode'] if champion['score']>=lifetime else None
             realm=max((r.get('realm_idx',0) for r in records),default=0)
             item={'user_id':owner_id,'dao_hanh':balanced_rating({m:v[0] for m,v in best.items()}),
-                  'total_score':sum(r['score'] for r in records),'score':sum(r['score'] for r in records),
+                  'total_score':sum(r['score'] for r in records),'score':max(champion['score'],lifetime),
                   'strongest_mode':strongest,'mode_progress':{m:round(best[m][0],1) if m in best else None for m in MODES},
-                  'completed_runs':len(records),'words_slain':sum(r.get('words_slain',0) for r in records),
+                  'completed_runs':sum(bool(r.get('finalized')) for r in records),'words_slain':sum(r.get('words_slain',0) for r in records),
                   'realm_idx':realm,'realm':REALMS[min(4,max(0,realm))],
-                  'complete_modes':list(best),'eligible':len(best)==3}
+                  'complete_modes':list(best),'eligible':True,'run_id':champion['run_id']}
         owner=owners.get(owner_id)
         item={**item,'player_name':(getattr(owner,'full_name',None) or owner.username) if owner else 'Tiên Hữu',
               'avatar_url':(owner.avatar_url or '') if owner else ''}
+        career=careers.get(owner_id,{})
+        item.update(career)
+        item['best_run_realm']=item.get('realm')
+        item['realm']=career.get('highest_realm',item.get('realm'))
+        item['realm_idx']=career.get('highest_realm_idx',item.get('realm_idx',0))
+        if scope=='WEEKLY':item['weekly_tuvi']=item['score'];item['weekly_best_run']=item.get('run_id')
         if hall=='OVERALL' and not item['eligible']:
             if owner_id==user_id:incomplete_self={**item,'rank':None}
             continue
         rows.append(item)
-    rows.sort(key=lambda r:((r['dao_hanh'],r['total_score']) if hall=='OVERALL' else rank_key(r,hall),-r['user_id']),reverse=True)
+    rows.sort(key=lambda r:((r['score'],r['dao_hanh'],r['total_score']) if hall=='OVERALL' else rank_key(r,hall),-r['user_id']),reverse=True)
     for rank,item in enumerate(rows,1):
         item['rank']=rank
+        if scope=='WEEKLY' and not assisted and rank<=10:item['title']=RANK_TITLES[rank-1];item['specialty']=SPECIALTIES[hall]
     return {'rows':rows[:limit],'self':next((r for r in rows if r['user_id']==user_id),incomplete_self),'total_players':len(rows)}
 
 

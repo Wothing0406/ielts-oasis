@@ -13,11 +13,12 @@ function runtime() {
     setTimeout: () => 1, clearTimeout() {} };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  for (const file of ['data/MeaningCorrections.js', 'core/LearningText.js', 'core/BattleLayout.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/DesignSystem.js', 'ui/UIManager.js']) {
+  for (const file of ['data/MeaningCorrections.js', 'core/LearningText.js', 'core/BattleLayout.js','core/Difficulty.js', 'core/GameState.js', 'data/RealmsData.js', 'data/TalentsData.js', 'core/SaveSystem.js', 'effects/FloatingText.js', 'entities/AsteroidManager.js', 'entities/ProjectileSystem.js', 'core/SpriteAnimator.js', 'combat/TypingEngine.js', 'combat/BreakthroughFlow.js', 'ui/ArtIcons.js', 'ui/DesignSystem.js', 'ui/UIManager.js']) {
     vm.runInContext(fs.readFileSync(path.join(base, 'js', file), 'utf8'), sandbox);
   }
   const M = sandbox.Meowcha;
   vm.runInContext(fs.readFileSync(path.join(base,'js/ui/LeaderboardHalls.js'),'utf8'),sandbox);
+  vm.runInContext(fs.readFileSync(path.join(base,'js/ui/WeeklyRace.js'),'utf8'),sandbox);
   const state = new M.GameState(); state.currentScene = 'BATTLE';
   const save = new M.SaveSystem();
   const noop = new Proxy({}, { get: () => () => {} });
@@ -651,15 +652,90 @@ test('leaderboard failure is distinct from empty results and retry can recover',
  const r=runtime();r.sandbox.AbortController=AbortController;
  const retry={},archive={},attributes={};let rendered=0,mode={value:'DIRECT'};
  const list={innerHTML:'',setAttribute:(k,v)=>attributes[k]=v,querySelector:id=>id==='#boardRetry'?retry:archive};
- r.sandbox.document.getElementById=()=>list;
+ r.sandbox.document.getElementById=id=>id==='pantheonRankList'?list:null;
  r.M.applyDesignSystem=()=>{};
- const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,boardHall:'DIRECT',modalPantheon:{querySelector:()=>({checked:false})},
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,boardHall:'DIRECT',boardPeriod:'ALL_TIME',modalPantheon:{querySelector:()=>({checked:false}),querySelectorAll:()=>[]},
  renderPantheonLeaderboard(){rendered++;}});
  r.sandbox.fetch=async()=>({ok:false,status:503});
  await ui.loadLeaderboardFromAPI();assert.match(list.innerHTML,/Chưa tải được/);assert.equal(typeof retry.onclick,'function');
  r.sandbox.fetch=async()=>({ok:true,json:async()=>({success:true,data:[]})});
- await retry.onclick();assert.match(list.innerHTML,/Chưa có trận/);assert.equal(attributes['aria-busy'],'false');
+ await retry.onclick();assert.match(list.innerHTML,/Chưa có kỷ lục/);assert.equal(attributes['aria-busy'],'false');
  assert.equal(rendered,4);
+});
+
+test('live high score checkpoints serialize captured runs without finishing or queuing duplicate rewards',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');
+ Object.assign(r.state,{score:100,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3});
+ let release,calls=[];
+ r.sandbox.fetch=async(url,options)=>{
+  if(url.endsWith('/runs'))return {ok:true};
+  const payload=JSON.parse(options.body);calls.push(payload);
+  if(calls.length===1)await new Promise(resolve=>{release=resolve;});
+  return {ok:true,json:async()=>({data:{score:payload.score,run_id:payload.run_id}})};
+ };
+ const run=r.state.runId,first=r.save.submitCheckpoint(r.state);r.state.score=200;
+ const second=r.save.submitCheckpoint(r.state);r.state.score=900;r.state.runId='future-run';
+ await new Promise(setImmediate);assert.equal(calls.length,1);release();
+ assert.deepEqual(await Promise.all([first,second]),[true,true]);
+ assert.deepEqual(calls.map(p=>p.score),[100,200]);assert.ok(calls.every(p=>p.run_id===run));
+ assert.equal(r.state.runFinished,false);assert.equal(Object.keys(r.save.getPendingRuns()).length,0);
+});
+
+test('failed score checkpoint can retry and never pretends to publish local highScore',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');
+ Object.assign(r.state,{score:100,highScore:90000,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3});
+ let calls=0;r.sandbox.fetch=async(url,options)=>url.endsWith('/runs')?{ok:true}:
+  (++calls===1?{ok:false}:{ok:true,json:async()=>({data:{score:JSON.parse(options.body).score}})});
+ assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(await r.save.submitCheckpoint(r.state),true);
+ assert.equal(calls,2);assert.equal(r.save.lastCheckpoint.score,100);assert.equal(r.state.highScore,90000);
+});
+
+test('late weekly response cannot overwrite lifetime podium or self after changing the period',async()=>{
+ const r=runtime(),list={setAttribute(){},innerHTML:''};r.sandbox.document.getElementById=id=>id==='pantheonRankList'?list:null;
+ let release,rendered=[],urls=[];
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:{submitCheckpoint:async()=>false,getAuthHeaders:()=>({})},
+  boardHall:'DIRECT',boardPeriod:'WEEKLY',modalPantheon:{querySelector:()=>({checked:false})},updateHallClock(){},renderWeeklyHonors(){},
+  renderPantheonLeaderboard(rows){rendered=rows;}});
+ r.M.applyDesignSystem=()=>{};
+ r.sandbox.fetch=async url=>{urls.push(url);if(url.includes('scope=WEEKLY'))await new Promise(resolve=>{release=resolve;});
+  const score=url.includes('scope=ALL_TIME')?900:10;return {ok:true,json:async()=>({success:true,data:[{score}],meta:{self:{score}}})};};
+ const week=ui.loadLeaderboardFromAPI();await new Promise(setImmediate);ui.boardPeriod='ALL_TIME';
+ await ui.loadLeaderboardFromAPI();release();await week;
+ assert.equal(rendered[0].score,900);assert.equal(ui.boardSelf.score,900);assert.ok(urls.some(u=>u.includes('scope=ALL_TIME')));
+ for(const hall of ['OVERALL','DIRECT','CLOZE','AUDIO'])assert.match(r.M.HALLS[hall].hero({score:900,wpm:3,accuracy:20}),/900/);
+});
+
+test('weekly countdown uses server offset and main halls contain exactly four modes',()=>{
+ const r=runtime();r.sandbox.Date=class extends Date{static now(){return 0;}};
+ const period={season_ends_at:'2026-11-01T17:00:00Z'},offset=Date.parse('2026-10-26T17:00:00Z');
+ assert.equal(r.M.raceCountdown(period,offset),'6 ngày 00:00:00');
+ assert.deepEqual(Object.keys(r.M.HALLS),['OVERALL','DIRECT','CLOZE','AUDIO']);
+});
+
+test('career import reads only the account personal record, never global guest high score or another owner',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');r.localStorage.setItem('meowcha_high_score','90000');
+ let payloads=[];r.sandbox.fetch=async(url,options)=>{payloads.push(JSON.parse(options.body));return {ok:true};};
+ assert.equal(await r.save.syncCareerRecord(),false);assert.equal(payloads.length,0);
+ Object.assign(r.state,{score:30000,realmIdx:3});r.save.rememberPersonalBest(r.state);
+ assert.equal(await r.save.syncCareerRecord(),true);assert.equal(payloads[0].score,30000);assert.equal(payloads[0].realm_idx,3);
+ r.localStorage.setItem('oasis_user',JSON.stringify({id:2}));
+ assert.equal(await r.save.syncCareerRecord(),false);
+ const other=new r.M.SaveSystem();assert.equal(await other.syncCareerRecord(),false);assert.equal(payloads.length,1);
+});
+
+test('banking weekly gains keeps cultivation, HP and skills and starts a zero-gain measurement segment',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');
+ Object.assign(r.state,{currentScene:'LOBBY',score:10000,wordsSlain:100,baselineScore:9000,baselineWords:90,
+  realmIdx:3,hp:37,maxHp:50,activeElapsedMs:60000,correctKeystrokes:40,totalKeystrokes:45});
+ r.state.skillLevels.WIND_SWORD_DOMAIN=2;r.state.selectedTalents=['WIND_SWORD_DOMAIN'];
+ let completed=[];r.sandbox.fetch=async(url,options)=>{if(url.endsWith('/complete'))completed.push(JSON.parse(options.body));return {ok:true};};
+ r.save.flushCloudSaves=async()=>{};
+ const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,showStatus(){},updateHUD(){},updateLobbyButtons(){},refreshWeeklyRace:async()=>{},loadLeaderboardFromAPI(){}});
+ const oldId=r.state.runId;assert.equal(await ui.bankWeeklyRun(),true);
+ assert.equal(r.state.score,10000);assert.equal(r.state.realmIdx,3);assert.equal(r.state.hp,37);assert.equal(r.state.skillLevels.WIND_SWORD_DOMAIN,2);
+ assert.equal(r.state.baselineScore,10000);assert.equal(r.state.baselineWords,100);assert.notEqual(r.state.runId,oldId);
+ assert.equal(r.state.activeElapsedMs,0);assert.equal(completed[0].score,1000);assert.equal(completed[0].words_slain,10);
+ assert.equal(await r.save.submitRun(r.state),false);assert.equal(completed.length,1);
 });
 
 test('pause preserves wall-clock animation deadlines and freezes practice and cooldown time',()=>{

@@ -61,7 +61,7 @@ class IntegrityTests(unittest.TestCase):
             self.assertEqual(result.json()['data']['max_perfect_streak'],3)
         self.assertEqual(self.db.query(MeowchaBattleLog).count(),1)
 
-    def test_mastery_and_overall_wait_for_three_measured_modes_and_reward_balance(self):
+    def test_mastery_waits_for_three_modes_while_high_score_hall_accepts_one_mode(self):
         for index,mode in enumerate(['DIRECT','CLOZE','AUDIO']):
             self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start(mode),
                 metrics_version=2,learning_attempts=3,first_successes=3,max_combo=3))
@@ -69,8 +69,8 @@ class IntegrityTests(unittest.TestCase):
             self.assertEqual(profile['complete'],index==2)
             self.assertEqual(profile['modes'][mode]['words'],3)
             overall=self.client.get('/api/meowcha/halls?hall=OVERALL').json()
-            self.assertEqual(len(overall['data']),1 if index==2 else 0)
-            self.assertEqual(overall['meta']['self']['eligible'],index==2)
+            self.assertEqual(len(overall['data']),1)
+            self.assertTrue(overall['meta']['self']['eligible'])
         from meowcha_halls import balanced_rating
         self.assertGreater(balanced_rating(dict(DIRECT=60,CLOZE=60,AUDIO=60)),
                            balanced_rating(dict(DIRECT=100,CLOZE=60,AUDIO=20)))
@@ -115,29 +115,30 @@ class IntegrityTests(unittest.TestCase):
         old=self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start('CLOZE'))).json()['data']
         self.assertIsNone(old['first_success_rate']);self.assertIsNone(old['max_combo'])
 
-    def test_halls_rank_by_mode_metric_refresh_owners_and_include_self_outside_limit(self):
+    def test_halls_rank_by_high_score_refresh_owners_and_include_self_outside_limit(self):
         for i in range(28):
             owner=User(username='hall-'+str(i),discord_id='hall-'+str(i));self.db.add(owner);self.db.flush()
             for mode in ['DIRECT','CLOZE','AUDIO']:
                 # Deliberately reverse score/WPM and learning rank between halls.
                 accuracy=50+i if mode=='CLOZE' else 99-i if mode=='AUDIO' else 90
-                result=dict(player_name='old name',score=1000-i,realm_idx=0,realm='Luyện Khí Kỳ',words_slain=3,
+                score=(1000-i if mode=='DIRECT' else 2000+i if mode=='CLOZE' else 3000-i)
+                result=dict(player_name='old name',score=score,realm_idx=0,realm='Luyện Khí Kỳ',words_slain=3,
                     accuracy=accuracy,wpm=10+i,max_combo=3,first_success_rate=75,hints_used=0,replay_count=i)
                 self.db.add(MeowchaRun(run_id=str(uuid4()),user_id=owner.id,game_mode=mode,deck_id='oxford_5000',assisted=False,
-                    completed_at=datetime.utcnow(),score=1000-i,result=result))
+                    completed_at=datetime.utcnow(),score=score,result=result))
         self.db.commit()
         self.client.post('/api/meowcha/runs/complete',json=self.payload(self.start(),metrics_version=2,learning_attempts=3,first_successes=3,max_combo=3))
         direct=self.client.get('/api/meowcha/halls?hall=DIRECT&limit=3').json()
         cloze=self.client.get('/api/meowcha/halls?hall=CLOZE').json()
         audio=self.client.get('/api/meowcha/halls?hall=AUDIO').json()
-        self.assertEqual(direct['data'][0]['player_name'],'hall-27')
+        self.assertEqual(direct['data'][0]['player_name'],'hall-0')
         self.assertEqual(cloze['data'][0]['player_name'],'hall-27')
         self.assertEqual(audio['data'][0]['player_name'],'hall-0')
         self.assertEqual(direct['meta']['self']['rank'],29)
         overall=self.client.get('/api/meowcha/halls?hall=OVERALL').json()
         self.assertTrue(all(0<=r['dao_hanh']<=300 for r in overall['data']))
-        self.assertIn('strongest_mode',overall['data'][0]);self.assertIsNone(overall['meta']['self']['rank'])
-        self.assertFalse(overall['meta']['self']['eligible'])
+        self.assertIn('strongest_mode',overall['data'][0]);self.assertEqual(overall['meta']['self']['rank'],29)
+        self.assertTrue(overall['meta']['self']['eligible'])
         self.assertEqual(overall['meta']['self']['complete_modes'],['DIRECT'])
         self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&assisted=true').json()['data'],[])
         self.assertEqual(self.client.get('/api/meowcha/halls?hall=AUDIO&deck_id=reading_academic').json()['data'],[])

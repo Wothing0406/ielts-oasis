@@ -191,9 +191,10 @@
       const appState=this.gameState||root.Meowcha.app?.gameState;
       const mode=appState?.gameMode||'DIRECT';
       // One budget in seconds, independent of pixel distance and stacked realm multipliers.
-      const introduction=rIdx===0?6*Math.max(0,1-(appState?.wordsSlain||0)/12):0;
-      const typingSeconds=([18,17,15,13.5,12][Math.min(4,rIdx)]+introduction+
-        Math.min(10,Math.max(0,word.length-4)*.9)+(mode==='AUDIO'?4:mode==='CLOZE'?3:0))/Math.max(.4,Math.min(1,slowFactor));
+      const difficulty=root.Meowcha.difficultyBudget({score:appState?.score||0,realm:rIdx,mode,word,
+        humanWpm:appState?.getRollingHumanWpm?.()||40,slowFactor});
+      const typingSeconds=difficulty.targetTime;
+      if(appState)appState.minimumTargetSeconds=Math.min(appState.minimumTargetSeconds||Infinity,typingSeconds);
       const vy=Math.max(20,(field.bottomThreshold||600)-entryTargetY)/(typingSeconds*60);
       const vx = 0;
       const fallAngle = Math.PI/2;
@@ -249,6 +250,7 @@
         entering:true,
         entryTargetY,
         entryProgress:0,typingSeconds,remainingSeconds:typingSeconds,layoutThreshold:field.bottomThreshold||null,
+        difficultyPressure:difficulty.pressure,difficultyVersion:difficulty.version,
         vx: vx,
         vy: vy,
         fallAngle: fallAngle,
@@ -310,7 +312,11 @@
 
         ast.vx=0;
         // A small, bounded hazard increase; never compound realm/score multipliers.
-        const gravMult = isLightningHazard ? 1.1 : 1;
+        const gravMult = 1; // Hazards must not push a bounded budget below its playable floor.
+        if(ast.awaitingPronunciation){
+          ast.voiceHoldRemaining=Math.max(0,(ast.voiceHoldRemaining||0)-dt);
+          if(!ast.voiceHoldRemaining)ast.awaitingPronunciation=false;
+        }
         if(ast.y<bottomThreshold){
           if(ast.entering){
             ast.entryTargetY=(root.Meowcha.battleLayout?.hudBottom||76)+48;
@@ -318,11 +324,11 @@
             const progress=1-Math.pow(1-ast.entryProgress,2);
             ast.y=-ast.radius-80+(ast.entryTargetY+ast.radius+80)*progress;
             ast.entering=ast.entryProgress<1;
-          }else if(Number.isFinite(ast.remainingSeconds)){
+          }else if(Number.isFinite(ast.remainingSeconds)&&!ast.awaitingPronunciation){
             ast.remainingSeconds=Math.max(0,ast.remainingSeconds-dt*gravMult*statusSpeedMult);
             const start=(root.Meowcha.battleLayout?.hudBottom||76)+48;
             ast.y=start+(bottomThreshold-start)*(1-ast.remainingSeconds/ast.typingSeconds);
-          }else ast.y+=ast.vy*60*dt*gravMult*statusSpeedMult;
+          }else if(!ast.awaitingPronunciation)ast.y+=ast.vy*60*dt*gravMult*statusSpeedMult;
         }
         // Cập nhật fallAngle và góc xoay chuẩn xác (đứng dọc hướng xuống)
         ast.fallAngle = Math.PI/2;
@@ -375,7 +381,7 @@
       const safeX=Math.max(paperW/2+8,Math.min(width-paperW/2-8,ast.x));
       ctx.font="12px 'Be Vietnam Pro',sans-serif";
       const detail=ast.isBoss?'Tâm Ma • '+(ast.currentShieldIdx+1)+'/'+ast.totalShields :
-        ast.isAudio?'Nghe và gõ • Tab nghe lại':ast.isCloze?
+        ast.isAudio?(ast.awaitingPronunciation?'Đang nghe • Tab nghe lại':'Nghe và gõ • Tab nghe lại'):ast.isCloze?
         ((ast.type?ast.type+' • ':'')+(ast.meaning||'Nhớ từ qua nghĩa')):
         ((ast.ipa&&ast.ipa!=='/.../'?ast.ipa+' • ':'')+(ast.typedLen||0)+' / '+ast.word.length);
       const time=Number.isFinite(ast.remainingSeconds)?' • '+Math.ceil(ast.remainingSeconds)+'s':'';
@@ -397,7 +403,7 @@
         const rock=this.assets['prop_asteroid_'+(ast.asteroidType||'void')];
         const size=ast.isBoss?(small?104:128):(small?78:104);
         for(const p of ast.trail||[]) {
-          ctx.globalAlpha=Math.max(0,p.alpha*.55);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);
+          ctx.globalAlpha=Math.max(0,p.alpha*(.55+(ast.difficultyPressure||0)*.15));ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);
         }
         ctx.globalAlpha=1;
         if(rock&&rock.loaded){

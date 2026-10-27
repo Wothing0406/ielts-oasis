@@ -78,11 +78,12 @@ async def on_ready():
         logger.error(f"Failed to sync commands: {e}")
 
     # Setup apscheduler for dynamic reminders
-    scheduler = AsyncIOScheduler()
-    # Runs every minute to check schedule matches
-    scheduler.add_job(schedule_checker_job, IntervalTrigger(minutes=1))
-    scheduler.start()
-    logger.info("APScheduler started: Checking schedules every minute.")
+    if not getattr(bot,'oasis_scheduler',None):
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(schedule_checker_job, IntervalTrigger(minutes=1),id='study_schedule',max_instances=1)
+        scheduler.add_job(meowcha_awards_job,IntervalTrigger(seconds=30),id='meowcha_weekly_awards',max_instances=1)
+        scheduler.start();bot.oasis_scheduler=scheduler
+        logger.info("APScheduler started: study schedules and weekly MEOW-CHA awards.")
 
 @bot.event
 async def on_message(message):
@@ -1143,6 +1144,9 @@ async def schedule_checker_job():
                     logger.error(e)
                     
     db.close()
+
+from meowcha_discord import register_meowcha
+meowcha_awards_job=register_meowcha(bot)
 
 if __name__ == "__main__":
     if DISCORD_BOT_TOKEN:

@@ -57,6 +57,8 @@
 
       const activeList = this.asteroids.asteroids;
       if (activeList.length === 0) return;
+      const initial=this.currentTarget||activeList[0];
+      if(initial&&!Number.isFinite(initial.humanStartedMs))initial.humanStartedMs=this.state.activeElapsedMs;
       this.state.totalKeystrokes++;
 
       // 1. Kiểm tra thiên thạch đang gõ dở
@@ -368,6 +370,7 @@
     handleWordSlain(target, canvas, assisted = false) {
       if (!target || !this.asteroids.asteroids.includes(target)) return;
       if (assisted) this.state.markAssistance(target, Math.max(0, target.word.length - target.typedLen));
+      if(!target.assistedKeystrokes)this.state.recordHumanWord?.(target);
       if(this.state.recordLearningOutcome)this.state.recordLearningOutcome(target,true);
       if (target.assistedKeystrokes) this.state.assistedWords++;
       else { this.state.humanWords++; this.state.humanWordCombo = target.hadTypo ? 0 : this.state.humanWordCombo + 1; }
@@ -396,6 +399,7 @@
           target.hintsUsed=0;target.replayCount=0;
           target.assistedKeystrokes = 0;
           target.typedLen = 0;
+          target.humanStartedMs=undefined;target.initialVoiceRequested=false;
           this.currentTarget = null;
           if (this.state.gameMode === 'AUDIO') this.playWordAudio(target);
 
@@ -622,7 +626,14 @@
     }
 
     playWordAudio(target) {
-      if (this.audio && this.audio.playWord) return this.audio.playWord(target);
+      if (this.audio && this.audio.playWord) {
+        const first=this.state.gameMode==='AUDIO'&&!target.initialVoiceRequested&&this.asteroids.asteroids.includes(target);
+        if(first){target.initialVoiceRequested=true;target.awaitingPronunciation=true;target.voiceHoldRemaining=22;target.voiceRequestId=(target.voiceRequestId||0)+1;}
+        const requestId=target.voiceRequestId;
+        const started=this.audio.playWord(first?{...target,onVoiceDone:()=>{if(target.voiceRequestId===requestId)target.awaitingPronunciation=false;}}:target);
+        if(first&&!started)target.awaitingPronunciation=false;
+        return started;
+      }
       return false;
     }
 

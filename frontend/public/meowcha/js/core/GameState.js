@@ -131,6 +131,20 @@
       this.baselineWords = 0;
       this.wpm = 0;
       this.accuracy = 100;
+      this.recentHumanWpm=[];
+      this.difficultyVersion=2;this.minimumTargetSeconds=0;
+    }
+
+    recordHumanWord(target) {
+      if(!target||target.assistedKeystrokes||!Number.isFinite(target.humanStartedMs))return;
+      const elapsed=Math.max(800,this.activeElapsedMs-target.humanStartedMs);
+      const wpm=Math.max(5,Math.min(180,target.word.length*12000/elapsed));
+      this.recentHumanWpm=[...(this.recentHumanWpm||[]),wpm].slice(-9);
+    }
+
+    getRollingHumanWpm() {
+      const values=(this.recentHumanWpm||[]).slice().sort((a,b)=>a-b);
+      return values.length<3?40:values[Math.floor(values.length/2)];
     }
 
     setPaused(paused) {
@@ -160,13 +174,14 @@
         'runFinished', 'baselineScore', 'baselineWords', 'maxCombo', 'typoCount', 'activeDeckId',
         'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers',
         'learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount',
-        'maxPerfectStreak','perfectMetricsKnown'];
+        'maxPerfectStreak','perfectMetricsKnown','difficultyVersion','minimumTargetSeconds'];
       return Object.fromEntries(fields.map(k => [k, this[k]]));
     }
 
     restoreRunMetrics(data) {
       this.resetRunMetrics();
       if (data && data.runId && !data.runFinished) {
+        this.difficultyVersion=data.difficultyVersion||1;
         this.perfectMetricsKnown=!!data.perfectMetricsKnown;
         this.learningMetricsVersion=data.learningMetricsVersion===2?2:1;
         for (const key of Object.keys(this.getRunMetrics())) {

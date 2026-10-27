@@ -71,6 +71,10 @@ class RunComplete(BaseModel):
     replay_count: int=Field(0,ge=0,le=1_000_000)
     max_combo: int=Field(0,ge=0,le=100_000)
     max_perfect_streak: int | None=Field(None,ge=0,le=100_000)
+    difficulty_version: int=Field(1,ge=1,le=2)
+    pressure_score: int=Field(0,ge=0,le=100_000_000)
+    rolling_human_wpm: float=Field(40,ge=0,le=180)
+    minimum_target_seconds: float=Field(0,ge=0,le=60)
 
     @model_validator(mode='after')
     def check_counts(self):
@@ -106,7 +110,7 @@ class SaveSnapshotPayload(BaseModel):
         modes = self.snapshot.get('modes', {})
         if not isinstance(modes, dict) or any(m not in ('DIRECT', 'CLOZE', 'AUDIO') for m in modes):
             raise ValueError('Invalid save modes')
-        limits = {'score': (0, 100_000_000), 'words': (0, 100_000), 'realmIdx': (0, 4),
+        limits = {'score': (0, 100_000_000),'highScore':(0,100_000_000), 'words': (0, 100_000), 'realmIdx': (0, 4),
             'hp': (0, 250), 'maxHp': (1, 250), 'shieldCharges': (0, 20),
             'correctKeystrokes': (0, 10_000_000), 'totalKeystrokes': (0, 10_000_000),
             'activeElapsedMs': (0, 604_800_000)}
@@ -169,30 +173,10 @@ def complete_run(db, user, payload):
     if not claimed:
         db.refresh(run)
         return {**run.result, 'duplicate': True}
-    max_realm = max(i for i, (score, words) in enumerate(THRESHOLDS)
-                    if payload.score >= score and payload.words_slain >= words)
-    realm_idx = min(payload.realm_idx, max_realm)
-    assisted = bool(run.resumed or payload.assisted or payload.assisted_keystrokes or payload.assisted_words or payload.hints_used)
-    result = {
-        'run_id': run.run_id, 'user_id': user.id,
-        'player_name': getattr(user, 'full_name', None) or user.username or 'Tiên Hữu',
-        'score': payload.score, 'words_slain': payload.words_slain,
-        'realm': REALMS[realm_idx], 'realm_idx': realm_idx,
-        'accuracy': round(payload.correct_keystrokes * 100 / payload.total_keystrokes, 1) if payload.total_keystrokes else 100.0,
-        'wpm': round(payload.correct_keystrokes * 12000 / payload.active_ms),
-        'game_mode': run.game_mode, 'deck_id': run.deck_id, 'assisted': assisted,
-        'verification': 'plausibility_checked', 'duplicate': False,
-        'human_words':payload.words_slain-payload.assisted_words,'assisted_words':payload.assisted_words,
-        'metrics_version':payload.metrics_version,
-        'max_combo':payload.max_combo if payload.metrics_version==2 else None,
-        'max_perfect_streak':payload.max_perfect_streak,
-        'learning_attempts':payload.learning_attempts if payload.metrics_version==2 else None,
-        'first_successes':payload.first_successes if payload.metrics_version==2 else None,
-        'first_success_rate':round(payload.first_successes*100/payload.learning_attempts,1) if payload.metrics_version==2 and payload.learning_attempts else None,
-        'hints_used':payload.hints_used if payload.metrics_version==2 else None,
-        'replay_count':payload.replay_count if payload.metrics_version==2 else None,
-        'avatar_url': user.avatar_url if (user.avatar_url or '').startswith('https://') else '',
-    }
+    from meowcha_seasons import prepare_result, store_scores
+    result = prepare_result(run, user, payload, now)
+    store_scores(db, run, result, now, finalized=True)
+    realm_idx, assisted = result['realm_idx'], result['assisted']
     profile = db.query(MeowchaUserProfile).filter(MeowchaUserProfile.user_id == user.id).first()
     if not profile:
         profile = MeowchaUserProfile(user_id=user.id, total_score=0, total_words_slain=0,

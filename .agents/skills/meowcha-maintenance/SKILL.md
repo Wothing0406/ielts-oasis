@@ -161,3 +161,16 @@ after reductions, update HP immediately and prevent a cloud cue from erasing the
 same impact receipt. Preserve per-realm weapon/projectile/beam assets. PC shows
 a compact weapon label/icon; mobile keeps typing space. Do not re-add the removed
 aiming tether or invent an equipment/inventory system.
+
+For weekly race release 21 read docs/meowcha-weekly-race-21.md. Keep exactly four
+main halls; history stays secondary and Archive must not return as a tab. Weekly
+rank is the highest finalized gain segment inside the Vietnam Monday boundary;
+lifetime rank uses monotonic highest Tu Vi and highest evidenced realm. Never
+guess an unknown legacy mode. Banking a weekly segment preserves cultivation,
+HP, skills, talents, SRS and saves while opening a zero-gain measurement run.
+The lobby recap is once per account/week with server acknowledgement. Discord
+honors are opt-in, linked-account only and public posting requires explicit env
+configuration. Preserve durable at-most-once claims and do not retry ambiguous
+sends. Difficulty floors are DIRECT 7s, CLOZE 8.5s and AUDIO 9.5s, human-WPM
+adaptation is capped at 10%, word bonus at 3.5s, and initial AUDIO voice holds
+the timer without replay resetting it. Plausibility checks are not server replay.

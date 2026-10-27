@@ -279,7 +279,11 @@
       this.gameState.addListener((changeKey) => {
         if(changeKey==='stun')this.audio.play('stun');
         if(changeKey==='stunEnd'){this.audio.play('stun_end');M.combatFeedback?.(this.gameState,'recover');}
-        if (changeKey === 'score') this.saveSystem.rememberPersonalBest(this.gameState);
+        if (changeKey === 'score') {
+          this.saveSystem.rememberPersonalBest(this.gameState);
+          clearTimeout(this.checkpointTimer);
+          this.checkpointTimer=setTimeout(()=>Promise.allSettled([this.saveSystem.submitCheckpoint(this.gameState),this.saveSystem.syncCareerRecord()]),2000);
+        }
         if (changeKey === "gameOver" || (changeKey === "hp" && this.gameState.hp <= 0)) {
           this.handleGameOver();
         } else if (changeKey === "hp" && this.gameState.hp > 0 && this.gameState.currentScene === "BATTLE") {
@@ -307,6 +311,8 @@
         this.saveSystem.flushCloudSaves();
       });
       this.saveSystem.retryPendingRuns();
+      this.ui.refreshWeeklyHonors?.();
+      this.honorTimer=setInterval(()=>{if(this.gameState.currentScene==='LOBBY')this.ui.refreshWeeklyHonors?.();},60000);
 
       // Bắt đầu vòng lặp đồ họa
       this.isLoopRunning = true;
@@ -778,6 +784,14 @@
       // Lọc danh sách theo chuẩn độ dài
       // CEFR/source deck selects difficulty; length only enforces playable alphabetic words.
       let matchedList = sourceList.filter(w => w && /^[a-z]{3,32}$/i.test(w.word));
+      const fitting=matchedList.filter(w=>M.wordFitsBudget({score:this.gameState.score,realm:rIdx,mode:this.gameState.gameMode,
+        word:w.word,humanWpm:this.gameState.getRollingHumanWpm()}));
+      if(fitting.length)matchedList=fitting;
+      if(this.gameState.score>=50000&&curDeckId==='oxford_5000'){
+        const levels=this.gameState.score>=100000?['B2','C1','C2']:['B1','B2','C1','C2'];
+        const harder=matchedList.filter(w=>levels.includes(w.cefr||w.level));
+        if(harder.length>=20)matchedList=harder;
+      }
       if (matchedList.length === 0) {
         matchedList = sourceList.filter(w => w && w.word && w.word.length >= Math.max(3, targetMinLen - 2));
       }

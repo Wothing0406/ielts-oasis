@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="vi">
   <head>
-    <script src="./js/core/DeviceDetector.js?v=20.0"></script>
+    <script src="./js/core/DeviceDetector.js?v=21.0"></script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -24,12 +24,12 @@
     />
 
     <!-- Tiên Hiệp Dark Xianxia Styling Modules -->
-    <link rel="stylesheet" href="./css/meowcha-theme.css?v=20.0" />
-    <link rel="stylesheet" href="./css/meowcha-layout.css?v=20.0" />
-    <link rel="stylesheet" href="./css/meowcha-ui.css?v=20.0" />
-    <link rel="stylesheet" href="./css/meowcha-animations.css?v=20.0" />
-    <link rel="stylesheet" href="./css/meowcha-polish.css?v=20.0" />
-    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=20.0" />
+    <link rel="stylesheet" href="./css/meowcha-theme.css?v=21.0" />
+    <link rel="stylesheet" href="./css/meowcha-layout.css?v=21.0" />
+    <link rel="stylesheet" href="./css/meowcha-ui.css?v=21.0" />
+    <link rel="stylesheet" href="./css/meowcha-animations.css?v=21.0" />
+    <link rel="stylesheet" href="./css/meowcha-polish.css?v=21.0" />
+    <link rel="stylesheet" href="./css/meowcha-design-system.css?v=21.0" />
   </head>
   <body data-session="checking">
     <div id="gameAppWrapper">
@@ -292,6 +292,7 @@
             </button>
             <button type="button" class="sword-talisman-restart" id="btnRestartGame" style="display: none;"><span>TRÙNG TU</span></button>
           </div>
+          <button type="button" id="lobbyRaceBanner" hidden><strong>THIÊN BẢNG TRANH PHONG</strong><span class="lobby-race-score"></span><span class="lobby-race-clock"></span></button>
         </section>
         <aside id="lobbySyncNotice" hidden role="status" aria-live="polite">
           <span><strong>Có hai bản lưu</strong><span id="lobbySyncDetail">Bản trên máy vẫn được giữ.</span></span>
@@ -450,6 +451,7 @@
             <div class="sect-row-title">
               <span class="sect-level-tag" id="hudLevelBadge">CẤP 0</span>
               <strong id="hudRealm">Tiểu Miêu Kiếm Đồng</strong>
+              <span id="hudDaoPressure" title="Độ khó tăng theo Tu Vi và cảnh giới.">Đạo Áp: Nhẹ</span>
             </div>
             <!-- Hiển thị Khí Huyết Mệnh Đan & Ống Tiên Đan Ngọc Bích (Jade Elixir Vial) -->
             <div class="sect-hp-container">
@@ -1653,47 +1655,49 @@
       </div>
 
     <!-- Scripts Data & Logic Modules -->
-    <script src="./js/core/Release.js?v=20.0"></script>
-    <script src="./js/core/Session.js?v=20.0"></script>
-    <script src="./js/data/RealmsData.js?v=20.0"></script>
-    <script src="./js/data/AudioAssets.js?v=20.0"></script>
-    <script src="./js/data/MeaningCorrections.js?v=20.0"></script>
-    <script src="./js/core/LearningText.js?v=20.0"></script>
-    <script src="./js/data/WordDecks.js?v=20.0"></script>
-    <script src="./js/ui/XianxiaIcons.js?v=20.0"></script>
-    <script src="./js/data/TalentsData.js?v=20.0"></script>
-    <script src="./js/data/SpeechesData.js?v=20.0"></script>
+    <script src="./js/core/Release.js?v=21.0"></script>
+    <script src="./js/core/Session.js?v=21.0"></script>
+    <script src="./js/data/RealmsData.js?v=21.0"></script>
+    <script src="./js/data/AudioAssets.js?v=21.0"></script>
+    <script src="./js/data/MeaningCorrections.js?v=21.0"></script>
+    <script src="./js/core/LearningText.js?v=21.0"></script>
+    <script src="./js/data/WordDecks.js?v=21.0"></script>
+    <script src="./js/ui/XianxiaIcons.js?v=21.0"></script>
+    <script src="./js/data/TalentsData.js?v=21.0"></script>
+    <script src="./js/data/SpeechesData.js?v=21.0"></script>
 
-    <script src="./js/ui/ArtIcons.js?v=20.0"></script>
-    <script src="./js/ui/DesignSystem.js?v=20.0"></script>
-    <script src="./js/core/AudioManager.js?v=20.0"></script>
-    <script src="./js/core/SaveSystem.js?v=20.0"></script>
-    <script src="./js/core/GameState.js?v=20.0"></script>
-    <script src="./js/core/BattleLayout.js?v=20.0"></script>
-    <script src="./js/core/CombatFeedback.js?v=20.0"></script>
-    <script src="./js/core/SpriteAnimator.js?v=20.0"></script>
-    <script src="./js/core/ActorMotion.js?v=20.0"></script>
+    <script src="./js/ui/ArtIcons.js?v=21.0"></script>
+    <script src="./js/ui/DesignSystem.js?v=21.0"></script>
+    <script src="./js/core/AudioManager.js?v=21.0"></script>
+    <script src="./js/core/SaveSystem.js?v=21.0"></script>
+    <script src="./js/core/GameState.js?v=21.0"></script>
+  <script src="./js/core/BattleLayout.js?v=21.0"></script>
+  <script src="./js/core/Difficulty.js?v=21.0"></script>
+    <script src="./js/core/CombatFeedback.js?v=21.0"></script>
+    <script src="./js/core/SpriteAnimator.js?v=21.0"></script>
+    <script src="./js/core/ActorMotion.js?v=21.0"></script>
 
-    <script src="./js/effects/ParticleEngine.js?v=20.0"></script>
-    <script src="./js/effects/RealmVFX.js?v=20.0"></script>
-    <script src="./js/effects/FloatingText.js?v=20.0"></script>
+    <script src="./js/effects/ParticleEngine.js?v=21.0"></script>
+    <script src="./js/effects/RealmVFX.js?v=21.0"></script>
+    <script src="./js/effects/FloatingText.js?v=21.0"></script>
 
-    <script src="./js/entities/CatCultivator.js?v=20.0"></script>
-    <script src="./js/entities/AsteroidManager.js?v=20.0"></script>
-    <script src="./js/entities/ProjectileSystem.js?v=20.0"></script>
+    <script src="./js/entities/CatCultivator.js?v=21.0"></script>
+    <script src="./js/entities/AsteroidManager.js?v=21.0"></script>
+    <script src="./js/entities/ProjectileSystem.js?v=21.0"></script>
 
-    <script src="./js/combat/TypingEngine.js?v=20.0"></script>
-    <script src="./js/combat/BreakthroughFlow.js?v=20.0"></script>
+    <script src="./js/combat/TypingEngine.js?v=21.0"></script>
+    <script src="./js/combat/BreakthroughFlow.js?v=21.0"></script>
 
-    <script src="./js/ui/IPAToast.js?v=20.0"></script>
-    <script src="./js/ui/VirtualKeyboard.js?v=20.0"></script>
-    <script src="./js/ui/UnityBridge.js?v=20.0"></script>
-    <script src="./js/core/VocabLoader.js?v=20.0"></script>
-    <script src="./js/ui/UIManager.js?v=20.0"></script>
-    <script src="./js/ui/LeaderboardHalls.js?v=20.0"></script>
-    <script src="./js/ui/MasteryProfile.js?v=20.0"></script>
+    <script src="./js/ui/IPAToast.js?v=21.0"></script>
+    <script src="./js/ui/VirtualKeyboard.js?v=21.0"></script>
+    <script src="./js/ui/UnityBridge.js?v=21.0"></script>
+    <script src="./js/core/VocabLoader.js?v=21.0"></script>
+    <script src="./js/ui/UIManager.js?v=21.0"></script>
+    <script src="./js/ui/LeaderboardHalls.js?v=21.0"></script>
+    <script src="./js/ui/WeeklyRace.js?v=21.0"></script>
+    <script src="./js/ui/MasteryProfile.js?v=21.0"></script>
 
     <!-- Game Bootstrap -->
-    <script src="./js/main.js?v=20.0"></script>
+    <script src="./js/main.js?v=21.0"></script>
   </body>
 </html>

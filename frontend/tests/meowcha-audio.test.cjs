@@ -126,3 +126,12 @@ test('sample voices are bounded during fast input and physical samples replace t
  assert.equal(tones,0);assert.equal(a.sampleSources.size,12);assert.equal(created.filter(s=>s.stopped).length,28);
  for(const source of [...a.sampleSources])source.onended();assert.equal(a.sampleSources.size,0);
 });
+
+test('voice completion listeners settle once and cancellation releases the first listening budget',()=>{
+ const r=audioRuntime(),a=r.manager,events=[];
+ a.playWord({word:'JADE',audio_url:'/jade.mp3',onVoiceDone:ok=>events.push(ok)});
+ r.clips[0].onended();a.stopVoice();assert.deepEqual(events,[true]);
+ a.playWord({word:'MOON',audio_url:'/moon.mp3',onVoiceDone:ok=>events.push(ok)});
+ a.playWord({word:'TEA',audio_url:'/tea.mp3',onVoiceDone:ok=>events.push(ok)});
+ a.stopVoice();a.stopVoice();assert.deepEqual(events,[true,false,false]);
+});

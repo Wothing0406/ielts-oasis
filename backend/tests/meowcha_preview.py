@@ -67,6 +67,32 @@ app.dependency_overrides[get_meowcha_user_from_token]=qa_identity
 app.include_router(router)
 
 
+@app.post('/preview/weekly-season')
+def fixture_weekly_season():
+    from datetime import timedelta
+    from meowcha_seasons import week_window,seal_week,MeowchaSeason,MeowchaHonor
+    key,start,end=week_window()
+    old_key,old_start,old_end=week_window(start-timedelta(seconds=1))
+    with Session() as db:
+        legacy=db.query(MeowchaLeaderboard).filter_by(user_id=7001).first();legacy.score=30000;legacy.realm='Nguyên Anh Tiên Tôn'
+        from meowcha_seasons import MeowchaWeeklyNotification
+        recap=db.get(MeowchaWeeklyNotification,(key,7001,'lobby_recap'))
+        if recap:recap.recap_seen_at=None
+        db.get(User,7001).discord_id='900000000000007001'
+        current=db.query(MeowchaRun).filter_by(user_id=7001,game_mode='DIRECT').first()
+        current.score=9000;current.result={**current.result,'score':9000,'wpm':3}
+        if not db.get(MeowchaSeason,old_key):
+            for owner in db.query(User).all():
+                for mode in ['DIRECT','CLOZE','AUDIO']:
+                    score=2000+(owner.id-7001)*500
+                    db.add(MeowchaRun(run_id=str(uuid4()),user_id=owner.id,game_mode=mode,deck_id='oxford_5000',assisted=False,
+                        started_at=old_start+timedelta(hours=1),completed_at=old_end-timedelta(hours=1),score=score,
+                        result={'score':score,'realm':'Luyện Khí Kỳ','realm_idx':0,'accuracy':90,'wpm':20,'words_slain':20,'first_success_rate':80}))
+            db.commit();seal_week(db,old_key)
+        db.commit()
+        return {'week':key,'closed':old_key,'honors':db.query(MeowchaHonor).count()}
+
+
 @app.post('/preview/session/{phase}')
 def fixture_session(phase: str):
     global qa_session
