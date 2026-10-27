@@ -24,7 +24,7 @@ def balanced_rating(progress):
     return round(3*(.4*min(values)+.6*sum(values)/3),1)
 
 def build_hall(db, hall, assisted, deck_id, limit, user_id=None, scope='ALL_TIME', week=None, now=None):
-    from meowcha_seasons import hall_records,RANK_TITLES,SPECIALTIES
+    from meowcha_seasons import hall_records,RANK_TITLES,SPECIALTIES,weekly_reward
     from meowcha_career import career_records
     grouped=defaultdict(list)
     for record in hall_records(db, assisted, deck_id, scope, week, now):
@@ -41,6 +41,7 @@ def build_hall(db, hall, assisted, deck_id, limit, user_id=None, scope='ALL_TIME
     for owner_id, records in grouped.items():
         if hall in MODES:
             item=max(records,key=lambda r:(rank_key(r,hall),r['run_id']))
+            item={**item,'provisional':not bool(item.get('finalized'))}
         else:
             best={}
             for record in records:
@@ -57,7 +58,8 @@ def build_hall(db, hall, assisted, deck_id, limit, user_id=None, scope='ALL_TIME
                   'strongest_mode':strongest,'mode_progress':{m:round(best[m][0],1) if m in best else None for m in MODES},
                   'completed_runs':sum(bool(r.get('finalized')) for r in records),'words_slain':sum(r.get('words_slain',0) for r in records),
                   'realm_idx':realm,'realm':REALMS[min(4,max(0,realm))],
-                  'complete_modes':list(best),'eligible':True,'run_id':champion['run_id']}
+                  'complete_modes':list(best),'eligible':True,'run_id':champion['run_id'],
+                  'provisional':not bool(champion.get('finalized')) if champion.get('run_id') else False}
         owner=owners.get(owner_id)
         item={**item,'player_name':(getattr(owner,'full_name',None) or owner.username) if owner else 'Tiên Hữu',
               'avatar_url':(owner.avatar_url or '') if owner else ''}
@@ -74,7 +76,9 @@ def build_hall(db, hall, assisted, deck_id, limit, user_id=None, scope='ALL_TIME
     rows.sort(key=lambda r:((r['score'],r['dao_hanh'],r['total_score']) if hall=='OVERALL' else rank_key(r,hall),-r['user_id']),reverse=True)
     for rank,item in enumerate(rows,1):
         item['rank']=rank
-        if scope=='WEEKLY' and not assisted and rank<=10:item['title']=RANK_TITLES[rank-1];item['specialty']=SPECIALTIES[hall]
+        if scope=='WEEKLY' and not assisted and rank<=10:
+            item['title']=RANK_TITLES[rank-1];item['specialty']=SPECIALTIES[hall]
+            item['reward']=weekly_reward(rank)
     return {'rows':rows[:limit],'self':next((r for r in rows if r['user_id']==user_id),incomplete_self),'total_players':len(rows)}
 
 

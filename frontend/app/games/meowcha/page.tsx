@@ -5,7 +5,9 @@ import release from "../../../meowcha-release.json";
 
 export default function MeowchaGamePage() {
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const repairedVersionRef = useRef(false);
   const [access, setAccess] = useState<'checking'|'ready'|'locked'|'error'>('checking');
+  const [frameRepair, setFrameRepair] = useState('');
   useEffect(() => {
     const controller = new AbortController();
     const token = localStorage.getItem('oasis_token');
@@ -24,8 +26,16 @@ export default function MeowchaGamePage() {
   useEffect(() => {
     const navigateFromGame = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return;
-      if (event.data?.type !== "MEOWCHA_NAVIGATE" || event.data.path !== "/games") return;
-      window.location.assign("/games");
+      if (event.data?.type === "MEOWCHA_READY" && event.data.version !== release.version) {
+        if (!repairedVersionRef.current) {
+          repairedVersionRef.current = true;
+          setFrameRepair(`&repair=${Date.now()}`);
+        } else {
+          setAccess('error');
+        }
+        return;
+      }
+      if (event.data?.type === "MEOWCHA_NAVIGATE" && event.data.path === "/games") window.location.assign("/games");
     };
     window.addEventListener("message", navigateFromGame);
     return () => window.removeEventListener("message", navigateFromGame);
@@ -40,10 +50,9 @@ export default function MeowchaGamePage() {
         <a className="underline" href="/games">Trở về Tiên Giới</a>
       </section> : <iframe
         ref={frameRef}
-        src={`/meowcha/index.html?v=${release.version}`}
+        src={`/meowcha/index.html?v=${release.version}${frameRepair}`}
         className="w-full h-full border-none block m-0 p-0 overflow-hidden"
         title="Meowcha IELTS Game"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
         allow="autoplay; fullscreen; clipboard-write"
         referrerPolicy="same-origin"
       />}

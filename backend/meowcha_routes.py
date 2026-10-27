@@ -7,6 +7,7 @@ import random
 import logging
 import hashlib
 import json
+import os
 from pydantic import BaseModel,Field
 
 from database import get_db
@@ -37,6 +38,32 @@ router = APIRouter(
     prefix="/api/meowcha",
     tags=["Meow-Cha Cultivation"]
 )
+
+MEOWCHA_API_VERSION = "21.1"
+MEOWCHA_CAPABILITIES = {
+    'checkpoint': True,
+    'career_record': True,
+    'weekly_race': True,
+    'difficulty_v2': True,
+    'live_weekly_checkpoint': True,
+    'cosmetic_weekly_rewards': True,
+}
+
+
+def meowcha_release_info():
+    """Public, non-secret build contract used to detect mixed deployments."""
+    return {
+        'git_sha': os.getenv('MEOWCHA_GIT_SHA', 'development'),
+        'build_timestamp': os.getenv('MEOWCHA_BUILD_TIMESTAMP', 'development'),
+        'meowcha_schema_version': MEOWCHA_API_VERSION,
+        'meowcha_api_version': MEOWCHA_API_VERSION,
+        'capabilities': MEOWCHA_CAPABILITIES,
+    }
+
+
+@router.get('/version')
+def game_version():
+    return api_response(meowcha_release_info())
 
 def get_meowcha_user_from_token(
     current_user: Optional[dict] = Depends(get_current_user),
@@ -702,6 +729,10 @@ def get_halls(hall: str=Query('OVERALL',pattern='^(OVERALL|DIRECT|CLOZE|AUDIO)$'
     return api_response(board['rows'],meta={'hall':hall,'assisted':assisted,'deck_id':deck_id,
         'self':board['self'],'total_players':board['total_players'],'verification':'plausibility_checked',
         'formula_version':2,'competitive':False,'ranking':'high_score','period':period,'sealed':bool(season),
+        'live_checkpoints':True,
+        'reward_policy':{'type':'cosmetic','duration':'until_next_season',
+            'tiers':['Top 1: Kim Miện + khung Phong Thần','Top 2–3: khung Tam Giáp + danh hiệu','Top 4–10: danh hiệu Thiên Bảng'],
+            'note':'Không cộng chỉ số hoặc vật phẩm có giá trị khi chưa có server replay.'},
         'all_time_self':all_time['self'],'career':career_records(db,[user.id]).get(user.id) if user else None,
         'previous_champions':previous.boards.get(board_key(hall,deck_id,assisted),[])[:3] if previous else []})
 

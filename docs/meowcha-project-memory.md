@@ -1,6 +1,18 @@
 # MEOW-CHA — bộ nhớ dự án
 
-## Baseline mới nhất — 21.0 (27/10/2026)
+## Baseline đang đóng gói — 21.1 (27/10/2026)
+
+- Phong Thần có hai chiều độc lập: `Kỳ xếp hạng` (Thiên Bảng tuần / Phong Thần
+  vĩnh viễn) và `Pháp môn` (Tổng Đạo / Trực Diện / Ngộ Đạo / Thính Âm). Hai hàng
+  nằm chung một thanh sticky; đổi kỳ phải đổi Top 3, bảng và self card thật sự.
+- Weekly dùng checkpoint gain và có thể hiện `TẠM` khi run chưa chốt; lifetime giữ
+  highest Tu Vi/highest realm. Không bắt người chơi chết hoặc reset để lên bảng.
+- Client/API cùng schema 21.1 qua `/api/version` và `/api/meowcha/version`. Lệch
+  schema thì chặn ghi; 404/422 không retry vô hạn; chỉ lỗi tạm thời được retry có hạn.
+- Xem `meowcha-production-contract-21.1.md` và prompt 22. Chỉ đổi dòng này thành
+  baseline production sau khi container test, deploy và smoke test hoàn tất.
+
+## Baseline production trước — 21.0 (27/10/2026)
 
 - Phong Thần chính có đúng Tổng Đạo / Trực Diện / Ngộ Đạo / Thính Âm. Lịch sử
   là view phụ; không khôi phục Lưu Trữ hoặc khối vinh danh vào flow chính.

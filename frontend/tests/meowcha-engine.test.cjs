@@ -218,7 +218,7 @@ test('WPM excludes pauses and survives save/load and independent mode switching'
   const r = runtime(); r.state.correctKeystrokes = 100; r.state.totalKeystrokes = 125;
   r.state.advanceClock(60); r.state.isPaused = true; r.state.advanceClock(120);
   assert.equal(r.state.calculateWPM(), 20); assert.equal(r.state.accuracy, 80);
-  r.state.wordsSlain = 3; r.state.score = 450; r.state.shieldCharges = 1;
+  r.state.wordsSlain = 3; r.state.learningAttempts=3;r.state.firstSuccesses=2;r.state.maxCombo=3;r.state.score = 450; r.state.shieldCharges = 1;
   r.state.talents.shieldCharges = 2; r.save.saveGame(1, r.state);
   const runId = r.state.runId; r.state.resetForNewMode('AUDIO');
   assert.equal(r.state.totalKeystrokes, 0); assert.notEqual(r.state.runId, runId);
@@ -297,6 +297,7 @@ test('HTML and iframe use one asset release', () => {
   assert.ok(versions.length > 20); assert.equal(new Set(versions).size, 1);
   const release=JSON.parse(fs.readFileSync(path.join(__dirname,'../meowcha-release.json'),'utf8'));
   assert.equal(versions[0],release.version);assert.match(page,/release\.version/);
+  assert.doesNotMatch(page,/sandbox=/);
 });
 
 test('local HTML and engine asset references resolve to shipped files', () => {
@@ -382,20 +383,22 @@ test('failed explicit local selection retains the conflict and both copies, incl
 test('failed run completion stays in a durable outbox and retries the same id', async () => {
   const r = runtime(); r.localStorage.setItem('oasis_token', 'test-token');
   r.state.wordsSlain = 1; r.state.score = 100; r.state.activeElapsedMs = 60_000;
-  r.state.correctKeystrokes = 3; r.state.totalKeystrokes = 3;
+  r.state.correctKeystrokes = 3; r.state.totalKeystrokes = 3;r.state.learningAttempts=1;r.state.maxCombo=1;
   const sent = [];
   r.sandbox.fetch = async (url, options) => {
     sent.push({ url, body: JSON.parse(options.body) });
+    if(url.endsWith('/runs'))return {ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})};
     return { ok: !url.endsWith('complete'), status: 503 };
   };
   assert.equal(await r.save.submitRun(r.state), false);
   assert.equal(Object.keys(r.save.getPendingRuns()).length, 1);
-  r.sandbox.fetch = async (url, options) => { sent.push({ url, body: JSON.parse(options.body) }); return { ok: true }; };
+  r.sandbox.fetch = async (url, options) => { sent.push({ url, body: JSON.parse(options.body) });
+    return url.endsWith('/runs')?{ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})}:{ok:true}; };
   await r.save.retryPendingRuns();
   assert.equal(Object.keys(r.save.getPendingRuns()).length, 0);
   const completions = sent.filter(item => item.url.endsWith('complete'));
-  assert.equal(completions.length, 2);
-  assert.equal(completions[0].body.run_id, completions[1].body.run_id);
+  assert.equal(completions.length, 4);
+  assert.ok(completions.every(item=>item.body.run_id===completions[0].body.run_id));
   assert.equal(completions[0].body.score, 100);
 });
 
@@ -427,15 +430,16 @@ test('Oxford fallback preserves source CEFR and shares one local download across
   assert.equal(result.words[0].cefr, 'C1'); assert.equal(result.words[0].word, 'BIAS');
 });
 
-test('legacy saves retain local progress but only submit newly measured work', async () => {
+test('legacy saves retain progress and begin clean v21 run counters', async () => {
   const r = runtime(); r.localStorage.setItem('oasis_token', 'test-token');
   r.state.loadFromModeData({ score: 2000, words: 15, realmIdx: 1, hp: 50 }, 'DIRECT');
   assert.equal(r.state.score, 2000); assert.equal(r.state.wordsSlain, 15);
-  assert.equal(r.state.assisted, true);
+  assert.equal(r.state.assisted, false);assert.equal(r.state.runMetricsVersion,2);assert.equal(r.state.baselineScore,2000);
   r.state.score += 100; r.state.wordsSlain++;
-  r.state.activeElapsedMs = 60_000; r.state.correctKeystrokes = 3; r.state.totalKeystrokes = 3;
+  r.state.activeElapsedMs = 60_000; r.state.correctKeystrokes = 3; r.state.totalKeystrokes = 3;r.state.learningAttempts=1;r.state.maxCombo=1;
   let payload;
-  r.sandbox.fetch = async (url, options) => { if(url.endsWith('complete')) payload=JSON.parse(options.body); return { ok: true }; };
+  r.sandbox.fetch = async (url, options) => { if(url.endsWith('/runs'))return {ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})};
+    if(url.endsWith('complete'))payload=JSON.parse(options.body);return {ok:true}; };
   await r.save.submitRun(r.state);
   assert.equal(payload.score, 100); assert.equal(payload.words_slain, 1);
 });
@@ -665,10 +669,10 @@ test('leaderboard failure is distinct from empty results and retry can recover',
 
 test('live high score checkpoints serialize captured runs without finishing or queuing duplicate rewards',async()=>{
  const r=runtime();r.localStorage.setItem('oasis_token','test-token');
- Object.assign(r.state,{score:100,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3});
+ Object.assign(r.state,{score:100,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3,learningAttempts:1,maxCombo:1});
  let release,calls=[];
  r.sandbox.fetch=async(url,options)=>{
-  if(url.endsWith('/runs'))return {ok:true};
+  if(url.endsWith('/runs'))return {ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})};
   const payload=JSON.parse(options.body);calls.push(payload);
   if(calls.length===1)await new Promise(resolve=>{release=resolve;});
   return {ok:true,json:async()=>({data:{score:payload.score,run_id:payload.run_id}})};
@@ -683,11 +687,33 @@ test('live high score checkpoints serialize captured runs without finishing or q
 
 test('failed score checkpoint can retry and never pretends to publish local highScore',async()=>{
  const r=runtime();r.localStorage.setItem('oasis_token','test-token');
- Object.assign(r.state,{score:100,highScore:90000,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3});
- let calls=0;r.sandbox.fetch=async(url,options)=>url.endsWith('/runs')?{ok:true}:
+ Object.assign(r.state,{score:100,highScore:90000,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3,learningAttempts:1,maxCombo:1});
+ let calls=0;r.sandbox.fetch=async(url,options)=>url.endsWith('/runs')?{ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})}:
   (++calls===1?{ok:false}:{ok:true,json:async()=>({data:{score:JSON.parse(options.body).score}})});
  assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(await r.save.submitCheckpoint(r.state),true);
  assert.equal(calls,2);assert.equal(r.save.lastCheckpoint.score,100);assert.equal(r.state.highScore,90000);
+});
+
+test('permanent checkpoint errors stop identical retries and 404 disables the capability',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');
+ Object.assign(r.state,{score:100,wordsSlain:1,activeElapsedMs:60000,correctKeystrokes:3,totalKeystrokes:3,learningAttempts:1,maxCombo:1});
+ let checkpoints=0;
+ r.sandbox.fetch=async(url,options)=>{
+  if(url.endsWith('/runs'))return {ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})};
+  checkpoints++;return {ok:false,status:422,clone(){return this;},json:async()=>({detail:[{loc:['body','score'],msg:'invalid'}]})};
+ };
+ assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(checkpoints,1);
+ r.state.score=101;r.state.correctKeystrokes=4;r.state.totalKeystrokes=4;
+ r.sandbox.fetch=async url=>url.endsWith('/runs/checkpoint')?(checkpoints++,{ok:false,status:404}):{ok:true,json:async()=>({data:{run_id:r.state.runId}})};
+ assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(r.save.supportsCapability('checkpoint'),false);
+ assert.equal(await r.save.submitCheckpoint(r.state),false);assert.equal(checkpoints,2);
+});
+
+test('API handshake rejects mixed releases before mutation',async()=>{
+ const r=runtime();r.localStorage.setItem('oasis_token','test-token');let writes=0;
+ r.sandbox.fetch=async(url,options={})=>{if(options.method)writes++;return {ok:true,json:async()=>({data:{meowcha_schema_version:'20.0',capabilities:{checkpoint:true}}})};};
+ r.M.RELEASE='21.1';const info=await r.save.loadApiCapabilities();assert.equal(info.compatible,false);
+ await assert.rejects(r.save.request('/api/meowcha/runs',{method:'POST'}),/version mismatch/);assert.equal(writes,0);
 });
 
 test('late weekly response cannot overwrite lifetime podium or self after changing the period',async()=>{
@@ -726,9 +752,10 @@ test('career import reads only the account personal record, never global guest h
 test('banking weekly gains keeps cultivation, HP and skills and starts a zero-gain measurement segment',async()=>{
  const r=runtime();r.localStorage.setItem('oasis_token','test-token');
  Object.assign(r.state,{currentScene:'LOBBY',score:10000,wordsSlain:100,baselineScore:9000,baselineWords:90,
-  realmIdx:3,hp:37,maxHp:50,activeElapsedMs:60000,correctKeystrokes:40,totalKeystrokes:45});
+  realmIdx:3,hp:37,maxHp:50,activeElapsedMs:60000,correctKeystrokes:40,totalKeystrokes:45,learningAttempts:10,firstSuccesses:8,maxCombo:7});
  r.state.skillLevels.WIND_SWORD_DOMAIN=2;r.state.selectedTalents=['WIND_SWORD_DOMAIN'];
- let completed=[];r.sandbox.fetch=async(url,options)=>{if(url.endsWith('/complete'))completed.push(JSON.parse(options.body));return {ok:true};};
+ let completed=[];r.sandbox.fetch=async(url,options)=>{if(url.endsWith('/runs'))return {ok:true,json:async()=>({data:{run_id:JSON.parse(options.body).run_id}})};
+  if(url.endsWith('/complete'))completed.push(JSON.parse(options.body));return {ok:true};};
  r.save.flushCloudSaves=async()=>{};
  const ui=Object.assign(Object.create(r.M.UIManager.prototype),{state:r.state,saveSystem:r.save,showStatus(){},updateHUD(){},updateLobbyButtons(){},refreshWeeklyRace:async()=>{},loadLeaderboardFromAPI(){}});
  const oldId=r.state.runId;assert.equal(await ui.bankWeeklyRun(),true);

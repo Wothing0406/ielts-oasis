@@ -21,8 +21,13 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/games/meowcha',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
+      },
+      {
         source: '/meowcha/:path*',
         headers: [
+          { key: 'Cache-Control', value: 'no-cache, must-revalidate' },
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: '*' },

@@ -138,6 +138,7 @@ test('resuming after a completed word still opens its saved realm gate after the
 test('an empty newly selected mode cannot hide another saved journey at startup',()=>{
  const r=setup();r.state.score=2000;r.state.wordsSlain=15;r.state.realmIdx=1;r.state.hp=38;r.state.maxHp=50;
  r.state.skillLevels.WIND_SWORD_DOMAIN=1;r.state.correctKeystrokes=55;r.state.totalKeystrokes=60;
+ r.state.learningAttempts=15;r.state.firstSuccesses=12;r.state.maxCombo=8;
  r.save.saveGame(1,r.state);r.state.resetForNewMode('AUDIO');r.save.saveGame(1,r.state);
  const resumed=r.save.hasActiveSave();assert.equal(resumed.activeMode,'DIRECT');
  const loaded=new r.M.GameState();loaded.loadFromSlot(resumed);

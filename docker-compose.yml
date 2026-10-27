@@ -21,7 +21,11 @@ services:
 
   # --- Backend Service (FastAPI) ---
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        - MEOWCHA_GIT_SHA=${MEOWCHA_GIT_SHA:-development}
+        - MEOWCHA_BUILD_TIMESTAMP=${MEOWCHA_BUILD_TIMESTAMP:-development}
     container_name: ielts_oasis_backend
     restart: always
     environment:
@@ -34,7 +38,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./backend/static:/app/static
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 300
     depends_on:
       db:
@@ -44,7 +48,11 @@ services:
 
   # --- Discord Bot Service ---
   discord_bot:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        - MEOWCHA_GIT_SHA=${MEOWCHA_GIT_SHA:-development}
+        - MEOWCHA_BUILD_TIMESTAMP=${MEOWCHA_BUILD_TIMESTAMP:-development}
     container_name: ielts_oasis_discord_bot
     restart: always
     environment:
@@ -55,7 +63,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./backend:/app
+      - ./backend/static:/app/static
     command: python bot.py
     depends_on:
       db:
@@ -69,6 +77,8 @@ services:
       context: ./frontend
       args:
         - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        - MEOWCHA_GIT_SHA=${MEOWCHA_GIT_SHA:-development}
+        - MEOWCHA_BUILD_TIMESTAMP=${MEOWCHA_BUILD_TIMESTAMP:-development}
     container_name: ielts_oasis_web
     restart: always
     environment:
@@ -76,8 +86,6 @@ services:
       - DOCKER_ENV=true
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend/public:/app/public
     depends_on:
       - backend
     networks:

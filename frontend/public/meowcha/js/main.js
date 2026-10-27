@@ -293,7 +293,9 @@
         }
       });
 
-      // Cloud precedes selecting the journey, including a first boot on another device.
+      // Refuse writes across a mixed client/API deployment, then let cloud data
+      // precede selecting the journey on a compatible release.
+      await this.saveSystem.loadApiCapabilities();
       await this.saveSystem.syncWithBackend();
       await this.saveSystem.syncPersonalBest().catch(()=>{});
       // Nạp tự động tiến trình đã lưu nếu có (theo slot đang hoạt động)
@@ -341,7 +343,8 @@
         }
       }
 
-      console.log("[Meowcha] Động cơ Meowcha IELTS đã khởi tạo hoàn tất!");
+      if(window.parent&&window.parent!==window)window.parent.postMessage({type:'MEOWCHA_READY',version:M.RELEASE,apiVersion:M.API_INFO?.meowcha_api_version||null},window.location.origin);
+      console.log(`[Meowcha] Động cơ ${M.RELEASE||'dev'} đã khởi tạo hoàn tất!`);
     }
 
     purgeAllBattleState() {

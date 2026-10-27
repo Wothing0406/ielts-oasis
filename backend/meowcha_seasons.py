@@ -24,6 +24,17 @@ RANK_TITLES=('Chí Tôn Tiên Miện','Bạch Ngân Đạo Quân','Thanh Đồng
 SPECIALTIES={'OVERALL':'Vạn Pháp','DIRECT':'Kiếm Tốc','CLOZE':'Ngộ Đạo','AUDIO':'Thiên Nhĩ'}
 
 
+def weekly_reward(rank):
+    """Cosmetic-only rewards while results remain plausibility checked."""
+    if rank == 1:
+        return {'tier':'champion','label':'Kim Miện Tuần + khung Phong Thần','cosmetic':True}
+    if rank <= 3:
+        return {'tier':'podium','label':'Khung Tam Giáp + danh hiệu tuần','cosmetic':True}
+    if rank <= 10:
+        return {'tier':'top10','label':'Danh hiệu Thiên Bảng tuần','cosmetic':True}
+    return None
+
+
 class MeowchaScoreRecord(Base):
     __tablename__ = 'meowcha_score_records'
     run_id = Column(String(36), ForeignKey('meowcha_runs.run_id'), primary_key=True)
@@ -219,12 +230,17 @@ def hall_records(db, assisted, deck_id, scope='ALL_TIME', week=None, now=None):
     for record, run in checkpoints:
         snapshot=record.snapshot
         if scope=='WEEKLY':
-            if not snapshot.get('finalized') or record.score<=0:continue
+            # A persisted checkpoint is enough to survive closing the tab and to
+            # appear provisionally. Completion/banking only changes finalized;
+            # it never credits profiles twice.
+            if record.score<=0:continue
             snapshot=snapshot.get('weekly_result',snapshot)
         if bool(snapshot.get('assisted'))!=assisted:
             continue
         if record.run_id not in records or record.score>records[record.run_id]['score']:
-            records[record.run_id] = {**snapshot, 'run_id': run.run_id, 'user_id': run.user_id, 'game_mode': run.game_mode,'finalized':bool(record.snapshot.get('finalized'))}
+            records[record.run_id] = {**snapshot, 'run_id': run.run_id, 'user_id': run.user_id,
+                'game_mode': run.game_mode, 'finalized':bool(record.snapshot.get('finalized')),
+                'provisional':not bool(record.snapshot.get('finalized'))}
     return list(records.values())
 
 
@@ -256,12 +272,14 @@ def seal_week(db, week, now=None):
                 for row in board['rows']:
                     title=RANK_TITLES[row['rank']-1] if not assisted and row['rank']<=10 else None
                     specialty=SPECIALTIES[hall] if title else None
-                    row['title'],row['specialty']=title,specialty
+                    reward=weekly_reward(row['rank']) if title else None
+                    row['title'],row['specialty'],row['reward']=title,specialty,reward
                     db.add(MeowchaWeeklyStanding(week=key,user_id=row['user_id'],hall=hall,deck_id=deck,assisted=assisted,
                         rank=row['rank'],weekly_score=row['score'],best_run_id=row.get('run_id'),title=title,specialty=specialty,snapshot=row))
                     notices[row['user_id']].append({'hall': hall, 'deck_id': deck, 'assisted': assisted,
                         'rank': row['rank'], 'score': row['score'], 'players': board['total_players'],
-                        'title':title,'specialty':specialty,'highest_realm':row.get('highest_realm',row.get('realm'))})
+                        'title':title,'specialty':specialty,'reward':reward,
+                        'highest_realm':row.get('highest_realm',row.get('realm'))})
     season.boards = boards
     for user_id, placements in notices.items():
         db.add(MeowchaHonor(week=key, user_id=user_id, placements=placements, created_at=now))

@@ -127,5 +127,7 @@ Không coi việc lưu brief là đã hoàn thành mọi yêu cầu trong brief.
 - [21 — Thiên Bảng tuần, Discord và Đạo Áp](21-weekly-race-discord-difficulty.md).
   [Giới hạn difficulty trực tiếp](21b-smooth-difficulty-overrides.md).
   [Nghiệm thu đợt 21](../../meowcha-weekly-race-21.md).
+- [22 — Hợp đồng production 21.1, route 404 và payload 422](22-production-version-contract.md).
+  [Bản ghi release và hai phạm vi Phong Thần](../../meowcha-production-contract-21.1.md).
 - [Brief toàn website Matcha](../matcha-website-design-system-reference.md) là
   tham chiếu riêng, chưa phải redesign đã hoàn thành.

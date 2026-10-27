@@ -174,3 +174,11 @@ configuration. Preserve durable at-most-once claims and do not retry ambiguous
 sends. Difficulty floors are DIRECT 7s, CLOZE 8.5s and AUDIO 9.5s, human-WPM
 adaptation is capped at 10%, word bonus at 3.5s, and initial AUDIO voice holds
 the timer without replay resetting it. Plausibility checks are not server replay.
+
+For production contract 21.1 read docs/meowcha-production-contract-21.1.md. The
+leaderboard has two independent selectors: weekly versus lifetime, then the four
+mode halls. Keep both together and visible; changing either must replace podium,
+rows and self stats. Weekly checkpoints may rank provisionally without death,
+while lifetime remains monotonic. Keep frontend/API schema versions identical,
+confirm run start before writes, circuit-break known 404/422 failures and deploy
+container artifacts atomically instead of bind-mounting application source.

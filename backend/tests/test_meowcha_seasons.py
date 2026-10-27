@@ -54,6 +54,9 @@ class SeasonTests(unittest.TestCase):
         value.update(changes);return value
 
     def test_monday_boundary_is_vietnam_time_not_browser_or_utc_midnight(self):
+        version=self.client.get('/api/meowcha/version').json()['data']
+        self.assertEqual(version['meowcha_api_version'],'21.1')
+        self.assertTrue(version['capabilities']['checkpoint'])
         self.assertEqual(week_window(MONDAY-timedelta(microseconds=1))[0],'2026-10-19')
         self.assertEqual(week_window(MONDAY)[0],'2026-10-26')
         self.assertEqual(week_window(MONDAY)[1],MONDAY)
@@ -71,6 +74,9 @@ class SeasonTests(unittest.TestCase):
         self.assertEqual(self.db.query(MeowchaUserProfile).count(),0)
         board=self.client.get('/api/meowcha/halls?hall=DIRECT').json()
         self.assertEqual(board['data'][0]['score'],450)
+        weekly=self.client.get('/api/meowcha/halls?hall=DIRECT&scope=WEEKLY').json()
+        self.assertEqual(weekly['data'][0]['score'],450)
+        self.assertTrue(weekly['data'][0]['provisional'])
         self.assertEqual(self.client.get('/api/meowcha/personal-best').json()['data']['score'],450)
         for _ in range(2):
             self.assertEqual(self.client.post('/api/meowcha/runs/complete',json=self.payload(row)).status_code,200)
@@ -102,7 +108,8 @@ class SeasonTests(unittest.TestCase):
         store_scores(self.db,row,prepare_result(row,self.user,payload,MONDAY+timedelta(seconds=1)),MONDAY+timedelta(seconds=1));self.db.commit()
         with patch('meowcha_seasons.utc_now',return_value=MONDAY+timedelta(minutes=2)):
             weekly=self.client.get('/api/meowcha/halls?hall=DIRECT&scope=WEEKLY').json()
-            self.assertEqual(weekly['data'],[])
+            self.assertEqual(weekly['data'][0]['score'],7000)
+            self.assertTrue(weekly['data'][0]['provisional'])
             self.assertEqual(weekly['meta']['all_time_self']['score'],15000)
             archive=self.client.get('/api/meowcha/halls?hall=DIRECT&scope=WEEKLY&week=previous').json()
             self.assertTrue(archive['meta']['sealed']);self.assertEqual(archive['data'][0]['score'],8000)
@@ -158,6 +165,8 @@ class SeasonTests(unittest.TestCase):
         self.assertTrue(seal_week(self.db,'2026-10-19',MONDAY))
         standings=self.db.query(MeowchaWeeklyStanding).filter_by(hall='DIRECT').order_by(MeowchaWeeklyStanding.rank).all()
         self.assertEqual([r.title for r in standings[:10]],list(RANK_TITLES));self.assertIsNone(standings[10].title)
+        self.assertEqual(standings[0].snapshot['reward']['tier'],'champion')
+        self.assertEqual(standings[9].snapshot['reward']['tier'],'top10')
         self.assertEqual(self.db.query(MeowchaWeeklyNotification).filter_by(kind='discord_award').count(),9)
         self.assertEqual(self.db.query(MeowchaHonor).count(),11)
 

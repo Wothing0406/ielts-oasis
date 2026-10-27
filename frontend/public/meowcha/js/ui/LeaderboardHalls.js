@@ -5,7 +5,7 @@
  const pct=v=>v==null?'Chưa lưu':num(v)+'%';
  const names={OVERALL:'Tổng Đạo',DIRECT:'Trực Diện',CLOZE:'Ngộ Đạo',AUDIO:'Thính Âm'};
  const configs={
-  OVERALL:{title:'Tổng Đạo • Kỷ lục tu luyện',description:'Vĩnh viễn giữ kỷ lục cá nhân; bảng tuần lấy điểm một ván hoàn tất cao nhất. Đạo Hạnh là chỉ số tham khảo.',
+  OVERALL:{title:'Tổng Đạo • Kỷ lục tu luyện',description:'Vĩnh viễn giữ kỷ lục cá nhân; bảng tuần cập nhật từ checkpoint đã đồng bộ, kể cả khi chưa tử trận. Đạo Hạnh là chỉ số tham khảo.',
    columns:['Hạng','Tiên Hữu','Cảnh Giới Cao Nhất','Kỷ Lục','Đạo Hạnh','Tổng Tu Vi','Sở Trường'],values:r=>[num(r.score),num(r.dao_hanh),num(r.total_score),names[r.strongest_mode]||'Chưa lưu'],hero:r=>num(r.score)+' Tu Vi'},
   DIRECT:{title:'Kiếm Đạo Điện • Trực Diện',description:'Xếp theo kỷ lục điểm Trực Diện. Bằng điểm xét độ chính xác, liên trảm rồi WPM.',
    columns:['Hạng','Tiên Hữu','Cảnh Giới Cao Nhất','Kỷ Lục','Kiếm Tốc','Kiếm Chuẩn','Liên Trảm'],values:r=>[num(r.score),num(r.wpm)+' WPM',pct(r.accuracy),num(r.max_combo)],hero:r=>num(r.score)+' Tu Vi'},
@@ -21,12 +21,13 @@
   let nav=this.modalPantheon.querySelector('.hall-navigation');
   if(!nav){
    const hero=document.getElementById('pantheonPodium');
-   const season=document.createElement('div');season.className='hall-season-header';
-   season.innerHTML='<div class="hall-periods" role="group" aria-label="Mùa xếp hạng"><button type="button" data-period="WEEKLY">Tuần này</button><button type="button" data-period="ALL_TIME">Vĩnh viễn</button><span id="hallClock" role="status"></span></div>';
-   hero.before(season);nav=document.createElement('div');nav.className='hall-navigation';
-   nav.innerHTML='<div class="hall-tabs" role="tablist" aria-label="Phong Thần điện">'+Object.keys(configs).map(key=>'<button type="button" role="tab" id="hall-tab-'+key+'" data-hall="'+key+'" aria-controls="pantheonRankList" aria-selected="false">'+names[key]+'</button>').join('')+'</div><label class="hall-assistance"><input id="boardAssisted" type="checkbox"><span>Có hỗ trợ</span></label>';
-   hero.after(nav);
+   nav=document.createElement('div');nav.className='hall-navigation';
+   nav.innerHTML='<div class="hall-scope-row"><strong class="hall-control-label">KỲ XẾP HẠNG</strong><div class="hall-periods" role="group" aria-label="Chọn kỳ xếp hạng"><button type="button" data-period="WEEKLY"><span>Thiên Bảng</span><small>Tuần này</small></button><button type="button" data-period="ALL_TIME"><span>Phong Thần</span><small>Vĩnh viễn</small></button></div><span id="hallClock" role="status"></span></div><div class="hall-mode-row"><strong class="hall-control-label">PHÁP MÔN</strong><div class="hall-tabs" role="tablist" aria-label="Phong Thần điện">'+Object.keys(configs).map(key=>'<button type="button" role="tab" id="hall-tab-'+key+'" data-hall="'+key+'" aria-controls="pantheonRankList" aria-selected="false">'+names[key]+'</button>').join('')+'</div><label class="hall-assistance"><input id="boardAssisted" type="checkbox"><span>Có hỗ trợ</span></label></div>';
+   hero.before(nav);
    const description=document.createElement('p');description.className='hall-description';description.id='hallDescription';nav.after(description);
+   const rewards=document.createElement('div');rewards.className='hall-weekly-rewards';rewards.id='hallWeeklyRewards';rewards.setAttribute('role','note');
+   rewards.innerHTML='<strong>THƯỞNG DANH DỰ TUẦN</strong><span>#1 Kim Miện + khung Phong Thần • #2–3 khung Tam Giáp • #4–10 danh hiệu Thiên Bảng</span><small>Mỹ phẩm đến mùa kế tiếp, không cộng chỉ số.</small>';
+   description.after(rewards);
    nav.querySelectorAll('[data-hall]').forEach(button=>{
     button.onclick=()=>this.selectHall(button.dataset.hall);
     button.onkeydown=event=>{
@@ -37,7 +38,7 @@
     };
    });
    nav.querySelector('#boardAssisted').onchange=()=>this.loadLeaderboardFromAPI();
-   season.querySelectorAll('[data-period]').forEach(button=>button.onclick=()=>{this.boardPeriod=button.dataset.period;this.loadLeaderboardFromAPI();});
+   nav.querySelectorAll('[data-period]').forEach(button=>button.onclick=()=>{this.boardPeriod=button.dataset.period;this.loadLeaderboardFromAPI();});
    const secondary=document.createElement('div');secondary.className='hall-secondary-actions';
    secondary.innerHTML='<button type="button" id="btnBankWeeklyRun">CHỐT ĐẠO QUẢ TUẦN</button><button type="button" id="btnHallHistory">LỊCH SỬ PHONG THẦN</button><label class="hall-discord-preference"><input type="checkbox" id="hallDiscordPreference"><span>Vinh danh Discord</span></label><span id="hallPreferenceStatus" role="status"></span>';
    (this.modalPantheon.querySelector('.pantheon-footer-bar')||description).after(secondary);
@@ -73,8 +74,9 @@
   const panel=this.pantheonPlayerSelfStats;if(!panel)return;
   const row=this.boardSelf,config=configs[this.boardHall||'OVERALL'],career=this.boardMeta?.career;
   const record=career?' • Kỷ lục cá nhân: '+num(career.highest_tuvi)+' Tu Vi • '+career.highest_realm:'';
-  panel.textContent=row?'Hạng #'+row.rank+' • '+config.columns.slice(3).map((label,i)=>label+': '+config.values(row)[i]).join(' • ')+record:
-   (user.isLoggedIn?'Chưa có ván hoàn tất trong kỳ này.':'Đăng nhập để xem hạng cá nhân.')+record;
+  const state=row?.provisional?' • Tạm tính từ checkpoint; thoát game vẫn giữ hạng.':'';
+  panel.textContent=row?'Hạng #'+row.rank+' • '+config.columns.slice(3).map((label,i)=>label+': '+config.values(row)[i]).join(' • ')+record+state:
+   (user.isLoggedIn?'Chưa có checkpoint hợp lệ trong kỳ này.':'Đăng nhập để xem hạng cá nhân.')+record;
  };
  UI.loadLeaderboardFromAPI=async function(){
   const list=document.getElementById('pantheonRankList');if(!list)return;
@@ -99,7 +101,7 @@
    this.boardMeta=result.meta||{};this.boardSelf=result.meta?.self||null;this.updateHallClock();this.updateRacePrefs?.();
    this.renderPantheonLeaderboard(result.data);
    if(!result.data.length){
-    list.innerHTML='<div class="board-message" role="status">'+(this.boardPeriod==='WEEKLY'?'Tuần mới đã mở. Hoàn tất một ván mới để ghi tên vào Thiên Bảng. Kỷ lục cá nhân vẫn được giữ ở Vĩnh viễn.':'Chưa có kỷ lục đã đồng bộ ở điện này. Kỷ lục cũ chưa rõ pháp môn được giữ ở Tổng Đạo Vĩnh viễn.')+'</div>';
+     list.innerHTML='<div class="board-message" role="status">'+(this.boardPeriod==='WEEKLY'?'Tuần mới đã mở. Gõ ít nhất một từ và đồng bộ checkpoint để ghi tên; không cần cố ý tử trận.':'Chưa có kỷ lục đã đồng bộ ở điện này. Kỷ lục cũ chưa rõ pháp môn được giữ ở Tổng Đạo Vĩnh viễn.')+'</div>';
    }
   }catch(error){
    M.report?.('leaderboard_failed');
@@ -114,14 +116,16 @@
  };
  UI.updateHallClock=function(){
   const period=this.boardPeriod||'WEEKLY';
+  if(this.modalPantheon){this.modalPantheon.dataset=this.modalPantheon.dataset||{};this.modalPantheon.dataset.period=period;}
   this.modalPantheon?.querySelectorAll('[data-period]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.period===period)));
   const node=document.getElementById('hallClock');if(!node)return;
   const desc=this.modalPantheon?.querySelector('.hall-description');
   if(desc)desc.textContent=configs[this.boardHall||'OVERALL'].description+(this.boardSyncWarning?' Điểm hiện tại chưa đồng bộ.':'');
+  const rewards=document.getElementById('hallWeeklyRewards');if(rewards)rewards.hidden=period==='ALL_TIME';
   const info=this.boardMeta?.period;if(!info){node.textContent='Đang thỉnh Thiên Bảng…';return;}
   if(this._clockStamp!==info.server_now){this._clockStamp=info.server_now;this._clockOffset=Date.parse(info.server_now)-Date.now();}
   const title=this.modalPantheon.querySelector('.modal-title');
-  if(title)title.textContent=period==='ALL_TIME'?'PHONG THẦN VĨNH VIỄN':'THIÊN BẢNG TUẦN '+info.season_number;
+  if(title)title.textContent=(period==='ALL_TIME'?'PHONG THẦN VĨNH VIỄN':'THIÊN BẢNG TUẦN '+info.season_number)+' • '+names[this.boardHall||'OVERALL'].toUpperCase();
   if(period==='ALL_TIME'){node.textContent='Kỷ lục Tu Vi và cảnh giới cao nhất • không reset';return;}
   node.textContent='Còn '+(M.raceCountdown?M.raceCountdown(info,this._clockOffset):'…')+' • Chốt thứ Hai 00:00 (VN)';
   if(Date.parse(info.season_ends_at)<=Date.now()+(this._clockOffset||0)&&this._rolloverRequested!==info.week){this._rolloverRequested=info.week;this.loadLeaderboardFromAPI();this.refreshWeeklyRace?.();}
@@ -139,7 +143,7 @@
    if(avatar){avatar.style.display=item?'block':'none';if(item)this.setUserAvatar(avatar,item.avatar_url);}
    if(empty)empty.style.display=item?'none':'block';
   }
-  list.innerHTML=data.map((row,index)=>'<div class="pantheon-row" role="row"><span role="cell">#'+(row.rank||index+1)+'</span><span class="hall-player" role="cell">'+
+   list.innerHTML=data.map((row,index)=>'<div class="pantheon-row" role="row"><span role="cell">#'+(row.rank||index+1)+(row.provisional?' <small class="hall-provisional">TẠM</small>':'')+'</span><span class="hall-player" role="cell">'+
    '<img class="user-row-avatar" alt="" data-avatar-index="'+index+'"><span>'+esc(row.player_name||'Tiên Hữu')+'</span></span><span role="cell">'+esc(row.realm||'Luyện Khí Kỳ')+'</span>'+
    config.values(row).map(value=>'<span role="cell">'+esc(value)+'</span>').join('')+'</div>').join('');
   if(list.querySelectorAll)list.querySelectorAll('[data-avatar-index]').forEach(image=>this.setUserAvatar(image,data[Number(image.dataset.avatarIndex)].avatar_url));

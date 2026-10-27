@@ -111,6 +111,7 @@
     }
 
     resetRunMetrics() {
+      this.runMetricsVersion=2;
       this.learningMetricsVersion=2;this.learningAttempts=0;this.firstSuccesses=0;this.hintsUsed=0;this.replayCount=0;
       this.runId = (root.crypto && root.crypto.randomUUID) ? root.crypto.randomUUID() :
         'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -173,26 +174,40 @@
         'assistedKeystrokes', 'assistedWords', 'humanWords', 'humanWordCombo', 'assisted',
         'runFinished', 'baselineScore', 'baselineWords', 'maxCombo', 'typoCount', 'activeDeckId',
         'unlockedSkills', 'skillLevels', 'selectedTalents', 'passiveModifiers',
-        'learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount',
+        'runMetricsVersion','learningMetricsVersion','learningAttempts','firstSuccesses','hintsUsed','replayCount',
         'maxPerfectStreak','perfectMetricsKnown','difficultyVersion','minimumTargetSeconds'];
       return Object.fromEntries(fields.map(k => [k, this[k]]));
     }
 
     restoreRunMetrics(data) {
       this.resetRunMetrics();
-      if (data && data.runId && !data.runFinished) {
+      const score=Number(data?.score)||0,words=Number(data?.words)||0,baselineWords=Number(data?.baselineWords)||0;
+      const runWords=Math.max(0,words-baselineWords);
+      const coherent=!!(data&&data.runMetricsVersion===2&&data.runId&&!data.runFinished&&
+        Number.isFinite(data.activeElapsedMs)&&data.activeElapsedMs>=0&&
+        Number.isFinite(data.correctKeystrokes)&&Number.isFinite(data.totalKeystrokes)&&
+        data.correctKeystrokes>=0&&data.totalKeystrokes>=data.correctKeystrokes&&
+        Number.isFinite(data.assistedKeystrokes)&&data.assistedKeystrokes>=0&&
+        Number.isFinite(data.assistedWords)&&data.assistedWords>=0&&data.assistedWords<=runWords&&
+        runWords<=data.correctKeystrokes+data.assistedKeystrokes&&
+        (data.learningMetricsVersion!==2||(
+          Number.isFinite(data.learningAttempts)&&data.learningAttempts>=runWords&&
+          Number.isFinite(data.firstSuccesses)&&data.firstSuccesses>=0&&
+          data.firstSuccesses<=data.learningAttempts&&data.firstSuccesses<=runWords&&
+          Number.isFinite(data.maxCombo)&&data.maxCombo>=0&&data.maxCombo<=runWords)));
+      if (coherent) {
         this.difficultyVersion=data.difficultyVersion||1;
         this.perfectMetricsKnown=!!data.perfectMetricsKnown;
         this.learningMetricsVersion=data.learningMetricsVersion===2?2:1;
         for (const key of Object.keys(this.getRunMetrics())) {
           if (data[key] !== undefined) this[key] = data[key];
         }
-      } else if (data && (data.score || data.words)) {
-        this.perfectMetricsKnown=false;
-        // Old saves have no verifiable typing clock; retain progress as assisted practice.
-        this.assisted = true;
-        this.baselineScore = data.score || 0;
-        this.baselineWords = data.words || 0;
+      } else if (data && (score || words)) {
+        // v20 and older saves contain lifetime progress but not a coherent v21
+        // run. Start a clean measured segment instead of posting stale counters.
+        this.baselineScore = score;
+        this.baselineWords = words;
+        this.migratedRunCounters = true;
       }
       this.calculateWPM();
     }

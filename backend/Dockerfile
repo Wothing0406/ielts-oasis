@@ -21,6 +21,11 @@ FROM python:3.10-slim AS runner
 
 WORKDIR /app
 
+ARG MEOWCHA_GIT_SHA=development
+ARG MEOWCHA_BUILD_TIMESTAMP=development
+ENV MEOWCHA_GIT_SHA=$MEOWCHA_GIT_SHA
+ENV MEOWCHA_BUILD_TIMESTAMP=$MEOWCHA_BUILD_TIMESTAMP
+
 # Install essential runtime dependencies for OpenCV, FFmpeg and Healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \

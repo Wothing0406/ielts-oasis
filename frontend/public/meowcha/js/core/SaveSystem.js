@@ -48,7 +48,88 @@
       this.slots = this.loadLocalSlots();
       this._pendingSlots = new Set([1, 2, 3].filter(id => this.slots[id].cloudDirty));
       this._runStarts = new Map();
+      this._runCompletions = new Map();
+      this._invalidPayloads = new Set();
+      this._checkpointRejectedSignatures = new Map();
+      this._terminalWarnings = new Set();
+      this.apiCapabilities={checkpoint:true,career_record:true,weekly_race:true,difficulty_v2:true,run_lifecycle:true};
+      this.apiCompatibility=null;
       this.syncSrsDeck();
+    }
+
+    supportsCapability(name){return this.apiCapabilities[name]!==false;}
+
+    disableCapability(name,status){
+      this.apiCapabilities[name]=false;
+      const key=name+':'+status;
+      if(!this._terminalWarnings.has(key)){
+        this._terminalWarnings.add(key);
+        console.warn(`[MEOW-CHA API] ${name} tạm tắt cho phiên này (HTTP ${status}).`);
+      }
+    }
+
+    async safeError(response){
+      try{const body=await response.clone().json();return body?.detail||body?.error||`HTTP ${response.status}`;}
+      catch(_){return `HTTP ${response.status}`;}
+    }
+
+    debugApiFailure(endpoint,status,detail){
+      const debug=typeof location!=='undefined'&&(/^(localhost|127[.]0[.]0[.]1)$/.test(location.hostname)||new URLSearchParams(location.search).has('debugApi'));
+      if(debug)console.warn('[MEOW-CHA API validation]',{endpoint,status,detail});
+    }
+
+    async capabilityRequest(capability,url,options={},attempts=3){
+      if(!this.supportsCapability(capability))return null;
+      let lastError=null;
+      for(let attempt=0;attempt<attempts;attempt++){
+        try{
+          const response=await this.request(url,options);
+          if(response.ok)return response;
+          if(response.status===404){this.disableCapability(capability,404);return response;}
+          if(response.status===401||response.status===403||response.status===422)return response;
+          if(response.status!==429&&![500,502,503,504].includes(response.status))return response;
+          lastError=new Error(`HTTP ${response.status}`);
+        }catch(error){lastError=error;}
+        // Keep retries bounded and immediate. Browser fetch timeouts already
+        // provide spacing, while an explicit sleeping timer can be frozen by a
+        // paused game/test clock.
+      }
+      if(lastError)throw lastError;
+      return null;
+    }
+
+    async loadApiCapabilities(){
+      if(this._capabilityLoad)return this._capabilityLoad;
+      this._capabilityLoad=(async()=>{
+        try{
+          const response=await this.request('/api/meowcha/version');
+          if(!response.ok){if(response.status===404)this.disableCapability('version_handshake',404);return null;}
+          const body=await response.json(),info=body.data||body;
+          if(info?.capabilities)this.apiCapabilities={...this.apiCapabilities,...info.capabilities};
+          this.apiCompatibility=info||null;root.Meowcha.API_INFO=info||null;
+          const client=String(root.Meowcha.RELEASE||''),server=String(info?.meowcha_schema_version||'');
+          if(client&&server&&client!==server){
+            this.apiCompatibility={...info,compatible:false};
+            console.warn(`[MEOW-CHA] Lệch phiên bản client ${client} / API ${server}; dừng ghi dữ liệu phiên này.`);
+            for(const key of ['checkpoint','career_record','weekly_race','run_lifecycle'])this.apiCapabilities[key]=false;
+            return this.apiCompatibility;
+          }
+          this.apiCompatibility={...info,compatible:true};return this.apiCompatibility;
+        }catch(_){return null;}
+      })();return this._capabilityLoad;
+    }
+
+    validateRunPayload(payload){
+      const errors=[];
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(payload.run_id||'')))errors.push('run_id');
+      for(const key of ['score','words_slain','realm_idx','active_ms','correct_keystrokes','total_keystrokes','assisted_keystrokes','assisted_words']){
+        if(!Number.isFinite(payload[key])||payload[key]<0)errors.push(key);
+      }
+      if(payload.active_ms<1000)errors.push('active_ms');
+      if(payload.realm_idx>4||payload.correct_keystrokes>payload.total_keystrokes||payload.assisted_words>payload.words_slain)errors.push('typing_counters');
+      if(payload.words_slain>payload.correct_keystrokes+payload.assisted_keystrokes)errors.push('word_evidence');
+      if(payload.metrics_version===2&&(payload.first_successes>payload.learning_attempts||payload.first_successes>payload.words_slain||payload.max_combo>payload.words_slain||payload.learning_attempts<payload.words_slain))errors.push('learning_counters');
+      return [...new Set(errors)];
     }
 
     syncSrsDeck() {
@@ -171,14 +252,16 @@
 
     async syncCareerRecord() {
       const record=this.getStoredPersonalBest();
-      if(!this.hasSession()||!Number.isFinite(record.score)||record.score<=0||this._careerSyncedScore>=record.score)return false;
+      if(!this.hasSession()||!this.supportsCapability('career_record')||!Number.isFinite(record.score)||record.score<=0||
+        this._careerSyncedScore>=record.score||this._careerRejectedScore===record.score)return false;
       if(this._careerSync)return this._careerSync;
       this._careerSync=(async()=>{
-        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);
-        try{const response=await this.request('/api/meowcha/career/personal-record',{method:'POST',headers:this.getAuthHeaders(),signal:controller.signal,
+        try{const response=await this.capabilityRequest('career_record','/api/meowcha/career/personal-record',{method:'POST',headers:this.getAuthHeaders(),
           body:JSON.stringify({score:record.score,realm_idx:Number.isInteger(record.realmIdx)?record.realmIdx:0})});
-          if(response.ok){this._careerSyncedScore=record.score;return true;}return false;
-        }catch(_){return false;}finally{clearTimeout(timer);}
+          if(response?.ok){this._careerSyncedScore=record.score;return true;}
+          if(response?.status===422){this._careerRejectedScore=record.score;this.debugApiFailure('/career/personal-record',422,await this.safeError(response));}
+          return false;
+        }catch(_){return false;}
       })().finally(()=>{this._careerSync=null;});return this._careerSync;
     }
 
@@ -198,14 +281,20 @@
     }
 
     startRun(state) {
-      if (!this.hasSession() || state.runFinished) return Promise.resolve(false);
+      if (!this.hasSession() || !this.supportsCapability('run_lifecycle') || state.runFinished) return Promise.resolve(false);
       if (this._runStarts.has(state.runId)) return this._runStarts.get(state.runId);
-      const request = this.request('/api/meowcha/runs', {
+      const request = this.capabilityRequest('run_lifecycle','/api/meowcha/runs', {
         method: 'POST', headers: this.getAuthHeaders(),
         body: JSON.stringify({ run_id: state.runId, game_mode: state.gameMode, deck_id: state.activeDeckId,
           resumed: (state.activeElapsedMs || 0) > 0 })
-      }).then(r => { if (!r.ok) throw new Error(`Start run: ${r.status}`); return true; })
-        .catch(() => { this._runStarts.delete(state.runId); return false; });
+      }).then(async r => {
+        if (!r?.ok) {
+          if(r?.status===422)this.debugApiFailure('/runs',422,await this.safeError(r));
+          if(r?.status===404)this.disableCapability('run_lifecycle',404);
+          return false;
+        }
+        const body=await r.json();return String(body?.data?.run_id||'')===String(state.runId);
+      }).catch(() => { this._runStarts.delete(state.runId); return false; });
       this._runStarts.set(state.runId, request);
       return request;
     }
@@ -214,9 +303,9 @@
       state.calculateWPM();
       return { run_id: state.runId, score: Math.max(0, state.score - (state.baselineScore || 0)),
         words_slain: Math.max(0, state.wordsSlain - (state.baselineWords || 0)),
-        realm_idx: state.realmIdx, active_ms: Math.round(state.activeElapsedMs),
-        correct_keystrokes: state.correctKeystrokes, total_keystrokes: state.totalKeystrokes,
-        assisted_keystrokes: state.assistedKeystrokes, assisted_words: state.assistedWords,
+        realm_idx: state.realmIdx, active_ms: Math.round(state.activeElapsedMs || 0),
+        correct_keystrokes: Number(state.correctKeystrokes || 0), total_keystrokes: Number(state.totalKeystrokes || 0),
+        assisted_keystrokes: Number(state.assistedKeystrokes || 0), assisted_words: Number(state.assistedWords || 0),
         assisted: state.assisted, is_victory: state.hp > 0,
         metrics_version:state.learningMetricsVersion||1,learning_attempts:state.learningAttempts||0,
         first_successes:state.firstSuccesses||0,hints_used:state.hintsUsed||0,
@@ -227,21 +316,26 @@
     }
 
     async submitCheckpoint(state) {
-      if(!this.hasSession()||state.runFinished||!state.runId||!state.wordsSlain||state.activeElapsedMs<1000)return false;
+      if(!this.hasSession()||!this.supportsCapability('checkpoint')||state.runFinished||!state.runId||!state.wordsSlain||state.activeElapsedMs<1000)return false;
       const payload=this.captureRunPayload(state),signature=JSON.stringify(payload);
       if(!payload.words_slain)return false;
+      const invalid=this.validateRunPayload(payload);
+      if(invalid.length){if(!this._invalidPayloads.has(signature)){this._invalidPayloads.add(signature);this.debugApiFailure('/runs/checkpoint','client',invalid);}return false;}
       const start={runId:state.runId,gameMode:state.gameMode,activeDeckId:state.activeDeckId,activeElapsedMs:state.activeElapsedMs};
       this._checkpointChains=this._checkpointChains||new Map();this._checkpointSignatures=this._checkpointSignatures||new Map();
       const task=(this._checkpointChains.get(start.runId)||Promise.resolve()).then(async()=>{
         if(this._checkpointSignatures.get(start.runId)===signature)return true;
+        if(this._checkpointRejectedSignatures.get(start.runId)===signature)return false;
         if(!(await this.startRun(start)))return false;
-        const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
         try{
-          const response=await this.request('/api/meowcha/runs/checkpoint',{method:'POST',headers:this.getAuthHeaders(),body:signature,signal:controller.signal});
-          if(!response.ok)return false;
+          const response=await this.capabilityRequest('checkpoint','/api/meowcha/runs/checkpoint',{method:'POST',headers:this.getAuthHeaders(),body:signature});
+          if(!response?.ok){
+            if(response?.status===422){this._checkpointRejectedSignatures.set(start.runId,signature);this.debugApiFailure('/runs/checkpoint',422,await this.safeError(response));}
+            return false;
+          }
           const body=await response.json();this.lastCheckpoint=body.data;
           this._checkpointSignatures.set(start.runId,signature);return true;
-        }catch(_){return false;}finally{clearTimeout(timer);}
+        }catch(_){return false;}
       });
       this._checkpointChains.set(start.runId,task);return task;
     }
@@ -249,16 +343,24 @@
     async submitRun(state) {
       if (!this.hasSession() || !state.wordsSlain || !state.runId) return false;
       const payload = this.captureRunPayload(state);
-      if (!payload.words_slain) return false;
+      if (!payload.words_slain || this.validateRunPayload(payload).length) return false;
+      if(this._runCompletions.has(payload.run_id))return this._runCompletions.get(payload.run_id);
+      if (!(await this.startRun(state))) return false;
       const pending = this.getPendingRuns();
       pending[payload.run_id] = { payload, game_mode: state.gameMode, deck_id: state.activeDeckId };
       this.storage.setItem(this.pendingRunsKey, JSON.stringify(pending));
-      if (!(await this.startRun(state))) return false;
-      try {
-        const response = await this.request('/api/meowcha/runs/complete', {
+      const task=(async()=>{try {
+        const response = await this.capabilityRequest('run_lifecycle','/api/meowcha/runs/complete', {
           method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error(`Complete run: ${response.status}`);
+        if (!response?.ok) {
+          if(response?.status===422){
+            const current=this.getPendingRuns();current[payload.run_id]={...current[payload.run_id],terminal_status:422,
+              terminal_detail:await this.safeError(response)};this.storage.setItem(this.pendingRunsKey,JSON.stringify(current));
+            this.debugApiFailure('/runs/complete',422,current[payload.run_id].terminal_detail);
+          }
+          return false;
+        }
         const remaining = this.getPendingRuns();
         delete remaining[payload.run_id];
         this.storage.setItem(this.pendingRunsKey, JSON.stringify(remaining));
@@ -267,6 +369,8 @@
         if(!root.Meowcha.Session||String(root.Meowcha.Session.owner)===String(this.owner))root.Meowcha.app?.ui?.refreshWeeklyRace?.();
         return true;
       } catch (err) { root.Meowcha.report?.('run_submit_failed');return false; }
+      finally{this._runCompletions.delete(payload.run_id);}})();
+      this._runCompletions.set(payload.run_id,task);return task;
     }
 
     getPendingRuns() {
@@ -278,15 +382,24 @@
       this._retrying = true;
       try {
         for (const [runId, item] of Object.entries(this.getPendingRuns())) {
+          if(item.terminal_status)continue;
+          const payloadErrors=this.validateRunPayload(item.payload||{});
+          if(payloadErrors.length){
+            const pending=this.getPendingRuns();pending[runId]={...item,terminal_status:422,terminal_detail:{source:'client',fields:payloadErrors}};
+            this.storage.setItem(this.pendingRunsKey,JSON.stringify(pending));continue;
+          }
           const started = await this.startRun({ runId, gameMode: item.game_mode, activeDeckId: item.deck_id,
             activeElapsedMs: item.payload.active_ms });
           if (!started) continue;
           try {
-            const res = await this.request('/api/meowcha/runs/complete', { method: 'POST', headers: this.getAuthHeaders(),
+            const res = await this.capabilityRequest('run_lifecycle','/api/meowcha/runs/complete', { method: 'POST', headers: this.getAuthHeaders(),
               body: JSON.stringify(item.payload) });
-            if (res.ok) {
+            if (res?.ok) {
               const pending = this.getPendingRuns(); delete pending[runId];
               this.storage.setItem(this.pendingRunsKey, JSON.stringify(pending));
+            }else if(res?.status===422){
+              const pending=this.getPendingRuns();pending[runId]={...item,terminal_status:422,terminal_detail:await this.safeError(res)};
+              this.storage.setItem(this.pendingRunsKey,JSON.stringify(pending));this.debugApiFailure('/runs/complete',422,pending[runId].terminal_detail);
             }
           } catch (_) { /* Retry on reconnect; the server deduplicates by run id. */ }
         }
@@ -507,6 +620,7 @@
 
     async request(url,options={}){
       if(!this.hasSession())throw new Error('Session unavailable');
+      if(this.apiCompatibility?.compatible===false&&String(options.method||'GET').toUpperCase()!=='GET')throw new Error('MEOW-CHA version mismatch');
       const controller=options.signal?null:new AbortController();
       const timer=controller?setTimeout(()=>controller.abort(),12000):null;
       let response;

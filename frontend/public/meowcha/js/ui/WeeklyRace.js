@@ -87,7 +87,8 @@
   const node=overlay('weeklyRecap','THIÊN ĐẠO BAN CHIẾU');this.weeklyRecapNode=node;
   const awards=data.awards.filter(p=>!p.assisted),best=awards.slice().sort((a,b)=>a.rank-b.rank||Object.keys(names).indexOf(a.hall)-Object.keys(names).indexOf(b.hall))[0];
   const winners=data.previous_top3,top=winners.map((row,i)=>'<div class="weekly-winner"><img alt="Tiên Hữu" data-weekly-avatar="'+i+'"><strong>#'+row.rank+' '+esc(row.player_name)+'</strong><span>'+num(row.score)+' Tu Vi</span></div>').join('');
-  const title=best?.title?'<strong class="weekly-award-title">'+esc(best.title)+' • '+esc(best.specialty||'')+'</strong>':'';
+  const reward=best?.reward?.label?'<span class="weekly-award-reward">Phần thưởng: '+esc(best.reward.label)+' • hiệu lực đến mùa kế tiếp</span>':'';
+  const title=best?.title?'<strong class="weekly-award-title">'+esc(best.title)+' • '+esc(best.specialty||'')+'</strong>'+reward:'';
   const own=best?'Đạo hữu xếp hạng #'+best.rank+' • '+num(best.score)+' Tu Vi tuần • '+esc(best.highest_realm||data.career?.highest_realm||''):
    'Thiên bảng tuần mới đã khai mở. Mỗi trận luyện tập đều là một bước tiến!';
   node.querySelector('.weekly-race-body').innerHTML='<p class="weekly-edict-subtitle">PHONG THẦN TUẦN TRƯỚC</p><div class="weekly-winners">'+(top||'<p>Thiên bảng mới đang chờ những chiến tích đầu tiên.</p>')+'</div>'+title+'<p>'+own+'</p><div class="weekly-recap-actions"><button type="button" class="sword-talisman-cta" id="btnClaimWeeklyTitle"><span class="sword-cta-content"><span class="sword-cta-main">'+(best?.title?'NHẬN DANH HIỆU':'TIẾP TỤC TU LUYỆN')+'</span></span></button><button type="button" class="btn-xianxia-seal" id="btnRecapPantheon">XEM PHONG THẦN</button></div>';

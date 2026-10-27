@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Request, Depends, Query
+from fastapi.exceptions import RequestValidationError
 from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -125,7 +126,7 @@ def seed_db():
 
 from auth_routes import router as auth_router
 from auth_routes import get_current_user, get_optional_current_user
-from meowcha_routes import router as meowcha_router
+from meowcha_routes import router as meowcha_router, meowcha_release_info
 try:
     from grammar_routes import grammar_router
 except ImportError:
@@ -133,6 +134,24 @@ except ImportError:
 from fastapi import Depends
 
 app = FastAPI(title="IELTS Oasis API")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Validation details help diagnose development payload bugs, but inputs and
+    # authorization headers are deliberately never logged.
+    safe_errors = [{'loc': list(item.get('loc', ())), 'msg': item.get('msg'), 'type': item.get('type')}
+                   for item in exc.errors()]
+    if os.getenv('MEOWCHA_VALIDATION_DEBUG') == '1' and request.url.path.startswith('/api/meowcha/'):
+        logger.warning('MEOW-CHA validation failed endpoint=%s status=422 errors=%s',
+                       request.url.path, safe_errors)
+    return JSONResponse(status_code=422, content={'detail': safe_errors})
+
+
+@app.get('/version')
+def build_version():
+    # Next.js maps public /api/version to this route after removing /api.
+    return meowcha_release_info()
 
 @app.middleware("http")
 async def normalize_api_path_middleware(request: Request, call_next):
