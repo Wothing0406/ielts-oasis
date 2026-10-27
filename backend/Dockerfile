@@ -47,6 +47,7 @@ ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Copy app source code and grant ownership
 COPY --chown=appuser:appgroup . .
+RUN mkdir -p /app/logs && chown appuser:appgroup /app /app/logs
 
 USER appuser
 
